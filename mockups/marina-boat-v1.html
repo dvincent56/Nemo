@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Marina · Mistral · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-3:       #3a4a6b;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --open:         #1a4d7a;
+  --open-soft:    rgba(26, 77, 122, 0.08);
+  --past:         #7b6f5c;
+  --past-soft:    rgba(123, 111, 92, 0.10);
+  --danger:       #9e2a2a;
+  --warn:         #d97706;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead (iso) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy); padding: 10px 18px; border: 1px solid var(--navy);
+  text-decoration: none; border-radius: 2px;
+}
+
+/* ──────── Sub-header (breadcrumb + titre court) ──────── */
+.subhead {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 0;
+}
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.breadcrumb a:hover { color: var(--navy); }
+.breadcrumb .sep { color: var(--navy-rule); }
+
+/* ──────── Hero ──────── */
+.boat-hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 36px clamp(24px, 4vw, 64px) 56px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.hero-render {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 32px;
+  aspect-ratio: 16/10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-render::before {
+  content: '';
+  position: absolute;
+  left: 32px; right: 32px; bottom: 24%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--navy-line), transparent);
+}
+.hero-render-svg { width: 96%; height: 96%; }
+
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.hero-class {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+}
+.hero-class::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.hero-name {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 7vw, 104px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+.hero-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid;
+}
+.hero-state.in-race {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: rgba(45, 138, 78, 0.28);
+}
+.hero-state.idle {
+  color: var(--t3);
+  background: var(--ivory-2);
+  border-color: var(--navy-line);
+}
+.hero-state-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.hero-meta-line {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.55;
+}
+.hero-meta-line strong { color: var(--navy); font-weight: 700; }
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); color: var(--navy); }
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(158, 42, 42, 0.35);
+}
+.btn-danger:hover { background: rgba(158, 42, 42, 0.06); border-color: var(--danger); }
+
+/* ──────── Stats band ──────── */
+.stats-band {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 56px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--navy-line);
+  border-bottom: 1px solid var(--navy-line);
+}
+.stat-cell {
+  padding: 24px clamp(16px, 2vw, 28px);
+  border-right: 1px solid var(--navy-line);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 8px;
+}
+.stat-cell-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--navy);
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+}
+.stat-cell-value.gold { color: var(--gold-dark); }
+.stat-cell-value sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: inherit;
+}
+.stat-cell-value small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--t3);
+  margin-left: 4px;
+}
+.stat-cell-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 8px 0 0;
+}
+
+/* ──────── Section générique ──────── */
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px clamp(24px, 4vw, 64px);
+}
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 56px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.section-aside {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--t2);
+  max-width: 360px;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ──────── Catégories d'upgrades ──────── */
+.cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 56px;
+}
+.cat {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 20px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 150ms, border-color 150ms;
+}
+.cat:hover { background: var(--paper-hover); border-color: var(--navy-rule); }
+.cat.tuned { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.cat-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0;
+}
+.cat.tuned .cat-label { color: var(--gold-dark); }
+.cat-variant {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 24px;
+}
+.cat-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--navy-line);
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.cat:not(.tuned) .cat-foot { color: var(--t2); }
+
+/* Pills d'effet (gain / malus / neutre) */
+.effect-pill {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.effect-pill.gain { color: var(--live); background: var(--live-soft); }
+.effect-pill.malus { color: var(--warn); background: rgba(217, 119, 6, 0.10); }
+.effect-pill.neutre { color: var(--t3); background: var(--ivory-2); }
+.effect-pill.risk { color: var(--danger); background: rgba(158, 42, 42, 0.07); }
+
+/* Vue détaillée d'une catégorie : comparaison des variantes */
+.compare-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.compare-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 6px;
+}
+.compare-title {
+  font-family: var(--font-display);
+  font-size: 36px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.compare-aside {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--t2);
+  max-width: 380px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.variants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.variant {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.variant.equipped {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  background: var(--paper-hover);
+}
+.variant-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.variant-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.variant-status {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid;
+  border-radius: var(--r-md);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.variant-status.equipped-tag {
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  border-color: var(--gold);
+}
+.variant-status.research {
+  color: var(--danger);
+  background: rgba(158, 42, 42, 0.06);
+  border-color: rgba(158, 42, 42, 0.25);
+}
+.variant-desc {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.5;
+  margin: 0;
+}
+.variant-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Jauges de performance (4 axes) */
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 0 4px;
+}
+.metric {
+  display: grid;
+  grid-template-columns: 76px 1fr 28px;
+  align-items: center;
+  gap: 10px;
+}
+.metric-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.metric-bar {
+  position: relative;
+  height: 5px;
+  background: var(--ivory-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.metric-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--navy);
+  border-radius: 2px;
+}
+.metric-fill.gold { background: var(--gold); }
+.metric-fill.bad { background: var(--warn); }
+.metric-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.variant.equipped .metric-fill:not(.bad) { background: var(--gold-dark); }
+.variant-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--navy-line);
+  margin-top: auto;
+}
+.variant-cost {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  color: var(--gold-dark);
+}
+.variant-cost small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--t3);
+  margin-left: 4px;
+}
+.variant-cost.free { color: var(--t3); }
+.variant-cta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: transparent;
+  border: 1px solid var(--navy-rule);
+  padding: 7px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.variant-cta:hover { background: var(--navy-soft); border-color: var(--navy); }
+.variant.equipped .variant-cta { display: none; }
+.variant.equipped .variant-foot { justify-content: flex-start; }
+
+/* ──────── Historique ──────── */
+.history {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+}
+.history-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.history-row:last-child { border-bottom: none; }
+.history-row:hover { background: var(--paper-hover); }
+.history-pos {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--navy);
+  line-height: 1;
+}
+.history-pos sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: var(--t3);
+}
+.history-pos.podium { color: var(--gold-dark); }
+.history-pos.podium sup { color: var(--gold); }
+.history-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 0 0 2px;
+}
+.history-meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.history-time {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.history-credits {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--gold-dark);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.history-foot {
+  padding: 16px 22px;
+  text-align: center;
+}
+.history-foot a {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t2);
+  text-decoration: none;
+}
+.history-foot a:hover { color: var(--gold-dark); }
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .subhead { padding: 18px 20px 0; }
+  .boat-hero {
+    grid-template-columns: 1fr;
+    padding: 24px 20px 36px;
+    gap: 28px;
+  }
+  .hero-render { padding: 22px; aspect-ratio: 16/9; }
+  .hero-name { font-size: clamp(48px, 14vw, 80px); }
+  .stats-band { padding: 0 20px 32px; }
+  .stat-cell { padding: 18px 14px; border-right: none; border-bottom: 1px solid var(--navy-line); }
+  .stat-cell:last-child { border-bottom: none; }
+  .stat-cell-value { font-size: 32px; }
+  .section { padding: 40px 20px; }
+  .section-aside { text-align: left; max-width: none; }
+  .cats { grid-template-columns: 1fr; gap: 10px; }
+  .variants { grid-template-columns: 1fr; gap: 10px; }
+  .compare-aside { text-align: left; max-width: none; }
+  .history-row {
+    grid-template-columns: 50px 1fr auto;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .history-credits { display: none; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  .btn, .upgrade-cta { min-height: 44px; }
+  .masthead-nav a, .lang a, .breadcrumb a { min-height: 36px; display: inline-flex; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#" class="active">Marina</a>
+    <a href="#">Classement</a>
+    <a href="#">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link active">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<!-- ──────── Sub-header ──────── -->
+<div class="subhead">
+  <nav class="breadcrumb" aria-label="Fil d'ariane">
+    <a href="#">← Marina</a>
+    <span class="sep">/</span>
+    <span>Mistral</span>
+  </nav>
+</div>
+
+<!-- ──────── Hero ──────── -->
+<section class="boat-hero">
+  <div class="hero-render" aria-hidden="true">
+    <svg class="hero-render-svg" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet">
+      <!-- Eau / waterline -->
+      <line x1="20" y1="160" x2="300" y2="160" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+      <!-- Coque (peinte bleu) -->
+      <path d="M 38,160 L 280,160 L 252,178 L 70,178 Z" fill="#1a4d7a" />
+      <path d="M 38,160 L 280,160 L 276,154 L 42,154 Z" fill="#f5f0e8" />
+      <text x="160" y="174" font-family="Bebas Neue" font-size="14" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.12em">MISTRAL</text>
+      <!-- Numéro tribord -->
+      <text x="64" y="170" font-family="Bebas Neue" font-size="9" fill="#c9a227" letter-spacing="0.1em">114</text>
+      <!-- Mât -->
+      <line x1="158" y1="160" x2="158" y2="22" stroke="#1a2840" stroke-width="3" />
+      <!-- Bôme -->
+      <line x1="158" y1="92" x2="248" y2="100" stroke="#1a2840" stroke-width="1.5" />
+      <!-- Grand-voile -->
+      <path d="M 160,22 L 246,100 L 160,88 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+      <text x="200" y="72" font-family="Bebas Neue" font-size="20" fill="#1a4d7a" text-anchor="middle">114</text>
+      <!-- Foc -->
+      <path d="M 156,22 L 156,88 L 88,138 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+      <!-- Quille -->
+      <path d="M 150,178 L 168,178 L 158,196 Z" fill="#1a2840" opacity="0.6" />
+      <!-- Foils suggérés (upgrade installé) -->
+      <path d="M 92,176 Q 70,188 50,180" fill="none" stroke="#c9a227" stroke-width="1.5" />
+      <path d="M 226,176 Q 246,188 264,180" fill="none" stroke="#c9a227" stroke-width="1.5" />
+    </svg>
+  </div>
+
+  <div class="hero-side">
+    <p class="hero-class">Class40 · FRA-114</p>
+    <h1 class="hero-name">Mistral</h1>
+    <span class="hero-state idle">
+      <span class="hero-state-dot"></span>
+      Au port
+    </span>
+    <p class="hero-meta-line">
+      Acquis après le podium de Lorient, ton Class40 a parcouru
+      <strong>3 482 milles</strong> et reste ton bateau de prédilection sur les transats moyennes.
+    </p>
+    <div class="hero-actions">
+      <a href="#" class="btn btn-primary">Personnaliser →</a>
+      <a href="#" class="btn btn-danger">Vendre</a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Stats band ──────── -->
+<section class="stats-band">
+  <div class="stats-grid">
+    <div class="stat-cell">
+      <p class="stat-cell-label">Courses</p>
+      <p class="stat-cell-value">12</p>
+      <p class="stat-cell-sub">Saison 2026</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Meilleur classement</p>
+      <p class="stat-cell-value gold">04<sup>e</sup></p>
+      <p class="stat-cell-sub">Fastnet Sprint · 2025</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Distance parcourue</p>
+      <p class="stat-cell-value">3 482<small>NM</small></p>
+      <p class="stat-cell-sub">Depuis l'acquisition</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Modules optimisés</p>
+      <p class="stat-cell-value">04<small>/06</small></p>
+      <p class="stat-cell-sub">Carène + Électronique en standard</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Section Upgrades ──────── -->
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="section-eyebrow">Performance</p>
+      <h2 class="section-title">Configuration</h2>
+    </div>
+    <p class="section-aside">
+      Six modules à arbitrer. Chaque variante a son profil de performance
+      sur quatre axes : près, portant, gros temps, usure.
+    </p>
+  </div>
+
+  <!-- 6 catégories : aperçu compact -->
+  <div class="cats">
+
+    <a href="#" class="cat">
+      <p class="cat-label">Carène</p>
+      <p class="cat-variant">Standard</p>
+      <div class="cat-pills">
+        <span class="effect-pill neutre">Polyvalente</span>
+      </div>
+      <div class="cat-foot">
+        <span>4 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+    <a href="#" class="cat tuned">
+      <p class="cat-label">Mât &amp; gréement</p>
+      <p class="cat-variant">Carbone HM</p>
+      <div class="cat-pills">
+        <span class="effect-pill gain">Vitesse +3%</span>
+        <span class="effect-pill gain">Roll −12%</span>
+      </div>
+      <div class="cat-foot">
+        <span>3 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+    <a href="#" class="cat tuned">
+      <p class="cat-label">Voiles</p>
+      <p class="cat-variant">Mylar</p>
+      <div class="cat-pills">
+        <span class="effect-pill gain">Forme stable</span>
+        <span class="effect-pill malus">Usure +20%</span>
+      </div>
+      <div class="cat-foot">
+        <span>4 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+    <a href="#" class="cat tuned">
+      <p class="cat-label">Foils &amp; appendices</p>
+      <p class="cat-variant">Foils en C</p>
+      <div class="cat-pills">
+        <span class="effect-pill gain">Vitesse +6% reaching</span>
+        <span class="effect-pill malus">Près −2%</span>
+      </div>
+      <div class="cat-foot">
+        <span>4 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+    <a href="#" class="cat tuned">
+      <p class="cat-label">Quille</p>
+      <p class="cat-variant">Pendulaire</p>
+      <div class="cat-pills">
+        <span class="effect-pill gain">Couple redresseur +18%</span>
+        <span class="effect-pill malus">Usure +12%</span>
+      </div>
+      <div class="cat-foot">
+        <span>3 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+    <a href="#" class="cat">
+      <p class="cat-label">Électronique</p>
+      <p class="cat-variant">Pack régate</p>
+      <div class="cat-pills">
+        <span class="effect-pill gain">Cibles polaires précises</span>
+      </div>
+      <div class="cat-foot">
+        <span>3 variantes</span>
+        <span>Modifier →</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Vue détaillée d'une catégorie : exemple Foils -->
+  <div class="compare-head">
+    <div>
+      <p class="compare-eyebrow">Vue détaillée — Foils &amp; appendices</p>
+      <h3 class="compare-title">Choix des foils</h3>
+    </div>
+    <p class="compare-aside">
+      Compare les profils sur les quatre axes de performance.
+      Le contour or = configuration équipée.
+    </p>
+  </div>
+
+  <div class="variants">
+
+    <article class="variant">
+      <div class="variant-head">
+        <h4 class="variant-name">Sans foils</h4>
+      </div>
+      <p class="variant-desc">
+        Configuration d'origine. Coque seule dans l'eau, comportement classique.
+      </p>
+      <div class="metrics" aria-label="Profil de performance">
+        <div class="metric">
+          <span class="metric-label">Près</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 60%"></div></div>
+          <span class="metric-value">60</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Portant</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 50%"></div></div>
+          <span class="metric-value">50</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Gros temps</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 65%"></div></div>
+          <span class="metric-value">65</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Usure</span>
+          <div class="metric-bar"><div class="metric-fill bad" style="width: 25%"></div></div>
+          <span class="metric-value">25</span>
+        </div>
+      </div>
+      <div class="variant-foot">
+        <span class="variant-cost free">Inclus</span>
+        <button class="variant-cta">Repasser</button>
+      </div>
+    </article>
+
+    <article class="variant equipped">
+      <div class="variant-head">
+        <h4 class="variant-name">Foils en C</h4>
+        <span class="variant-status equipped-tag">Équipé</span>
+      </div>
+      <p class="variant-desc">
+        Profil polyvalent. Sortie partielle de coque dès 12 nds, gain net au reaching.
+      </p>
+      <div class="metrics" aria-label="Profil de performance">
+        <div class="metric">
+          <span class="metric-label">Près</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 56%"></div></div>
+          <span class="metric-value">56</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Portant</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 68%"></div></div>
+          <span class="metric-value">68</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Gros temps</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 55%"></div></div>
+          <span class="metric-value">55</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Usure</span>
+          <div class="metric-bar"><div class="metric-fill bad" style="width: 42%"></div></div>
+          <span class="metric-value">42</span>
+        </div>
+      </div>
+      <div class="variant-foot">
+        <span class="variant-cost">4 500<small>cr.</small></span>
+      </div>
+    </article>
+
+    <article class="variant">
+      <div class="variant-head">
+        <h4 class="variant-name">Foils en S</h4>
+      </div>
+      <p class="variant-desc">
+        Profil agressif type IMOCA. Vol franc dès 14 nds.
+      </p>
+      <div class="metrics" aria-label="Profil de performance">
+        <div class="metric">
+          <span class="metric-label">Près</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 50%"></div></div>
+          <span class="metric-value">50</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Portant</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 82%"></div></div>
+          <span class="metric-value">82</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Gros temps</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 38%"></div></div>
+          <span class="metric-value">38</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Usure</span>
+          <div class="metric-bar"><div class="metric-fill bad" style="width: 70%"></div></div>
+          <span class="metric-value">70</span>
+        </div>
+      </div>
+      <div class="variant-foot">
+        <span class="variant-cost">9 800<small>cr.</small></span>
+        <button class="variant-cta">Équiper</button>
+      </div>
+    </article>
+
+    <article class="variant">
+      <div class="variant-head">
+        <h4 class="variant-name">Foils prototype</h4>
+        <span class="variant-status research">R&amp;D</span>
+      </div>
+      <p class="variant-desc">
+        Issus de la recherche d'écurie. Performance maximale connue,
+        sollicitation extrême.
+      </p>
+      <div class="metrics" aria-label="Profil de performance">
+        <div class="metric">
+          <span class="metric-label">Près</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 42%"></div></div>
+          <span class="metric-value">42</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Portant</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 96%"></div></div>
+          <span class="metric-value">96</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Gros temps</span>
+          <div class="metric-bar"><div class="metric-fill" style="width: 28%"></div></div>
+          <span class="metric-value">28</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Usure</span>
+          <div class="metric-bar"><div class="metric-fill bad" style="width: 92%"></div></div>
+          <span class="metric-value">92</span>
+        </div>
+      </div>
+      <div class="variant-foot">
+        <span class="variant-cost">18 000<small>cr.</small></span>
+        <button class="variant-cta">Équiper</button>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ──────── Section Historique ──────── -->
+<section class="section" style="padding-top: 0;">
+  <div class="section-head">
+    <div>
+      <p class="section-eyebrow">Palmarès</p>
+      <h2 class="section-title">Historique</h2>
+    </div>
+    <p class="section-aside">
+      12 courses bouclées avec ce bateau depuis son acquisition.
+    </p>
+  </div>
+
+  <div class="history">
+    <div class="history-row">
+      <span class="history-pos podium">04<sup>e</sup></span>
+      <div>
+        <p class="history-name">Fastnet Sprint</p>
+        <p class="history-meta">Class40 · 06 août 2025 · 608 NM</p>
+      </div>
+      <span class="history-time">2 j 18 h 42 min</span>
+      <span class="history-credits">+ 1 240 cr.</span>
+    </div>
+    <div class="history-row">
+      <span class="history-pos">12<sup>e</sup></span>
+      <div>
+        <p class="history-name">Transat Jacques Vabre</p>
+        <p class="history-meta">Class40 · 12 nov. 2025 · 4 350 NM</p>
+      </div>
+      <span class="history-time">11 j 04 h 17 min</span>
+      <span class="history-credits">+ 820 cr.</span>
+    </div>
+    <div class="history-row">
+      <span class="history-pos">07<sup>e</sup></span>
+      <div>
+        <p class="history-name">Route du Café</p>
+        <p class="history-meta">Class40 · 24 mars 2026 · 2 850 NM</p>
+      </div>
+      <span class="history-time">8 j 02 h 51 min</span>
+      <span class="history-credits">+ 1 080 cr.</span>
+    </div>
+    <div class="history-row">
+      <span class="history-pos">18<sup>e</sup></span>
+      <div>
+        <p class="history-name">Drheam Cup</p>
+        <p class="history-meta">Class40 · 02 fév. 2026 · 1 062 NM</p>
+      </div>
+      <span class="history-time">4 j 14 h 22 min</span>
+      <span class="history-credits">+ 540 cr.</span>
+    </div>
+    <div class="history-row">
+      <span class="history-pos">09<sup>e</sup></span>
+      <div>
+        <p class="history-name">Cap Lizard Trophy</p>
+        <p class="history-meta">Class40 · 18 jan. 2026 · 412 NM</p>
+      </div>
+      <span class="history-time">1 j 22 h 08 min</span>
+      <span class="history-credits">+ 720 cr.</span>
+    </div>
+    <div class="history-foot">
+      <a href="#">Voir les 7 courses précédentes →</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Saison <span data-season-year>2026</span></div>
+  <div>Polaires réelles · Météo NOAA GFS</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

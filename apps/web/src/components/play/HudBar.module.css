@@ -1,0 +1,110 @@
+.bar {
+  position: fixed;
+  top: env(safe-area-inset-top, 0);
+  left: 0;
+  right: 0;
+  height: 46px;
+  z-index: var(--z-hud);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 var(--sp-5);
+  background: rgba(5, 13, 26, 0.82);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--b1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.bar::-webkit-scrollbar { display: none; }
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--cyan);
+  letter-spacing: 0.08em;
+  padding-right: var(--sp-5);
+  border-right: 1px solid var(--b1);
+  margin-right: var(--sp-5);
+  white-space: nowrap;
+  text-shadow: 0 0 16px rgba(0, 212, 255, 0.35);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--sp-5);
+  border-right: 1px solid var(--b1);
+  min-width: 72px;
+  flex-shrink: 0;
+}
+
+.cell:last-of-type { border-right: none; }
+
+.label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--t1);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.colorOptimal { color: var(--green); }
+.colorOverlap { color: var(--amber); }
+.colorNeutral { color: var(--cyan); }
+.colorDeadzone { color: var(--red); }
+
+.grow { flex: 1; }
+
+.rank {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 14px;
+  border-radius: var(--r-xl);
+  background: var(--cyan-a);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wsStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: var(--sp-5);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.wsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: wsPulse 2s ease-in-out infinite;
+}
+
+.wsOpen { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.wsClosed { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.wsIdle { background: var(--t3); }
+
+@keyframes wsPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

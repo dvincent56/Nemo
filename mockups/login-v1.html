@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Accès skipper · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   NEMO — /login · Direction éditoriale "Nautical Luxury"
+   Palette unique ivory/navy/gold, même grammaire que /races.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-3:       #3a4a6b;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --danger:       #9e2a2a;
+  --danger-soft:  rgba(158, 42, 42, 0.08);
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100dvh;
+}
+
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ──────── Topbar ─────────────────────────────────────────── */
+.topbar {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px clamp(20px, 4vw, 64px);
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+  flex-shrink: 0;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* language switcher — pills éditoriaux */
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+  transition: color 150ms, background 150ms;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+.topbar-link {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--t2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+  white-space: nowrap;
+  transition: color 150ms, border-bottom-color 150ms;
+}
+.topbar-link:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.topbar-link strong { color: var(--navy); font-weight: 700; }
+
+/* ──────── Shell : split éditorial ─────────────────────────── */
+.shell {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  min-height: calc(100dvh - 82px - 82px);
+}
+
+/* ──────── Panneau éditorial (gauche) ──────────────────────── */
+.editorial {
+  padding: clamp(40px, 6vw, 96px) clamp(24px, 4vw, 72px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  border-right: 1px solid var(--navy-line);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Rose des vents subtile en fond */
+.compass-bg {
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 340px;
+  height: 340px;
+  opacity: 0.10;
+  pointer-events: none;
+}
+
+.compass-bg svg { width: 100%; height: 100%; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+.eyebrow-num {
+  font-family: var(--font-mono);
+  color: var(--t3);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 8vw, 112px);
+  line-height: 0.90;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0 0 28px;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+}
+
+.headline em {
+  font-style: normal;
+  color: var(--gold);
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.55;
+  color: var(--t2);
+  max-width: 40ch;
+  margin: 0 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.lede strong { color: var(--navy); font-weight: 600; }
+
+.manifesto {
+  display: grid;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.manifesto-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding-top: 16px;
+  border-top: 1px solid var(--navy-line);
+}
+
+.manifesto-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gold-dark);
+}
+
+.manifesto-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--t2);
+}
+
+.manifesto-body strong {
+  color: var(--navy);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.colophon {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.colophon::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+  display: inline-block;
+}
+
+/* ──────── Panneau formulaire (droite) ─────────────────────── */
+.form-pane {
+  padding: clamp(40px, 6vw, 96px) clamp(24px, 4vw, 72px);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+}
+
+.form-inner {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.form-head {
+  margin-bottom: 40px;
+}
+
+.form-title {
+  font-family: var(--font-display);
+  font-size: 44px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0 0 8px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.form-sub {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.field {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t2);
+  margin-bottom: 8px;
+}
+
+.field-label a {
+  color: var(--gold-dark);
+  text-decoration: none;
+  letter-spacing: 0.10em;
+  font-size: 10px;
+}
+.field-label a:hover { color: var(--gold); }
+
+.field-input {
+  width: 100%;
+  background: var(--ivory);
+  border: 1px solid var(--navy-line);
+  border-radius: 2px;
+  padding: 14px 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--navy);
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+}
+
+.field-input::placeholder { color: var(--t3); }
+.field-input:hover { border-color: var(--navy-rule); }
+.field-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+/* Primary CTA — navy remplissage */
+.submit {
+  width: 100%;
+  background: var(--navy);
+  color: var(--ivory);
+  border: 1px solid var(--navy);
+  padding: 15px 20px;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 160ms, transform 80ms, box-shadow 200ms;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+}
+
+.submit:hover {
+  background: var(--navy-2);
+  box-shadow: 0 12px 28px -16px rgba(26, 40, 64, 0.45);
+}
+
+.submit:active { transform: translateY(1px); }
+
+.submit::after {
+  content: '→';
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  transition: transform 200ms;
+  letter-spacing: 0;
+}
+
+.submit:hover::after { transform: translateX(4px); }
+
+/* ---- Séparateur OU ---- */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px 0 20px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--navy-line);
+}
+
+.divider-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--t3);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---- OAuth ---- */
+.oauth {
+  display: grid;
+  gap: 10px;
+}
+
+.oauth-btn {
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--navy-line);
+  padding: 13px 16px;
+  border-radius: 2px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color 160ms, background 160ms;
+}
+
+.oauth-btn:hover:not(:disabled) {
+  border-color: var(--navy-rule);
+  background: var(--ivory);
+}
+
+.oauth-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.oauth-icon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--navy-soft);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+
+.oauth-btn-tag {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+/* ---- Legal ---- */
+.legal {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--navy-line);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--t3);
+  text-align: center;
+}
+
+.legal a {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--navy-line);
+  transition: text-decoration-color 150ms;
+}
+.legal a:hover { text-decoration-color: var(--gold); }
+
+/* ──────── Footer ──────────────────────────────────────────── */
+.foot {
+  padding: 20px clamp(20px, 4vw, 48px);
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.foot-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.foot a {
+  color: var(--t3);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.foot a:hover { color: var(--navy); }
+
+/* ──────── Responsive ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .form-pane {
+    order: 1;
+    border-bottom: 1px solid var(--navy-line);
+  }
+  .editorial {
+    order: 2;
+    border-right: none;
+    border-bottom: none;
+    padding: 48px 24px 56px;
+    gap: 32px;
+  }
+  .compass-bg { right: -120px; bottom: -120px; width: 280px; height: 280px; }
+  .headline { font-size: clamp(52px, 13vw, 88px); }
+  .lede { font-size: 15px; }
+  .manifesto { gap: 12px; }
+  .manifesto-item { padding-top: 12px; }
+}
+
+@media (max-width: 600px) {
+  .topbar { padding: 16px 20px; gap: 10px; }
+  .brand { font-size: 22px; }
+  .topbar-right { gap: 10px; }
+  .topbar-link { font-size: 12px; }
+  .lang a { padding: 3px 6px; font-size: 9px; }
+
+  .editorial { padding: 36px 20px 44px; gap: 24px; }
+  .headline { font-size: clamp(44px, 15vw, 72px); margin-bottom: 16px; }
+  .manifesto-item { grid-template-columns: 1fr; gap: 4px; }
+  .manifesto-num { display: none; }
+  .compass-bg { display: none; }
+
+  .form-pane { padding: 40px 20px 48px; }
+  .form-title { font-size: 36px; }
+  .form-head { margin-bottom: 28px; }
+  .field-input { font-size: 16px; } /* évite le zoom auto iOS */
+  .submit { font-size: 11px; letter-spacing: 0.14em; }
+
+  .foot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 9px;
+  }
+  .foot-links { gap: 14px; }
+}
+
+/* Touch targets ≥ 44px sur tout l'interactif mobile */
+@media (pointer: coarse) {
+  .lang a, .topbar-link, .foot a { min-height: 36px; display: inline-flex; align-items: center; }
+  .submit, .oauth-btn, .field-input { min-height: 48px; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">NE<span>M</span>O</div>
+  <div class="topbar-right">
+    <nav class="lang" aria-label="Langues">
+      <a href="#" class="active">FR</a>
+      <a href="#">EN</a>
+      <a href="#">ES</a>
+      <a href="#">DE</a>
+    </nav>
+    <a href="#" class="topbar-link">Pas de compte ? <strong>Créer un compte →</strong></a>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="editorial">
+    <div>
+      <p class="eyebrow">
+        <span>01 · Accès skipper</span>
+        <span class="eyebrow-num">Saison <span data-season-year>2026</span></span>
+      </p>
+      <h1 class="headline">
+        Bienvenue<br />à <em>bord</em>.
+      </h1>
+      <p class="lede">
+        <strong>Nemo</strong> est un circuit de course offshore en ligne.
+        Polaires certifiées par les constructeurs, météo NOAA vérifiable,
+        et un bateau qui te suit de course en course, façonné par tes victoires.
+      </p>
+    </div>
+
+    <div class="manifesto">
+      <div class="manifesto-item">
+        <span class="manifesto-num">01</span>
+        <p class="manifesto-body">
+          <strong>Polaires réelles</strong>
+          Les mêmes fichiers pour tous les joueurs, du Figaro III à l'Ultim.
+        </p>
+      </div>
+      <div class="manifesto-item">
+        <span class="manifesto-num">02</span>
+        <p class="manifesto-body">
+          <strong>Météo NOAA GFS</strong>
+          Mise à jour toutes les 6&nbsp;h, identique côté moteur et routeur.
+        </p>
+      </div>
+      <div class="manifesto-item">
+        <span class="manifesto-num">03</span>
+        <p class="manifesto-body">
+          <strong>Ton bateau, ta carrière</strong>
+          Tu gardes ton bateau d'une course à l'autre. Chaque podium rapporte des crédits qui financent tes upgrades&nbsp;: voiles, foils, électronique.
+        </p>
+      </div>
+      <div class="manifesto-item">
+        <span class="manifesto-num">04</span>
+        <p class="manifesto-body">
+          <strong>Prépare ta course</strong>
+          Avant chaque départ, tu arbitres&nbsp;: jeu de voiles, configuration de foils, ravitaillement. Tes choix décident du résultat.
+        </p>
+      </div>
+    </div>
+
+    <p class="colophon">Une carrière de skipper, mille à mille.</p>
+
+    <div class="compass-bg" aria-hidden="true">
+      <svg viewBox="0 0 340 340">
+        <g fill="none" stroke="#1a2840" stroke-width="1">
+          <circle cx="170" cy="170" r="160" />
+          <circle cx="170" cy="170" r="130" />
+          <circle cx="170" cy="170" r="90" />
+          <circle cx="170" cy="170" r="30" />
+          <!-- Cardinaux -->
+          <line x1="170" y1="10"  x2="170" y2="330" />
+          <line x1="10"  y1="170" x2="330" y2="170" />
+          <!-- Intercardinaux -->
+          <line x1="56"  y1="56"  x2="284" y2="284" />
+          <line x1="284" y1="56"  x2="56"  y2="284" />
+        </g>
+        <g fill="#c9a227">
+          <path d="M170,10 L180,160 L170,170 L160,160 Z" />
+        </g>
+        <g font-family="Bebas Neue" font-size="18" fill="#1a2840" text-anchor="middle">
+          <text x="170" y="5">N</text>
+          <text x="335" y="175">E</text>
+          <text x="170" y="345">S</text>
+          <text x="5" y="175">W</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="form-pane">
+    <div class="form-inner">
+      <div class="form-head">
+        <h2 class="form-title">Connexion</h2>
+        <p class="form-sub">Connectez-vous avec votre email et votre mot de passe.</p>
+      </div>
+
+      <form onsubmit="event.preventDefault()" noValidate>
+        <div class="field">
+          <label class="field-label" for="email">
+            Email
+          </label>
+          <input id="email" type="email" class="field-input" placeholder="skipper@nemo.sail" autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="pw">
+            Mot de passe
+            <a href="#">Oublié&nbsp;?</a>
+          </label>
+          <input id="pw" type="password" class="field-input" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+
+        <button class="submit" type="submit">Larguer les amarres</button>
+      </form>
+
+      <div class="divider">
+        <span class="divider-label">ou</span>
+      </div>
+
+      <div class="oauth">
+        <button class="oauth-btn" type="button">
+          <span class="oauth-icon">G</span>
+          <span>Continuer avec Google</span>
+        </button>
+        <button class="oauth-btn" type="button" disabled>
+          <span class="oauth-icon">⌘</span>
+          <span>Continuer avec Apple</span>
+          <span class="oauth-btn-tag">Phase 5</span>
+        </button>
+        <button class="oauth-btn" type="button" disabled>
+          <span class="oauth-icon">f</span>
+          <span>Continuer avec Facebook</span>
+          <span class="oauth-btn-tag">Phase 5</span>
+        </button>
+      </div>
+
+      <p class="legal">
+        En continuant, vous acceptez nos
+        <a href="#">Conditions d'utilisation</a>
+        et notre <a href="#">Politique de confidentialité</a>.
+        Les données de compte sont hébergées en Europe.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div>Nemo · Saison <span data-season-year>2026</span></div>
+  <div class="foot-links">
+    <a href="#">Aide</a>
+    <a href="#">Contact</a>
+    <a href="#">Statut système</a>
+    <a href="#">Mentions légales</a>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

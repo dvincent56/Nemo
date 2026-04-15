@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — En course · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   NEMO — Écran /play (en course)
+   Map dark night ocean + HUD/compass/panels Nautical Luxury
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --ivory:        #f5f0e8;
+  --paper:        #fbf7f0;
+  --paper-dim:    rgba(251, 247, 240, 0.92);
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-deep:    #0c1424;     /* fond de carte nuit */
+  --navy-deeper:  #060b18;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.18);
+
+  --live:         #2d8a4e;
+  --open:         #1a4d7a;
+  --soon:         #a8871e;
+  --past:         #7b6f5c;
+  --danger:       #9e2a2a;
+  --warn:         #d97706;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  /* Sur fond sombre */
+  --on-dark-1: #f5f0e8;
+  --on-dark-2: rgba(245, 240, 232, 0.72);
+  --on-dark-3: rgba(245, 240, 232, 0.42);
+  --dark-line: rgba(245, 240, 232, 0.16);
+  --dark-rule: rgba(245, 240, 232, 0.28);
+  --dark-fill: rgba(12, 20, 36, 0.78);
+  --dark-fill-2: rgba(12, 20, 36, 0.92);
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+
+  --hud-h: 56px;
+  --timeline-h: 64px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--navy-deeper);
+  color: var(--on-dark-1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100%;
+}
+
+button { font-family: inherit; cursor: pointer; }
+a { color: inherit; }
+
+/* ─────────── App shell ─────────── */
+.app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: var(--hud-h) 1fr var(--timeline-h);
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* Garde-fou : aucun enfant de .app ne peut forcer la grille à dépasser le viewport */
+.hud, .map, .timeline { min-width: 0; }
+
+/* ─────────── Top HUD ─────────── */
+.hud {
+  grid-row: 1;
+  background: var(--navy);
+  border-bottom: 1px solid var(--dark-line);
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(12px, 2vw, 24px);
+  gap: clamp(12px, 2vw, 24px);
+  z-index: 30;
+}
+
+.hud-brand {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: var(--on-dark-1);
+  flex-shrink: 0;
+}
+.hud-brand span { color: var(--gold); }
+
+.hud-race {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-left: 16px;
+  border-left: 1px solid var(--dark-line);
+  flex-shrink: 0;
+  min-width: 0;
+}
+.hud-race-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: var(--on-dark-1);
+  line-height: 1;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hud-race-meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hud-rank-hero {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  margin-left: 12px;
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+}
+.hud-rank-hero-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin: 0;
+}
+.hud-rank-hero-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--gold);
+  line-height: 1;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+.hud-rank-hero-value small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(201, 162, 39, 0.7);
+  margin-left: 1px;
+  font-weight: 700;
+}
+.hud-rank-hero-trend {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  color: #6cd28a;
+  margin: 0;
+  line-height: 1;
+}
+
+.hud-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-left: auto;
+  border-left: 1px solid var(--dark-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.hud-stats::-webkit-scrollbar { display: none; }
+
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px clamp(8px, 1.2vw, 14px);
+  border-right: 1px solid var(--dark-line);
+  min-width: 54px;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.hud-stat-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  color: var(--on-dark-2);
+  text-transform: uppercase;
+  margin: 0 0 2px;
+  line-height: 1;
+}
+.hud-stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--on-dark-1);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hud-stat-value small { font-size: 9px; color: var(--on-dark-2); margin-left: 2px; }
+.hud-stat-value.gold { color: var(--gold); }
+.hud-stat-value.live { color: #6cd28a; }
+.hud-stat-value.warn { color: #f0b96b; }
+
+.hud-rank {
+  padding: 0 clamp(14px, 2vw, 22px);
+  border-right: 1px solid var(--dark-line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hud-rank-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-2);
+  text-transform: uppercase;
+  margin: 0;
+}
+.hud-rank-value {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--gold);
+  line-height: 0.9;
+}
+.hud-rank-value small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--on-dark-3);
+  margin-left: 4px;
+}
+
+.hud-end {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  border-left: 1px solid var(--dark-line);
+  flex-shrink: 0;
+}
+.hud-quit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--on-dark-2);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+.hud-quit:hover { color: var(--on-dark-1); border-color: var(--dark-rule); background: rgba(255,255,255,0.04); }
+.hud-quit-icon { font-size: 14px; line-height: 1; }
+
+/* ─────────── Map ─────────── */
+.map {
+  position: relative;
+  grid-row: 2;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 30% 35%, rgba(36, 53, 82, 0.5), transparent 60%),
+    radial-gradient(ellipse at 70% 65%, rgba(20, 30, 50, 0.6), transparent 60%),
+    linear-gradient(180deg, #0c1424 0%, #060b18 100%);
+}
+
+/* Wind colorization layer (simulé) */
+.map::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 38%, rgba(108, 210, 138, 0.18), transparent 28%),
+    radial-gradient(circle at 60% 28%, rgba(240, 185, 107, 0.22), transparent 22%),
+    radial-gradient(circle at 78% 52%, rgba(217, 119, 6, 0.18), transparent 25%),
+    radial-gradient(circle at 38% 72%, rgba(108, 210, 138, 0.14), transparent 30%);
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Wind particles direction (lignes pointillées) */
+.wind-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Map content (route, bateaux) */
+.map-content {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Coordonnées top-left */
+.coords {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--on-dark-2);
+  background: var(--dark-fill);
+  padding: 8px 12px;
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  pointer-events: auto;
+  z-index: 10;
+}
+.coords-row + .coords-row { margin-top: 2px; }
+.coords-row strong { color: var(--on-dark-1); font-weight: 700; }
+
+/* ─────────── Classement (gauche) ─────────── */
+#ranking-toggle, #sail-toggle, #prog-toggle { position: absolute; opacity: 0; pointer-events: none; left: -9999px; }
+
+.ranking-tab {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: var(--dark-fill-2);
+  border: 1px solid var(--dark-line);
+  border-left: none;
+  color: var(--on-dark-1);
+  padding: 16px 10px;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  z-index: 20;
+  transition: background 150ms, color 150ms;
+}
+.ranking-tab:hover { background: var(--navy-deep); }
+
+.ranking-tab-arrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--on-dark-2);
+  line-height: 1;
+}
+.ranking-tab-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--on-dark-1);
+}
+.ranking-tab-rank {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+#ranking-toggle:checked ~ .map .ranking-tab { left: 320px; }
+#ranking-toggle:checked ~ .map .ranking-tab .ranking-tab-arrow::before { content: '◀'; }
+#ranking-toggle:not(:checked) ~ .map .ranking-tab .ranking-tab-arrow::before { content: '▶'; }
+
+.ranking-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  background: var(--dark-fill-2);
+  border-right: 1px solid var(--dark-line);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 220ms ease;
+  z-index: 25;
+  pointer-events: auto;
+}
+#ranking-toggle:checked ~ .map .ranking-panel { transform: translateX(0); }
+
+.panel-head {
+  padding: 18px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--dark-line);
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  color: var(--on-dark-1);
+  margin: 0;
+}
+.panel-close {
+  background: transparent;
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-2);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.ranking-filters {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dark-line);
+}
+.ranking-filter-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+.ranking-filter-select {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-1);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 48%, var(--on-dark-2) 48%, var(--on-dark-2) 52%, transparent 52%),
+                    linear-gradient(-45deg, transparent 48%, var(--on-dark-2) 48%, var(--on-dark-2) 52%, transparent 52%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.ranking-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.ranking-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--dark-line);
+  cursor: pointer;
+  transition: background 120ms;
+}
+.ranking-row:hover { background: rgba(255,255,255,0.04); }
+.ranking-row.me {
+  background: rgba(201, 162, 39, 0.08);
+  border-left: 2px solid var(--gold);
+  padding-left: 18px;
+}
+
+.ranking-pos {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--on-dark-2);
+  line-height: 1;
+}
+.ranking-row.me .ranking-pos { color: var(--gold); }
+.ranking-row.podium .ranking-pos { color: var(--gold); }
+
+.ranking-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--on-dark-1);
+  line-height: 1.2;
+}
+.ranking-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.ranking-dtf {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--on-dark-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ranking-row.me .ranking-dtf { color: var(--gold); }
+
+/* ─────────── Right side stack (boutons + boussole) ─────────── */
+.right-stack {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 20;
+  pointer-events: auto;
+}
+.r-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.r-btn {
+  background: var(--dark-fill-2);
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-1);
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--r-md);
+  transition: background 150ms, border-color 150ms, color 150ms;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+.r-btn:hover { background: var(--navy-deep); border-color: var(--dark-rule); }
+.r-btn.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.r-btn-icon { font-size: 18px; line-height: 1; }
+.r-btn-zoom { width: 52px; height: 38px; font-size: 18px; }
+
+.r-btn-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--dark-line);
+  background: var(--dark-fill-2);
+}
+.r-btn-group .r-btn {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.r-btn-group .r-btn + .r-btn {
+  border-top: 1px solid var(--dark-line);
+}
+
+/* ─────────── Compass (bottom-right) ─────────── */
+.compass-wrap {
+  background: var(--dark-fill-2);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  padding: 14px;
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compass-readouts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--dark-line);
+}
+.compass-readout-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+  margin: 0 0 1px;
+  line-height: 1;
+}
+.compass-readout-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--on-dark-1);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.compass-readout-value small { font-size: 10px; color: var(--on-dark-3); margin-left: 2px; }
+.compass-readout-value.gold { color: var(--gold); }
+.compass-readout-value.live { color: #6cd28a; }
+
+.compass-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+}
+.compass-svg { width: 100%; height: 100%; display: block; }
+
+.compass-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dark-line);
+}
+.compass-action {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-1);
+  padding: 8px 6px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.compass-action:hover { background: rgba(255,255,255,0.08); }
+.compass-action.locked { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.compass-action-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--on-dark-3);
+}
+.compass-action.locked .compass-action-dot { background: var(--gold); }
+
+/* ─────────── Side panel droite générique (sails/programmation) ─────────── */
+.side-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 420px;
+  background: var(--dark-fill-2);
+  border-left: 1px solid var(--dark-line);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+  z-index: 28;
+  pointer-events: auto;
+}
+#sail-toggle:checked ~ .map .side-panel.sails { transform: translateX(0); }
+#prog-toggle:checked ~ .map .side-panel.prog { transform: translateX(0); }
+
+#sail-toggle:checked ~ .map .r-btn.sails-trigger,
+#prog-toggle:checked ~ .map .r-btn.prog-trigger { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+/* Sail panel content */
+.sail-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  margin-bottom: 16px;
+}
+.sail-mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--on-dark-2);
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.sail-mode-btn.active { background: var(--gold); color: var(--navy); }
+
+.sail-current {
+  padding: 14px;
+  background: rgba(201, 162, 39, 0.08);
+  border: 1px solid var(--gold);
+  border-radius: var(--r-md);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  justify-content: space-between;
+}
+.sail-current-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.sail-current-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.sail-current-twa {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--on-dark-2);
+  margin-top: 4px;
+}
+
+.sail-list { display: flex; flex-direction: column; gap: 6px; }
+.sail-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.sail-row:hover { background: rgba(255,255,255,0.06); border-color: var(--dark-rule); }
+.sail-row.active { background: var(--gold-soft); border-color: var(--gold); }
+.sail-row.disabled { opacity: 0.45; cursor: not-allowed; }
+
+.sail-row-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--on-dark-1);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.sail-row.active .sail-row-name { color: var(--gold); }
+.sail-row-desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--on-dark-2);
+  line-height: 1.3;
+}
+.sail-row-range {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--on-dark-3);
+  letter-spacing: 0.10em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Programmation panel content */
+.prog-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--dark-line);
+  margin-bottom: 16px;
+}
+.prog-tab {
+  background: transparent;
+  border: none;
+  color: var(--on-dark-2);
+  padding: 12px 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.prog-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.prog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.prog-field { display: flex; flex-direction: column; gap: 6px; }
+.prog-field-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+}
+.prog-field-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-1);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+.prog-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.prog-submit {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.prog-submit:hover { background: #d8b03a; }
+
+.prog-queue-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--on-dark-1);
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.prog-queue-title small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+}
+
+.prog-queue { display: flex; flex-direction: column; gap: 6px; }
+.prog-order {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+}
+.prog-order-when {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.prog-order-what {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--on-dark-1);
+}
+.prog-order-what strong { color: var(--gold); font-weight: 700; }
+.prog-order-del {
+  background: transparent;
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-3);
+  width: 24px; height: 24px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.prog-order-del:hover { color: var(--danger); border-color: var(--danger); }
+
+.prog-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--dark-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.02);
+}
+.prog-foot a {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-dark-2);
+  text-decoration: none;
+}
+.prog-foot a:hover { color: var(--gold); }
+
+/* ─────────── Bottom timeline (météo) ─────────── */
+.timeline {
+  grid-row: 3;
+  background: var(--navy);
+  border-top: 1px solid var(--dark-line);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 clamp(12px, 2vw, 24px);
+  z-index: 30;
+  min-width: 0;
+}
+
+.timeline-now { flex: 0 0 auto; }
+.timeline-track { flex: 1 1 0; min-width: 0; }
+.timeline-end { flex: 0 0 auto; }
+
+.timeline-now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--on-dark-1);
+  text-transform: uppercase;
+}
+.timeline-now-day { color: var(--gold); }
+
+.timeline-track {
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+.timeline-bar {
+  position: absolute;
+  inset: 50% 0;
+  height: 2px;
+  background: var(--dark-line);
+  transform: translateY(-50%);
+}
+.timeline-progress {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 38%;
+  height: 2px;
+  background: var(--gold);
+  transform: translateY(-50%);
+}
+.timeline-thumb {
+  position: absolute;
+  top: 50%;
+  left: 38%;
+  width: 14px;
+  height: 14px;
+  background: var(--gold);
+  border: 2px solid var(--navy);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px var(--gold);
+}
+.timeline-marks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.timeline-mark {
+  width: 1px;
+  height: 6px;
+  background: var(--dark-line);
+  align-self: center;
+}
+.timeline-mark.major { height: 10px; background: var(--dark-rule); }
+
+.timeline-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timeline-btn {
+  background: transparent;
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-2);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.timeline-btn:hover { color: var(--on-dark-1); border-color: var(--dark-rule); }
+.timeline-btn.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.timeline-speed {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ─────────── Layers toggles (bottom-left) ─────────── */
+.layers {
+  position: absolute;
+  left: 16px;
+  bottom: 64px;
+  background: var(--dark-fill-2);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+  min-width: 180px;
+}
+.layers-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-3);
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+.layer-row-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-dark-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.layer-row-icon {
+  font-size: 14px;
+  color: var(--on-dark-2);
+}
+/* Pure-CSS switch */
+.layer-switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  background: rgba(245, 240, 232, 0.15);
+  border-radius: 999px;
+  transition: background 150ms;
+  flex-shrink: 0;
+}
+.layer-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--on-dark-1);
+  border-radius: 50%;
+  transition: transform 150ms, background 150ms;
+}
+.layer-row input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.layer-row input[type="checkbox"]:checked + .layer-switch {
+  background: var(--gold);
+}
+.layer-row input[type="checkbox"]:checked + .layer-switch::after {
+  transform: translateX(14px);
+  background: var(--navy);
+}
+
+/* ─────────── Wind legend (bottom-left, au-dessus de la timeline) ─────────── */
+.wind-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  background: var(--dark-fill);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 15;
+}
+.wind-legend-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--on-dark-2);
+  text-transform: uppercase;
+}
+.wind-legend-bar {
+  width: 120px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg,
+    #6cd28a 0%, #c9d860 25%, #f0b96b 50%, #d97706 75%, #9e2a2a 100%);
+}
+.wind-legend-ticks {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  color: var(--on-dark-3);
+  letter-spacing: 0.06em;
+}
+
+/* ─────────── Responsive ─────────── */
+@media (max-width: 1100px) {
+  .hud-stat { padding: 4px 10px; min-width: 56px; }
+  .hud-stat-value { font-size: 14px; }
+  .compass-wrap { width: 240px; padding: 12px; }
+  .compass-readout-value { font-size: 12px; }
+  .side-panel { width: 360px; }
+}
+
+@media (max-width: 860px) {
+  .hud { padding: 0 12px; gap: 10px; }
+  .hud-race { display: none; }
+  .hud-brand { font-size: 18px; }
+  .ranking-panel { width: 280px; }
+  #ranking-toggle:checked ~ .map .ranking-tab { left: 280px; }
+  .side-panel { width: 100%; }
+  .right-stack { gap: 6px; bottom: 12px; right: 12px; }
+  .r-btn { width: 44px; height: 44px; font-size: 8px; }
+  .r-btn-zoom { height: 32px; }
+  .compass-wrap { width: 220px; padding: 10px; }
+  .wind-legend { display: none; }
+  .layers { display: none; }
+}
+
+/* ────────── Phone & petits tablets : refonte du bottom area ────────── */
+@media (max-width: 900px) {
+  :root { --hud-h: 50px; --timeline-h: 44px; }
+
+  /* HUD compact */
+  .hud { padding: 0 10px; gap: 6px; }
+  .hud-brand { font-size: 16px; }
+  .hud-rank-hero { margin-left: 6px; padding: 3px 8px; gap: 6px; }
+  .hud-rank-hero-label { display: none; }
+  .hud-rank-hero-value { font-size: 18px; }
+  .hud-rank-hero-trend { display: none; }
+  .hud-stats { border-left: 1px solid var(--dark-line); padding-left: 6px; }
+  .hud-stat { min-width: 46px; padding: 4px 7px; }
+  .hud-stat-label { font-size: 7px; }
+  .hud-stat-value { font-size: 12px; }
+  .hud-stat-value small { font-size: 8px; }
+  .hud-end { display: none; }
+
+  /* Coordonnées plus discrètes */
+  .coords { top: 8px; left: 8px; padding: 5px 8px; font-size: 9px; }
+
+  /* Right stack centré, max 320px (aligné avec la boussole) */
+  .right-stack {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    max-width: 320px;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  /* Actions = ligne horizontale compacte alignée à droite, au-dessus de la boussole */
+  .r-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+  }
+  .r-actions > * { flex: 0 0 auto; }
+  .r-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    gap: 0;
+    font-size: 0;
+  }
+  .r-btn-icon { font-size: 16px; }
+  .r-btn > span:not(.r-btn-icon) { display: none; }
+  .r-btn-group { flex-direction: row; }
+  .r-btn-group .r-btn + .r-btn {
+    border-top: none;
+    border-left: 1px solid var(--dark-line);
+  }
+  .r-btn-zoom { width: 36px; height: 40px; font-size: 16px; flex: 0 0 36px; }
+
+  /* Boussole : centrée pleine largeur, plus compacte */
+  .compass-wrap {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .compass-readouts { gap: 4px 12px; padding-bottom: 8px; }
+  .compass-readout-label { font-size: 8px; }
+  .compass-readout-value { font-size: 13px; }
+  .compass-stage { max-width: 220px; margin: 0 auto; }
+  .compass-actions { gap: 4px; padding-top: 8px; }
+  .compass-action { padding: 9px 4px; font-size: 9px; min-height: 36px; }
+
+  /* Onglet classement reste à gauche en mode mini */
+  .ranking-tab {
+    padding: 12px 8px;
+  }
+  .ranking-tab-label { font-size: 9px; letter-spacing: 0.14em; }
+  .ranking-tab-rank { font-size: 16px; }
+  .ranking-panel { width: 100%; }
+  #ranking-toggle:checked ~ .map .ranking-tab { display: none; }
+
+  /* Timeline 2 rangées — tout reste visible, layout adaptatif */
+  :root { --timeline-h: 96px; }
+  .timeline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "now end"
+      "track track";
+    gap: 4px 10px;
+    padding: 6px calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left));
+    align-items: center;
+  }
+  .timeline-now {
+    grid-area: now;
+    font-size: 10px;
+    gap: 6px;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .timeline-now-day { font-size: 12px; }
+  .timeline-track { grid-area: track; min-width: 0; }
+  .timeline-end {
+    grid-area: end;
+    gap: 3px;
+    justify-self: end;
+    flex-shrink: 0;
+  }
+  .timeline-end .timeline-btn { flex-shrink: 0; }
+  .timeline-btn { width: 30px; height: 30px; font-size: 11px; }
+  .timeline-speed { width: auto; min-width: 28px; padding: 0 4px; font-size: 9px; }
+}
+
+/* Touch targets minimum 44px partout sur écrans tactiles */
+@media (pointer: coarse) {
+  .r-btn, .compass-action, .timeline-btn, .panel-close { min-height: 44px; }
+  .r-btn-zoom { min-height: 44px; }
+  .layer-row { min-height: 36px; padding: 4px 0; }
+  .ranking-row { padding: 14px 20px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="ranking-toggle" />
+<input type="checkbox" id="sail-toggle" />
+<input type="checkbox" id="prog-toggle" />
+
+<div class="app">
+
+  <!-- ════════ TOP HUD ════════ -->
+  <header class="hud" aria-label="Tableau de bord course">
+    <div class="hud-brand">NE<span>M</span>O</div>
+
+    <div class="hud-race">
+      <span class="hud-race-name">Vendée Express</span>
+      <span class="hud-race-meta">J3 · 14h12</span>
+    </div>
+
+    <div class="hud-rank-hero" aria-label="Rang actuel">
+      <p class="hud-rank-hero-label">Rang</p>
+      <p class="hud-rank-hero-value">12<small>/428</small></p>
+      <p class="hud-rank-hero-trend">▲ 2</p>
+    </div>
+
+    <div class="hud-stats">
+      <div class="hud-stat">
+        <p class="hud-stat-label">BSP</p>
+        <p class="hud-stat-value live">11.4 <small>nds</small></p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">TWS</p>
+        <p class="hud-stat-value">18.2 <small>nds</small></p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">TWA</p>
+        <p class="hud-stat-value">128°</p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">HDG</p>
+        <p class="hud-stat-value">216°</p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">VMG</p>
+        <p class="hud-stat-value gold">9.8 <small>nds</small></p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">DTF</p>
+        <p class="hud-stat-value">1 642 <small>NM</small></p>
+      </div>
+      <div class="hud-stat">
+        <p class="hud-stat-label">Factor</p>
+        <p class="hud-stat-value warn">0.94×</p>
+      </div>
+    </div>
+
+    <div class="hud-end">
+      <a href="#" class="hud-quit" title="Quitter et revenir aux courses">
+        <span class="hud-quit-icon">←</span>
+        <span class="hud-quit-label">Quitter</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ════════ MAP ════════ -->
+  <main class="map" aria-label="Carte de course">
+
+    <!-- Wind particles simulation -->
+    <svg class="wind-particles" viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g stroke="#f5f0e8" stroke-width="0.6" stroke-linecap="round" fill="none" opacity="0.55">
+        <!-- Lignes vent diagonales (simule particules) -->
+        <line x1="120" y1="80" x2="148" y2="64" />
+        <line x1="200" y1="120" x2="232" y2="100" />
+        <line x1="320" y1="60" x2="356" y2="44" />
+        <line x1="440" y1="100" x2="478" y2="80" />
+        <line x1="560" y1="80" x2="600" y2="60" />
+        <line x1="680" y1="140" x2="720" y2="116" />
+        <line x1="800" y1="100" x2="844" y2="76" />
+        <line x1="920" y1="160" x2="966" y2="138" />
+        <line x1="1040" y1="120" x2="1088" y2="98" />
+        <line x1="1160" y1="180" x2="1208" y2="158" />
+        <line x1="1280" y1="140" x2="1330" y2="118" />
+        <line x1="1400" y1="200" x2="1452" y2="178" />
+
+        <line x1="80" y1="240" x2="118" y2="222" />
+        <line x1="220" y1="280" x2="262" y2="260" />
+        <line x1="380" y1="240" x2="426" y2="218" />
+        <line x1="540" y1="300" x2="588" y2="278" />
+        <line x1="700" y1="260" x2="752" y2="238" />
+        <line x1="860" y1="320" x2="916" y2="296" />
+        <line x1="1020" y1="280" x2="1078" y2="256" />
+        <line x1="1180" y1="340" x2="1240" y2="316" />
+        <line x1="1340" y1="300" x2="1402" y2="276" />
+
+        <line x1="60" y1="420" x2="106" y2="402" />
+        <line x1="240" y1="460" x2="290" y2="440" />
+        <line x1="420" y1="420" x2="476" y2="398" />
+        <line x1="600" y1="480" x2="660" y2="458" />
+        <line x1="780" y1="440" x2="844" y2="416" />
+        <line x1="960" y1="500" x2="1028" y2="476" />
+        <line x1="1140" y1="460" x2="1212" y2="436" />
+        <line x1="1320" y1="520" x2="1396" y2="496" />
+
+        <line x1="100" y1="600" x2="148" y2="582" />
+        <line x1="280" y1="640" x2="332" y2="620" />
+        <line x1="460" y1="600" x2="518" y2="578" />
+        <line x1="640" y1="660" x2="704" y2="638" />
+        <line x1="820" y1="620" x2="888" y2="596" />
+        <line x1="1000" y1="680" x2="1072" y2="656" />
+        <line x1="1180" y1="640" x2="1256" y2="616" />
+        <line x1="1360" y1="700" x2="1440" y2="676" />
+      </g>
+    </svg>
+
+    <!-- Map content (route, bateaux) -->
+    <svg class="map-content" viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <!-- Côtes (silhouettes très discrètes) -->
+      <g fill="#1a2840" opacity="0.55">
+        <path d="M0,420 L60,400 L100,440 L140,420 L180,460 L160,520 L120,540 L80,560 L40,540 L0,560 Z" />
+        <path d="M1480,300 L1520,280 L1560,300 L1600,280 L1600,400 L1560,420 L1520,400 L1480,380 Z" />
+      </g>
+
+      <!-- Route prévue (ligne pointillée) -->
+      <path d="M380,520 L520,460 L680,420 L820,400 L960,380 L1080,360 L1200,340 L1320,300 L1420,280"
+            fill="none" stroke="#c9a227" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.55" />
+
+      <!-- Trace passée (ligne pleine) -->
+      <path d="M180,640 L240,620 L300,580 L340,560 L380,520"
+            fill="none" stroke="#f5f0e8" stroke-width="2" opacity="0.85" />
+
+      <!-- Waypoints / portes -->
+      <g>
+        <circle cx="380" cy="520" r="3" fill="#f5f0e8" />
+        <circle cx="680" cy="420" r="4" fill="#c9a227" />
+        <circle cx="960" cy="380" r="4" fill="#c9a227" />
+        <circle cx="1320" cy="300" r="5" fill="#c9a227" />
+        <text x="700" y="408" font-family="Space Mono" font-size="10" font-weight="700" fill="#c9a227" letter-spacing="0.12em">PORTE 1</text>
+        <text x="980" y="368" font-family="Space Mono" font-size="10" font-weight="700" fill="#c9a227" letter-spacing="0.12em">PORTE 2</text>
+        <text x="1340" y="288" font-family="Space Mono" font-size="10" font-weight="700" fill="#c9a227" letter-spacing="0.12em">ARRIVÉE</text>
+      </g>
+
+      <!-- Mon bateau (gros, gold avec halo) -->
+      <g transform="translate(380 520)">
+        <circle r="14" fill="#c9a227" opacity="0.18" />
+        <circle r="8" fill="#c9a227" opacity="0.32" />
+        <path d="M 0,-10 L 6,8 L 0,4 L -6,8 Z" fill="#c9a227" stroke="#1a2840" stroke-width="0.8" transform="rotate(-32)" />
+        <text x="14" y="6" font-family="Space Mono" font-size="11" font-weight="700" fill="#c9a227">VOUS</text>
+      </g>
+
+      <!-- Autres bateaux (anonymes) -->
+      <g fill="#f5f0e8" opacity="0.55">
+        <circle cx="430" cy="500" r="2.5" />
+        <circle cx="320" cy="560" r="2.5" />
+        <circle cx="460" cy="540" r="2.5" />
+        <circle cx="280" cy="600" r="2.5" />
+        <circle cx="500" cy="490" r="2.5" />
+        <circle cx="350" cy="580" r="2.5" />
+        <circle cx="540" cy="470" r="2.5" />
+        <circle cx="600" cy="450" r="2.5" />
+      </g>
+
+      <!-- Zone d'exclusion (warn) — exemple -->
+      <g>
+        <path d="M820,200 L920,180 L1000,220 L980,300 L900,340 L820,300 Z"
+              fill="#d97706" fill-opacity="0.10" stroke="#d97706" stroke-width="1" stroke-dasharray="4 4" opacity="0.7" />
+        <text x="880" y="262" font-family="Space Mono" font-size="11" font-weight="700" fill="#d97706" letter-spacing="0.12em">ZONE WARN</text>
+      </g>
+    </svg>
+
+    <!-- Coordonnées top-left -->
+    <div class="coords" aria-label="Position">
+      <div class="coords-row"><strong>47°23.41'</strong>N</div>
+      <div class="coords-row"><strong>003°12.88'</strong>W</div>
+    </div>
+
+    <!-- Layers toggles bottom-left -->
+    <div class="layers" aria-label="Couches d'affichage">
+      <p class="layers-title">Couches</p>
+      <label class="layer-row">
+        <span class="layer-row-label"><span class="layer-row-icon">≋</span>Vent</span>
+        <input type="checkbox" checked />
+        <span class="layer-switch" aria-hidden="true"></span>
+      </label>
+      <label class="layer-row">
+        <span class="layer-row-label"><span class="layer-row-icon">∿</span>Houle</span>
+        <input type="checkbox" />
+        <span class="layer-switch" aria-hidden="true"></span>
+      </label>
+      <label class="layer-row">
+        <span class="layer-row-label"><span class="layer-row-icon">⛵</span>Adversaires</span>
+        <input type="checkbox" checked />
+        <span class="layer-switch" aria-hidden="true"></span>
+      </label>
+      <label class="layer-row">
+        <span class="layer-row-label"><span class="layer-row-icon">⊘</span>Zones</span>
+        <input type="checkbox" checked />
+        <span class="layer-switch" aria-hidden="true"></span>
+      </label>
+    </div>
+
+    <!-- Wind legend bottom-left -->
+    <div class="wind-legend" aria-label="Échelle vitesse vent">
+      <span class="wind-legend-label">Vent</span>
+      <div class="wind-legend-bar"></div>
+      <span class="wind-legend-ticks">0&nbsp;·&nbsp;40&nbsp;nds</span>
+    </div>
+
+    <!-- ─── Onglet classement (gauche) ─── -->
+    <label for="ranking-toggle" class="ranking-tab" aria-label="Classement">
+      <span class="ranking-tab-arrow"></span>
+      <span class="ranking-tab-label">Classement</span>
+      <span class="ranking-tab-rank">12</span>
+    </label>
+
+    <aside class="ranking-panel" aria-label="Classement">
+      <div class="panel-head">
+        <h3 class="panel-title">Classement</h3>
+        <label for="ranking-toggle" class="panel-close" aria-label="Fermer">✕</label>
+      </div>
+      <div class="ranking-filters">
+        <p class="ranking-filter-label">Filtre</p>
+        <select class="ranking-filter-select" aria-label="Filtre du classement">
+          <option>Général · 428 skippers</option>
+          <option>Mes amis · 14</option>
+          <option>Mon équipe · La Rochelle Racing</option>
+          <option>Ma ville · La Rochelle</option>
+          <option>Mon département · Charente-Maritime</option>
+          <option>Ma région · Nouvelle-Aquitaine</option>
+          <option>Mon pays · France</option>
+        </select>
+      </div>
+      <div class="ranking-list">
+        <div class="ranking-row podium">
+          <span class="ranking-pos">01</span>
+          <div>
+            <div class="ranking-name">@laperouse</div>
+            <div class="ranking-sub">FR · La Trinité</div>
+          </div>
+          <span class="ranking-dtf">1 524 NM</span>
+        </div>
+        <div class="ranking-row podium">
+          <span class="ranking-pos">02</span>
+          <div>
+            <div class="ranking-name">@northwind</div>
+            <div class="ranking-sub">NL · Amsterdam</div>
+          </div>
+          <span class="ranking-dtf">1 538 NM</span>
+        </div>
+        <div class="ranking-row podium">
+          <span class="ranking-pos">03</span>
+          <div>
+            <div class="ranking-name">@bora_c</div>
+            <div class="ranking-sub">IT · Trieste</div>
+          </div>
+          <span class="ranking-dtf">1 552 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">04</span>
+          <div><div class="ranking-name">@finistère</div><div class="ranking-sub">FR · Brest</div></div>
+          <span class="ranking-dtf">1 561 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">05</span>
+          <div><div class="ranking-name">@tradewind</div><div class="ranking-sub">UK · Cowes</div></div>
+          <span class="ranking-dtf">1 574 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">06</span>
+          <div><div class="ranking-name">@mistral</div><div class="ranking-sub">FR · Marseille</div></div>
+          <span class="ranking-dtf">1 588 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">07</span>
+          <div><div class="ranking-name">@cap_horn</div><div class="ranking-sub">CL · Punta Arenas</div></div>
+          <span class="ranking-dtf">1 601 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">08</span>
+          <div><div class="ranking-name">@hebrides</div><div class="ranking-sub">UK · Stornoway</div></div>
+          <span class="ranking-dtf">1 612 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">09</span>
+          <div><div class="ranking-name">@galway_bay</div><div class="ranking-sub">IE · Galway</div></div>
+          <span class="ranking-dtf">1 624 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">10</span>
+          <div><div class="ranking-name">@portofino</div><div class="ranking-sub">IT · Portofino</div></div>
+          <span class="ranking-dtf">1 631 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">11</span>
+          <div><div class="ranking-name">@bay_of_biscay</div><div class="ranking-sub">ES · Bilbao</div></div>
+          <span class="ranking-dtf">1 638 NM</span>
+        </div>
+        <div class="ranking-row me">
+          <span class="ranking-pos">12</span>
+          <div>
+            <div class="ranking-name">@vous</div>
+            <div class="ranking-sub">FR · La Rochelle</div>
+          </div>
+          <span class="ranking-dtf">1 642 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">13</span>
+          <div><div class="ranking-name">@aurora</div><div class="ranking-sub">NO · Tromsø</div></div>
+          <span class="ranking-dtf">1 651 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">14</span>
+          <div><div class="ranking-name">@south_wind</div><div class="ranking-sub">PT · Cascais</div></div>
+          <span class="ranking-dtf">1 668 NM</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-pos">15</span>
+          <div><div class="ranking-name">@meridian</div><div class="ranking-sub">FR · Lorient</div></div>
+          <span class="ranking-dtf">1 682 NM</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─── Side panel : Voiles (droite) ─── -->
+    <aside class="side-panel sails" aria-label="Choix de voiles">
+      <div class="panel-head">
+        <h3 class="panel-title">Voiles</h3>
+        <label for="sail-toggle" class="panel-close" aria-label="Fermer">✕</label>
+      </div>
+      <div class="panel-body">
+        <div class="sail-mode" role="tablist" aria-label="Mode de gestion">
+          <button class="sail-mode-btn active">Auto</button>
+          <button class="sail-mode-btn">Manuel</button>
+        </div>
+
+        <div class="sail-current">
+          <div>
+            <p class="sail-current-label">En route</p>
+            <p class="sail-current-name">Genoa</p>
+          </div>
+          <p class="sail-current-twa">TWA 128°<br/><span style="color:var(--on-dark-3)">depuis 02h14</span></p>
+        </div>
+
+        <div class="sail-list">
+          <div class="sail-row">
+            <span class="sail-row-name">LW</span>
+            <div>
+              <div class="sail-row-desc">Light wind genoa</div>
+              <div class="ranking-sub">Petit temps · &lt; 10 nds</div>
+            </div>
+            <span class="sail-row-range">TWA 60–150°</span>
+          </div>
+          <div class="sail-row">
+            <span class="sail-row-name">JIB</span>
+            <div>
+              <div class="sail-row-desc">Foc standard</div>
+              <div class="ranking-sub">Polyvalent</div>
+            </div>
+            <span class="sail-row-range">TWA 30–110°</span>
+          </div>
+          <div class="sail-row active">
+            <span class="sail-row-name">GEN</span>
+            <div>
+              <div class="sail-row-desc">Genoa</div>
+              <div class="ranking-sub">Sélectionnée par l'auto</div>
+            </div>
+            <span class="sail-row-range">TWA 60–150°</span>
+          </div>
+          <div class="sail-row">
+            <span class="sail-row-name">C0</span>
+            <div>
+              <div class="sail-row-desc">Code 0</div>
+              <div class="ranking-sub">Reaching léger</div>
+            </div>
+            <span class="sail-row-range">TWA 70–120°</span>
+          </div>
+          <div class="sail-row">
+            <span class="sail-row-name">HG</span>
+            <div>
+              <div class="sail-row-desc">Heavy genoa</div>
+              <div class="ranking-sub">Allure soutenue</div>
+            </div>
+            <span class="sail-row-range">TWA 50–130°</span>
+          </div>
+          <div class="sail-row disabled">
+            <span class="sail-row-name">SPI</span>
+            <div>
+              <div class="sail-row-desc">Spinnaker asymétrique</div>
+              <div class="ranking-sub">Indisponible — TWA hors plage</div>
+            </div>
+            <span class="sail-row-range">TWA 90–170°</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ─── Side panel : Programmation (droite) ─── -->
+    <aside class="side-panel prog" aria-label="Programmation des ordres">
+      <div class="panel-head">
+        <h3 class="panel-title">Programmation</h3>
+        <label for="prog-toggle" class="panel-close" aria-label="Fermer">✕</label>
+      </div>
+      <div class="panel-body">
+        <div class="prog-tabs" role="tablist">
+          <button class="prog-tab active">Cap</button>
+          <button class="prog-tab">Waypoints</button>
+          <button class="prog-tab">Voiles</button>
+        </div>
+
+        <div class="prog-form">
+          <div class="prog-field">
+            <label class="prog-field-label">Quand</label>
+            <select class="prog-field-input" aria-label="Déclencheur">
+              <option>Immédiatement</option>
+              <option>À une heure précise</option>
+              <option>À un waypoint</option>
+              <option>Après une durée</option>
+            </select>
+          </div>
+          <div class="prog-field-row">
+            <div class="prog-field">
+              <label class="prog-field-label">Cap cible</label>
+              <input class="prog-field-input" value="225°" />
+            </div>
+            <div class="prog-field">
+              <label class="prog-field-label">Lock TWA</label>
+              <select class="prog-field-input">
+                <option>Désactivé</option>
+                <option>Activé</option>
+              </select>
+            </div>
+          </div>
+          <button class="prog-submit">Ajouter à la file</button>
+        </div>
+
+        <h4 class="prog-queue-title">File d'ordres <small>04 actifs</small></h4>
+        <div class="prog-queue">
+          <div class="prog-order">
+            <span class="prog-order-when">+ 00h22</span>
+            <span class="prog-order-what">Cap → <strong>225°</strong> · TWA verrouillé</span>
+            <button class="prog-order-del" aria-label="Supprimer">✕</button>
+          </div>
+          <div class="prog-order">
+            <span class="prog-order-when">Porte 1</span>
+            <span class="prog-order-what">Voile → <strong>C0</strong></span>
+            <button class="prog-order-del" aria-label="Supprimer">✕</button>
+          </div>
+          <div class="prog-order">
+            <span class="prog-order-when">+ 06h00</span>
+            <span class="prog-order-what">Cap → <strong>240°</strong></span>
+            <button class="prog-order-del" aria-label="Supprimer">✕</button>
+          </div>
+          <div class="prog-order">
+            <span class="prog-order-when">Porte 2</span>
+            <span class="prog-order-what">Mode voiles → <strong>AUTO</strong></span>
+            <button class="prog-order-del" aria-label="Supprimer">✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="prog-foot">
+        <a href="#">↗ Ouvrir en pleine page</a>
+        <a href="#">Voir le routeur</a>
+      </div>
+    </aside>
+
+    <!-- ─── Right stack (boutons + boussole) ─── -->
+    <div class="right-stack" aria-label="Outils carte">
+      <div class="r-actions">
+        <label for="sail-toggle" class="r-btn sails-trigger" title="Voiles">
+          <span class="r-btn-icon">⛵</span>
+          <span>Voiles</span>
+        </label>
+        <label for="prog-toggle" class="r-btn prog-trigger" title="Programmation">
+          <span class="r-btn-icon">≡</span>
+          <span>Prog.</span>
+        </label>
+        <button class="r-btn" title="Recentrer sur le bateau">
+          <span class="r-btn-icon">⊕</span>
+          <span>Centrer</span>
+        </button>
+        <div class="r-btn-group" role="group" aria-label="Zoom carte">
+          <button class="r-btn r-btn-zoom" title="Zoomer">+</button>
+          <button class="r-btn r-btn-zoom" title="Dézoomer">−</button>
+        </div>
+      </div>
+
+      <!-- Compass -->
+      <div class="compass-wrap" aria-label="Boussole et contrôles cap">
+        <div class="compass-readouts">
+          <div>
+            <p class="compass-readout-label">Vit. bateau</p>
+            <p class="compass-readout-value live">11.4 <small>nds</small></p>
+          </div>
+          <div>
+            <p class="compass-readout-label">Vent local</p>
+            <p class="compass-readout-value">18.2 <small>nds</small></p>
+          </div>
+          <div>
+            <p class="compass-readout-label">Cap</p>
+            <p class="compass-readout-value gold">216°</p>
+          </div>
+          <div>
+            <p class="compass-readout-label">TWA</p>
+            <p class="compass-readout-value">128°</p>
+          </div>
+        </div>
+
+        <div class="compass-stage">
+          <svg class="compass-svg" viewBox="0 0 200 200" aria-hidden="true">
+            <!-- Cercle externe -->
+            <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(245,240,232,0.18)" stroke-width="1" />
+            <circle cx="100" cy="100" r="78" fill="none" stroke="rgba(245,240,232,0.10)" stroke-width="1" />
+            <circle cx="100" cy="100" r="44" fill="none" stroke="rgba(245,240,232,0.10)" stroke-width="1" />
+
+            <!-- Graduations cardinales -->
+            <g stroke="rgba(245,240,232,0.30)" stroke-width="1">
+              <line x1="100" y1="8" x2="100" y2="20" />
+              <line x1="100" y1="180" x2="100" y2="192" />
+              <line x1="8" y1="100" x2="20" y2="100" />
+              <line x1="180" y1="100" x2="192" y2="100" />
+            </g>
+            <!-- Graduations intermédiaires -->
+            <g stroke="rgba(245,240,232,0.18)" stroke-width="1">
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(45 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(90 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(135 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(180 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(225 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(270 100 100)" />
+              <line x1="100" y1="8" x2="100" y2="14" transform="rotate(315 100 100)" />
+            </g>
+
+            <!-- Labels cardinaux -->
+            <g font-family="Bebas Neue" font-size="14" fill="#f5f0e8" text-anchor="middle">
+              <text x="100" y="32">N</text>
+              <text x="170" y="105">E</text>
+              <text x="100" y="178">S</text>
+              <text x="30" y="105">W</text>
+            </g>
+
+            <!-- Zone VMG (arc cible) -->
+            <path d="M 100,100 L 161,38 A 86 86 0 0 1 175,82 Z"
+                  fill="#c9a227" fill-opacity="0.10" stroke="#c9a227" stroke-width="0.8" opacity="0.85" />
+
+            <!-- Zone voile actuelle (TWA 60-150) -->
+            <path d="M 100,100 L 173,57 A 84 84 0 0 1 176,121 Z"
+                  fill="#6cd28a" fill-opacity="0.06" stroke="rgba(108,210,138,0.4)" stroke-width="0.6" />
+
+            <!-- Pointeur vent (TWA arrow) — gold -->
+            <g transform="rotate(128 100 100)">
+              <line x1="100" y1="100" x2="100" y2="14" stroke="#c9a227" stroke-width="2" stroke-linecap="round" />
+              <path d="M100,10 L106,22 L100,18 L94,22 Z" fill="#c9a227" />
+              <text x="100" y="38" font-family="Space Mono" font-size="9" font-weight="700" fill="#c9a227" text-anchor="middle" transform="rotate(-128 100 38)">TWA</text>
+            </g>
+
+            <!-- Pointeur cap (HDG) — ivory -->
+            <g transform="rotate(216 100 100)">
+              <line x1="100" y1="100" x2="100" y2="20" stroke="#f5f0e8" stroke-width="2.5" stroke-linecap="round" />
+              <path d="M100,16 L107,32 L100,28 L93,32 Z" fill="#f5f0e8" />
+            </g>
+
+            <!-- Hub central -->
+            <circle cx="100" cy="100" r="12" fill="#1a2840" stroke="#c9a227" stroke-width="1.2" />
+            <text x="100" y="103" font-family="Space Mono" font-size="9" font-weight="700" fill="#c9a227" text-anchor="middle">216°</text>
+          </svg>
+        </div>
+
+        <div class="compass-actions">
+          <button class="compass-action locked" aria-pressed="true" title="Verrouiller TWA">
+            <span class="compass-action-dot"></span>
+            Lock TWA
+          </button>
+          <button class="compass-action" title="Appliquer le cap">
+            Appliquer
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ════════ TIMELINE MÉTÉO ════════ -->
+  <footer class="timeline" aria-label="Timeline météo">
+    <div class="timeline-now">
+      <span class="timeline-now-day">J3</span>
+      <span>14h12 · 9 avr.</span>
+    </div>
+
+    <div class="timeline-track" role="slider" aria-label="Position dans le temps" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38">
+      <div class="timeline-bar"></div>
+      <div class="timeline-marks">
+        <span class="timeline-mark major"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark major"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark major"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark major"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark"></span>
+        <span class="timeline-mark major"></span>
+      </div>
+      <div class="timeline-progress"></div>
+      <div class="timeline-thumb"></div>
+    </div>
+
+    <div class="timeline-end">
+      <button class="timeline-btn timeline-btn-extra" aria-label="Reculer">◀</button>
+      <button class="timeline-btn" aria-label="Lecture">▶</button>
+      <button class="timeline-btn timeline-btn-extra" aria-label="Avancer">▶▶</button>
+      <button class="timeline-btn active timeline-speed">1×</button>
+      <button class="timeline-btn timeline-speed timeline-speed-extra">6×</button>
+      <button class="timeline-btn timeline-speed timeline-speed-extra">24×</button>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

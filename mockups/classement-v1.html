@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Classement · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --silver:       #a8a8a8;
+  --bronze:       #cd7f32;
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --danger:       #9e2a2a;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy); padding: 10px 18px; border: 1px solid var(--navy);
+  text-decoration: none; border-radius: 2px;
+}
+
+/* ──────── Hero ──────── */
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 64px clamp(24px, 4vw, 64px) 32px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 16px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 9vw, 132px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0;
+}
+.hero-meta {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--t2);
+  margin: 0 0 24px;
+}
+.hero-meta strong { color: var(--navy); font-weight: 700; }
+
+.hero-me {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 22px;
+  background: var(--paper);
+  border: 1px solid var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  border-radius: var(--r-md);
+}
+.hero-me-rank {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 0.9;
+  color: var(--gold);
+}
+.hero-me-rank sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  vertical-align: super;
+  margin-left: 2px;
+  color: var(--gold-dark);
+}
+.hero-me-info { flex: 1; min-width: 0; }
+.hero-me-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+.hero-me-pseudo {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0 0 4px;
+}
+.hero-me-stats {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+
+/* ──────── Podium ──────── */
+.podium-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 48px;
+}
+.podium {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  align-items: end;
+  gap: 16px;
+}
+.podium-card {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 24px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.podium-card.p1 {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  padding-top: 36px;
+}
+.podium-card.p2 {
+  border-color: var(--silver);
+}
+.podium-card.p3 {
+  border-color: var(--bronze);
+}
+.podium-badge {
+  font-family: var(--font-display);
+  font-size: 84px;
+  line-height: 0.8;
+  color: var(--gold);
+}
+.podium-card.p1 .podium-badge { color: var(--gold); font-size: 108px; }
+.podium-card.p2 .podium-badge { color: var(--silver); font-size: 76px; }
+.podium-card.p3 .podium-badge { color: var(--bronze); font-size: 72px; }
+.podium-badge sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  vertical-align: super;
+  margin-left: 2px;
+  color: inherit;
+  opacity: 0.8;
+}
+.podium-name {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.podium-card.p1 .podium-name { font-size: 36px; }
+.podium-loc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.podium-flag {
+  display: inline-flex;
+  width: 22px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+.podium-points {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--gold-dark);
+  padding-top: 10px;
+  border-top: 1px solid var(--navy-line);
+  width: 100%;
+  text-align: center;
+}
+.podium-points small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+/* ──────── View switcher (Saison / Par course) ──────── */
+.view-switch {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 20px;
+  display: flex;
+  gap: 8px;
+}
+.view-switch-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t2);
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 150ms, background 150ms, border-color 150ms;
+}
+.view-switch-btn:hover { color: var(--navy); background: var(--navy-soft); }
+.view-switch-btn.active {
+  background: var(--navy);
+  color: var(--paper);
+  border-color: var(--navy);
+}
+
+/* ──────── Filtres ──────── */
+.filters {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--navy-line);
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filter-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0;
+}
+.filter-tab {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: color 150ms, background 150ms, border-color 150ms;
+}
+.filter-tab:hover { color: var(--navy); background: var(--navy-soft); }
+.filter-tab.active { color: var(--navy); background: var(--gold-soft); border-color: var(--gold); }
+
+/* ──────── Table classement ──────── */
+.ranking-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px clamp(24px, 4vw, 64px) 56px;
+}
+.ranking {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.ranking-head {
+  display: grid;
+  grid-template-columns: 64px 1fr 90px 90px 90px 120px 80px;
+  gap: 16px;
+  padding: 14px 22px;
+  background: var(--ivory-2);
+  border-bottom: 1px solid var(--navy-line);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.ranking-head .num { text-align: right; }
+.ranking-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 90px 90px 90px 120px 80px;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--navy-line);
+  transition: background 120ms;
+}
+.ranking-row:last-child { border-bottom: none; }
+.ranking-row:hover { background: var(--paper-hover); }
+.ranking-row.me {
+  background: var(--gold-soft);
+  border-left: 3px solid var(--gold);
+  padding-left: 19px;
+}
+.ranking-pos {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--t2);
+  line-height: 1;
+}
+.ranking-pos sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: var(--t3);
+}
+.ranking-row.podium .ranking-pos,
+.ranking-row.me .ranking-pos { color: var(--gold-dark); }
+.ranking-row.podium .ranking-pos sup,
+.ranking-row.me .ranking-pos sup { color: var(--gold); }
+
+.ranking-skipper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.rs-flag {
+  display: inline-flex;
+  width: 28px;
+  height: 20px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+.rs-flag.fr { background: linear-gradient(90deg, #1a4d7a 0 33%, #f5f0e8 33% 66%, #9e2a2a 66%); }
+.rs-flag.nl { background: linear-gradient(0deg, #1a4d7a 33%, #f5f0e8 33% 66%, #9e2a2a 66%); }
+.rs-flag.it { background: linear-gradient(90deg, #2d8a4e 0 33%, #f5f0e8 33% 66%, #9e2a2a 66%); }
+.rs-flag.uk { background: linear-gradient(0deg, #1a4d7a 50%, #9e2a2a 50%); }
+.rs-flag.no { background: #1a4d7a; }
+.rs-flag.es { background: linear-gradient(0deg, #9e2a2a 33%, #c9a227 33% 66%, #9e2a2a 66%); }
+.rs-flag.ie { background: linear-gradient(90deg, #2d8a4e 0 33%, #f5f0e8 33% 66%, #c9a227 66%); }
+.rs-flag.pt { background: linear-gradient(90deg, #2d8a4e 0 40%, #9e2a2a 40%); }
+.rs-flag.cl { background: linear-gradient(0deg, #9e2a2a 50%, #f5f0e8 50%); }
+.rs-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-city {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+
+.ranking-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ranking-num.gold { color: var(--gold-dark); }
+.ranking-num small {
+  font-size: 9px;
+  color: var(--t3);
+  margin-left: 3px;
+}
+
+.ranking-boat {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ranking-trend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--t3);
+  font-variant-numeric: tabular-nums;
+}
+.ranking-trend.up { color: var(--live); }
+.ranking-trend.down { color: var(--danger); }
+
+/* ──────── Pagination ──────── */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 22px;
+  background: var(--ivory-2);
+  border-top: 1px solid var(--navy-line);
+}
+.pagination-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--t2);
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  min-width: 36px;
+}
+.pagination-btn:hover { color: var(--navy); border-color: var(--navy-rule); background: var(--paper-hover); }
+.pagination-btn.active { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+.pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-sep {
+  font-family: var(--font-mono);
+  color: var(--t3);
+  padding: 0 4px;
+}
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+}
+
+@media (max-width: 900px) {
+  .ranking-head,
+  .ranking-row {
+    grid-template-columns: 44px 1fr 70px 70px;
+  }
+  .ranking-head .col-courses,
+  .ranking-head .col-podiums,
+  .ranking-head .col-boat,
+  .ranking-row .col-courses,
+  .ranking-row .col-podiums,
+  .ranking-row .col-boat { display: none; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 36px 20px 24px;
+    gap: 28px;
+  }
+  .hero-title { font-size: clamp(56px, 15vw, 84px); }
+  .hero-me-rank { font-size: 44px; }
+  .hero-me-pseudo { font-size: 22px; }
+  .podium-wrap { padding: 16px 20px 32px; }
+  .podium {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .podium-card.p1 { padding-top: 24px; }
+  .podium-card.p1 .podium-badge { font-size: 72px; }
+  .podium-card .podium-badge { font-size: 64px; }
+  .filters {
+    padding: 0 20px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-group {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    width: 100%;
+  }
+  .filter-group::-webkit-scrollbar { display: none; }
+  .ranking-wrap { padding: 24px 20px 40px; }
+  .ranking-head,
+  .ranking-row {
+    padding: 12px 14px;
+    gap: 10px;
+    grid-template-columns: 36px 1fr 60px 60px;
+  }
+  .ranking-pos { font-size: 20px; }
+  .rs-flag { width: 22px; height: 16px; }
+  .rs-name { font-size: 13px; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  .filter-tab, .pagination-btn { min-height: 36px; }
+  .ranking-row { min-height: 52px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#">Marina</a>
+    <a href="#" class="active">Classement</a>
+    <a href="#">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link active">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div>
+    <p class="hero-eyebrow">Saison <span data-season-year>2026</span> · Circuit Nemo</p>
+    <h1 class="hero-title">Classement</h1>
+  </div>
+  <div>
+    <p class="hero-meta">
+      Rang cumulé sur l'ensemble des courses de la saison, toutes classes confondues.
+      <strong>1 287 skippers</strong> actifs sur le circuit.
+    </p>
+    <div class="hero-me">
+      <span class="hero-me-rank">12<sup>e</sup></span>
+      <div class="hero-me-info">
+        <p class="hero-me-label">Ta position</p>
+        <p class="hero-me-pseudo">@vous</p>
+        <p class="hero-me-stats">2 140 pts · 42 courses · 07 podiums</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Podium ──────── -->
+<section class="podium-wrap">
+  <div class="podium">
+
+    <!-- 2e -->
+    <div class="podium-card p2">
+      <span class="podium-badge">02<sup>e</sup></span>
+      <h3 class="podium-name">@northwind</h3>
+      <div class="podium-loc">
+        <span class="podium-flag rs-flag nl" aria-hidden="true"></span>
+        Amsterdam
+      </div>
+      <p class="podium-points">4 082<small>pts</small></p>
+    </div>
+
+    <!-- 1er -->
+    <div class="podium-card p1">
+      <span class="podium-badge">01<sup>er</sup></span>
+      <h3 class="podium-name">@laperouse</h3>
+      <div class="podium-loc">
+        <span class="podium-flag rs-flag fr" aria-hidden="true"></span>
+        La Trinité
+      </div>
+      <p class="podium-points">4 318<small>pts</small></p>
+    </div>
+
+    <!-- 3e -->
+    <div class="podium-card p3">
+      <span class="podium-badge">03<sup>e</sup></span>
+      <h3 class="podium-name">@bora_c</h3>
+      <div class="podium-loc">
+        <span class="podium-flag rs-flag it" aria-hidden="true"></span>
+        Trieste
+      </div>
+      <p class="podium-points">3 947<small>pts</small></p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ──────── View switcher ──────── -->
+<div class="view-switch">
+  <button class="view-switch-btn active">Saison</button>
+  <a href="classement-race-v1.html" class="view-switch-btn">Par course</a>
+</div>
+
+<!-- ──────── Filtres ──────── -->
+<div class="filters">
+  <div class="filter-group">
+    <p class="filter-label">Classe</p>
+    <button class="filter-tab active">Toutes</button>
+    <button class="filter-tab">Figaro III</button>
+    <button class="filter-tab">Class40</button>
+    <button class="filter-tab">Ocean Fifty</button>
+    <button class="filter-tab">IMOCA 60</button>
+    <button class="filter-tab">Ultim</button>
+  </div>
+  <div class="filter-group">
+    <p class="filter-label">Périmètre</p>
+    <button class="filter-tab active">Général</button>
+    <button class="filter-tab">Amis</button>
+    <button class="filter-tab">Équipe</button>
+    <button class="filter-tab">Ville</button>
+    <button class="filter-tab">Département</button>
+    <button class="filter-tab">Région</button>
+    <button class="filter-tab">Pays</button>
+  </div>
+</div>
+
+<!-- ──────── Classement ──────── -->
+<section class="ranking-wrap">
+  <div class="ranking">
+
+    <div class="ranking-head">
+      <span class="num">Rang</span>
+      <span>Skipper</span>
+      <span class="num">Points</span>
+      <span class="num col-courses">Courses</span>
+      <span class="num col-podiums">Podiums</span>
+      <span class="num col-boat" style="text-align: right;">Bateau favori</span>
+      <span class="num">Tendance</span>
+    </div>
+
+    <div class="ranking-row podium">
+      <span class="ranking-pos">01<sup>er</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag fr"></span>
+        <div>
+          <p class="rs-name">@laperouse</p>
+          <p class="rs-city">La Trinité · FR</p>
+        </div>
+      </div>
+      <span class="ranking-num gold">4 318</span>
+      <span class="ranking-num col-courses">58</span>
+      <span class="ranking-num col-podiums">22</span>
+      <span class="ranking-boat col-boat">Finisterre</span>
+      <span class="ranking-trend">—</span>
+    </div>
+
+    <div class="ranking-row podium">
+      <span class="ranking-pos">02<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag nl"></span>
+        <div>
+          <p class="rs-name">@northwind</p>
+          <p class="rs-city">Amsterdam · NL</p>
+        </div>
+      </div>
+      <span class="ranking-num gold">4 082</span>
+      <span class="ranking-num col-courses">52</span>
+      <span class="ranking-num col-podiums">18</span>
+      <span class="ranking-boat col-boat">Noordster</span>
+      <span class="ranking-trend up">▲ 1</span>
+    </div>
+
+    <div class="ranking-row podium">
+      <span class="ranking-pos">03<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag it"></span>
+        <div>
+          <p class="rs-name">@bora_c</p>
+          <p class="rs-city">Trieste · IT</p>
+        </div>
+      </div>
+      <span class="ranking-num gold">3 947</span>
+      <span class="ranking-num col-courses">49</span>
+      <span class="ranking-num col-podiums">14</span>
+      <span class="ranking-boat col-boat">Tramontana</span>
+      <span class="ranking-trend down">▼ 1</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">04<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag fr"></span>
+        <div>
+          <p class="rs-name">@finistère</p>
+          <p class="rs-city">Brest · FR</p>
+        </div>
+      </div>
+      <span class="ranking-num">3 512</span>
+      <span class="ranking-num col-courses">47</span>
+      <span class="ranking-num col-podiums">11</span>
+      <span class="ranking-boat col-boat">Iroise</span>
+      <span class="ranking-trend up">▲ 3</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">05<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag uk"></span>
+        <div>
+          <p class="rs-name">@tradewind</p>
+          <p class="rs-city">Cowes · UK</p>
+        </div>
+      </div>
+      <span class="ranking-num">3 384</span>
+      <span class="ranking-num col-courses">44</span>
+      <span class="ranking-num col-podiums">09</span>
+      <span class="ranking-boat col-boat">Solent</span>
+      <span class="ranking-trend">—</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">06<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag fr"></span>
+        <div>
+          <p class="rs-name">@mistral</p>
+          <p class="rs-city">Marseille · FR</p>
+        </div>
+      </div>
+      <span class="ranking-num">3 221</span>
+      <span class="ranking-num col-courses">41</span>
+      <span class="ranking-num col-podiums">08</span>
+      <span class="ranking-boat col-boat">Bandol</span>
+      <span class="ranking-trend down">▼ 2</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">07<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag cl"></span>
+        <div>
+          <p class="rs-name">@cap_horn</p>
+          <p class="rs-city">Punta Arenas · CL</p>
+        </div>
+      </div>
+      <span class="ranking-num">3 102</span>
+      <span class="ranking-num col-courses">39</span>
+      <span class="ranking-num col-podiums">07</span>
+      <span class="ranking-boat col-boat">Magellan</span>
+      <span class="ranking-trend up">▲ 2</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">08<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag uk"></span>
+        <div>
+          <p class="rs-name">@hebrides</p>
+          <p class="rs-city">Stornoway · UK</p>
+        </div>
+      </div>
+      <span class="ranking-num">2 984</span>
+      <span class="ranking-num col-courses">38</span>
+      <span class="ranking-num col-podiums">06</span>
+      <span class="ranking-boat col-boat">Lewis</span>
+      <span class="ranking-trend">—</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">09<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag ie"></span>
+        <div>
+          <p class="rs-name">@galway_bay</p>
+          <p class="rs-city">Galway · IE</p>
+        </div>
+      </div>
+      <span class="ranking-num">2 842</span>
+      <span class="ranking-num col-courses">36</span>
+      <span class="ranking-num col-podiums">05</span>
+      <span class="ranking-boat col-boat">Claddagh</span>
+      <span class="ranking-trend up">▲ 1</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">10<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag it"></span>
+        <div>
+          <p class="rs-name">@portofino</p>
+          <p class="rs-city">Portofino · IT</p>
+        </div>
+      </div>
+      <span class="ranking-num">2 721</span>
+      <span class="ranking-num col-courses">34</span>
+      <span class="ranking-num col-podiums">05</span>
+      <span class="ranking-boat col-boat">Liguria</span>
+      <span class="ranking-trend down">▼ 1</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">11<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag es"></span>
+        <div>
+          <p class="rs-name">@bay_of_biscay</p>
+          <p class="rs-city">Bilbao · ES</p>
+        </div>
+      </div>
+      <span class="ranking-num">2 438</span>
+      <span class="ranking-num col-courses">32</span>
+      <span class="ranking-num col-podiums">04</span>
+      <span class="ranking-boat col-boat">Euskadi</span>
+      <span class="ranking-trend">—</span>
+    </div>
+
+    <div class="ranking-row me">
+      <span class="ranking-pos">12<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag fr"></span>
+        <div>
+          <p class="rs-name">@vous</p>
+          <p class="rs-city">La Rochelle · FR</p>
+        </div>
+      </div>
+      <span class="ranking-num gold">2 140</span>
+      <span class="ranking-num col-courses">42</span>
+      <span class="ranking-num col-podiums">07</span>
+      <span class="ranking-boat col-boat">Mistral</span>
+      <span class="ranking-trend up">▲ 2</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">13<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag no"></span>
+        <div>
+          <p class="rs-name">@aurora</p>
+          <p class="rs-city">Tromsø · NO</p>
+        </div>
+      </div>
+      <span class="ranking-num">2 082</span>
+      <span class="ranking-num col-courses">30</span>
+      <span class="ranking-num col-podiums">04</span>
+      <span class="ranking-boat col-boat">Polaris</span>
+      <span class="ranking-trend down">▼ 1</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">14<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag pt"></span>
+        <div>
+          <p class="rs-name">@south_wind</p>
+          <p class="rs-city">Cascais · PT</p>
+        </div>
+      </div>
+      <span class="ranking-num">1 987</span>
+      <span class="ranking-num col-courses">28</span>
+      <span class="ranking-num col-podiums">03</span>
+      <span class="ranking-boat col-boat">Tejo</span>
+      <span class="ranking-trend up">▲ 4</span>
+    </div>
+
+    <div class="ranking-row">
+      <span class="ranking-pos">15<sup>e</sup></span>
+      <div class="ranking-skipper">
+        <span class="rs-flag fr"></span>
+        <div>
+          <p class="rs-name">@meridian</p>
+          <p class="rs-city">Lorient · FR</p>
+        </div>
+      </div>
+      <span class="ranking-num">1 864</span>
+      <span class="ranking-num col-courses">26</span>
+      <span class="ranking-num col-podiums">03</span>
+      <span class="ranking-boat col-boat">Kerbrézellec</span>
+      <span class="ranking-trend">—</span>
+    </div>
+
+    <div class="pagination" role="navigation" aria-label="Pagination">
+      <button class="pagination-btn" disabled>◀</button>
+      <button class="pagination-btn active">1</button>
+      <button class="pagination-btn">2</button>
+      <button class="pagination-btn">3</button>
+      <span class="pagination-sep">…</span>
+      <button class="pagination-btn">86</button>
+      <button class="pagination-btn">▶</button>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Saison <span data-season-year>2026</span></div>
+  <div>Polaires réelles · Météo NOAA GFS</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

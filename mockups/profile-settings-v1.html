@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Profil · Paramètres · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --danger:       #9e2a2a;
+  --danger-soft:  rgba(158, 42, 42, 0.08);
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead (iso) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy); padding: 10px 18px; border: 1px solid var(--navy);
+  text-decoration: none; border-radius: 2px;
+}
+
+/* ──────── Sub-header ──────── */
+.subhead {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 0;
+}
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.breadcrumb a { color: inherit; text-decoration: none; }
+.breadcrumb a:hover { color: var(--navy); }
+.breadcrumb .sep { color: var(--navy-rule); }
+
+/* ──────── Page head ──────── */
+.page-head {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 40px;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 7vw, 108px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+.page-sub {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--t2);
+  max-width: 620px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ──────── Layout 2 colonnes (nav sticky + sections) ──────── */
+.layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 96px;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.sidenav {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px 0;
+  border-top: 1px solid var(--navy-line);
+  border-bottom: 1px solid var(--navy-line);
+}
+.sidenav-link {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t2);
+  text-decoration: none;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 2px solid transparent;
+  padding-left: 14px;
+  margin-left: -14px;
+  transition: color 150ms, border-color 150ms;
+}
+.sidenav-link:hover { color: var(--navy); }
+.sidenav-link.active { color: var(--gold-dark); border-left-color: var(--gold); }
+.sidenav-num {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--t3);
+}
+.sidenav-link.active .sidenav-num { color: var(--gold); }
+.sidenav-danger { color: var(--danger); }
+.sidenav-danger:hover { color: var(--danger); }
+
+.sections { display: flex; flex-direction: column; gap: 24px; }
+
+.section-card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 28px 32px 26px;
+  scroll-margin-top: 24px;
+}
+.section-card.danger {
+  border-color: rgba(158, 42, 42, 0.30);
+  background: var(--danger-soft);
+}
+.section-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.section-card.danger .section-card-head {
+  border-bottom-color: rgba(158, 42, 42, 0.25);
+}
+.section-card-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+}
+.section-card.danger .section-card-num { color: var(--danger); }
+.section-card-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.section-card-aside {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--t2);
+  margin: 0 0 18px;
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+/* ──────── Fields ──────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field + .field { margin-top: 16px; }
+.field-row .field + .field { margin-top: 0; }
+.field-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.field-input,
+.field-select,
+.field-textarea {
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  color: var(--navy);
+  padding: 0 13px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  height: 44px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.field-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 32px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--t2) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--t2) 50%);
+  background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+.field-textarea {
+  resize: vertical;
+  height: auto;
+  min-height: 88px;
+  padding: 11px 13px;
+  font-style: italic;
+}
+.field-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--t3);
+  margin: 2px 0 0;
+  line-height: 1.45;
+}
+
+/* Toggle (réutilise pattern iOS-like) */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--navy-line);
+}
+.toggle-row:last-of-type { border-bottom: none; }
+.toggle-row-text {
+  flex: 1;
+  min-width: 0;
+}
+.toggle-row-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 0 0 2px;
+}
+.toggle-row-desc {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--t3);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  background: rgba(26, 40, 64, 0.15);
+  border-radius: 999px;
+  transition: background 150ms;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--paper);
+  border-radius: 50%;
+  transition: transform 150ms, background 150ms;
+}
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.toggle input:checked ~ .toggle-dot {}
+.toggle.on { background: var(--gold); }
+.toggle.on::after { transform: translateX(16px); background: var(--navy); }
+
+/* Segmented (units) */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--ivory-2);
+  flex-shrink: 0;
+}
+.segmented button {
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-right: 1px solid var(--navy-line);
+}
+.segmented button:last-child { border-right: none; }
+.segmented button.active { background: var(--navy); color: var(--paper); }
+.segmented button:not(.active):hover { color: var(--navy); }
+
+/* ──────── Buttons ──────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(158, 42, 42, 0.35);
+}
+.btn-danger:hover { background: rgba(158, 42, 42, 0.08); border-color: var(--danger); }
+.btn-danger-solid {
+  background: var(--danger);
+  color: var(--paper);
+  border-color: var(--danger);
+}
+.btn-danger-solid:hover { background: #7c1f1f; border-color: #7c1f1f; }
+
+.section-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--navy-line);
+}
+.section-card.danger .section-foot {
+  justify-content: flex-start;
+  border-top-color: rgba(158, 42, 42, 0.20);
+}
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+  .layout { grid-template-columns: 1fr; gap: 24px; }
+  .sidenav {
+    position: static;
+    flex-direction: row;
+    gap: 0;
+    padding: 0 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sidenav::-webkit-scrollbar { display: none; }
+  .sidenav-link {
+    padding: 12px 14px;
+    margin: 0;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sidenav-link.active {
+    border-left: none;
+    border-bottom-color: var(--gold);
+  }
+  .sidenav-num { display: none; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .subhead { padding: 18px 20px 0; }
+  .page-head { padding: 20px 20px 28px; }
+  .page-title { font-size: clamp(48px, 13vw, 72px); }
+  .layout { padding: 0 20px 72px; }
+  .section-card { padding: 22px 22px 20px; }
+  .section-card-title { font-size: 26px; }
+  .field-row { grid-template-columns: 1fr; }
+  .section-foot { flex-direction: column-reverse; align-items: stretch; }
+  .section-foot .btn { justify-content: center; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  .btn, .segmented button, .toggle { min-height: 36px; }
+  .btn { min-height: 44px; }
+  .sidenav-link { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#">Marina</a>
+    <a href="#">Classement</a>
+    <a href="#" class="active">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link active">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<div class="subhead">
+  <nav class="breadcrumb" aria-label="Fil d'ariane">
+    <a href="#">← Profil</a>
+    <span class="sep">/</span>
+    <span>Paramètres</span>
+  </nav>
+</div>
+
+<header class="page-head">
+  <h1 class="page-title">Paramètres</h1>
+  <p class="page-sub">
+    Gère ton identité publique, ton compte, tes préférences de jeu et les notifications.
+  </p>
+</header>
+
+<main class="layout">
+
+  <!-- Sidenav sticky -->
+  <aside class="sidenav" aria-label="Sections">
+    <a href="#identite" class="sidenav-link active">
+      <span>Identité publique</span>
+      <span class="sidenav-num">01</span>
+    </a>
+    <a href="#compte" class="sidenav-link">
+      <span>Compte</span>
+      <span class="sidenav-num">02</span>
+    </a>
+    <a href="#preferences" class="sidenav-link">
+      <span>Préférences</span>
+      <span class="sidenav-num">03</span>
+    </a>
+    <a href="#notifications" class="sidenav-link">
+      <span>Notifications</span>
+      <span class="sidenav-num">04</span>
+    </a>
+    <a href="#danger" class="sidenav-link sidenav-danger">
+      <span>Zone sensible</span>
+      <span class="sidenav-num">05</span>
+    </a>
+  </aside>
+
+  <section class="sections">
+
+    <!-- 01 · Identité publique -->
+    <article class="section-card" id="identite">
+      <div class="section-card-head">
+        <span class="section-card-num">01</span>
+        <h2 class="section-card-title">Identité publique</h2>
+      </div>
+      <p class="section-card-aside">
+        Ces informations sont visibles par les autres skippers dans le classement,
+        l'historique des courses et sur ta page profil.
+      </p>
+
+      <div class="field">
+        <label class="field-label" for="pseudo">Pseudo</label>
+        <input id="pseudo" class="field-input" value="@vous" maxlength="24" />
+        <p class="field-hint">Entre 3 et 24 caractères. Lettres, chiffres, tirets et underscores.</p>
+      </div>
+
+      <div class="field-row" style="margin-top: 16px;">
+        <div class="field">
+          <label class="field-label" for="pays">Pays</label>
+          <select id="pays" class="field-select">
+            <option selected>France</option>
+            <option>Belgique</option>
+            <option>Suisse</option>
+            <option>Royaume-Uni</option>
+            <option>Pays-Bas</option>
+            <option>Italie</option>
+            <option>Allemagne</option>
+            <option>Espagne</option>
+            <option>Portugal</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="ville">Ville</label>
+          <select id="ville" class="field-select">
+            <option selected>La Rochelle (17)</option>
+            <option>La Trinité-sur-Mer (56)</option>
+            <option>Lorient (56)</option>
+            <option>Brest (29)</option>
+            <option>Saint-Malo (35)</option>
+            <option>Marseille (13)</option>
+            <option>Nice (06)</option>
+            <option>Les Sables-d'Olonne (85)</option>
+          </select>
+          <p class="field-hint">Recherche par nom ou code postal.</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="equipe">Équipe (optionnel)</label>
+        <input id="equipe" class="field-input" value="La Rochelle Racing" />
+        <p class="field-hint">Nom libre, aucun effet gameplay — juste pour le classement par équipe.</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="devise">Devise sur ton profil (optionnel)</label>
+        <textarea id="devise" class="field-textarea" maxlength="120" placeholder="Une phrase d'accroche visible sur ta page profil.">Je n'ai jamais autant appris à perdre que depuis ce circuit.</textarea>
+        <p class="field-hint">120 caractères max. Laisse vide pour masquer la section sur ton profil.</p>
+      </div>
+
+      <div class="section-foot">
+        <button class="btn btn-secondary" disabled>Annuler</button>
+        <button class="btn btn-primary" disabled>Enregistrer</button>
+      </div>
+    </article>
+
+    <!-- 02 · Compte -->
+    <article class="section-card" id="compte">
+      <div class="section-card-head">
+        <span class="section-card-num">02</span>
+        <h2 class="section-card-title">Compte</h2>
+      </div>
+      <p class="section-card-aside">
+        Adresse email utilisée pour la connexion et mot de passe.
+      </p>
+
+      <div class="field">
+        <label class="field-label" for="email">Adresse email</label>
+        <input id="email" class="field-input" type="email" value="damien.vincent56@gmail.com" />
+        <p class="field-hint">Un lien de confirmation est envoyé à chaque changement.</p>
+      </div>
+
+      <div class="field-row" style="margin-top: 16px;">
+        <div class="field">
+          <label class="field-label" for="pwd-old">Mot de passe actuel</label>
+          <input id="pwd-old" class="field-input" type="password" placeholder="••••••••" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="pwd-new">Nouveau mot de passe</label>
+          <input id="pwd-new" class="field-input" type="password" placeholder="••••••••" />
+        </div>
+      </div>
+
+      <div class="section-foot">
+        <button class="btn btn-secondary" disabled>Annuler</button>
+        <button class="btn btn-primary" disabled>Mettre à jour</button>
+      </div>
+    </article>
+
+    <!-- 03 · Préférences -->
+    <article class="section-card" id="preferences">
+      <div class="section-card-head">
+        <span class="section-card-num">03</span>
+        <h2 class="section-card-title">Préférences de jeu</h2>
+      </div>
+      <p class="section-card-aside">
+        Unités, format d'affichage et langue de l'interface.
+      </p>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Unité de vitesse</p>
+          <p class="toggle-row-desc">Utilisée sur le HUD, la boussole et les polaires.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Unité de vitesse">
+          <button class="active">Nœuds</button>
+          <button>km/h</button>
+          <button>mph</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Unité de distance</p>
+          <p class="toggle-row-desc">Utilisée pour DTF, tracés, statistiques.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Unité de distance">
+          <button class="active">NM</button>
+          <button>km</button>
+          <button>mi</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Format d'heure</p>
+          <p class="toggle-row-desc">Utilisé partout sur l'interface.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Format d'heure">
+          <button class="active">24 h</button>
+          <button>12 h (am/pm)</button>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Langue de l'interface</p>
+          <p class="toggle-row-desc">Texte du menu, des pages et des notifications.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Langue">
+          <button class="active">FR</button>
+          <button>EN</button>
+          <button>ES</button>
+          <button>DE</button>
+        </div>
+      </div>
+
+      <div class="section-foot">
+        <button class="btn btn-primary" disabled>Enregistrer</button>
+      </div>
+    </article>
+
+    <!-- 04 · Notifications -->
+    <article class="section-card" id="notifications">
+      <div class="section-card-head">
+        <span class="section-card-num">04</span>
+        <h2 class="section-card-title">Notifications</h2>
+      </div>
+      <p class="section-card-aside">
+        Canal email. Les notifications in-app sont toujours actives pendant une course.
+      </p>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Départ imminent (H−1 h)</p>
+          <p class="toggle-row-desc">Rappel une heure avant le départ d'une course à laquelle tu es inscrit.</p>
+        </div>
+        <label class="toggle on"><input type="checkbox" checked /></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Passage de porte / waypoint</p>
+          <p class="toggle-row-desc">Email à chaque franchissement d'une porte obligatoire.</p>
+        </div>
+        <label class="toggle"><input type="checkbox" /></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Podium amis / équipe</p>
+          <p class="toggle-row-desc">Un skipper que tu suis termine dans le top 3 d'une course.</p>
+        </div>
+        <label class="toggle on"><input type="checkbox" checked /></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Nouvelles courses ouvertes</p>
+          <p class="toggle-row-desc">Annonce des nouvelles dates de course dans les classes que tu possèdes.</p>
+        </div>
+        <label class="toggle on"><input type="checkbox" checked /></label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Résumé hebdomadaire</p>
+          <p class="toggle-row-desc">Email chaque lundi avec tes résultats et l'actualité du circuit.</p>
+        </div>
+        <label class="toggle"><input type="checkbox" /></label>
+      </div>
+
+      <div class="section-foot">
+        <button class="btn btn-primary" disabled>Enregistrer</button>
+      </div>
+    </article>
+
+    <!-- 05 · Danger zone -->
+    <article class="section-card danger" id="danger">
+      <div class="section-card-head">
+        <span class="section-card-num">05</span>
+        <h2 class="section-card-title">Zone sensible</h2>
+      </div>
+      <p class="section-card-aside">
+        Actions irréversibles. Lis bien avant d'agir.
+      </p>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Se déconnecter de tous les appareils</p>
+          <p class="toggle-row-desc">Termine toutes les sessions actives (web, mobile). Tu devras te reconnecter partout.</p>
+        </div>
+        <button class="btn btn-danger">Déconnecter tout</button>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Exporter mes données</p>
+          <p class="toggle-row-desc">Archive ZIP avec ton historique de courses, ta flotte et tes paramètres. RGPD.</p>
+        </div>
+        <button class="btn btn-secondary">Demander l'export</button>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <p class="toggle-row-title">Supprimer mon compte</p>
+          <p class="toggle-row-desc">Suppression définitive de ton skipper, ta flotte et ton historique. Aucun retour possible.</p>
+        </div>
+        <button class="btn btn-danger-solid">Supprimer mon compte</button>
+      </div>
+    </article>
+
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Saison <span data-season-year>2026</span></div>
+  <div>Polaires réelles · Météo NOAA GFS</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

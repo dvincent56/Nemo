@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Marina · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   NEMO — Marina (flotte du skipper)
+   Reprend le design system canonique de races-v1.html
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-3:       #3a4a6b;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --open:         #1a4d7a;
+  --open-soft:    rgba(26, 77, 122, 0.08);
+  --soon:         #a8871e;
+  --soon-soft:    rgba(168, 135, 30, 0.10);
+  --past:         #7b6f5c;
+  --past-soft:    rgba(123, 111, 92, 0.10);
+  --danger:       #9e2a2a;
+  --locked:       rgba(26, 40, 64, 0.45);
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead (iso races/login) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+  transition: color 150ms, background 150ms;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+/* Burger toggle (pure CSS, checkbox hack) */
+#nav-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+}
+.burger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  position: relative;
+  z-index: 20;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.burger-bars {
+  position: relative;
+  width: 22px;
+  height: 1px;
+  background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before,
+.burger-bars::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 1px;
+  background: var(--navy);
+  transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed;
+  inset: 0;
+  background: var(--ivory);
+  z-index: 15;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  display: flex;
+  flex-direction: column;
+  padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drawer-link {
+  font-family: var(--font-display);
+  font-size: 44px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  text-decoration: none;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto;
+  padding-top: 32px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy);
+  padding: 10px 18px;
+  border: 1px solid var(--navy);
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+/* ──────── Hero band ──────── */
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 72px clamp(24px, 4vw, 64px) 56px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 9vw, 132px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0;
+}
+
+.hero-meta {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--t2);
+  margin: 0 0 28px;
+}
+.hero-meta strong { color: var(--navy); font-weight: 700; }
+
+.hero-counters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--navy-line);
+}
+.counter-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 8px;
+}
+.counter-value {
+  font-family: var(--font-display);
+  font-size: 44px;
+  color: var(--navy);
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.counter-value.gold { color: var(--gold); }
+.counter-value small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--t3);
+  margin-left: 4px;
+}
+.counter-value sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold-dark);
+  vertical-align: super;
+  margin-left: 1px;
+}
+.counter-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 6px 0 0;
+}
+
+/* ──────── Filters / résumé carrière ──────── */
+.career-band {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.career-progression {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.career-progression-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.progression {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.progression-step {
+  width: 32px;
+  height: 4px;
+  background: var(--navy-line);
+}
+.progression-step + .progression-step { margin-left: 4px; }
+.progression-step.unlocked { background: var(--gold); }
+.progression-step.current { background: var(--gold); box-shadow: 0 0 0 1px var(--navy); }
+.career-credits {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.career-credits-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.career-credits-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--gold-dark);
+  line-height: 1;
+}
+.career-credits-value small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--t3);
+  margin-left: 4px;
+}
+
+/* ──────── Fleet grid ──────── */
+.fleet {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px clamp(24px, 4vw, 64px) 64px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.boat-card {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 28px 28px 22px;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: background 180ms, border-color 180ms, transform 180ms;
+}
+.boat-card:hover {
+  background: var(--paper-hover);
+  border-color: var(--navy-rule);
+  transform: translateY(-2px);
+}
+
+.boat-card.locked {
+  background: var(--ivory-2);
+  cursor: default;
+}
+.boat-card.locked:hover {
+  transform: none;
+  border-color: var(--navy-line);
+}
+.boat-card.active {
+  border-color: var(--gold);
+  background: var(--paper-hover);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.boat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.boat-class {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.boat-state {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: var(--r-md);
+}
+.boat-state.in-race {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: rgba(45, 138, 78, 0.28);
+}
+.boat-state.idle {
+  color: var(--t3);
+  background: var(--ivory-2);
+  border-color: var(--navy-line);
+}
+.boat-state.locked-chip {
+  color: var(--t3);
+  background: transparent;
+  border-color: var(--navy-line);
+}
+
+.boat-name {
+  font-family: var(--font-display);
+  font-size: 38px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  line-height: 0.95;
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+.boat-card.locked .boat-name {
+  color: var(--locked);
+  font-style: italic;
+}
+
+.boat-tagline {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--t2);
+  margin: -8px 0 0;
+}
+
+/* SVG silhouette du bateau (placeholder générique) */
+.boat-render {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background:
+    linear-gradient(180deg, transparent 60%, rgba(26, 40, 64, 0.04) 60%, rgba(26, 40, 64, 0.04) 65%, transparent 65%);
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.boat-svg { width: 92%; height: 92%; }
+.boat-card.locked .boat-svg { opacity: 0.18; filter: grayscale(1); }
+
+/* Stats inline */
+.boat-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--navy-line);
+}
+.stat-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+.stat-value.gold { color: var(--gold-dark); }
+.stat-value small {
+  font-size: 10px;
+  color: var(--t3);
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+/* État verrouillé : message au centre */
+.boat-locked-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 0;
+  border-top: 1px solid var(--navy-line);
+  text-align: center;
+}
+.boat-locked-icon {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--locked);
+}
+.boat-locked-text {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--t2);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 280px;
+}
+.boat-locked-text strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+/* CTA détail (chevron) */
+.boat-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin-top: auto;
+  padding-top: 4px;
+}
+.boat-cta-arrow {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1;
+}
+.boat-card.locked .boat-cta { color: var(--t3); }
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 40px 20px 32px;
+    gap: 28px;
+  }
+  .hero-title { font-size: clamp(56px, 15vw, 84px); }
+  .hero-meta { font-size: 14px; }
+  .hero-counters { gap: 20px; }
+  .counter-value { font-size: 34px; }
+  .career-band {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 0 20px 20px;
+  }
+  .fleet { padding: 12px 20px 56px; gap: 16px; grid-template-columns: 1fr; }
+  .boat-card { padding: 22px 22px 18px; }
+  .boat-name { font-size: 32px; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; }
+}
+
+@media (pointer: coarse) {
+  .masthead-nav a, .lang a, .footer a { min-height: 36px; display: inline-flex; align-items: center; }
+  .boat-card { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#" class="active">Marina</a>
+    <a href="#">Classement</a>
+    <a href="#">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link active">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div>
+    <p class="hero-eyebrow">Saison <span data-season-year>2026</span> · Ta carrière</p>
+    <h1 class="hero-title">Marina</h1>
+  </div>
+  <div>
+    <p class="hero-meta">
+      Ta flotte personnelle. Chaque bateau te suit de course en course,
+      gagne en performance avec tes <strong>upgrades</strong> et porte tes couleurs.
+      Inscris-toi à une course pour débloquer la classe correspondante.
+    </p>
+    <div class="hero-counters">
+      <div>
+        <p class="counter-label">Bateaux</p>
+        <p class="counter-value">03<small>/05</small></p>
+      </div>
+      <div>
+        <p class="counter-label">Courses</p>
+        <p class="counter-value">42</p>
+      </div>
+      <div>
+        <p class="counter-label">Meilleur classement</p>
+        <p class="counter-value gold">04<sup>e</sup></p>
+        <p class="counter-sub">Fastnet Sprint · 2025</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="career-band">
+  <div class="career-credits">
+    <span class="career-credits-label">Crédits</span>
+    <span class="career-credits-value">12 480<small>cr.</small></span>
+  </div>
+</div>
+
+<main class="fleet" aria-label="Flotte du skipper">
+
+  <!-- Bateau 1 — Figaro III, débloqué -->
+  <a class="boat-card active" href="#">
+    <div class="boat-head">
+      <span class="boat-class">Figaro III</span>
+      <span class="boat-state in-race">En course · Vendée Express</span>
+    </div>
+    <h2 class="boat-name">Albatros</h2>
+
+    <div class="boat-render" aria-hidden="true">
+      <svg class="boat-svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+        <!-- Eau -->
+        <line x1="10" y1="148" x2="310" y2="148" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <!-- Coque -->
+        <path d="M 60,148 L 260,148 L 240,162 L 80,162 Z" fill="#1a2840" />
+        <path d="M 60,148 L 260,148 L 256,142 L 64,142 Z" fill="#c9a227" />
+        <!-- Numéro coque -->
+        <text x="160" y="158" font-family="Bebas Neue" font-size="11" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.1em">208</text>
+        <!-- Mât -->
+        <line x1="160" y1="148" x2="160" y2="32" stroke="#1a2840" stroke-width="2" />
+        <!-- Bôme -->
+        <line x1="160" y1="92" x2="232" y2="98" stroke="#1a2840" stroke-width="1.5" />
+        <!-- Grand-voile -->
+        <path d="M 162,32 L 230,98 L 162,90 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <text x="190" y="78" font-family="Bebas Neue" font-size="14" fill="#1a2840" text-anchor="middle">208</text>
+        <!-- Foc -->
+        <path d="M 158,32 L 158,90 L 110,128 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+        <!-- Quille (visible légèrement sous l'eau) -->
+        <path d="M 152,162 L 168,162 L 162,178 Z" fill="#1a2840" opacity="0.6" />
+      </svg>
+    </div>
+
+    <div class="boat-stats">
+      <div>
+        <p class="stat-label">Courses</p>
+        <p class="stat-value">24</p>
+      </div>
+      <div>
+        <p class="stat-label">Meilleur</p>
+        <p class="stat-value gold">12<sup>e</sup></p>
+      </div>
+      <div>
+        <p class="stat-label">Upgrades</p>
+        <p class="stat-value">3<small>/6</small></p>
+      </div>
+    </div>
+
+    <div class="boat-cta">
+      <span>Détail bateau</span>
+      <span class="boat-cta-arrow">→</span>
+    </div>
+  </a>
+
+  <!-- Bateau 2 — Class40, débloqué -->
+  <a class="boat-card" href="#">
+    <div class="boat-head">
+      <span class="boat-class">Class40</span>
+      <span class="boat-state idle">Au port</span>
+    </div>
+    <h2 class="boat-name">Mistral</h2>
+
+    <div class="boat-render" aria-hidden="true">
+      <svg class="boat-svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="148" x2="310" y2="148" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <path d="M 50,148 L 268,148 L 244,164 L 76,164 Z" fill="#1a4d7a" />
+        <path d="M 50,148 L 268,148 L 264,142 L 54,142 Z" fill="#f5f0e8" />
+        <text x="160" y="160" font-family="Bebas Neue" font-size="12" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.1em">MISTRAL</text>
+        <line x1="158" y1="148" x2="158" y2="24" stroke="#1a2840" stroke-width="2.5" />
+        <line x1="158" y1="86" x2="240" y2="92" stroke="#1a2840" stroke-width="1.5" />
+        <path d="M 160,24 L 238,92 L 160,82 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <text x="195" y="68" font-family="Bebas Neue" font-size="16" fill="#1a4d7a" text-anchor="middle">114</text>
+        <path d="M 156,24 L 156,82 L 100,124 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+        <path d="M 150,164 L 166,164 L 158,180 Z" fill="#1a2840" opacity="0.6" />
+      </svg>
+    </div>
+
+    <div class="boat-stats">
+      <div>
+        <p class="stat-label">Courses</p>
+        <p class="stat-value">12</p>
+      </div>
+      <div>
+        <p class="stat-label">Meilleur</p>
+        <p class="stat-value gold">04<sup>e</sup></p>
+      </div>
+      <div>
+        <p class="stat-label">Upgrades</p>
+        <p class="stat-value">4<small>/6</small></p>
+      </div>
+    </div>
+
+    <div class="boat-cta">
+      <span>Détail bateau</span>
+      <span class="boat-cta-arrow">→</span>
+    </div>
+  </a>
+
+  <!-- Bateau 3 — Ocean Fifty, débloqué récemment -->
+  <a class="boat-card" href="#">
+    <div class="boat-head">
+      <span class="boat-class">Ocean Fifty</span>
+      <span class="boat-state idle">Au port · neuf</span>
+    </div>
+    <h2 class="boat-name">Sirocco</h2>
+
+    <div class="boat-render" aria-hidden="true">
+      <svg class="boat-svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="148" x2="310" y2="148" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <!-- Trimaran : coque centrale + 2 flotteurs latéraux suggérés en perspective -->
+        <path d="M 40,148 L 280,148 L 252,166 L 68,166 Z" fill="#7b6f5c" />
+        <path d="M 40,148 L 280,148 L 276,142 L 44,142 Z" fill="#a8a08e" />
+        <text x="160" y="161" font-family="Bebas Neue" font-size="12" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.1em">SIROCCO</text>
+        <line x1="160" y1="148" x2="160" y2="14" stroke="#1a2840" stroke-width="2.5" />
+        <line x1="160" y1="78" x2="252" y2="86" stroke="#1a2840" stroke-width="1.5" />
+        <path d="M 162,14 L 250,86 L 162,76 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <text x="200" y="58" font-family="Bebas Neue" font-size="16" fill="#7b6f5c" text-anchor="middle">042</text>
+        <path d="M 158,14 L 158,76 L 92,124 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+        <!-- Foils suggérés -->
+        <path d="M 100,162 Q 80,176 60,166" fill="none" stroke="#1a2840" stroke-width="1.5" opacity="0.55" />
+        <path d="M 220,162 Q 240,176 260,166" fill="none" stroke="#1a2840" stroke-width="1.5" opacity="0.55" />
+      </svg>
+    </div>
+
+    <div class="boat-stats">
+      <div>
+        <p class="stat-label">Courses</p>
+        <p class="stat-value">00</p>
+      </div>
+      <div>
+        <p class="stat-label">Meilleur</p>
+        <p class="stat-value">—</p>
+      </div>
+      <div>
+        <p class="stat-label">Upgrades</p>
+        <p class="stat-value">0<small>/6</small></p>
+      </div>
+    </div>
+
+    <div class="boat-cta">
+      <span>Personnaliser</span>
+      <span class="boat-cta-arrow">→</span>
+    </div>
+  </a>
+
+  <!-- Bateau 4 — IMOCA 60, verrouillé -->
+  <a class="boat-card locked" aria-disabled="true">
+    <div class="boat-head">
+      <span class="boat-class">IMOCA 60</span>
+      <span class="boat-state locked-chip">Verrouillé</span>
+    </div>
+    <h2 class="boat-name">À débloquer</h2>
+
+    <div class="boat-render" aria-hidden="true">
+      <svg class="boat-svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="148" x2="310" y2="148" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <path d="M 30,148 L 290,148 L 260,168 L 60,168 Z" fill="#1a2840" />
+        <line x1="160" y1="148" x2="160" y2="8" stroke="#1a2840" stroke-width="3" />
+        <line x1="160" y1="74" x2="262" y2="84" stroke="#1a2840" stroke-width="1.5" />
+        <path d="M 162,8 L 260,84 L 162,72 Z" fill="#1a2840" stroke="#1a2840" stroke-width="0.6" />
+        <path d="M 158,8 L 158,72 L 80,124 Z" fill="#1a2840" stroke="#1a2840" stroke-width="0.6" opacity="0.85" />
+        <!-- Foils -->
+        <path d="M 90,168 Q 60,184 28,170" fill="none" stroke="#1a2840" stroke-width="2" />
+        <path d="M 230,168 Q 260,184 292,170" fill="none" stroke="#1a2840" stroke-width="2" />
+      </svg>
+    </div>
+
+    <div class="boat-locked-msg">
+      <span class="boat-locked-icon">⚿</span>
+      <p class="boat-locked-text">
+        Inscris-toi à une course <strong>IMOCA 60</strong> pour recevoir gratuitement ta coque vierge.
+      </p>
+    </div>
+
+    <div class="boat-cta">
+      <span>Voir les courses IMOCA</span>
+      <span class="boat-cta-arrow">→</span>
+    </div>
+  </a>
+
+  <!-- Bateau 5 — Ultim, verrouillé -->
+  <a class="boat-card locked" aria-disabled="true">
+    <div class="boat-head">
+      <span class="boat-class">Ultim</span>
+      <span class="boat-state locked-chip">Verrouillé</span>
+    </div>
+    <h2 class="boat-name">À débloquer</h2>
+
+    <div class="boat-render" aria-hidden="true">
+      <svg class="boat-svg" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="148" x2="310" y2="148" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <!-- Tri Ultim : coque centrale + 2 flotteurs marqués -->
+        <path d="M 20,148 L 300,148 L 270,170 L 50,170 Z" fill="#1a2840" />
+        <line x1="160" y1="148" x2="160" y2="2" stroke="#1a2840" stroke-width="3.5" />
+        <line x1="160" y1="64" x2="270" y2="76" stroke="#1a2840" stroke-width="1.5" />
+        <path d="M 162,2 L 268,76 L 162,62 Z" fill="#1a2840" stroke="#1a2840" stroke-width="0.6" />
+        <path d="M 158,2 L 158,62 L 70,118 Z" fill="#1a2840" stroke="#1a2840" stroke-width="0.6" opacity="0.85" />
+        <!-- Bras de liaison + flotteurs -->
+        <line x1="80" y1="156" x2="40" y2="160" stroke="#1a2840" stroke-width="1.2" opacity="0.6" />
+        <line x1="240" y1="156" x2="280" y2="160" stroke="#1a2840" stroke-width="1.2" opacity="0.6" />
+        <ellipse cx="40" cy="162" rx="20" ry="3.5" fill="#1a2840" />
+        <ellipse cx="280" cy="162" rx="20" ry="3.5" fill="#1a2840" />
+      </svg>
+    </div>
+
+    <div class="boat-locked-msg">
+      <span class="boat-locked-icon">⚿</span>
+      <p class="boat-locked-text">
+        Inscris-toi à une course <strong>Ultim</strong> pour recevoir gratuitement ta coque vierge.
+      </p>
+    </div>
+
+    <div class="boat-cta">
+      <span>Voir les courses Ultim</span>
+      <span class="boat-cta-arrow">→</span>
+    </div>
+  </a>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Saison <span data-season-year>2026</span></div>
+  <div>Polaires réelles · Météo NOAA GFS</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

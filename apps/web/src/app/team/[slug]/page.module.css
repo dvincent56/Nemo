@@ -1,0 +1,313 @@
+/* =========================================================================
+   /team/[slug] — profil public d'équipe
+   ========================================================================= */
+
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px clamp(20px, 4vw, 64px) 48px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 48px;
+  align-items: start;
+  border-bottom: 1px solid var(--navy-line);
+}
+.heroMain { min-width: 0; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 9vw, 120px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0 0 14px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  margin: 0 0 20px;
+}
+.meta strong { color: var(--navy); }
+
+.description {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--t2);
+  max-width: 56ch;
+  margin: 0 0 20px;
+}
+
+.classTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.classTag {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  padding: 5px 10px;
+  border-radius: var(--r-pill, 999px);
+  border: 1px solid rgba(201, 162, 39, 0.28);
+}
+
+/* Hero stats side */
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--navy-line);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.heroStat {
+  background: var(--paper);
+  padding: 20px 22px;
+  min-width: 0;
+}
+.heroStatLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 8px;
+}
+.heroStatValue {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+.heroStatValue sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--t3);
+  margin-left: 1px;
+  vertical-align: super;
+}
+.gold { color: var(--gold-dark); }
+.gold sup { color: var(--gold); }
+.heroStatSub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 6px 0 0;
+}
+
+/* ── Section Roster ─────────────────────────────────────────── */
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 48px clamp(20px, 4vw, 64px);
+}
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--navy-line);
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+}
+.sectionEyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 6px;
+}
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+.count {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold-dark);
+  letter-spacing: 0.10em;
+  margin-left: 14px;
+  vertical-align: middle;
+}
+.sectionLink {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  white-space: nowrap;
+}
+.sectionLink:hover {
+  color: var(--gold-dark);
+  border-bottom-color: var(--gold);
+}
+
+/* ── Member cards ───────────────────────────────────────────── */
+.memberGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.memberCard {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "head    rank"
+    "stats   stats";
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 150ms, transform 150ms, background 150ms;
+}
+.memberCard:hover {
+  background: var(--paper-hover);
+  border-color: var(--navy-rule);
+  transform: translateY(-1px);
+}
+
+.memberHead { grid-area: head; min-width: 0; }
+.memberName {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.memberRole {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  background: var(--ivory-2);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+}
+.roleCaptain {
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+}
+.memberMeta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.memberRankBlock {
+  grid-area: rank;
+  text-align: right;
+  min-width: 50px;
+}
+.memberRankLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 4px;
+}
+.memberRank {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+.memberRank sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--t3);
+  margin-left: 1px;
+  vertical-align: super;
+}
+
+.memberStats {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--navy-line);
+}
+.memberStats div { min-width: 0; }
+.memberStats dt {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 2px;
+}
+.memberStats dd {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 40px 20px 32px;
+  }
+  .heroStats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .section { padding: 32px 20px; }
+  .memberGrid { grid-template-columns: 1fr; }
+}

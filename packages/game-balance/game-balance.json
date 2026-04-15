@@ -1,0 +1,214 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-04-14T00:00:00Z",
+  "updatedBy": "bootstrap",
+  "wear": {
+    "minCondition": 35,
+    "maxSpeedPenalty": 15,
+    "penaltyCurve": {
+      "thresholdNone": 60,
+      "thresholdMax": 35,
+      "slopePerPoint": 0.6
+    },
+    "baseRatesPerHour": {
+      "hull": 0.02,
+      "rig": 0.04,
+      "sails": 0.06,
+      "electronics": 0.01
+    },
+    "windMultipliers": {
+      "thresholdKnots": 20,
+      "maxFactor": 3.0,
+      "scaleKnots": 20
+    },
+    "swellMultipliers": {
+      "thresholdMeters": 2.0,
+      "maxHeightMeters": 8.0,
+      "dirFaceMax": 1.0,
+      "dirBackMin": 0.3,
+      "shortPeriodFactor": 1.2,
+      "shortPeriodThreshold": 8
+    },
+    "driveModeMultipliers": {
+      "PERFORMANCE": 2.0,
+      "NORMAL": 1.0,
+      "CONSERVATIVE": 0.4
+    },
+    "upgradeMultipliers": {
+      "foils_rig": 1.8,
+      "foils_hull": 1.3,
+      "reinforced_hull": 0.45,
+      "carbon_rig_normal": 1.0,
+      "carbon_rig_strong": 1.6,
+      "carbon_threshold_kts": 35,
+      "kevlar_sails": 0.35,
+      "heavy_weather_rig": 0.55,
+      "heavy_weather_sails": 0.55
+    }
+  },
+  "swell": {
+    "thresholdMeters": 1.5,
+    "maxSpeedBonus": 4,
+    "maxSpeedMalus": 12,
+    "sideMaxMalus": 5,
+    "frontAngle": 135,
+    "backAngle": 45
+  },
+  "sails": {
+    "transitionPenalty": 0.7,
+    "transitionTimes": {
+      "GEN_SPI": 300,
+      "SPI_GEN": 300,
+      "C0_HG": 240,
+      "HG_C0": 240,
+      "JIB_GEN": 120,
+      "GEN_JIB": 120,
+      "C0_SPI": 360,
+      "SPI_C0": 360,
+      "LW_JIB": 180,
+      "JIB_LW": 180
+    },
+    "overlapDegrees": {
+      "LW": 8,
+      "JIB": 8,
+      "GEN": 10,
+      "C0": 10,
+      "HG": 8,
+      "SPI": 8
+    },
+    "definitions": {
+      "LW": { "twaMin": 0, "twaMax": 60 },
+      "JIB": { "twaMin": 30, "twaMax": 100 },
+      "GEN": { "twaMin": 50, "twaMax": 140 },
+      "C0": { "twaMin": 60, "twaMax": 150 },
+      "HG": { "twaMin": 100, "twaMax": 170 },
+      "SPI": { "twaMin": 120, "twaMax": 180 }
+    }
+  },
+  "rewards": {
+    "distanceRates": {
+      "FIGARO": 0.8,
+      "CLASS40": 1.0,
+      "OCEAN_FIFTY": 1.6,
+      "IMOCA60": 1.4,
+      "ULTIM": 2.0
+    },
+    "rankMultipliers": [
+      { "threshold": 0.10, "multiplier": 3.0 },
+      { "threshold": 0.25, "multiplier": 2.0 },
+      { "threshold": 0.50, "multiplier": 1.5 },
+      { "threshold": 0.75, "multiplier": 1.1 },
+      { "threshold": 1.00, "multiplier": 1.0 }
+    ],
+    "sponsorVisibilityRatio": 0.5,
+    "leaderBonusRatio": 0.4,
+    "streakBonus": 0.1,
+    "streakMax": 2.0
+  },
+  "maintenance": {
+    "hull":        { "costPer10pts": 80,  "durationHours": 8 },
+    "rig":         { "costPer10pts": 50,  "durationHours": 4 },
+    "sails":       { "costPer10pts": 120, "durationHours": 12 },
+    "electronics": { "costPer10pts": 30,  "durationHours": 3 }
+  },
+  "upgrades": {
+    "AUTO_SAIL": {
+      "cost": 800,
+      "description": "Voiles automatiques + recouvrement"
+    },
+    "FOILS": {
+      "cost": 3000,
+      "description": "Foils de compétition IMOCA",
+      "speedByTWA": {
+        "upwind_0_60":    -3,
+        "close_60_90":     2,
+        "beam_90_120":    10,
+        "reach_120_150":  15,
+        "run_150_180":     5
+      },
+      "activeMinTWS": 14,
+      "wearRigMultiplier": 1.8,
+      "wearHullMultiplier": 1.3
+    },
+    "CARBON_RIG": {
+      "cost": 2500,
+      "speedAllPct": 4,
+      "speedLightAirBonus": 2,
+      "wearRigHeavyMultiplier": 1.6,
+      "heavyTwsThresholdKts": 35
+    },
+    "KEVLAR_SAILS": {
+      "cost": 2000,
+      "speedAllPct": 3,
+      "wearSailMultiplier": 0.35
+    },
+    "REINFORCED_HULL": {
+      "cost": 1500,
+      "speedAllPct": -2,
+      "wearHullMultiplier": 0.45
+    },
+    "HEAVY_WEATHER_KIT": {
+      "cost": 1200,
+      "speedLightAirPct": -4,
+      "speedHeavyAirBonus": 3,
+      "activeThresholdTWS": 25,
+      "wearRigSailMultiplier": 0.55
+    }
+  },
+  "maneuvers": {
+    "sailChange": {
+      "transitionSpeedFactor": 0.70,
+      "transitionTimeSec": {
+        "FIGARO": 180,
+        "CLASS40": 240,
+        "OCEAN_FIFTY": 300,
+        "IMOCA60": 300,
+        "ULTIM": 360
+      }
+    },
+    "tack": {
+      "speedFactor": 0.60,
+      "durationSec": {
+        "FIGARO": 60,
+        "CLASS40": 90,
+        "OCEAN_FIFTY": 150,
+        "IMOCA60": 120,
+        "ULTIM": 180
+      }
+    },
+    "gybe": {
+      "speedFactor": 0.55,
+      "durationSec": {
+        "FIGARO": 90,
+        "CLASS40": 120,
+        "OCEAN_FIFTY": 200,
+        "IMOCA60": 150,
+        "ULTIM": 240
+      }
+    }
+  },
+  "grounding": {
+    "basePenaltySeconds": 600,
+    "speedFactorMax": 2.0,
+    "conditionLossMin": 2,
+    "conditionLossMax": 8,
+    "detectionIntermediatePoints": 20,
+    "forcedTurnAroundBspKnots": 2.0
+  },
+  "zones": {
+    "warnDefaultMultiplier": 0.8,
+    "penaltyDefaultMultiplier": 0.5
+  },
+  "economy": {
+    "startingCredits": 500,
+    "buybackUpgradePct": 70,
+    "palmaresBonus": {
+      "win": 500,
+      "podium": 150,
+      "top10": 30
+    }
+  },
+  "tick": {
+    "intervalSeconds": 30
+  }
+}

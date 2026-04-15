@@ -1,0 +1,167 @@
+/* =========================================================================
+   NEMO — Direction éditoriale "Nautical Luxury"
+   Référence : North Sails / SailGP / Rolex / Roland-Garros
+   Palette UNIQUE ivory/navy/gold — même grammaire joueur + admin.
+   Canonique : mockups/races-v1.html
+   ========================================================================= */
+
+:root {
+  /* ---- Fonds & surfaces ------------------------------------------------ */
+  --ivory:       #f5f0e8;
+  --ivory-2:     #ede8e0;
+  --ivory-3:     #e4ddd0;
+  --paper:       #fbf7f0;
+  --paper-hover: #ffffff;
+
+  /* ---- Primaires ------------------------------------------------------- */
+  --navy:      #1a2840;
+  --navy-2:    #243552;
+  --navy-3:    #3a4a6b;
+  --navy-soft: rgba(26, 40, 64, 0.06);
+  --navy-line: rgba(26, 40, 64, 0.12);
+  --navy-rule: rgba(26, 40, 64, 0.20);
+
+  /* ---- Accent or ------------------------------------------------------- */
+  --gold:      #c9a227;
+  --gold-dark: #a8871e;
+  --gold-soft: rgba(201, 162, 39, 0.12);
+
+  /* ---- Statuts --------------------------------------------------------- */
+  --live:       #2d8a4e;
+  --live-soft:  rgba(45, 138, 78, 0.10);
+  --open:       #1a4d7a;
+  --open-soft:  rgba(26, 77, 122, 0.08);
+  --soon:       #a8871e;
+  --soon-soft:  rgba(168, 135, 30, 0.10);
+  --past:       #7b6f5c;
+  --past-soft:  rgba(123, 111, 92, 0.10);
+  --danger:     #9e2a2a;
+  --danger-soft: rgba(158, 42, 42, 0.08);
+
+  /* ---- Texte ----------------------------------------------------------- */
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  /* ---- Radius --------------------------------------------------------- */
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+  --r-pill: 999px;
+
+  /* ---- Spacing (multiples de 2) --------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 6px;
+  --sp-3: 8px;
+  --sp-4: 10px;
+  --sp-5: 12px;
+  --sp-6: 14px;
+  --sp-7: 16px;
+  --sp-8: 20px;
+  --sp-9: 24px;
+  --sp-10: 32px;
+  --sp-11: 48px;
+  --sp-12: 64px;
+
+  /* ---- Z-index --------------------------------------------------------- */
+  --z-map:    1;
+  --z-panel:  100;
+  --z-hud:    200;
+  --z-drawer: 500;
+  --z-modal:  900;
+  --z-toast:  1000;
+
+  /* ---- Typo (alias sémantiques exposés par layout.tsx) ---------------- */
+  --font-display: var(--font-bebas-raw), "Bebas Neue", Impact, sans-serif;
+  --font-body:    var(--font-grotesk-raw), "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    var(--font-mono-raw), "Space Mono", ui-monospace, monospace;
+
+  color-scheme: light;
+}
+
+/* =========================================================================
+   Reset + règles globales
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
+}
+
+body {
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  position: relative;
+}
+
+/* Grain papier subtil — atmosphère "édition imprimée" */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.035), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.025), transparent 60%);
+  z-index: -1;
+}
+
+body *, body *::before, body *::after { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+button, input, select, textarea { font-family: inherit; }
+
+button {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* Données numériques → toujours Space Mono tabulaire */
+[data-numeric], .numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible : un unique style pour tout l'interactif */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+/* Scrollbars discrètes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--navy-line) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--navy-line); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--navy-rule); }

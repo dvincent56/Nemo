@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Marina · Personnaliser Mistral · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-3:       #3a4a6b;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --danger:       #9e2a2a;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead (iso) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy); padding: 10px 18px; border: 1px solid var(--navy);
+  text-decoration: none; border-radius: 2px;
+}
+
+/* ──────── Sub-header ──────── */
+.subhead {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 0;
+}
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+.breadcrumb a:hover { color: var(--navy); }
+.breadcrumb .sep { color: var(--navy-rule); }
+
+/* ──────── Studio layout ──────── */
+.studio {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 96px;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* Preview pane (left, sticky) */
+.preview {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.preview-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+.preview-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.preview-stage {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 36px 32px 32px;
+  aspect-ratio: 5/4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-stage::after {
+  content: '';
+  position: absolute;
+  left: 32px; right: 32px; bottom: 22%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--navy-line), transparent);
+}
+.preview-svg { width: 96%; height: 96%; }
+
+.preview-name {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 5.6vw, 84px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+.preview-meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.preview-meta strong { color: var(--gold-dark); }
+
+/* Bottom action bar (sous le titre, alignée avec la preview) */
+.action-bar {
+  margin-top: 8px;
+  padding: 16px 18px;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.action-bar-msg {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.action-bar-msg::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--t3);
+}
+.action-bar-msg.dirty { color: var(--gold-dark); }
+.action-bar-msg.dirty::before { background: var(--gold); }
+.action-bar-buttons { display: flex; gap: 10px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btn-ghost {
+  background: transparent;
+  color: var(--t2);
+  border-color: transparent;
+}
+.btn-ghost:hover { color: var(--navy); background: var(--navy-soft); }
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Controls pane (right) */
+.controls { display: flex; flex-direction: column; gap: 18px; }
+
+.section-card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 22px 24px 20px;
+}
+.section-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.section-card-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.20em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+}
+.section-card-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.section-card-aside {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--t3);
+  margin: 0;
+}
+
+/* Field row */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field + .field { margin-top: 12px; }
+.field-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.field-input,
+.field-select {
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  color: var(--navy);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+.field-input:focus,
+.field-select:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.field-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--t3);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Mode tabs (uni / dégradé / texture) */
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--ivory-2);
+  border-radius: var(--r-md);
+  margin-bottom: 16px;
+}
+.mode-tab {
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  padding: 9px 8px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mode-tab.active { background: var(--navy); color: var(--paper); }
+.mode-tab:not(.active):hover { color: var(--navy); }
+
+/* Color swatches */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.swatch {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(26, 40, 64, 0.18);
+  cursor: pointer;
+  transition: transform 120ms;
+}
+.swatch:hover { transform: scale(1.08); }
+.swatch.active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--gold);
+  border-radius: var(--r-md);
+}
+.swatch.custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-conic-gradient(#ede8e0 0% 25%, #f5f0e8 0% 50%) 50% / 8px 8px;
+}
+.swatch.custom::before {
+  content: '+';
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--navy);
+}
+
+/* Color picker unifié : swatches + input hex */
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.picker-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.picker-hex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.picker-hex-chip {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(26, 40, 64, 0.20);
+  flex-shrink: 0;
+}
+.picker-hex-input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  color: var(--navy);
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.picker-hex-input:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+
+/* Gradient mode (2 colors + angle) */
+.gradient-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.gradient-stop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+}
+.gradient-stop-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.gradient-stop-chip {
+  height: 28px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(26, 40, 64, 0.18);
+}
+.gradient-preview {
+  height: 24px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--navy-line);
+  margin-bottom: 12px;
+}
+.gradient-angle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gradient-angle-input {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--ivory-2);
+  border-radius: 2px;
+  outline: none;
+}
+.gradient-angle-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--gold);
+  border-radius: 50%;
+  border: 2px solid var(--navy);
+  cursor: pointer;
+}
+.gradient-angle-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--navy);
+  min-width: 44px;
+  text-align: right;
+}
+
+/* Texture upload */
+.upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  background: var(--ivory-2);
+  border: 1px dashed var(--navy-rule);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  text-align: center;
+}
+.upload:hover { border-color: var(--gold); background: var(--gold-soft); }
+.upload-icon {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--navy);
+  line-height: 1;
+}
+.upload-text {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0;
+}
+.upload-hint {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Marquages (text on hull/sail) */
+.marking-block + .marking-block { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--navy-line); }
+.marking-block-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+}
+
+@media (max-width: 900px) {
+  .studio {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .preview {
+    position: static;
+  }
+  .action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 14px 20px;
+    border-top: 1px solid var(--navy-line);
+    background: var(--paper);
+    z-index: 30;
+  }
+  .controls { padding-bottom: 80px; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .subhead { padding: 18px 20px 0; }
+  .studio { padding: 16px 20px 96px; }
+  .preview-stage { padding: 22px; aspect-ratio: 4/3; }
+  .preview-name { font-size: clamp(40px, 11vw, 64px); }
+  .swatches { grid-template-columns: repeat(6, 1fr); }
+  .field-row { grid-template-columns: 1fr; }
+  .gradient-row { grid-template-columns: 1fr; }
+  .drawer-link { font-size: 36px; }
+}
+
+@media (pointer: coarse) {
+  .btn, .mode-tab, .swatch { min-height: 36px; }
+  .btn { min-height: 44px; }
+  .upload { min-height: 120px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#" class="active">Marina</a>
+    <a href="#">Classement</a>
+    <a href="#">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link active">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<div class="subhead">
+  <nav class="breadcrumb" aria-label="Fil d'ariane">
+    <a href="#">← Marina</a>
+    <span class="sep">/</span>
+    <a href="#">Mistral</a>
+    <span class="sep">/</span>
+    <span>Personnaliser</span>
+  </nav>
+</div>
+
+<main class="studio">
+
+  <!-- ════════ Preview pane ════════ -->
+  <aside class="preview">
+    <p class="preview-eyebrow">Aperçu</p>
+    <div class="preview-stage" aria-label="Aperçu du bateau personnalisé">
+      <svg class="preview-svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet">
+        <!-- Waterline -->
+        <line x1="20" y1="190" x2="300" y2="190" stroke="#1a2840" stroke-opacity="0.16" stroke-width="1" stroke-dasharray="2 4" />
+        <!-- Coque (dégradé bleu/navy défini par le joueur) -->
+        <defs>
+          <linearGradient id="hullGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#1a4d7a" />
+            <stop offset="1" stop-color="#0c2a4a" />
+          </linearGradient>
+          <linearGradient id="sailGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fbf7f0" />
+            <stop offset="1" stop-color="#e4ddd0" />
+          </linearGradient>
+        </defs>
+        <path d="M 38,190 L 280,190 L 250,210 L 70,210 Z" fill="url(#hullGrad)" />
+        <!-- Pont -->
+        <path d="M 38,190 L 280,190 L 276,184 L 42,184 Z" fill="#f5f0e8" />
+        <!-- Texte coque -->
+        <text x="160" y="205" font-family="Bebas Neue" font-size="15" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.14em">MISTRAL</text>
+        <text x="62" y="201" font-family="Bebas Neue" font-size="9" fill="#c9a227" letter-spacing="0.10em">114</text>
+        <!-- Mât (couleur définie par joueur — ici noir carbone) -->
+        <line x1="158" y1="190" x2="158" y2="22" stroke="#1a2840" stroke-width="3" />
+        <!-- Bôme -->
+        <line x1="158" y1="100" x2="248" y2="108" stroke="#1a2840" stroke-width="1.5" />
+        <!-- Grand-voile -->
+        <path d="M 160,22 L 246,108 L 160,96 Z" fill="url(#sailGrad)" stroke="#1a2840" stroke-width="0.6" />
+        <!-- Numéro voile (FRA-114) -->
+        <text x="200" y="76" font-family="Bebas Neue" font-size="22" fill="#1a4d7a" text-anchor="middle">114</text>
+        <text x="200" y="92" font-family="Space Mono" font-size="7" fill="#1a4d7a" text-anchor="middle" font-weight="700" letter-spacing="0.2em">FRA</text>
+        <!-- Foc -->
+        <path d="M 156,22 L 156,96 L 88,148 Z" fill="url(#sailGrad)" stroke="#1a2840" stroke-width="0.6" opacity="0.94" />
+        <!-- Quille (appendices, gold ici) -->
+        <path d="M 150,210 L 168,210 L 158,228 Z" fill="#c9a227" opacity="0.85" />
+        <!-- Foils -->
+        <path d="M 90,206 Q 70,218 50,210" fill="none" stroke="#c9a227" stroke-width="1.6" />
+        <path d="M 226,206 Q 246,218 264,210" fill="none" stroke="#c9a227" stroke-width="1.6" />
+      </svg>
+    </div>
+
+    <h1 class="preview-name">Mistral</h1>
+    <p class="preview-meta">Class40 · <strong>FRA-114</strong> · Aperçu non sauvegardé</p>
+
+    <div class="action-bar">
+      <span class="action-bar-msg">Aucune modification</span>
+      <div class="action-bar-buttons">
+        <button class="btn btn-ghost" disabled>Réinitialiser</button>
+        <button class="btn btn-secondary" disabled>Annuler</button>
+        <button class="btn btn-primary" disabled>Enregistrer</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════ Controls pane ════════ -->
+  <section class="controls" aria-label="Personnalisation">
+
+    <!-- 01 · Identité -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">01 · Identité</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 16px">Nom</h2>
+
+      <div class="field">
+        <label class="field-label" for="boat-name">Nom du bateau</label>
+        <input id="boat-name" class="field-input" value="Mistral" maxlength="20" />
+        <p class="field-hint">20 caractères max. Visible sur le pont, le palmarès et le classement.</p>
+      </div>
+    </div>
+
+    <!-- 02 · Coque -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">02 · Coque</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 14px">Coque</h2>
+
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab" role="tab">Uni</button>
+        <button class="mode-tab active" role="tab" aria-selected="true">Dégradé</button>
+        <button class="mode-tab" role="tab">Texture</button>
+      </div>
+
+      <!-- Mode dégradé actif -->
+      <div class="gradient-preview" style="background: linear-gradient(90deg, #1a4d7a, #0c2a4a)"></div>
+
+      <div class="gradient-row">
+        <div class="gradient-stop">
+          <span class="gradient-stop-label">Couleur 1</span>
+          <div class="picker-hex-row">
+            <span class="picker-hex-chip" style="background: #1a4d7a"></span>
+            <input class="picker-hex-input" value="#1A4D7A" maxlength="7" />
+          </div>
+        </div>
+        <div class="gradient-stop">
+          <span class="gradient-stop-label">Couleur 2</span>
+          <div class="picker-hex-row">
+            <span class="picker-hex-chip" style="background: #0c2a4a"></span>
+            <input class="picker-hex-input" value="#0C2A4A" maxlength="7" />
+          </div>
+        </div>
+      </div>
+
+      <div class="gradient-angle">
+        <span class="gradient-stop-label">Angle</span>
+        <input type="range" min="0" max="360" value="90" class="gradient-angle-input" aria-label="Angle du dégradé" />
+        <span class="gradient-angle-value">90°</span>
+      </div>
+
+      <div class="picker-swatches" style="margin-top: 16px;" aria-label="Palette de couleurs prédéfinies">
+        <span class="swatch active" style="background: #1a4d7a"></span>
+        <span class="swatch" style="background: #1a2840"></span>
+        <span class="swatch" style="background: #0c2a4a"></span>
+        <span class="swatch" style="background: #c9a227"></span>
+        <span class="swatch" style="background: #f5f0e8"></span>
+        <span class="swatch" style="background: #2d8a4e"></span>
+        <span class="swatch" style="background: #9e2a2a"></span>
+        <span class="swatch custom"></span>
+      </div>
+    </div>
+
+    <!-- 03 · Mât -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">03 · Mât</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 14px">Mât &amp; gréement</h2>
+
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" role="tab" aria-selected="true">Uni</button>
+        <button class="mode-tab" role="tab">Dégradé</button>
+        <button class="mode-tab" role="tab">Texture</button>
+      </div>
+
+      <div class="picker">
+        <div class="picker-hex-row">
+          <span class="picker-hex-chip" style="background: #1a2840"></span>
+          <input class="picker-hex-input" value="#1A2840" maxlength="7" />
+        </div>
+        <div class="picker-swatches">
+          <span class="swatch active" style="background: #1a2840"></span>
+          <span class="swatch" style="background: #4a5568"></span>
+          <span class="swatch" style="background: #f5f0e8"></span>
+          <span class="swatch" style="background: #c9a227"></span>
+          <span class="swatch" style="background: #1a4d7a"></span>
+          <span class="swatch" style="background: #2d8a4e"></span>
+          <span class="swatch" style="background: #9e2a2a"></span>
+          <span class="swatch custom"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 · Appendices -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">04 · Appendices</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 6px">Foils &amp; quille</h2>
+      <p class="section-card-aside" style="margin-bottom: 14px">Couleur appliquée à toutes les pièces immergées.</p>
+
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab active" role="tab" aria-selected="true">Uni</button>
+        <button class="mode-tab" role="tab">Dégradé</button>
+        <button class="mode-tab" role="tab">Texture</button>
+      </div>
+
+      <div class="picker">
+        <div class="picker-hex-row">
+          <span class="picker-hex-chip" style="background: #c9a227"></span>
+          <input class="picker-hex-input" value="#C9A227" maxlength="7" />
+        </div>
+        <div class="picker-swatches">
+          <span class="swatch" style="background: #1a2840"></span>
+          <span class="swatch" style="background: #4a5568"></span>
+          <span class="swatch" style="background: #f5f0e8"></span>
+          <span class="swatch active" style="background: #c9a227"></span>
+          <span class="swatch" style="background: #1a4d7a"></span>
+          <span class="swatch" style="background: #2d8a4e"></span>
+          <span class="swatch" style="background: #9e2a2a"></span>
+          <span class="swatch custom"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 · Voiles -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">05 · Voiles</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 6px">Voiles</h2>
+      <p class="section-card-aside" style="margin-bottom: 14px">Couleur de fond. Le numéro et les marquages sont gérés en section 06.</p>
+
+      <div class="mode-tabs" role="tablist">
+        <button class="mode-tab" role="tab">Uni</button>
+        <button class="mode-tab active" role="tab" aria-selected="true">Dégradé</button>
+        <button class="mode-tab" role="tab">Texture</button>
+      </div>
+
+      <div class="gradient-preview" style="background: linear-gradient(180deg, #fbf7f0, #e4ddd0)"></div>
+
+      <div class="gradient-row">
+        <div class="gradient-stop">
+          <span class="gradient-stop-label">Haut</span>
+          <div class="picker-hex-row">
+            <span class="picker-hex-chip" style="background: #fbf7f0"></span>
+            <input class="picker-hex-input" value="#FBF7F0" maxlength="7" />
+          </div>
+        </div>
+        <div class="gradient-stop">
+          <span class="gradient-stop-label">Bas</span>
+          <div class="picker-hex-row">
+            <span class="picker-hex-chip" style="background: #e4ddd0"></span>
+            <input class="picker-hex-input" value="#E4DDD0" maxlength="7" />
+          </div>
+        </div>
+      </div>
+
+      <div class="gradient-angle">
+        <span class="gradient-stop-label">Angle</span>
+        <input type="range" min="0" max="360" value="180" class="gradient-angle-input" />
+        <span class="gradient-angle-value">180°</span>
+      </div>
+    </div>
+
+    <!-- 06 · Marquages -->
+    <div class="section-card">
+      <div class="section-card-head">
+        <p class="section-card-num">06 · Marquages</p>
+      </div>
+      <h2 class="section-card-title" style="margin-bottom: 6px">Textes sur voile &amp; coque</h2>
+      <p class="section-card-aside" style="margin-bottom: 14px">Numéros, sponsors fictifs, devises. Police imposée (Bebas Neue).</p>
+
+      <!-- Marquage voile -->
+      <div class="marking-block">
+        <p class="marking-block-title">Sur la voile</p>
+
+        <div class="field">
+          <label class="field-label" for="sail-text">Texte principal</label>
+          <input id="sail-text" class="field-input" value="114" maxlength="6" />
+          <p class="field-hint">6 caractères max. Visible à grande distance — privilégier numéro ou sigle.</p>
+        </div>
+
+        <div class="field-row" style="margin-top: 12px;">
+          <div class="field">
+            <label class="field-label">Couleur</label>
+            <div class="picker-hex-row">
+              <span class="picker-hex-chip" style="background: #1a4d7a"></span>
+              <input class="picker-hex-input" value="#1A4D7A" maxlength="7" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="sail-text-size">Taille</label>
+            <select id="sail-text-size" class="field-select">
+              <option>Petite</option>
+              <option selected>Grande</option>
+              <option>Très grande</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field-label" for="sail-pays">Code pays (au-dessus du n°)</label>
+          <input id="sail-pays" class="field-input" value="FRA" maxlength="3" />
+        </div>
+      </div>
+
+      <!-- Marquage coque -->
+      <div class="marking-block">
+        <p class="marking-block-title">Sur la coque</p>
+
+        <div class="field">
+          <label class="field-label" for="hull-text">Texte (sponsor / devise)</label>
+          <input id="hull-text" class="field-input" value="MISTRAL" maxlength="20" />
+          <p class="field-hint">20 caractères max. Le nom du bateau est utilisé par défaut.</p>
+        </div>
+
+        <div class="field-row" style="margin-top: 12px;">
+          <div class="field">
+            <label class="field-label">Couleur</label>
+            <div class="picker-hex-row">
+              <span class="picker-hex-chip" style="background: #f5f0e8"></span>
+              <input class="picker-hex-input" value="#F5F0E8" maxlength="7" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="hull-text-pos">Position</label>
+            <select id="hull-text-pos" class="field-select">
+              <option>Centrée</option>
+              <option>Avant</option>
+              <option>Arrière</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 12px;">
+          <label class="field-label" for="hull-num-side">Numéro tribord</label>
+          <input id="hull-num-side" class="field-input" value="114" maxlength="4" />
+        </div>
+      </div>
+
+      <!-- Upload texture pour les puristes -->
+      <div class="marking-block">
+        <p class="marking-block-title">Décor avancé</p>
+        <label class="upload" for="upload-decal">
+          <span class="upload-icon">↑</span>
+          <p class="upload-text">Importer un sticker / livrée</p>
+          <p class="upload-hint">PNG ou SVG · 2 Mo max · positionnement libre après import</p>
+        </label>
+        <input id="upload-decal" type="file" accept="image/png,image/svg+xml" hidden />
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

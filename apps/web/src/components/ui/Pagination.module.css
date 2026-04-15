@@ -1,0 +1,50 @@
+.pagination {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding-top: 24px;
+  margin-top: 4px;
+  border-top: 1px solid var(--navy-line);
+  flex-wrap: wrap;
+}
+
+.btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 150ms;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--navy-rule);
+  color: var(--navy);
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.active {
+  background: var(--navy);
+  color: var(--ivory);
+  border-color: var(--navy);
+}
+.sep {
+  color: var(--t3);
+  padding: 0 6px;
+  border: none;
+  cursor: default;
+}
+.meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  padding: 0 12px;
+}

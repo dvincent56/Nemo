@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Profil · @vous · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --past:         #7b6f5c;
+  --danger:       #9e2a2a;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Masthead (iso) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t3);
+  padding: 4px 8px;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+.drawer-cta {
+  color: var(--navy); padding: 10px 18px; border: 1px solid var(--navy);
+  text-decoration: none; border-radius: 2px;
+}
+
+/* ──────── Profil header ──────── */
+.profile-hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 64px clamp(24px, 4vw, 64px) 40px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 56px;
+  align-items: end;
+}
+
+.skipper-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 16px;
+}
+.skipper-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+
+.skipper-pseudo {
+  font-family: var(--font-display);
+  font-size: clamp(80px, 11vw, 156px);
+  letter-spacing: 0.01em;
+  line-height: 0.9;
+  color: var(--navy);
+  margin: 0;
+}
+.skipper-pseudo .at {
+  color: var(--gold);
+  font-weight: 400;
+}
+
+.skipper-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.10em;
+  color: var(--navy);
+}
+.flag-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  background: var(--navy);
+  color: var(--paper);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+.flag-chip.fr { background: linear-gradient(90deg, #1a4d7a 0 33%, #f5f0e8 33% 66%, #9e2a2a 66%); color: transparent; min-width: 36px; height: 22px; }
+.skipper-city {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  margin-left: 4px;
+}
+
+.skipper-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.skipper-tagline {
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-style: italic;
+  color: var(--t2);
+  line-height: 1.55;
+  margin: 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--gold);
+}
+.skipper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.skipper-meta strong { color: var(--navy); font-weight: 700; }
+
+.skipper-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+
+/* ──────── Stats band ──────── */
+.stats-band {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 56px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border-top: 1px solid var(--navy-line);
+  border-bottom: 1px solid var(--navy-line);
+}
+.stat-cell {
+  padding: 24px clamp(16px, 2vw, 28px);
+  border-right: 1px solid var(--navy-line);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 8px;
+}
+.stat-cell-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--navy);
+  letter-spacing: 0;
+  line-height: 1;
+  margin: 0;
+}
+.stat-cell-value.gold { color: var(--gold-dark); }
+.stat-cell-value sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 16px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: inherit;
+}
+.stat-cell-value small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--t3);
+  margin-left: 4px;
+}
+.stat-cell-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 8px 0 0;
+}
+
+/* ──────── Section générique ──────── */
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px clamp(24px, 4vw, 64px);
+}
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4vw, 56px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+}
+.section-link {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+}
+.section-link:hover { border-bottom-color: var(--gold); color: var(--navy); }
+
+/* ──────── Palmarès ──────── */
+.palmares {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+}
+.palmares-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.palmares-row:last-child { border-bottom: none; }
+.palmares-pos {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--gold-dark);
+  line-height: 1;
+}
+.palmares-pos sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: var(--gold);
+}
+.palmares-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--navy);
+  margin: 0 0 4px;
+}
+.palmares-meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.palmares-boat {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--navy);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  min-width: 0;
+}
+.palmares-time {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--t2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ──────── Flotte aperçu ──────── */
+.fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.fleet-tile {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 150ms, border-color 150ms;
+}
+.fleet-tile:hover { background: var(--paper-hover); border-color: var(--navy-rule); }
+.fleet-tile-class {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.fleet-tile-name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+.fleet-tile-svg {
+  width: 100%;
+  aspect-ratio: 16/8;
+  margin: 4px 0;
+}
+.fleet-tile-mini {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  padding-top: 8px;
+  border-top: 1px solid var(--navy-line);
+}
+.fleet-tile-mini strong { color: var(--gold-dark); font-weight: 700; }
+.fleet-tile.locked { opacity: 0.35; pointer-events: none; }
+
+/* ──────── Activité (réutilise pattern history de marina-boat) ──────── */
+.activity {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+}
+.activity-row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.activity-row:last-child { border-bottom: none; }
+.activity-pos {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--navy);
+  line-height: 1;
+}
+.activity-pos sup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  margin-left: 1px;
+  vertical-align: super;
+  color: var(--t3);
+}
+.activity-pos.podium { color: var(--gold-dark); }
+.activity-pos.podium sup { color: var(--gold); }
+.activity-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 0 0 2px;
+}
+.activity-meta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.activity-boat {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: var(--navy);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  min-width: 0;
+}
+.activity-date {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--t3);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .masthead .lang { display: none; }
+  .burger { display: inline-flex; }
+}
+
+@media (max-width: 720px) {
+  .masthead { padding: 20px 20px; }
+  .brand { font-size: 22px; }
+  .profile-hero {
+    grid-template-columns: 1fr;
+    padding: 36px 20px 28px;
+    gap: 28px;
+  }
+  .skipper-pseudo { font-size: clamp(64px, 17vw, 96px); }
+  .stats-band { padding: 0 20px 32px; }
+  .stat-cell { padding: 18px 14px; border-right: none; border-bottom: 1px solid var(--navy-line); }
+  .stat-cell:last-child { border-bottom: none; }
+  .stat-cell-value { font-size: 32px; }
+  .section { padding: 40px 20px; }
+  .palmares-row {
+    grid-template-columns: 60px 1fr auto;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .palmares-time { display: none; }
+  .palmares-boat { font-size: 18px; }
+  .activity-row {
+    grid-template-columns: 50px 1fr auto;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .activity-date { display: none; }
+  .activity-boat { font-size: 14px; }
+  .fleet-grid { grid-template-columns: 1fr; gap: 12px; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .masthead-nav a, .lang a { min-height: 36px; display: inline-flex; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Principal">
+    <a href="#">Courses</a>
+    <a href="#">Marina</a>
+    <a href="#">Classement</a>
+    <a href="#" class="active">Profil</a>
+  </nav>
+  <nav class="lang" aria-label="Langues">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Courses<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link">Marina<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Classement<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link active">Profil<span class="drawer-sub">04</span></a>
+  <nav class="lang" aria-label="Langues" style="margin: 32px 0 0; justify-content: center;">
+    <a href="#" class="active">FR</a>
+    <a href="#">EN</a>
+    <a href="#">ES</a>
+    <a href="#">DE</a>
+  </nav>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Se déconnecter</a>
+  </div>
+</nav>
+
+<!-- ──────── Profil hero ──────── -->
+<section class="profile-hero">
+  <div>
+    <p class="skipper-eyebrow">Skipper · Saison <span data-season-year>2026</span></p>
+    <h1 class="skipper-pseudo"><span class="at">@</span>vous</h1>
+    <div class="skipper-flag">
+      <span class="flag-chip fr" aria-hidden="true"></span>
+      France
+      <span class="skipper-city">· La Rochelle</span>
+    </div>
+  </div>
+  <div class="skipper-side">
+    <p class="skipper-tagline">
+      « Je n'ai jamais autant appris à perdre que depuis ce circuit. »
+    </p>
+    <div class="skipper-meta">
+      <span>Inscrit depuis <strong>mars 2024</strong></span>
+      <span>Équipe <strong>La Rochelle Racing</strong></span>
+      <span>Bateau favori <strong>Mistral</strong></span>
+    </div>
+    <div class="skipper-actions">
+      <a href="#" class="btn btn-primary">Modifier le profil</a>
+      <a href="#" class="btn btn-secondary">Paramètres →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Stats band ──────── -->
+<section class="stats-band">
+  <div class="stats-grid">
+    <div class="stat-cell">
+      <p class="stat-cell-label">Courses</p>
+      <p class="stat-cell-value">42</p>
+      <p class="stat-cell-sub">38 finishes · 4 abandons</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Podiums</p>
+      <p class="stat-cell-value gold">07</p>
+      <p class="stat-cell-sub">2 victoires · 5 places d'honneur</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Distance parcourue</p>
+      <p class="stat-cell-value">18 240<small>NM</small></p>
+      <p class="stat-cell-sub">Tous bateaux confondus</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Heures en mer</p>
+      <p class="stat-cell-value">1 824<small>h</small></p>
+      <p class="stat-cell-sub">76 jours de navigation</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Meilleur classement</p>
+      <p class="stat-cell-value gold">01<sup>er</sup></p>
+      <p class="stat-cell-sub">Cap Lizard Trophy · 2025</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Section Palmarès ──────── -->
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="section-eyebrow">Faits d'armes</p>
+      <h2 class="section-title">Palmarès</h2>
+    </div>
+    <a href="#" class="section-link">Voir tout l'historique →</a>
+  </div>
+
+  <div class="palmares">
+    <div class="palmares-row">
+      <span class="palmares-pos">01<sup>er</sup></span>
+      <div>
+        <p class="palmares-name">Cap Lizard Trophy</p>
+        <p class="palmares-meta">Class40 · 18 jan. 2025 · 412 NM</p>
+      </div>
+      <span class="palmares-boat">Mistral</span>
+      <span class="palmares-time">1 j 22 h 08 min</span>
+    </div>
+    <div class="palmares-row">
+      <span class="palmares-pos">01<sup>er</sup></span>
+      <div>
+        <p class="palmares-name">Coupe de la Saint-Brieuc</p>
+        <p class="palmares-meta">Figaro III · 03 sep. 2024 · 188 NM</p>
+      </div>
+      <span class="palmares-boat">Albatros</span>
+      <span class="palmares-time">14 h 37 min</span>
+    </div>
+    <div class="palmares-row">
+      <span class="palmares-pos">02<sup>e</sup></span>
+      <div>
+        <p class="palmares-name">Drheam Cup</p>
+        <p class="palmares-meta">Class40 · 12 juin 2025 · 1 062 NM</p>
+      </div>
+      <span class="palmares-boat">Mistral</span>
+      <span class="palmares-time">4 j 12 h 50 min</span>
+    </div>
+    <div class="palmares-row">
+      <span class="palmares-pos">03<sup>e</sup></span>
+      <div>
+        <p class="palmares-name">Tour de Bretagne</p>
+        <p class="palmares-meta">Figaro III · 04 août 2024 · 564 NM</p>
+      </div>
+      <span class="palmares-boat">Albatros</span>
+      <span class="palmares-time">2 j 16 h 04 min</span>
+    </div>
+    <div class="palmares-row">
+      <span class="palmares-pos">04<sup>e</sup></span>
+      <div>
+        <p class="palmares-name">Fastnet Sprint</p>
+        <p class="palmares-meta">Class40 · 06 août 2025 · 608 NM</p>
+      </div>
+      <span class="palmares-boat">Mistral</span>
+      <span class="palmares-time">2 j 18 h 42 min</span>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Section Flotte ──────── -->
+<section class="section" style="padding-top: 0;">
+  <div class="section-head">
+    <div>
+      <p class="section-eyebrow">Écurie</p>
+      <h2 class="section-title">Flotte</h2>
+    </div>
+    <a href="#" class="section-link">Aller à la marina →</a>
+  </div>
+
+  <div class="fleet-grid">
+
+    <a href="#" class="fleet-tile">
+      <span class="fleet-tile-class">Figaro III</span>
+      <h3 class="fleet-tile-name">Albatros</h3>
+      <svg class="fleet-tile-svg" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="128" x2="310" y2="128" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <path d="M 60,128 L 260,128 L 240,142 L 80,142 Z" fill="#1a2840" />
+        <line x1="160" y1="128" x2="160" y2="22" stroke="#1a2840" stroke-width="2" />
+        <path d="M 162,22 L 230,80 L 162,72 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <path d="M 158,22 L 158,72 L 110,108 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+      </svg>
+      <div class="fleet-tile-mini">
+        <span>24 courses</span>
+        <span><strong>12<sup>e</sup></strong> meilleur</span>
+      </div>
+    </a>
+
+    <a href="#" class="fleet-tile">
+      <span class="fleet-tile-class">Class40</span>
+      <h3 class="fleet-tile-name">Mistral</h3>
+      <svg class="fleet-tile-svg" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="128" x2="310" y2="128" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <path d="M 50,128 L 268,128 L 244,144 L 76,144 Z" fill="#1a4d7a" />
+        <line x1="158" y1="128" x2="158" y2="14" stroke="#1a2840" stroke-width="2.5" />
+        <path d="M 160,14 L 238,80 L 160,70 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <path d="M 156,14 L 156,70 L 100,108 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+      </svg>
+      <div class="fleet-tile-mini">
+        <span>12 courses</span>
+        <span><strong>04<sup>e</sup></strong> meilleur</span>
+      </div>
+    </a>
+
+    <a href="#" class="fleet-tile">
+      <span class="fleet-tile-class">Ocean Fifty</span>
+      <h3 class="fleet-tile-name">Sirocco</h3>
+      <svg class="fleet-tile-svg" viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet">
+        <line x1="10" y1="128" x2="310" y2="128" stroke="#1a2840" stroke-opacity="0.18" stroke-width="1" stroke-dasharray="2 4" />
+        <path d="M 40,128 L 280,128 L 252,146 L 68,146 Z" fill="#7b6f5c" />
+        <line x1="160" y1="128" x2="160" y2="6" stroke="#1a2840" stroke-width="2.5" />
+        <path d="M 162,6 L 250,76 L 162,66 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" />
+        <path d="M 158,6 L 158,66 L 92,108 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.6" opacity="0.92" />
+        <path d="M 100,142 Q 80,156 60,146" fill="none" stroke="#1a2840" stroke-width="1.5" opacity="0.55" />
+        <path d="M 220,142 Q 240,156 260,146" fill="none" stroke="#1a2840" stroke-width="1.5" opacity="0.55" />
+      </svg>
+      <div class="fleet-tile-mini">
+        <span>00 courses</span>
+        <span>—</span>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ──────── Section Activité récente ──────── -->
+<section class="section" style="padding-top: 0;">
+  <div class="section-head">
+    <div>
+      <p class="section-eyebrow">Dernières sorties</p>
+      <h2 class="section-title">Activité récente</h2>
+    </div>
+    <a href="#" class="section-link">Tout l'historique →</a>
+  </div>
+
+  <div class="activity">
+    <div class="activity-row">
+      <span class="activity-pos">12<sup>e</sup></span>
+      <div>
+        <p class="activity-name">Vendée Express</p>
+        <p class="activity-meta">IMOCA 60 · En cours · J3</p>
+      </div>
+      <span class="activity-boat">Albatros</span>
+      <span class="activity-date">9 avr. 2026</span>
+    </div>
+    <div class="activity-row">
+      <span class="activity-pos podium">04<sup>e</sup></span>
+      <div>
+        <p class="activity-name">Fastnet Sprint</p>
+        <p class="activity-meta">Class40 · 608 NM</p>
+      </div>
+      <span class="activity-boat">Mistral</span>
+      <span class="activity-date">06 août 2025</span>
+    </div>
+    <div class="activity-row">
+      <span class="activity-pos">07<sup>e</sup></span>
+      <div>
+        <p class="activity-name">Route du Café</p>
+        <p class="activity-meta">Class40 · 2 850 NM</p>
+      </div>
+      <span class="activity-boat">Mistral</span>
+      <span class="activity-date">24 mars 2026</span>
+    </div>
+    <div class="activity-row">
+      <span class="activity-pos">15<sup>e</sup></span>
+      <div>
+        <p class="activity-name">Baie de Seine Cup</p>
+        <p class="activity-meta">Figaro III · 180 NM</p>
+      </div>
+      <span class="activity-boat">Albatros</span>
+      <span class="activity-date">22 fév. 2026</span>
+    </div>
+    <div class="activity-row">
+      <span class="activity-pos">18<sup>e</sup></span>
+      <div>
+        <p class="activity-name">Drheam Cup</p>
+        <p class="activity-meta">Class40 · 1 062 NM</p>
+      </div>
+      <span class="activity-boat">Mistral</span>
+      <span class="activity-date">02 fév. 2026</span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Saison <span data-season-year>2026</span></div>
+  <div>Polaires réelles · Météo NOAA GFS</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

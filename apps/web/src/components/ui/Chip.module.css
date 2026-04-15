@@ -1,0 +1,66 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-pill);
+  background: var(--ivory-2);
+  color: var(--t2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+
+.interactive { cursor: pointer; }
+.interactive:hover { border-color: var(--navy-rule); color: var(--navy); }
+
+.active {
+  background: var(--navy);
+  color: var(--ivory);
+  border-color: var(--navy);
+}
+
+/* Variants statut */
+.live {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: rgba(45, 138, 78, 0.28);
+}
+.open {
+  color: var(--open);
+  background: var(--open-soft);
+  border-color: rgba(26, 77, 122, 0.22);
+}
+.soon {
+  color: var(--soon);
+  background: var(--soon-soft);
+  border-color: rgba(168, 135, 30, 0.30);
+}
+.past {
+  color: var(--past);
+  background: var(--past-soft);
+  border-color: rgba(123, 111, 92, 0.22);
+}
+.gold {
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  border-color: rgba(201, 162, 39, 0.28);
+}
+
+.liveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--live);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

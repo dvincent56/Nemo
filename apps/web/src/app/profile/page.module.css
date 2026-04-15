@@ -1,0 +1,396 @@
+/* =========================================================================
+   /profile — transposition de mockups/profile-v1.html
+   ========================================================================= */
+
+/* ── Hero ────────────────────────────────────────────────────────── */
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 64px clamp(20px, 4vw, 64px) 48px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+.heroMain { min-width: 0; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.pseudo {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 12vw, 168px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0 0 14px;
+  font-weight: 400;
+}
+
+.origin {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.originCity { color: var(--t3); }
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 8px;
+}
+.tagline {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--t2);
+  max-width: 36ch;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--gold);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+}
+.meta strong { color: var(--navy); font-weight: 700; }
+.teamLink {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--gold-soft);
+  transition: color 150ms, border-color 150ms;
+}
+.teamLink:hover { color: var(--gold-dark); border-bottom-color: var(--gold); }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Flag chip (réutilise pattern /classement mais inline ici) ─── */
+.flag {
+  display: inline-block;
+  width: 22px;
+  height: 16px;
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.fr { background: linear-gradient(90deg, #1a4d7a 0 33%, #f5f0e8 33% 66%, #9e2a2a 66%); }
+
+/* ── Stats band : 5 cellules horizontales ───────────────────────── */
+.statsBand {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px) 40px;
+}
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--paper);
+}
+.statCell {
+  padding: 20px 18px 18px;
+  border-right: 1px solid var(--navy-line);
+  min-width: 0;
+}
+.statCell:last-child { border-right: none; }
+
+.statLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 6px;
+}
+.statValue {
+  font-family: var(--font-display);
+  font-size: 44px;
+  color: var(--navy);
+  line-height: 1;
+  margin: 0 0 6px;
+  letter-spacing: 0.02em;
+}
+.statValueGold { color: var(--gold); }
+.statValue small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--t3);
+  margin-left: 3px;
+  text-transform: uppercase;
+  vertical-align: baseline;
+  line-height: 1;
+}
+.statValue sup { font-size: 0.45em; color: var(--t3); vertical-align: super; }
+.statSub {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* ── Sections éditoriales partagées ─────────────────────────────── */
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px clamp(20px, 4vw, 64px);
+}
+.sectionTop { padding-top: 0; }
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--navy-line);
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.sectionEyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 6px;
+}
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+.sectionLink {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition: border-bottom-color 150ms, color 150ms;
+  white-space: nowrap;
+}
+.sectionLink:hover { color: var(--gold-dark); border-bottom-color: var(--gold); }
+
+/* ── Palmarès & Activité (mêmes rangées, colonnes différentes) ──── */
+.list { display: flex; flex-direction: column; }
+
+.listRow {
+  display: grid;
+  grid-template-columns: 70px 1fr 180px 140px;
+  gap: 16px;
+  padding: 14px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--navy-line);
+  min-height: 60px;
+  transition: background 150ms;
+}
+.listRow:hover { background: var(--navy-soft); }
+.listRow:last-child { border-bottom: none; }
+
+.listPos {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  line-height: 1;
+}
+.listPos sup { font-size: 0.55em; color: var(--t3); }
+.listPosPodium { color: var(--gold-dark); }
+
+.listName {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  margin: 0 0 3px;
+}
+.listMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.listBoat {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--t2);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listTime,
+.listDate {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  letter-spacing: 0.04em;
+}
+
+/* ── Fleet grid : 3 tiles max (1 bateau / classe actuelle) ─────── */
+.fleetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.fleetTile {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  transition: border-color 200ms, transform 200ms, box-shadow 200ms;
+}
+.fleetTile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  width: 44px;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms ease;
+}
+.fleetTile:hover {
+  border-color: var(--navy-rule);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -24px rgba(26, 40, 64, 0.20);
+}
+.fleetTile:hover::before { transform: scaleX(1); }
+
+.fleetClass {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.fleetName {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+  line-height: 1;
+}
+.fleetSvg {
+  width: 100%;
+  aspect-ratio: 16 / 8;
+  background: var(--ivory-2);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-sm);
+}
+.fleetMini {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--t2);
+  padding-top: 10px;
+  border-top: 1px solid var(--navy-line);
+}
+.fleetMini strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+.fleetMini sup { font-size: 0.65em; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .statCell:nth-child(2n) { border-right: none; }
+  .statCell:not(:nth-last-child(-n+2)) { border-bottom: 1px solid var(--navy-line); }
+  .listRow { grid-template-columns: 56px 1fr 110px; }
+  .listBoat { display: none; }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 40px 20px 32px;
+    gap: 28px;
+    align-items: start;
+  }
+  .pseudo { font-size: clamp(56px, 15vw, 96px); }
+  .statsBand { padding: 0 20px 32px; }
+  .statsGrid { grid-template-columns: 1fr; }
+  .statCell { border-right: none; border-bottom: 1px solid var(--navy-line); }
+  .statCell:last-child { border-bottom: none; }
+  .section { padding: 32px 20px; }
+  .listRow {
+    grid-template-columns: 48px 1fr auto;
+    padding: 12px 16px;
+    min-height: 52px;
+  }
+  .listTime,
+  .listDate { display: none; }
+  .listPos { font-size: 22px; }
+  .listName { font-size: 14px; }
+}

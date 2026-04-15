@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Administration · Courses · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --open:         #1a4d7a;
+  --open-soft:    rgba(26, 77, 122, 0.08);
+  --soon:         #a8871e;
+  --soon-soft:    rgba(168, 135, 30, 0.10);
+  --past:         #7b6f5c;
+  --past-soft:    rgba(123, 111, 92, 0.10);
+  --archive:      #4a5568;
+  --archive-soft: rgba(74, 85, 104, 0.10);
+  --draft:        #8a7f6d;
+  --draft-soft:   rgba(138, 127, 109, 0.12);
+  --danger:       #9e2a2a;
+  --danger-soft:  rgba(158, 42, 42, 0.08);
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+body * { max-width: 100%; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ──────── Admin ribbon (bandeau navy en haut) ──────── */
+.admin-ribbon {
+  background: var(--navy);
+  color: var(--paper);
+  padding: 8px clamp(20px, 4vw, 64px);
+}
+.admin-ribbon-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+}
+.admin-ribbon-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-ribbon-badge {
+  background: var(--gold);
+  color: var(--navy);
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  letter-spacing: 0.18em;
+}
+.admin-ribbon a {
+  color: rgba(245, 240, 232, 0.65);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.admin-ribbon a:hover { color: var(--paper); }
+
+/* ──────── Masthead admin (mêmes tokens, nav différente) ──────── */
+.masthead {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 22px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+.masthead-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.masthead-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+.masthead-nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
+.masthead-nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+#nav-toggle { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; left: -9999px; }
+.burger {
+  display: none;
+  width: 40px; height: 40px; cursor: pointer; position: relative; z-index: 20;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.burger-bars {
+  position: relative; width: 22px; height: 1px; background: var(--navy);
+  transition: transform 200ms, background 200ms;
+}
+.burger-bars::before, .burger-bars::after {
+  content: ''; position: absolute; left: 0; width: 22px; height: 1px;
+  background: var(--navy); transition: transform 200ms, top 200ms;
+}
+.burger-bars::before { top: -7px; }
+.burger-bars::after  { top:  7px; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars { background: transparent; }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::before { top: 0; transform: rotate(45deg); }
+#nav-toggle:checked ~ .masthead .burger .burger-bars::after  { top: 0; transform: rotate(-45deg); }
+
+.drawer {
+  position: fixed; inset: 0; background: var(--ivory); z-index: 15;
+  opacity: 0; pointer-events: none; transition: opacity 220ms ease;
+  display: flex; flex-direction: column; padding: 96px clamp(24px, 6vw, 64px) 48px;
+}
+#nav-toggle:checked ~ .drawer { opacity: 1; pointer-events: auto; }
+.drawer-link {
+  font-family: var(--font-display); font-size: 44px; letter-spacing: 0.02em;
+  color: var(--navy); text-decoration: none; padding: 16px 0;
+  border-bottom: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.drawer-link .drawer-sub {
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.18em;
+  color: var(--t3); text-transform: uppercase;
+}
+.drawer-link.active { color: var(--gold-dark); }
+.drawer-link.active .drawer-sub { color: var(--gold); }
+.drawer-foot {
+  margin-top: auto; padding-top: 32px; border-top: 1px solid var(--navy-line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--t3);
+}
+
+/* ──────── Page head ──────── */
+.page-head {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 48px clamp(24px, 4vw, 64px) 32px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: end;
+}
+.page-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 12px;
+}
+.page-eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-dark);
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 7vw, 108px);
+  letter-spacing: 0.02em;
+  line-height: 0.92;
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+.page-sub {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--t2);
+  max-width: 540px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-secondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btn-ghost {
+  background: transparent;
+  color: var(--t2);
+  border-color: transparent;
+}
+.btn-ghost:hover { color: var(--navy); background: var(--navy-soft); }
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(158, 42, 42, 0.28);
+}
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
+
+.btn-icon {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1;
+  color: inherit;
+}
+
+/* ──────── Stats ──────── */
+.stats {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 40px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border-top: 1px solid var(--navy-line);
+  border-bottom: 1px solid var(--navy-line);
+}
+.stat-cell {
+  padding: 24px clamp(16px, 2vw, 28px);
+  border-right: 1px solid var(--navy-line);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 8px;
+}
+.stat-cell-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--navy);
+  line-height: 1;
+  margin: 0;
+}
+.stat-cell-value.gold { color: var(--gold-dark); }
+.stat-cell-value.live { color: var(--live); }
+.stat-cell-value.past { color: var(--past); }
+
+/* ──────── Filters bar ──────── */
+.filters {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.filter-tab:hover { color: var(--navy); background: var(--navy-soft); }
+.filter-tab.active { color: var(--navy); background: var(--gold-soft); border-color: var(--gold); }
+.filter-tab .count {
+  font-family: var(--font-display);
+  font-size: 13px;
+  margin-left: 6px;
+  color: var(--gold);
+}
+.filter-tab.active .count { color: var(--gold-dark); }
+
+.search {
+  position: relative;
+  min-width: 260px;
+}
+.search-input {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  color: var(--navy);
+  padding: 0 14px 0 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+.search-input:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+.search-input::placeholder { color: var(--t3); font-weight: 400; }
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--t3);
+  pointer-events: none;
+}
+
+/* ──────── Table des courses ──────── */
+.table-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 4vw, 64px) 64px;
+}
+.table {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.table-head {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px 170px 90px 160px;
+  gap: 16px;
+  padding: 14px 22px;
+  background: var(--ivory-2);
+  border-bottom: 1px solid var(--navy-line);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.table-head .num { text-align: right; }
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px 170px 90px 160px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--navy-line);
+  transition: background 120ms;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: var(--paper-hover); }
+
+.tr-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tr-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+
+.tr-class {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--navy);
+  text-transform: uppercase;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: var(--r-md);
+  white-space: nowrap;
+}
+.chip.live    { color: var(--live); background: var(--live-soft); border-color: rgba(45, 138, 78, 0.28); }
+.chip.soon    { color: var(--soon); background: var(--soon-soft); border-color: rgba(168, 135, 30, 0.30); }
+.chip.past    { color: var(--past); background: var(--past-soft); border-color: rgba(123, 111, 92, 0.22); }
+.chip.archive { color: var(--archive); background: var(--archive-soft); border-color: rgba(74, 85, 104, 0.24); }
+.chip.draft   { color: var(--draft); background: var(--draft-soft); border-color: rgba(138, 127, 109, 0.28); }
+.chip .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tr-date {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.tr-date-hint {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.tr-count {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--navy);
+  text-align: right;
+  line-height: 1;
+}
+.tr-count small {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+
+.tr-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.tr-icon-btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  color: var(--t2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background 150ms;
+}
+.tr-icon-btn:hover { color: var(--navy); border-color: var(--navy-rule); background: var(--navy-soft); }
+.tr-icon-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+
+.table-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  background: var(--ivory-2);
+  border-top: 1px solid var(--navy-line);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pagination-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--t2);
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  min-width: 32px;
+}
+.pagination-btn:hover { color: var(--navy); border-color: var(--navy-rule); background: var(--paper-hover); }
+.pagination-btn.active { background: var(--navy); color: var(--paper); border-color: var(--navy); }
+.pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ──────── Footer ──────── */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px clamp(24px, 4vw, 64px) 56px;
+  border-top: 1px solid var(--navy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.footer-seal {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 1100px) {
+  .table-head,
+  .table-row {
+    grid-template-columns: 1fr 90px 90px 140px 150px;
+  }
+  .table-head .col-count,
+  .table-row .col-count { display: none; }
+}
+
+@media (max-width: 860px) {
+  .masthead-nav { display: none; }
+  .burger { display: inline-flex; }
+  .table-head,
+  .table-row {
+    grid-template-columns: 1fr 90px 140px;
+  }
+  .table-head .col-class,
+  .table-head .col-count,
+  .table-row .col-class,
+  .table-row .col-count { display: none; }
+}
+
+@media (max-width: 720px) {
+  .admin-ribbon { padding: 8px 20px; }
+  .admin-ribbon-inner { font-size: 9px; }
+  .masthead { padding: 18px 20px; }
+  .brand { font-size: 22px; }
+  .page-head {
+    grid-template-columns: 1fr;
+    padding: 32px 20px 24px;
+    gap: 20px;
+  }
+  .page-title { font-size: clamp(44px, 13vw, 72px); }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell { padding: 16px 14px; border-right: 1px solid var(--navy-line); border-bottom: 1px solid var(--navy-line); }
+  .stat-cell:nth-child(2n) { border-right: none; }
+  .stats-grid > .stat-cell:nth-last-child(-n+2) { border-bottom: none; }
+  .stat-cell-value { font-size: 28px; }
+  .filters { padding: 0 20px 16px; flex-direction: column; align-items: stretch; }
+  .filter-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .table-wrap { padding: 0 20px 48px; }
+  .table-head { display: none; }
+  .table-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title status"
+      "meta actions";
+    row-gap: 8px;
+    padding: 14px 16px;
+  }
+  .table-row > :nth-child(1) { grid-area: title; }
+  .table-row > :nth-child(2) { display: none; }
+  .table-row > :nth-child(3) { grid-area: status; justify-self: end; }
+  .table-row > :nth-child(4) { grid-area: meta; }
+  .table-row > :nth-child(5) { display: none; }
+  .table-row > :nth-child(6) { grid-area: actions; justify-self: end; }
+  .drawer-link { font-size: 36px; }
+  .footer { padding: 24px 20px 36px; font-size: 9px; flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .filter-tab, .tr-icon-btn, .pagination-btn { min-height: 36px; }
+  .search-input { height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-toggle" aria-label="Menu" />
+
+<!-- ──────── Admin ribbon ──────── -->
+<div class="admin-ribbon">
+  <div class="admin-ribbon-inner">
+    <div class="admin-ribbon-left">
+      <span class="admin-ribbon-badge">Admin</span>
+      <span>Nemo · Circuit offshore</span>
+    </div>
+    <div>
+      <a href="#">Retour au site ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- ──────── Masthead ──────── -->
+<header class="masthead">
+  <div class="brand">NE<span>M</span>O</div>
+  <nav class="masthead-nav" aria-label="Admin">
+    <a href="#">Tableau de bord</a>
+    <a href="#" class="active">Courses</a>
+    <a href="#">Bateaux</a>
+    <a href="#">Skippers</a>
+    <a href="#">Météo</a>
+    <a href="#">Logs</a>
+  </nav>
+  <label for="nav-toggle" class="burger" aria-label="Ouvrir le menu">
+    <span class="burger-bars" aria-hidden="true"></span>
+  </label>
+</header>
+
+<nav class="drawer" aria-label="Menu mobile">
+  <a href="#" class="drawer-link">Tableau de bord<span class="drawer-sub">01</span></a>
+  <a href="#" class="drawer-link active">Courses<span class="drawer-sub">02</span></a>
+  <a href="#" class="drawer-link">Bateaux<span class="drawer-sub">03</span></a>
+  <a href="#" class="drawer-link">Skippers<span class="drawer-sub">04</span></a>
+  <a href="#" class="drawer-link">Météo<span class="drawer-sub">05</span></a>
+  <a href="#" class="drawer-link">Logs<span class="drawer-sub">06</span></a>
+  <div class="drawer-foot">
+    <span>Saison <span data-season-year>2026</span></span>
+    <a href="#" class="drawer-cta">Retour au site</a>
+  </div>
+</nav>
+
+<!-- ──────── Page head ──────── -->
+<header class="page-head">
+  <div>
+    <p class="page-eyebrow">Administration · Saison <span data-season-year>2026</span></p>
+    <h1 class="page-title">Courses</h1>
+    <p class="page-sub">
+      Création, édition et supervision des courses du circuit.
+      Les brouillons ne sont pas visibles des skippers.
+    </p>
+  </div>
+  <a href="admin-races-edit-v1.html" class="btn btn-primary">
+    <span class="btn-icon">+</span>
+    Nouvelle course
+  </a>
+</header>
+
+<!-- ──────── Stats ──────── -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat-cell">
+      <p class="stat-cell-label">Total saison</p>
+      <p class="stat-cell-value">47</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">En cours</p>
+      <p class="stat-cell-value live">03</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">À venir</p>
+      <p class="stat-cell-value gold">19</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Terminées</p>
+      <p class="stat-cell-value past">18</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Archivées</p>
+      <p class="stat-cell-value past">05</p>
+    </div>
+    <div class="stat-cell">
+      <p class="stat-cell-label">Brouillons</p>
+      <p class="stat-cell-value">02</p>
+    </div>
+  </div>
+</section>
+
+<!-- ──────── Filtres + recherche ──────── -->
+<div class="filters">
+  <div class="filter-tabs" role="tablist">
+    <button class="filter-tab active">Tous <span class="count">47</span></button>
+    <button class="filter-tab">En cours <span class="count">03</span></button>
+    <button class="filter-tab">À venir <span class="count">19</span></button>
+    <button class="filter-tab">Terminées <span class="count">18</span></button>
+    <button class="filter-tab">Archivées <span class="count">05</span></button>
+    <button class="filter-tab">Brouillons <span class="count">02</span></button>
+  </div>
+  <div class="search">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" type="search" placeholder="Rechercher une course…" aria-label="Rechercher une course" />
+  </div>
+</div>
+
+<!-- ──────── Table des courses ──────── -->
+<section class="table-wrap">
+  <div class="table">
+
+    <div class="table-head">
+      <span>Course</span>
+      <span class="col-class">Classe</span>
+      <span>Statut</span>
+      <span>Départ</span>
+      <span class="num col-count">Inscrits</span>
+      <span class="num">Actions</span>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Vendée Express</p>
+        <p class="tr-sub">1 850 NM · 8 j estimés</p>
+      </div>
+      <span class="tr-class col-class">IMOCA 60</span>
+      <span class="chip live"><span class="dot"></span>En cours · J3</span>
+      <div>
+        <p class="tr-date">06 avr. · 14h00</p>
+        <p class="tr-date-hint">Arrivée est. 14 avr.</p>
+      </div>
+      <span class="tr-count col-count">428<small>skippers</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Superviser">⊙</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Fastnet Sprint</p>
+        <p class="tr-sub">608 NM · 3 j estimés</p>
+      </div>
+      <span class="tr-class col-class">Class40</span>
+      <span class="chip soon">À venir</span>
+      <div>
+        <p class="tr-date">28 avr. · 12h00</p>
+        <p class="tr-date-hint">Inscriptions jusqu'au 26</p>
+      </div>
+      <span class="tr-count col-count">116<small>inscrits</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Dupliquer">⎘</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Atlantic Crossing</p>
+        <p class="tr-sub">2 850 NM · 4 j estimés</p>
+      </div>
+      <span class="tr-class col-class">Ultim</span>
+      <span class="chip soon">À venir</span>
+      <div>
+        <p class="tr-date">12 mai · 16h00</p>
+        <p class="tr-date-hint">Inscriptions ouvertes</p>
+      </div>
+      <span class="tr-count col-count">32<small>inscrits</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Dupliquer">⎘</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Baie de Seine Cup</p>
+        <p class="tr-sub">180 NM · 26 h estimées</p>
+      </div>
+      <span class="tr-class col-class">Figaro III</span>
+      <span class="chip soon">À venir</span>
+      <div>
+        <p class="tr-date">22 avr. · 18h00</p>
+        <p class="tr-date-hint">Inscriptions jusqu'au 20</p>
+      </div>
+      <span class="tr-count col-count">58<small>inscrits</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Dupliquer">⎘</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Pro Sailing Tour</p>
+        <p class="tr-sub">420 NM · 2 j estimés</p>
+      </div>
+      <span class="tr-class col-class">Ocean Fifty</span>
+      <span class="chip soon">À venir</span>
+      <div>
+        <p class="tr-date">18 mai · 13h00</p>
+        <p class="tr-date-hint">Inscriptions ouvertes</p>
+      </div>
+      <span class="tr-count col-count">42<small>inscrits</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Dupliquer">⎘</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Transat Jacques Vabre</p>
+        <p class="tr-sub">4 350 NM · 11 j estimés</p>
+      </div>
+      <span class="tr-class col-class">Class40</span>
+      <span class="chip soon">À venir</span>
+      <div>
+        <p class="tr-date">05 nov. · 13h02</p>
+        <p class="tr-date-hint">Inscriptions bientôt</p>
+      </div>
+      <span class="tr-count col-count">220<small>pré-inscrits</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir public">↗</button>
+        <button class="tr-icon-btn" title="Dupliquer">⎘</button>
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Tour du Golfe de Gascogne</p>
+        <p class="tr-sub">Nouveau — à finaliser</p>
+      </div>
+      <span class="tr-class col-class">IMOCA 60</span>
+      <span class="chip draft"><span class="dot"></span>Brouillon</span>
+      <div>
+        <p class="tr-date">— · —</p>
+        <p class="tr-date-hint">Tracé incomplet</p>
+      </div>
+      <span class="tr-count col-count">—<small>&nbsp;</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Éditer">✎</button>
+        <button class="tr-icon-btn danger" title="Supprimer">✕</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Arkéa Ultim Challenge</p>
+        <p class="tr-sub">21 600 NM · 50 j</p>
+      </div>
+      <span class="tr-class col-class">Ultim</span>
+      <span class="chip archive">Archivée</span>
+      <div>
+        <p class="tr-date">06 fév. · 09h47</p>
+        <p class="tr-date-hint">Archivée le 15 fév.</p>
+      </div>
+      <span class="tr-count col-count">06<small>skippers</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir le bilan">↗</button>
+        <button class="tr-icon-btn" title="Désarchiver">⇧</button>
+      </div>
+    </div>
+
+    <div class="table-row">
+      <div>
+        <p class="tr-title">Route du Café</p>
+        <p class="tr-sub">2 850 NM · 8 j</p>
+      </div>
+      <span class="tr-class col-class">Class40</span>
+      <span class="chip past">Terminée</span>
+      <div>
+        <p class="tr-date">24 mars · 11h30</p>
+        <p class="tr-date-hint">38 finishers · 4 abandons</p>
+      </div>
+      <span class="tr-count col-count">42<small>skippers</small></span>
+      <div class="tr-actions">
+        <button class="tr-icon-btn" title="Voir le bilan">↗</button>
+        <button class="tr-icon-btn" title="Archiver">⇩</button>
+      </div>
+    </div>
+
+    <div class="table-foot">
+      <span>Page 1 sur 5 · 9 courses affichées sur 42</span>
+      <div class="pagination">
+        <button class="pagination-btn" disabled>◀</button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">4</button>
+        <button class="pagination-btn">5</button>
+        <button class="pagination-btn">▶</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-seal">Nemo · Admin · Saison <span data-season-year>2026</span></div>
+  <div>Environnement : production</div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-season-year]').forEach(el => {
+    el.textContent = new Date().getFullYear();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+import Fastify from 'fastify';
+import cookie from '@fastify/cookie';
+import cors from '@fastify/cors';
+import pino from 'pino';
+import type { Boat } from '@nemo/shared-types';
+import { GameBalance } from '@nemo/game-balance';
+import { TickManager } from './engine/manager.js';
+import type { BoatRuntime } from './engine/tick.js';
+import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
+import { registerAuthRoutes } from './api/auth.js';
+import { connectRedis } from './infra/redis.js';
+
+const log = pino({ name: 'game-engine' });
+
+/**
+ * Phase 3 : un seul bateau démo attaché à la première course in-memory, pour
+ * que le broadcast pipeline soit testable visuellement. La création réelle
+ * des BoatRuntime arrivera en Phase 4 (inscription en course → hydratation DB).
+ */
+function createDemoRuntime(): BoatRuntime {
+  const boat: Boat = {
+    id: 'demo-boat-1',
+    ownerId: 'demo-owner',
+    name: 'Nemo Démo',
+    boatClass: 'CLASS40',
+    position: { lat: 47.0, lon: -3.0 },
+    heading: 90,
+    bsp: 0,
+    sail: 'SPI',
+    sailState: 'STABLE',
+    hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
+    driveMode: 'NORMAL',
+  };
+  return {
+    boat,
+    raceId: 'r-vendee-2026',
+    condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
+    sailState: { active: 'SPI', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
+    segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
+    orderHistory: [],
+    zonesAlerted: new Set(),
+    upgrades: new Set(),
+    prevTwa: null,
+    maneuver: null,
+  };
+}
+
+async function main() {
+  await GameBalance.loadFromDisk();
+  log.info({ version: GameBalance.version }, 'game-balance loaded');
+
+  const app = Fastify({ logger: false });
+  await app.register(cookie);
+  await app.register(cors, {
+    origin: process.env['WEB_ORIGIN'] ?? 'http://localhost:3000',
+    credentials: true,
+  });
+
+  app.get('/health', async () => ({
+    status: 'ok',
+    balanceVersion: GameBalance.version,
+    cognito: !!process.env['COGNITO_REGION'],
+    redis: !!process.env['REDIS_URL'],
+  }));
+  registerAuthRoutes(app);
+  registerRaceRoutes(app);
+  await seedRacesIfEmpty();
+
+  const port = Number(process.env['PORT'] ?? 3001);
+  await app.listen({ port, host: '0.0.0.0' });
+  log.info({ port }, 'game-engine listening');
+
+  const redis = connectRedis();
+  const tick = new TickManager(redis);
+  tick.start([createDemoRuntime()]).catch((err) => {
+    log.error({ err }, 'tick worker failed to start — HTTP still up, gameplay disabled');
+  });
+
+  const shutdown = async () => {
+    log.info('shutting down');
+    await tick.stop();
+    await app.close();
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+main().catch((err) => {
+  log.error({ err }, 'fatal');
+  process.exit(1);
+});

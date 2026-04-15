@@ -1,0 +1,258 @@
+/* =========================================================================
+   /races — transposition de mockups/races-v1.html
+   ========================================================================= */
+
+.masthead {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 72px clamp(20px, 4vw, 64px) 56px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+
+.mastheadMain { min-width: 0; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 11vw, 148px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ── Counters à droite du masthead ──────────────────────────────── */
+.counters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px 32px;
+  padding-bottom: 8px;
+}
+
+.counter { min-width: 0; }
+
+.counterLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 4px;
+}
+
+.counterValue {
+  font-family: var(--font-display);
+  font-size: 44px;
+  color: var(--navy);
+  line-height: 1;
+}
+.counterLive { color: var(--live); }
+.counterGold { color: var(--gold); }
+
+/* ── Filtres (lignes séparées par des règles fines) ─────────────── */
+.filters {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px);
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--navy-line);
+  border-bottom: 1px solid var(--navy-line);
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.filterLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0;
+  padding-right: 8px;
+  border-right: 1px solid var(--navy-line);
+  white-space: nowrap;
+}
+
+.filterTab {
+  background: transparent;
+  border: none;
+  padding: 4px 2px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--t2);
+  cursor: pointer;
+  position: relative;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.filterTab::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 2px;
+  background: transparent;
+  transition: background 150ms;
+}
+.filterTab:hover { color: var(--navy); }
+.filterTabActive {
+  color: var(--navy);
+  font-weight: 700;
+}
+.filterTabActive::after { background: var(--gold); }
+
+/* ── Grille de cards ────────────────────────────────────────────── */
+.grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 48px clamp(20px, 4vw, 64px) 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 32px;
+}
+
+.card {
+  /* La card réutilise le composant UI Card avec accent — styles hérités.
+     Ici on ajoute juste le layout interne spécifique aux race-cards. */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0 0 6px;
+  font-weight: 400;
+}
+
+.cardMeta {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.cardMetaSep {
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  background: var(--t3);
+}
+
+.tierCareer { color: var(--gold-dark); }
+.tierFree { color: var(--t2); }
+
+.mini {
+  aspect-ratio: 16 / 8;
+  background: var(--ivory-2);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  position: relative;
+}
+.miniSvg { width: 100%; height: 100%; display: block; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--navy-line);
+}
+
+.statLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0 0 3px;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.statValueGold { color: var(--gold-dark); }
+.statValueSmall {
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 400;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--t2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .masthead {
+    grid-template-columns: 1fr;
+    padding: 40px 20px 32px;
+    gap: 28px;
+  }
+  .title { font-size: clamp(56px, 15vw, 84px); }
+  .counters { gap: 20px; }
+  .counterValue { font-size: 34px; }
+  .filters {
+    flex-direction: column;
+    gap: 0;
+    padding: 0 20px;
+  }
+  .filterGroup {
+    gap: 12px;
+    padding: 14px 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .filterGroup::-webkit-scrollbar { display: none; }
+  .filterGroup + .filterGroup { border-top: 1px solid var(--navy-line); }
+  .grid { padding: 28px 20px 64px; gap: 20px; grid-template-columns: 1fr; }
+  .cardTitle { font-size: 28px; }
+}

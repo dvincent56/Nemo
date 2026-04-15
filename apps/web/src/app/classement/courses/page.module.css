@@ -1,0 +1,227 @@
+/* =========================================================================
+   /classement/courses — liste des courses pour entrer dans le classement
+   par course. Pattern proche de /races mais simplifié (pas de filtres,
+   uniquement le tracé minimal et le nb de skippers).
+   ========================================================================= */
+
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px clamp(20px, 4vw, 64px) 24px;
+}
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 11vw, 148px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+
+.viewSwitch {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px) 16px;
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.viewBtn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+  padding: 12px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+  text-decoration: none;
+  transition: color 150ms, border-color 150ms;
+}
+.viewBtn:hover { color: var(--navy); }
+.viewBtnActive { color: var(--navy); border-bottom-color: var(--gold); }
+
+/* ── Section En cours / Terminées ──────────────────────────────── */
+.section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 36px clamp(20px, 4vw, 64px) 16px;
+}
+.section + .section { padding-top: 24px; }
+.sectionHead {
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.sectionEyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin: 0 0 6px;
+}
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+.count {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--gold-dark);
+  letter-spacing: 0.10em;
+  margin-left: 14px;
+  vertical-align: middle;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 140px 130px 100px 80px;
+  gap: 20px;
+  padding: 18px 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--navy-line);
+  text-decoration: none;
+  color: inherit;
+  transition: background 150ms;
+  position: relative;
+}
+.row:hover { background: var(--navy-soft); }
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  transform-origin: center;
+  width: 3px; height: 60%;
+  background: var(--gold);
+  transition: transform 200ms ease;
+}
+.row:hover::before { transform: translateY(-50%) scaleY(1); }
+
+.name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0 0 4px;
+  font-weight: 400;
+  line-height: 1;
+}
+.meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 0;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cellLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+.cellValue {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.statusLive {
+  color: var(--live);
+  background: var(--live-soft);
+  border-color: rgba(45, 138, 78, 0.28);
+}
+.statusFinished {
+  color: var(--past);
+  background: var(--past-soft);
+  border-color: rgba(123, 111, 92, 0.22);
+}
+.liveDot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--live);
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.arrow {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--t3);
+  text-align: right;
+  transition: transform 200ms, color 200ms;
+}
+.row:hover .arrow {
+  transform: translateX(4px);
+  color: var(--navy);
+}
+
+.empty {
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--t2);
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .hero { padding: 40px 20px 16px; }
+  .title { font-size: clamp(56px, 15vw, 84px); }
+  .intro { padding: 20px 20px 8px; }
+  .list { padding: 8px 20px 48px; }
+  .row {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px 16px;
+    padding: 14px 16px;
+  }
+  .row > .cell,
+  .row > .arrow { display: none; }
+  .row > .statusChip { grid-column: 2; grid-row: 1; }
+  .name { font-size: 22px; }
+}

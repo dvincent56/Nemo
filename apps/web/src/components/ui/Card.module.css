@@ -1,0 +1,36 @@
+.card {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 200ms, transform 200ms, box-shadow 200ms;
+}
+
+.interactive { cursor: pointer; }
+.interactive:hover {
+  border-color: var(--navy-rule);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -24px rgba(26, 40, 64, 0.20);
+}
+
+/* Accent gold qui apparaît au hover (signature éditoriale) */
+.accent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 24px;
+  width: 44px;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 250ms ease;
+}
+.interactive.accent:hover::before,
+.accent.isHovered::before { transform: scaleX(1); }

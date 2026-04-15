@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Admin · Édition course · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-deep:    #0c1424;
+  --navy-deeper:  #060b18;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.18);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --draft:        #8a7f6d;
+  --draft-soft:   rgba(138, 127, 109, 0.12);
+  --danger:       #9e2a2a;
+  --danger-soft:  rgba(158, 42, 42, 0.08);
+  --warn:         #d97706;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+
+  --on-dark-1: #f5f0e8;
+  --on-dark-2: rgba(245, 240, 232, 0.72);
+  --on-dark-3: rgba(245, 240, 232, 0.42);
+  --dark-line: rgba(245, 240, 232, 0.14);
+  --dark-fill: rgba(12, 20, 36, 0.78);
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+body * { max-width: 100%; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ──────── Admin ribbon ──────── */
+.admin-ribbon {
+  background: var(--navy);
+  color: var(--paper);
+  padding: 6px clamp(20px, 4vw, 64px);
+  flex-shrink: 0;
+}
+.admin-ribbon-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+}
+.admin-ribbon-badge {
+  background: var(--gold);
+  color: var(--navy);
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  letter-spacing: 0.18em;
+}
+.admin-ribbon a {
+  color: rgba(245, 240, 232, 0.65);
+  text-decoration: none;
+}
+.admin-ribbon a:hover { color: var(--paper); }
+
+/* ──────── Sub-header (titre course + actions) ──────── */
+.subhead {
+  background: var(--paper);
+  border-bottom: 1px solid var(--navy-line);
+  padding: 14px clamp(20px, 4vw, 40px);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.subhead-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+}
+.back-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.back-btn:hover { color: var(--navy); border-color: var(--navy-rule); background: var(--navy-soft); }
+
+.title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.title-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin: 0;
+}
+.title-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--navy);
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border: 1px solid;
+  border-radius: var(--r-md);
+  white-space: nowrap;
+}
+.chip.draft { color: var(--draft); background: var(--draft-soft); border-color: rgba(138, 127, 109, 0.28); }
+.chip.live  { color: var(--live); background: var(--live-soft); border-color: rgba(45, 138, 78, 0.28); }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.subhead-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.dirty-indicator {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 6px;
+}
+.dirty-indicator::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.btn-primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+.btn-secondary { background: transparent; color: var(--navy); border-color: var(--navy-rule); }
+.btn-secondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btn-ghost { background: transparent; color: var(--t2); border-color: transparent; }
+.btn-ghost:hover { color: var(--navy); background: var(--navy-soft); }
+
+/* ──────── Studio layout ──────── */
+.studio {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 68px 1fr 360px;
+  min-height: 0;
+}
+
+/* ──────── Tools (left) ──────── */
+.tools {
+  background: var(--paper);
+  border-right: 1px solid var(--navy-line);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+.tool {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--t2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px;
+}
+.tool:hover { color: var(--navy); background: var(--navy-soft); }
+.tool.active {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--gold-dark);
+}
+.tool-icon {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1;
+}
+.tool-sep {
+  height: 1px;
+  background: var(--navy-line);
+  margin: 6px 4px;
+}
+
+/* ──────── Map (center) ──────── */
+.map {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 30% 35%, rgba(36, 53, 82, 0.5), transparent 60%),
+    radial-gradient(ellipse at 70% 65%, rgba(20, 30, 50, 0.6), transparent 60%),
+    linear-gradient(180deg, #0c1424 0%, #060b18 100%);
+}
+.map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Info badge top-left */
+.map-info {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: var(--dark-fill);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--on-dark-2);
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.map-info strong { color: var(--on-dark-1); font-weight: 700; }
+.map-info .gold { color: var(--gold); }
+
+/* Controls top-right */
+.map-controls {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+.map-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--dark-fill);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  color: var(--on-dark-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+.map-btn:hover { background: var(--navy-deep); border-color: rgba(245, 240, 232, 0.28); }
+.map-btn-group { display: flex; flex-direction: column; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--dark-line); }
+.map-btn-group .map-btn { border-radius: 0; border: none; }
+.map-btn-group .map-btn + .map-btn { border-top: 1px solid var(--dark-line); }
+
+/* Cursor position indicator bottom-left */
+.cursor-indic {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  background: var(--dark-fill);
+  border: 1px solid var(--dark-line);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--on-dark-1);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+.cursor-indic .label {
+  font-size: 9px;
+  color: var(--on-dark-3);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ──────── Inspector (right) ──────── */
+.inspector {
+  background: var(--paper);
+  border-left: 1px solid var(--navy-line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.insp-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-bottom: 1px solid var(--navy-line);
+  flex-shrink: 0;
+}
+.insp-tab {
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  padding: 14px 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.insp-tab.active { color: var(--gold-dark); border-bottom-color: var(--gold); }
+
+.insp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+.insp-section + .insp-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--navy-line);
+}
+.insp-section-title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.20em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.insp-section-title .count {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--gold);
+  margin-left: 6px;
+}
+.insp-section-title .add {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--gold-dark);
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-sm);
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.insp-section-title .add:hover { background: var(--gold-soft); border-color: var(--gold); }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field + .field { margin-top: 12px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-row .field + .field { margin-top: 0; }
+.field-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--t3);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.field-input,
+.field-select,
+.field-textarea {
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  color: var(--navy);
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  height: 38px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.field-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--t2) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--t2) 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.field-textarea {
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 60px;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold);
+}
+.field-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--t3);
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+/* Liste d'éléments (route points, gates, zones) */
+.elem-list { display: flex; flex-direction: column; gap: 4px; }
+.elem {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.elem:hover { background: var(--paper-hover); border-color: var(--navy-rule); }
+.elem.selected {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+}
+.elem-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  background: var(--ivory-2);
+  color: var(--t2);
+}
+.elem-icon.start { background: var(--live); color: var(--paper); }
+.elem-icon.gate { background: var(--gold); color: var(--navy); }
+.elem-icon.wp { background: var(--ivory-2); color: var(--navy); border: 1px solid var(--gold); }
+.elem-icon.finish { background: var(--gold-dark); color: var(--paper); }
+.elem-icon.zone { background: var(--warn); color: var(--paper); }
+.elem-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--navy);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.elem-sub {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.elem-drag {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--t3);
+  line-height: 1;
+}
+
+/* Zone card avec segmented en 2e rangée */
+.zone-card { grid-template-rows: auto auto; }
+.zone-card .zone-switch {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+/* Segmented toggle (Zone type: warn/penalty) */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--ivory-2);
+}
+.segmented button {
+  background: transparent;
+  border: none;
+  color: var(--t2);
+  padding: 8px 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-right: 1px solid var(--navy-line);
+}
+.segmented button:last-child { border-right: none; }
+.segmented button.active { background: var(--navy); color: var(--paper); }
+
+/* ──────── Responsive ──────── */
+@media (max-width: 1100px) {
+  .studio { grid-template-columns: 60px 1fr 320px; }
+}
+@media (max-width: 860px) {
+  .studio { grid-template-columns: 54px 1fr; }
+  .inspector { display: none; }
+  .tools { padding: 8px 6px; }
+  .tool { width: 42px; height: 42px; font-size: 7px; }
+  .tool-icon { font-size: 16px; }
+}
+@media (max-width: 720px) {
+  .subhead { padding: 10px 16px; gap: 10px; flex-wrap: wrap; }
+  .title-name { font-size: 20px; }
+  .subhead-actions .btn-ghost { display: none; }
+  .dirty-indicator { display: none; }
+}
+
+@media (pointer: coarse) {
+  .btn, .tool, .map-btn, .back-btn { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ──────── Admin ribbon ──────── -->
+<div class="admin-ribbon">
+  <div class="admin-ribbon-inner">
+    <span>
+      <span class="admin-ribbon-badge">Admin</span>
+      <span style="margin-left: 10px;">Éditeur de course</span>
+    </span>
+    <div><a href="#">Retour au site ↗</a></div>
+  </div>
+</div>
+
+<!-- ──────── Sub-header ──────── -->
+<div class="subhead">
+  <div class="subhead-left">
+    <a href="admin-races-v1.html" class="back-btn">← Courses</a>
+    <div class="title-block">
+      <p class="title-eyebrow">Édition · IMOCA 60 · 1 850 NM</p>
+      <h1 class="title-name">Vendée Express</h1>
+    </div>
+    <span class="chip draft"><span class="dot"></span>Brouillon</span>
+  </div>
+
+  <div class="subhead-actions">
+    <span class="dirty-indicator">Modifications non enregistrées</span>
+    <button class="btn btn-ghost">Aperçu joueur ↗</button>
+    <button class="btn btn-secondary">Enregistrer brouillon</button>
+    <button class="btn btn-primary">Publier</button>
+  </div>
+</div>
+
+<!-- ──────── Studio : tools / map / inspector ──────── -->
+<main class="studio">
+
+  <!-- ════════ Tools (left) ════════ -->
+  <aside class="tools" aria-label="Outils d'édition">
+    <button class="tool" title="Sélection (V)">
+      <span class="tool-icon">↖</span>
+      <span>Sél.</span>
+    </button>
+    <button class="tool" title="Tracé indicatif (P)">
+      <span class="tool-icon">⌒</span>
+      <span>Tracé</span>
+    </button>
+    <button class="tool" title="Porte · 2 bouées (G)">
+      <span class="tool-icon">⌇</span>
+      <span>Porte</span>
+    </button>
+    <button class="tool active" title="Bouée simple (B)">
+      <span class="tool-icon">●</span>
+      <span>Bouée</span>
+    </button>
+    <button class="tool" title="Zone d'exclusion (Z)">
+      <span class="tool-icon">◇</span>
+      <span>Zone</span>
+    </button>
+    <button class="tool" title="Mesurer (M)">
+      <span class="tool-icon">⧎</span>
+      <span>Mesure</span>
+    </button>
+
+    <div class="tool-sep"></div>
+
+    <button class="tool" title="Annuler (⌘Z)">
+      <span class="tool-icon">↶</span>
+      <span>Undo</span>
+    </button>
+    <button class="tool" title="Refaire (⌘⇧Z)">
+      <span class="tool-icon">↷</span>
+      <span>Redo</span>
+    </button>
+
+    <div class="tool-sep"></div>
+
+    <button class="tool" title="Recadrer sur le tracé (F)">
+      <span class="tool-icon">⛶</span>
+      <span>Cadrer</span>
+    </button>
+    <button class="tool" title="Grille (G)">
+      <span class="tool-icon">▦</span>
+      <span>Grille</span>
+    </button>
+  </aside>
+
+  <!-- ════════ Map (center) ════════ -->
+  <section class="map" aria-label="Carte d'édition">
+
+    <!-- Map SVG : côtes + tracé + waypoints + zone -->
+    <svg class="map-svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <!-- Côtes silhouettes -->
+      <g fill="#1a2840" opacity="0.48">
+        <path d="M0,360 L60,340 L120,380 L160,360 L200,420 L180,500 L140,540 L80,560 L40,540 L0,580 Z" />
+        <path d="M40,100 L90,80 L130,100 L180,70 L220,110 L260,140 L240,180 L200,200 L160,180 L120,190 L70,160 Z" />
+        <path d="M960,240 L1020,220 L1080,260 L1140,250 L1200,270 L1200,400 L1160,420 L1110,400 L1060,420 L1010,400 L970,360 Z" />
+        <path d="M1040,560 L1100,540 L1160,560 L1200,590 L1200,720 L1140,740 L1080,720 L1040,700 Z" />
+      </g>
+
+      <!-- Grille discrète -->
+      <g stroke="rgba(245,240,232,0.05)" stroke-width="1">
+        <line x1="200" y1="0" x2="200" y2="800" />
+        <line x1="400" y1="0" x2="400" y2="800" />
+        <line x1="600" y1="0" x2="600" y2="800" />
+        <line x1="800" y1="0" x2="800" y2="800" />
+        <line x1="1000" y1="0" x2="1000" y2="800" />
+        <line x1="0" y1="200" x2="1200" y2="200" />
+        <line x1="0" y1="400" x2="1200" y2="400" />
+        <line x1="0" y1="600" x2="1200" y2="600" />
+      </g>
+
+      <!-- Tracé indicatif (chemin optimal suggéré, informatif seulement) -->
+      <path d="M 220,520 L 480,440 L 700,360 L 920,340 L 1080,290"
+            fill="none" stroke="#c9a227" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.5" />
+
+      <!-- Départ (point unique vert) -->
+      <g transform="translate(220 520)">
+        <circle r="10" fill="#2d8a4e" stroke="#f5f0e8" stroke-width="1.5" />
+        <text x="0" y="-16" font-family="Space Mono" font-size="10" font-weight="700" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.15em">DÉPART</text>
+      </g>
+
+      <!-- Porte Biscay (2 bouées visibles avec ligne passage) -->
+      <g>
+        <line x1="460" y1="468" x2="500" y2="412" stroke="#c9a227" stroke-width="1.2" opacity="0.6" stroke-dasharray="3 3" />
+        <circle cx="460" cy="468" r="6" fill="#c9a227" stroke="#f5f0e8" stroke-width="1.2" />
+        <circle cx="500" cy="412" r="6" fill="#c9a227" stroke="#f5f0e8" stroke-width="1.2" />
+        <text x="510" y="398" font-family="Space Mono" font-size="10" font-weight="700" fill="#c9a227" letter-spacing="0.12em">PORTE BISCAY</text>
+      </g>
+
+      <!-- Bouée Finisterre (single point avec flèche indiquant bâbord) SÉLECTIONNÉE -->
+      <g transform="translate(700 360)">
+        <circle r="16" fill="none" stroke="#f5f0e8" stroke-width="1" stroke-dasharray="3 3" opacity="0.85" />
+        <circle r="8" fill="#c9a227" stroke="#f5f0e8" stroke-width="2" />
+        <!-- Flèche courbe indiquant contournement bâbord (CCW) -->
+        <path d="M 712,352 A 14 14 0 1 1 712,368" fill="none" stroke="#f5f0e8" stroke-width="1.5" />
+        <polygon points="709,365 716,370 713,362" fill="#f5f0e8" />
+        <text x="18" y="4" font-family="Space Mono" font-size="10" font-weight="700" fill="#f5f0e8" letter-spacing="0.14em">BOUÉE FINISTERRE · SÉL.</text>
+        <!-- Readout coordonnées -->
+        <g transform="translate(18 18)">
+          <rect x="-2" y="0" width="168" height="32" rx="3" fill="rgba(12, 20, 36, 0.82)" stroke="rgba(245,240,232,0.18)" stroke-width="1" />
+          <text x="8" y="14" font-family="Space Mono" font-size="9" font-weight="700" fill="rgba(245, 240, 232, 0.7)" letter-spacing="0.12em">À LAISSER À BÂBORD</text>
+          <text x="8" y="25" font-family="Space Mono" font-size="9" font-weight="700" fill="rgba(245, 240, 232, 0.48)" letter-spacing="0.12em">42°53.20'N · 009°16.40'W</text>
+        </g>
+      </g>
+
+      <!-- Porte Azores (invisible joueurs : rendu grisé + mention) -->
+      <g opacity="0.7">
+        <line x1="900" y1="360" x2="940" y2="310" stroke="#8a7f6d" stroke-width="1.2" stroke-dasharray="2 4" />
+        <circle cx="900" cy="360" r="6" fill="none" stroke="#8a7f6d" stroke-width="1.5" />
+        <circle cx="940" cy="310" r="6" fill="none" stroke="#8a7f6d" stroke-width="1.5" />
+        <text x="950" y="296" font-family="Space Mono" font-size="10" font-weight="700" fill="#8a7f6d" letter-spacing="0.12em">PORTE AZORES · INVIS.</text>
+      </g>
+
+      <!-- Ligne d'arrivée (2 points connectés) -->
+      <g>
+        <line x1="1060" y1="310" x2="1100" y2="268" stroke="#a8871e" stroke-width="3" />
+        <circle cx="1060" cy="310" r="8" fill="#a8871e" stroke="#f5f0e8" stroke-width="1.5" />
+        <circle cx="1100" cy="268" r="8" fill="#a8871e" stroke="#f5f0e8" stroke-width="1.5" />
+        <text x="1080" y="252" font-family="Space Mono" font-size="10" font-weight="700" fill="#f5f0e8" text-anchor="middle" letter-spacing="0.15em">LIGNE D'ARRIVÉE</text>
+      </g>
+
+      <!-- Zone d'exclusion (WARN) -->
+      <g>
+        <path d="M 600,180 L 760,140 L 880,200 L 860,300 L 740,340 L 620,280 Z"
+              fill="#d97706" fill-opacity="0.12" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5 5" />
+        <text x="740" y="240" font-family="Space Mono" font-size="11" font-weight="700" fill="#d97706" text-anchor="middle" letter-spacing="0.14em">ZONE WARN · CASIERS</text>
+      </g>
+    </svg>
+
+    <!-- Info top-left -->
+    <div class="map-info" aria-label="Info parcours">
+      <div><strong>PARCOURS</strong> · <span class="gold">1 850 NM</span> indicatifs</div>
+      <div>01 départ · 01 arrivée · 03 passages</div>
+      <div>01 zone d'exclusion · outil actif <strong>Bouée</strong></div>
+    </div>
+
+    <!-- Controls top-right -->
+    <div class="map-controls" aria-label="Outils carte">
+      <div class="map-btn-group">
+        <button class="map-btn" title="Zoomer">+</button>
+        <button class="map-btn" title="Dézoomer">−</button>
+      </div>
+      <button class="map-btn" title="Recadrer">⛶</button>
+    </div>
+
+    <!-- Cursor position bottom-left -->
+    <div class="cursor-indic" aria-label="Position curseur">
+      <span>
+        <span class="label">Lat</span> 47°23.41'N
+      </span>
+      <span>
+        <span class="label">Lon</span> 003°12.88'W
+      </span>
+    </div>
+  </section>
+
+  <!-- ════════ Inspector (right) ════════ -->
+  <aside class="inspector" aria-label="Inspecteur">
+    <div class="insp-body">
+
+      <!-- Section : Identité -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">Identité</h3>
+        <div class="field">
+          <label class="field-label" for="race-name">Nom de la course</label>
+          <input id="race-name" class="field-input" value="Vendée Express" maxlength="60" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="race-class">Classe</label>
+          <select id="race-class" class="field-select">
+            <option>Figaro III</option>
+            <option>Class40</option>
+            <option>Ocean Fifty</option>
+            <option selected>IMOCA 60</option>
+            <option>Ultim</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="race-desc">Description publique</label>
+          <textarea id="race-desc" class="field-textarea" maxlength="240">Descente rapide des Sables à Punta Delgada, passage obligatoire par les portes du Golfe de Gascogne et de Finisterre.</textarea>
+          <p class="field-hint">240 caractères max. Affichée sur la fiche course côté joueur.</p>
+        </div>
+      </section>
+
+      <!-- Section : Image de course -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">Image de course</h3>
+        <div class="field-hint" style="margin: 0 0 10px;">
+          Visuel affiché sur les cartes côté joueur. Une capture auto depuis la carte pourra remplacer cette image si elle est absente.
+        </div>
+        <label for="race-image" style="display: block; cursor: pointer;">
+          <div style="
+            position: relative;
+            aspect-ratio: 16/9;
+            background: var(--ivory-2);
+            border: 1px dashed var(--navy-rule);
+            border-radius: var(--r-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-align: center;
+            padding: 16px;
+            transition: border-color 150ms, background 150ms;
+          ">
+            <span style="font-family: var(--font-display); font-size: 28px; color: var(--navy); line-height: 1;">↑</span>
+            <p style="font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--navy); margin: 0;">Importer une image</p>
+            <p style="font-family: var(--font-mono); font-weight: 700; font-size: 9px; letter-spacing: 0.14em; color: var(--t3); text-transform: uppercase; margin: 0;">JPG ou PNG · 2 Mo max · ratio 16:9</p>
+          </div>
+        </label>
+        <input id="race-image" type="file" accept="image/jpeg,image/png" hidden />
+        <div class="field-row" style="margin-top: 10px;">
+          <button class="btn btn-secondary" style="justify-content: center;">Générer depuis la carte</button>
+          <button class="btn btn-ghost" style="justify-content: center;" disabled>Retirer</button>
+        </div>
+      </section>
+
+      <!-- Section : Calendrier -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">Calendrier</h3>
+        <div class="field">
+          <label class="field-label" for="race-reg-open">Ouverture des inscriptions</label>
+          <input id="race-reg-open" class="field-input" type="date" value="2026-03-20" />
+          <p class="field-hint">Clôture automatiquement à l'heure du départ.</p>
+        </div>
+        <div class="field-row" style="margin-top: 12px;">
+          <div class="field">
+            <label class="field-label" for="race-start-date">Départ</label>
+            <input id="race-start-date" class="field-input" type="date" value="2026-04-06" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="race-start-time">Heure</label>
+            <input id="race-start-time" class="field-input" type="time" value="14:00" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Section : Départ -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">Départ</h3>
+        <div class="elem-list">
+          <div class="elem">
+            <span class="elem-icon start">D</span>
+            <div>
+              <div class="elem-label">Les Sables-d'Olonne</div>
+              <div class="elem-sub">46°29.45'N · 001°47.10'W</div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section : Arrivée (ligne = 2 points) -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">Arrivée</h3>
+        <div class="field-hint" style="margin: 0 0 12px;">
+          Ligne d'arrivée définie par deux points. Tout skipper qui la coupe est finisher.
+        </div>
+        <div class="elem-list">
+          <div class="elem">
+            <span class="elem-icon finish">A</span>
+            <div>
+              <div class="elem-label">Punta Delgada — Nord</div>
+              <div class="elem-sub">37°44.58'N · 025°40.22'W</div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+          <div class="elem">
+            <span class="elem-icon finish">A</span>
+            <div>
+              <div class="elem-label">Punta Delgada — Sud</div>
+              <div class="elem-sub">37°44.02'N · 025°39.82'W</div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section : Portes & bouées -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">
+          Portes &amp; bouées
+          <span>
+            <span class="count">03</span>
+            <button class="add" title="Ajouter">+</button>
+          </span>
+        </h3>
+        <div class="field-hint" style="margin: 0 0 12px;">
+          Passages obligatoires pour valider la course. Chaque entrée peut être rendue invisible aux joueurs.
+        </div>
+        <div class="elem-list">
+          <div class="elem">
+            <span class="elem-icon gate">P1</span>
+            <div>
+              <div class="elem-label">Porte Biscay</div>
+              <div class="elem-sub">Porte · 4,2 NM · Visible</div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+          <div class="elem selected">
+            <span class="elem-icon gate">B1</span>
+            <div>
+              <div class="elem-label">Bouée Finisterre</div>
+              <div class="elem-sub">Bouée · à laisser à bâbord · Visible</div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+          <div class="elem">
+            <span class="elem-icon gate" style="background: var(--draft); color: var(--paper);">P2</span>
+            <div>
+              <div class="elem-label">Porte Azores — contrôle</div>
+              <div class="elem-sub">Porte · 6,8 NM · <strong style="color: var(--draft);">Invisible joueurs</strong></div>
+            </div>
+            <span class="elem-drag">✎</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section : Zones d'exclusion -->
+      <section class="insp-section">
+        <h3 class="insp-section-title">
+          Zones d'exclusion
+          <span>
+            <span class="count">01</span>
+            <button class="add" title="Ajouter">+</button>
+          </span>
+        </h3>
+        <div class="elem-list">
+          <div class="elem zone-card">
+            <span class="elem-icon zone">Z</span>
+            <div>
+              <div class="elem-label">Casiers — Golfe</div>
+              <div class="elem-sub">06 sommets</div>
+            </div>
+            <span class="elem-drag">✎</span>
+            <div class="segmented zone-switch" style="grid-template-columns: 1fr 1fr;">
+              <button class="active">Warn · ×0,8</button>
+              <button>Penalty · ×0,5</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" style="width: 100%; justify-content: center; margin-top: 14px;">Importer les zones</button>
+        <p class="field-hint" style="margin-top: 8px;">
+          Un fichier JSON peut déclarer plusieurs zones d'un coup. Format GeoJSON ou KML accepté.
+          Pour tracer une zone à la main, clique sur le <strong>+</strong> ci-dessus.
+        </p>
+      </section>
+
+    </div>
+  </aside>
+
+</main>
+
+</body>
+</html>

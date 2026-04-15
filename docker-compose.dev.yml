@@ -1,0 +1,45 @@
+# Infra dev locale — PostgreSQL 16 + Redis 7
+# Usage : docker compose -f docker-compose.dev.yml up -d
+#
+# Volumes nommés (pas de bind mount depuis Windows) → I/O rapide sous WSL2
+# et compatibles Linux/macOS sans ajustement de chemin.
+
+name: nemo-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nemo
+      POSTGRES_PASSWORD: nemo
+      POSTGRES_DB: nemo
+      # Locale UTF-8 + collation C pour des index déterministes
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nemo -d nemo"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:

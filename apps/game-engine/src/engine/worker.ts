@@ -1,0 +1,94 @@
+import { parentPort, workerData } from 'node:worker_threads';
+import pino from 'pino';
+import type { OrderEnvelope, Polar } from '@nemo/shared-types';
+import { GameBalance } from '@nemo/game-balance';
+import { loadPolar } from '@nemo/polar-lib';
+import { runTick, type BoatRuntime, type TickOutcome } from './tick.js';
+import { buildZoneIndex, type IndexedZone } from './zones.js';
+import { createFixtureProvider, type WeatherProvider } from '../weather/provider.js';
+
+interface WorkerInit {
+  runtimes: BoatRuntime[];
+}
+
+type WorkerMsg =
+  | { kind: 'tick' }
+  | { kind: 'stop' }
+  | { kind: 'setRuntimes'; runtimes: BoatRuntime[] }
+  | { kind: 'ingestOrder'; boatId: string; envelope: OrderEnvelope };
+
+const log = pino({ name: 'tick-worker' });
+
+async function main() {
+  if (!parentPort) throw new Error('worker has no parentPort');
+  const init = workerData as WorkerInit;
+
+  await GameBalance.loadFromDisk();
+  const polar: Polar = await loadPolar('CLASS40');
+  const weather: WeatherProvider = await createFixtureProvider();
+  const zones: IndexedZone[] = buildZoneIndex([]);
+
+  let runtimes: BoatRuntime[] = init.runtimes ?? [];
+  let seq = 0;
+  const TICK_MS = GameBalance.tickIntervalSeconds * 1000;
+  let lastTickEnd = Date.now();
+
+  parentPort.on('message', (msg: WorkerMsg) => {
+    if (msg.kind === 'setRuntimes') { runtimes = msg.runtimes; return; }
+    if (msg.kind === 'stop') { process.exit(0); }
+
+    if (msg.kind === 'ingestOrder') {
+      // Insertion dans l'orderHistory du bon runtime, triée par effectiveTs.
+      const idx = runtimes.findIndex((r) => r.boat.id === msg.boatId);
+      if (idx < 0) { log.warn({ boatId: msg.boatId }, 'order for unknown boat'); return; }
+      const rt = runtimes[idx]!;
+      const already = rt.orderHistory.some(
+        (o) => o.connectionId === msg.envelope.connectionId && o.clientSeq === msg.envelope.clientSeq,
+      );
+      if (already) return; // dédup idempotent
+      const insertAt = rt.orderHistory.findIndex((o) => o.effectiveTs > msg.envelope.effectiveTs);
+      const history = rt.orderHistory.slice();
+      if (insertAt === -1) history.push(msg.envelope);
+      else history.splice(insertAt, 0, msg.envelope);
+      runtimes[idx] = { ...rt, orderHistory: history };
+      log.info(
+        { boatId: msg.boatId, type: msg.envelope.order.type, effectiveTs: msg.envelope.effectiveTs },
+        'order ingested',
+      );
+      return;
+    }
+
+    if (msg.kind === 'tick') {
+      seq += 1;
+      const tickStartMs = lastTickEnd;
+      const tickEndMs = tickStartMs + TICK_MS;
+      lastTickEnd = tickEndMs;
+      const outcomes: TickOutcome[] = runtimes.map(
+        (r) => runTick(r, { polar, weather, zones }, tickStartMs, tickEndMs),
+      );
+      runtimes = outcomes.map((o) => o.runtime);
+      for (const o of outcomes) {
+        log.info({
+          tick: seq,
+          boat: o.runtime.boat.id,
+          lat: o.runtime.boat.position.lat.toFixed(6),
+          lon: o.runtime.boat.position.lon.toFixed(6),
+          hdg: o.runtime.boat.heading,
+          twa: o.twa.toFixed(2),
+          tws: o.tws,
+          bsp: o.bsp.toFixed(3),
+          sail: o.runtime.boat.sail,
+          segments: o.segments.length,
+        }, 'tick');
+      }
+      parentPort!.postMessage({ kind: 'tick:done', seq, runtimes, outcomes });
+    }
+  });
+
+  parentPort.postMessage({ kind: 'ready' });
+}
+
+main().catch((err) => {
+  log.error({ err }, 'worker crashed');
+  process.exit(1);
+});

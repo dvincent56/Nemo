@@ -1,0 +1,386 @@
+/* =========================================================================
+   /profile/settings — transposition de mockups/profile-settings-v1.html
+   ========================================================================= */
+
+.head {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 56px clamp(20px, 4vw, 64px) 32px;
+  border-bottom: 1px solid var(--navy-line);
+}
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 8vw, 96px);
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0 0 12px;
+  font-weight: 400;
+  line-height: 0.95;
+}
+.sub {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--t2);
+  max-width: 60ch;
+  margin: 0;
+}
+
+/* ── Layout : sidenav sticky + sections ────────────────────────── */
+.layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px clamp(20px, 4vw, 64px) 80px;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.sidenav {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 16px;
+  border-right: 1px solid var(--navy-line);
+}
+.sidenavLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t2);
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  transition: color 150ms, background 150ms;
+}
+.sidenavLink:hover { color: var(--navy); background: var(--navy-soft); }
+.sidenavLinkActive {
+  color: var(--navy);
+  background: var(--gold-soft);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+.sidenavNum {
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 0.10em;
+}
+.sidenavDanger { color: var(--danger); }
+.sidenavDanger:hover { color: var(--danger); background: var(--danger-soft); }
+.sidenavDanger.sidenavLinkActive {
+  color: var(--danger);
+  background: var(--danger-soft);
+  box-shadow: inset 2px 0 0 var(--danger);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+
+/* ── Section card ──────────────────────────────────────────────── */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 32px;
+  scroll-margin-top: 24px;
+}
+.cardDanger {
+  background: var(--danger-soft);
+  border-color: rgba(158, 42, 42, 0.22);
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.cardNum {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--gold-dark);
+}
+.cardDanger .cardNum { color: var(--danger); }
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 36px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.cardAside {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--t2);
+  margin: 0 0 24px;
+  max-width: 60ch;
+}
+
+.cardFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--navy-line);
+}
+
+/* ── Champs (le primitive Field est plus minimaliste, ici on a aussi
+   select + textarea + grille 2 cols) ───────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.fieldLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.fieldInput,
+.fieldSelect,
+.fieldTextarea {
+  background: var(--ivory);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 13px 16px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--navy);
+  transition: border-color 150ms, background 150ms, box-shadow 150ms;
+  min-height: 48px;
+  width: 100%;
+}
+.fieldInput::placeholder,
+.fieldTextarea::placeholder { color: var(--t3); }
+.fieldInput:hover,
+.fieldSelect:hover,
+.fieldTextarea:hover { border-color: var(--navy-rule); }
+.fieldInput:focus,
+.fieldSelect:focus,
+.fieldTextarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--paper-hover);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+.fieldTextarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 16px;
+}
+.fieldHint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--t3);
+  margin: 0;
+}
+
+/* ── Team readonly block (gestion dans /profile/social) ───────── */
+.teamReadonly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--ivory);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  flex-wrap: wrap;
+}
+.teamReadonlyName {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  margin: 0;
+}
+.teamManageLink {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  white-space: nowrap;
+}
+.teamManageLink:hover {
+  color: var(--gold-dark);
+  border-bottom-color: var(--gold);
+}
+
+/* ── Saved feedback ──────────────────────────────────────────── */
+.savedFlash {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--live, #2d8a4e);
+  margin-right: auto;
+  align-self: center;
+}
+
+/* ── Toggle row : titre + desc à gauche, contrôle à droite ────── */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--navy-line);
+}
+.toggleRow:first-of-type { border-top: none; padding-top: 0; }
+.toggleText { min-width: 0; max-width: 50ch; }
+.toggleTitle {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 0 0 4px;
+}
+.toggleDesc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--t2);
+  margin: 0;
+}
+
+/* ── Segmented control ────────────────────────────────────────── */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  background: var(--ivory);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.segmented button {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--t2);
+  cursor: pointer;
+  border-right: 1px solid var(--navy-line);
+  transition: background 150ms, color 150ms;
+}
+.segmented button:last-child { border-right: none; }
+.segmented button:hover { color: var(--navy); }
+.segmented button.segOn {
+  background: var(--navy);
+  color: var(--ivory);
+}
+
+/* ── Toggle switch ─────────────────────────────────────────────── */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.toggle input {
+  opacity: 0;
+  width: 0; height: 0;
+  position: absolute;
+}
+.toggleSlider {
+  position: absolute;
+  inset: 0;
+  background: var(--ivory-3);
+  border-radius: 999px;
+  transition: background 200ms;
+  cursor: pointer;
+}
+.toggleSlider::before {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  background: var(--ivory);
+  border-radius: 50%;
+  top: 3px; left: 3px;
+  box-shadow: 0 1px 4px rgba(26, 40, 64, 0.20);
+  transition: transform 200ms;
+}
+.toggle input:checked + .toggleSlider { background: var(--navy); }
+.toggle input:checked + .toggleSlider::before { transform: translateX(20px); }
+.toggle input:focus-visible + .toggleSlider {
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px 20px 64px;
+  }
+  .sidenav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-right: 0;
+    padding-bottom: 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--navy-line);
+  }
+  .sidenavLink {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+  .sidenavNum { display: none; }
+  .head {
+    padding: 32px 20px 20px;
+  }
+  .card { padding: 24px 20px; }
+  .cardTitle { font-size: 28px; }
+  .fieldRow { grid-template-columns: 1fr; gap: 12px; }
+  .toggleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .segmented {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .segmented::-webkit-scrollbar { display: none; }
+  .segmented button { white-space: nowrap; }
+}

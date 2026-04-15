@@ -1,0 +1,334 @@
+/* =========================================================================
+   /login — transposition de mockups/login-v1.html
+   Shell split 1.2/1 desktop, stack vertical mobile (form en premier).
+   ========================================================================= */
+
+.topbar {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px clamp(20px, 4vw, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--navy-line);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+.brand span { color: var(--gold); }
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  padding: 4px 8px;
+  border-radius: 2px;
+  color: var(--t3);
+  transition: color 150ms, background 150ms;
+}
+.lang a.active { color: var(--navy); background: var(--navy-soft); }
+.lang a:hover { color: var(--navy); }
+
+.shell {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  min-height: calc(100dvh - 82px - 82px);
+}
+
+/* ── Panneau éditorial gauche ─────────────────────────────────────── */
+.editorial {
+  padding: clamp(40px, 6vw, 96px) clamp(24px, 4vw, 72px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  border-right: 1px solid var(--navy-line);
+  position: relative;
+  overflow: hidden;
+}
+
+.compassBg {
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 340px;
+  height: 340px;
+  opacity: 0.10;
+  pointer-events: none;
+  z-index: 0;
+}
+.compassBg svg { width: 100%; height: 100%; display: block; }
+
+.headline {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 8vw, 112px);
+  line-height: 0.90;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0 0 28px;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+}
+.headline em {
+  font-style: normal;
+  color: var(--gold);
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.55;
+  color: var(--t2);
+  max-width: 40ch;
+  margin: 0 0 24px;
+  position: relative;
+  z-index: 1;
+}
+.lede strong { color: var(--navy); font-weight: 600; }
+
+.manifesto {
+  display: grid;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.manifestoItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding-top: 16px;
+  border-top: 1px solid var(--navy-line);
+}
+
+.manifestoNum {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--gold-dark);
+}
+
+.manifestoBody {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--t2);
+}
+.manifestoBody strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--navy);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.colophon {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.colophon::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+/* ── Panneau formulaire droit ─────────────────────────────────────── */
+.formPane {
+  padding: clamp(40px, 6vw, 96px) clamp(24px, 4vw, 72px);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.formHead { margin-bottom: 36px; }
+
+.formTitle {
+  font-family: var(--font-display);
+  font-size: 44px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  margin: 0 0 8px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.formSub {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.form { display: grid; gap: 18px; }
+.form > :global(.btn) { margin-top: 4px; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px 0 16px;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--navy-line);
+}
+.dividerLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--t3);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.oauth { display: grid; gap: 10px; }
+
+.oauthBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--navy);
+  cursor: pointer;
+  min-height: 48px;
+  transition: border-color 160ms, background 160ms;
+}
+.oauthBtn:hover:not(:disabled) {
+  border-color: var(--navy-rule);
+  background: var(--ivory);
+}
+.oauthBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.oauthIcon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--navy-soft);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--navy);
+  flex-shrink: 0;
+}
+
+.oauthTag {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  background: var(--gold-soft);
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+}
+
+.legal {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--navy-line);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--t3);
+  text-align: center;
+}
+.legal a {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--navy-line);
+}
+.legal a:hover { text-decoration-color: var(--gold); }
+
+.error {
+  background: var(--danger-soft);
+  border: 1px solid rgba(158, 42, 42, 0.28);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  margin-bottom: 16px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .editorial {
+    border-right: none;
+    border-bottom: 1px solid var(--navy-line);
+    padding: 48px 24px 56px;
+    gap: 32px;
+    order: 2;  /* le form passe en premier sur mobile */
+  }
+  .formPane { order: 1; padding: 48px 24px 56px; }
+  .compassBg { right: -120px; bottom: -120px; width: 280px; height: 280px; }
+  .headline { font-size: clamp(52px, 13vw, 88px); margin-bottom: 20px; }
+}
+
+@media (max-width: 600px) {
+  .editorial { padding: 36px 20px 44px; gap: 24px; }
+  .headline { font-size: clamp(44px, 15vw, 72px); margin-bottom: 16px; }
+  .manifestoItem { grid-template-columns: 1fr; gap: 4px; padding-top: 12px; }
+  .manifestoNum { display: none; }
+  .compassBg { display: none; }
+
+  .formPane { padding: 32px 20px 40px; }
+  .formTitle { font-size: 36px; }
+  .formHead { margin-bottom: 24px; }
+}
