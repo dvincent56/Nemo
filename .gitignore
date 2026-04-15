@@ -1,15 +1,95 @@
+# ─── Dépendances ─────────────────────────────────────────────
 node_modules/
+.pnpm-store/
+.yarn/
+jspm_packages/
+
+# ─── Builds / artefacts ──────────────────────────────────────
 dist/
 build/
+out/
+*.tsbuildinfo
 .next/
 .turbo/
-coverage/
-*.log
+.vercel/
+.swc/
+
+# ─── Env / secrets ───────────────────────────────────────────
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
-.DS_Store
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# ─── Logs ────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ─── Tests / coverage ────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+playwright-report/
+test-results/
+
+# ─── Python (apps/weather-engine) ────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.python-version
+
+# ─── Docker / volumes locaux ─────────────────────────────────
+.docker-data/
+docker-volumes/
+*.sqlite
+*.sqlite-journal
+
+# ─── Éditeurs / IDE ──────────────────────────────────────────
 .vscode/
 .idea/
-*.tsbuildinfo
+*.sublime-project
+*.sublime-workspace
+.history/
+
+# ─── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ─── Specs / notes internes ──────────────────────────────────
 .specs/
+.claude/
+scratch/
+tmp/
+TODO.local.md
+
+# ─── PWA / assets générés ────────────────────────────────────
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
+apps/web/public/worker-*.js
+
+# ─── Drizzle ─────────────────────────────────────────────────
+apps/game-engine/drizzle/meta/_journal.json.bak
+
+# ─── Fixtures météo volumineuses générées ────────────────────
+apps/game-engine/fixtures/*.grib2
+apps/game-engine/fixtures/*.nc
