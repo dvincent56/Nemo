@@ -94,3 +94,4 @@ apps/game-engine/drizzle/meta/_journal.json.bak
 apps/game-engine/fixtures/*.grib2
 apps/game-engine/fixtures/*.nc
 .superpowers/
+.worktrees/
