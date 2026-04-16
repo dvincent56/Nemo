@@ -14,6 +14,8 @@ import {
   real,
   pgEnum,
   check,
+  index,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -25,6 +27,19 @@ export const raceStatusEnum = pgEnum('race_status', [
 export const gateTypeEnum = pgEnum('gate_type', ['GATE', 'MARK', 'FINISH']);
 export const zoneTypeEnum = pgEnum('zone_type', ['WARN', 'PENALTY']);
 export const orderTypeEnum = pgEnum('order_type', ['CAP', 'TWA', 'WPT', 'SAIL', 'MODE', 'VMG']);
+
+export const upgradeAcquisitionSourceEnum = pgEnum('upgrade_acquisition_source', [
+  'PURCHASE',
+  'ACHIEVEMENT_UNLOCK',
+  'BOAT_SOLD_RETURN',
+  'ADMIN_GRANT',
+  'GIFT',
+  'MIGRATION',
+]);
+
+export const upgradeSlotEnum = pgEnum('upgrade_slot', [
+  'HULL', 'MAST', 'SAILS', 'FOILS', 'KEEL', 'ELECTRONICS', 'REINFORCEMENT',
+]);
 
 export const players = pgTable('players', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -74,7 +89,7 @@ export const boats = pgTable('boats', {
   hullColor: varchar('hull_color', { length: 7 }),
   hullTextureUrl: text('hull_texture_url'),
   sailTextureUrl: text('sail_texture_url'),
-  totalUpgradeCost: integer('total_upgrade_cost').notNull().default(0),
+  generation: smallint('generation').notNull().default(1),
   currentValue: integer('current_value').notNull().default(0),
   activeRaceId: text('active_race_id').references(() => races.id, { onDelete: 'set null' }),
   hullCondition: smallint('hull_condition').notNull().default(100),
@@ -177,4 +192,25 @@ export const boatOrderQueue = pgTable('boat_order_queue', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   unique('uniq_participant_position').on(t.participantId, t.position),
+]);
+
+export const playerUpgrades = pgTable('player_upgrades', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+  upgradeCatalogId: text('upgrade_catalog_id').notNull(),
+  acquiredAt: timestamp('acquired_at', { withTimezone: true }).notNull().defaultNow(),
+  acquisitionSource: upgradeAcquisitionSourceEnum('acquisition_source').notNull(),
+  paidCredits: integer('paid_credits').notNull().default(0),
+}, (t) => [
+  index('idx_player_upgrades_player').on(t.playerId),
+]);
+
+export const boatInstalledUpgrades = pgTable('boat_installed_upgrades', {
+  boatId: uuid('boat_id').notNull().references(() => boats.id, { onDelete: 'cascade' }),
+  slot: upgradeSlotEnum('slot').notNull(),
+  playerUpgradeId: uuid('player_upgrade_id').notNull().unique('uniq_player_upgrade_install')
+    .references(() => playerUpgrades.id, { onDelete: 'cascade' }),
+  installedAt: timestamp('installed_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.boatId, t.slot], name: 'pk_boat_installed_upgrades' }),
 ]);
