@@ -2,6 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { BoatClass, DriveMode, SailId } from '@nemo/shared-types';
+import {
+  UpgradesBlockZ, CompletionBonusZ, type UpgradesBlock, type UpgradeItem,
+  type UpgradeSlot, type UpgradeTier, type SlotAvailability,
+} from './upgrade-catalog.schema.js';
+export type { UpgradesBlock, UpgradeItem, UpgradeSlot, UpgradeTier, SlotAvailability };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +19,7 @@ export interface GameBalanceConfig {
   sails: SailsConfig;
   rewards: RewardsConfig;
   maintenance: Record<'hull' | 'rig' | 'sails' | 'electronics', MaintenanceEntry>;
-  upgrades: UpgradesConfig;
+  upgrades: UpgradesBlock;
   maneuvers: ManeuversConfig;
   grounding: GroundingConfig;
   zones: { warnDefaultMultiplier: number; penaltyDefaultMultiplier: number };
@@ -70,34 +75,6 @@ export interface MaintenanceEntry {
   durationHours: number;
 }
 
-export interface UpgradesConfig {
-  AUTO_SAIL: { cost: number; description: string };
-  FOILS: {
-    cost: number;
-    description: string;
-    speedByTWA: Record<string, number>;
-    activeMinTWS: number;
-    wearRigMultiplier: number;
-    wearHullMultiplier: number;
-  };
-  CARBON_RIG: {
-    cost: number;
-    speedAllPct: number;
-    speedLightAirBonus: number;
-    wearRigHeavyMultiplier: number;
-    heavyTwsThresholdKts: number;
-  };
-  KEVLAR_SAILS: { cost: number; speedAllPct: number; wearSailMultiplier: number };
-  REINFORCED_HULL: { cost: number; speedAllPct: number; wearHullMultiplier: number };
-  HEAVY_WEATHER_KIT: {
-    cost: number;
-    speedLightAirPct: number;
-    speedHeavyAirBonus: number;
-    activeThresholdTWS: number;
-    wearRigSailMultiplier: number;
-  };
-}
-
 export interface ManeuversConfig {
   sailChange: {
     transitionSpeedFactor: number;
@@ -126,6 +103,7 @@ export interface EconomyConfig {
   startingCredits: number;
   buybackUpgradePct: number;
   palmaresBonus: { win: number; podium: number; top10: number };
+  completionBonus: Record<BoatClass, number>;
 }
 
 class GameBalanceClass {
@@ -134,10 +112,22 @@ class GameBalanceClass {
   async loadFromDisk(): Promise<void> {
     const path = join(__dirname, '..', 'game-balance.json');
     const raw = await readFile(path, 'utf8');
-    this.data = JSON.parse(raw) as GameBalanceConfig;
+    const parsed = JSON.parse(raw);
+    UpgradesBlockZ.parse(parsed.upgrades);
+    if (!parsed.economy || typeof parsed.economy !== 'object') {
+      throw new Error('game-balance.json: missing or invalid economy block');
+    }
+    CompletionBonusZ.parse(parsed.economy.completionBonus);
+    this.data = parsed as GameBalanceConfig;
   }
 
   load(raw: unknown): void {
+    const parsed = raw as Record<string, unknown>;
+    UpgradesBlockZ.parse(parsed.upgrades);
+    if (!parsed.economy || typeof parsed.economy !== 'object') {
+      throw new Error('game-balance: missing or invalid economy block');
+    }
+    CompletionBonusZ.parse((parsed.economy as Record<string, unknown>).completionBonus);
     this.data = raw as GameBalanceConfig;
   }
 
@@ -154,7 +144,7 @@ class GameBalanceClass {
   get sails(): SailsConfig { return this.ensure().sails; }
   get rewards(): RewardsConfig { return this.ensure().rewards; }
   get maintenance() { return this.ensure().maintenance; }
-  get upgrades(): UpgradesConfig { return this.ensure().upgrades; }
+  get upgrades(): UpgradesBlock { return this.ensure().upgrades; }
   get maneuvers(): ManeuversConfig { return this.ensure().maneuvers; }
   get grounding(): GroundingConfig { return this.ensure().grounding; }
   get zones() { return this.ensure().zones; }
