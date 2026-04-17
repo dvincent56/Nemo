@@ -179,19 +179,22 @@ GET /api/v1/weather/grid?bounds=40,-10,50,0&hours=0,3,6,12,24,48
 ### Réponse : ArrayBuffer binaire
 
 ```
-[Header: 40 bytes]
-  - runTimestamp       (uint32)  — timestamp de la run GFS active
-  - nextRunExpectedUtc (uint32)  — timestamp estimé de la prochaine run
-  - weatherStatus      (uint8)   — 0=stable, 1=blending, 2=delayed
-  - padding            (3 bytes) — alignement
-  - blendAlpha         (float32) — 0.0 à 1.0, progression du blend
-  - latMin, latMax     (float32 × 2)
-  - lonMin, lonMax     (float32 × 2)
-  - gridStepLat        (float32) — 0.25
-  - gridStepLon        (float32) — 0.25
-  - numLat, numLon     (uint16 × 2)
-  - numHours           (uint16)
-  - padding            (2 bytes)
+[Header: 48 bytes]
+  - runTimestamp       (uint32)    — offset 0
+  - nextRunExpectedUtc (uint32)    — offset 4
+  - weatherStatus      (uint8)     — offset 8 (0=stable, 1=blending, 2=delayed)
+  - padding            (3 bytes)   — offset 9
+  - blendAlpha         (float32)   — offset 12
+  - latMin             (float32)   — offset 16
+  - latMax             (float32)   — offset 20
+  - lonMin             (float32)   — offset 24
+  - lonMax             (float32)   — offset 28
+  - gridStepLat        (float32)   — offset 32 (0.25)
+  - gridStepLon        (float32)   — offset 36 (0.25)
+  - numLat             (uint16)    — offset 40
+  - numLon             (uint16)    — offset 42
+  - numHours           (uint16)    — offset 44
+  - padding            (2 bytes)   — offset 46
 
 [Body: Float32Array]
   Pour chaque forecast hour :
