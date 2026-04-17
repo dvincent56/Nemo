@@ -267,8 +267,9 @@ export default function WindOverlay(): React.ReactElement {
         const batch = batches[batchIdx]!;
 
         // Comet shape: head is thick + opaque, tail tapers + fades
-        // Fixed 2px head width in pixels, converted to clip space
-        const maxWidth = 2.0 / Math.min(width, height) * 2;
+        // 1.5px head width in real pixels, converted to clip space
+        const maxWidthX = 1.5 / width * 2;
+        const maxWidthY = 1.5 / height * 2;
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
 
         for (let s = 0; s < p.len - 1; s++) {
@@ -288,26 +289,30 @@ export default function WindOverlay(): React.ReactElement {
           const t0 = s / (p.len - 1);
           const t1 = (s + 1) / (p.len - 1);
 
-          // Width tapers: head = maxWidth, tail = 0.2 * maxWidth
-          const w0 = maxWidth * (0.2 + 0.8 * t0);
-          const w1 = maxWidth * (0.2 + 0.8 * t1);
+          // Width tapers: head = full, tail = 20%
+          const taper0 = 0.2 + 0.8 * t0;
+          const taper1 = 0.2 + 0.8 * t1;
 
           // Alpha tapers: head = baseAlpha, tail = baseAlpha * 0.1
           const a0 = baseAlpha * (0.1 + 0.9 * t0 * t0);
           const a1 = baseAlpha * (0.1 + 0.9 * t1 * t1);
 
-          // Normal perpendicular
+          // Normal perpendicular — apply X and Y clip-space scale separately
           const nx = -dy / segLen;
           const ny = dx / segLen;
+          const ox0 = nx * maxWidthX * taper0;
+          const oy0 = ny * maxWidthY * taper0;
+          const ox1 = nx * maxWidthX * taper1;
+          const oy1 = ny * maxWidthY * taper1;
 
           // 6 vertices = 2 triangles
           batch.verts.push(
-            x0 - nx * w0, y0 - ny * w0,
-            x0 + nx * w0, y0 + ny * w0,
-            x1 - nx * w1, y1 - ny * w1,
-            x1 - nx * w1, y1 - ny * w1,
-            x0 + nx * w0, y0 + ny * w0,
-            x1 + nx * w1, y1 + ny * w1,
+            x0 - ox0, y0 - oy0,
+            x0 + ox0, y0 + oy0,
+            x1 - ox1, y1 - oy1,
+            x1 - ox1, y1 - oy1,
+            x0 + ox0, y0 + oy0,
+            x1 + ox1, y1 + oy1,
           );
           batch.alphas.push(a0, a0, a1, a1, a0, a1);
         }
