@@ -82,8 +82,11 @@ def parse_atmos_grib(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray, np
     ds = xr.open_dataset(path, engine="cfgrib", backend_kwargs={
         "filter_by_keys": {"typeOfLevel": "heightAboveGround", "level": 10},
     })
-    u10 = ds["u10"].values.astype(np.float32)
-    v10 = ds["v10"].values.astype(np.float32)
+    # GFS uses u10/v10 or u/v depending on cfgrib version
+    u_key = "u10" if "u10" in ds else "u" if "u" in ds else "10u"
+    v_key = "v10" if "v10" in ds else "v" if "v" in ds else "10v"
+    u10 = ds[u_key].values.astype(np.float32)
+    v10 = ds[v_key].values.astype(np.float32)
     lats = ds["latitude"].values
     lons = ds["longitude"].values
     ds.close()
@@ -96,8 +99,17 @@ def parse_wave_grib(
     ds = xr.open_dataset(path, engine="cfgrib")
     wave_lats = ds["latitude"].values
     wave_lons = ds["longitude"].values
-    swh = reinterpolate_wave(ds["swh"].values, wave_lats, wave_lons, target_lats, target_lons)
-    mwd = reinterpolate_wave(ds["mwd"].values, wave_lats, wave_lons, target_lats, target_lons)
-    mwp = reinterpolate_wave(ds["perpw"].values, wave_lats, wave_lons, target_lats, target_lons)
+    # GFS Wave GRIB2 variable names vary — try common aliases
+    swh_key = next((k for k in ("swh", "shts", "htsgw") if k in ds), None)
+    mwd_key = next((k for k in ("mwd", "wvdir", "dirpw") if k in ds), None)
+    mwp_key = next((k for k in ("perpw", "mpww", "mpts") if k in ds), None)
+    if not all((swh_key, mwd_key, mwp_key)):
+        avail = list(ds.data_vars)
+        ds.close()
+        raise KeyError(f"missing wave variables, available: {avail}")
+    LOG.info("wave variables: swh=%s, mwd=%s, mwp=%s", swh_key, mwd_key, mwp_key)
+    swh = reinterpolate_wave(ds[swh_key].values, wave_lats, wave_lons, target_lats, target_lons)
+    mwd = reinterpolate_wave(ds[mwd_key].values, wave_lats, wave_lons, target_lats, target_lons)
+    mwp = reinterpolate_wave(ds[mwp_key].values, wave_lats, wave_lons, target_lats, target_lons)
     ds.close()
     return swh, mwd, mwp
