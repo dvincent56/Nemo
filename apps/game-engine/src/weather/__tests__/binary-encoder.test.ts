@@ -1,0 +1,56 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { encodeGridSubset, decodeHeader, HEADER_SIZE } from '../binary-encoder.js';
+import type { WeatherGridUV } from '../grid.js';
+
+function makeSimpleGrid(): WeatherGridUV {
+  const points = 2 * 2;
+  const total = points * 2;
+  return {
+    runTs: 1713340800,
+    bbox: { latMin: 40, latMax: 40.25, lonMin: -10, lonMax: -9.75 },
+    resolution: 0.25,
+    shape: { rows: 2, cols: 2 },
+    forecastHours: [0, 6],
+    u: new Float32Array(total).fill(-5),
+    v: new Float32Array(total).fill(-8.66),
+    swh: new Float32Array(total).fill(2.5),
+    mwdSin: new Float32Array(total).fill(0.5),
+    mwdCos: new Float32Array(total).fill(0.866),
+    mwp: new Float32Array(total).fill(9),
+  };
+}
+
+describe('encodeGridSubset', () => {
+  it('encodes header + body for a bounded subset', () => {
+    const grid = makeSimpleGrid();
+    const buf = encodeGridSubset(grid, {
+      bounds: { latMin: 40, latMax: 40.25, lonMin: -10, lonMax: -9.75 },
+      hours: [0, 6],
+      runTimestamp: 1713340800,
+      nextRunExpectedUtc: 1713376800,
+      weatherStatus: 0,
+      blendAlpha: 0,
+    });
+    assert.ok(buf.byteLength > HEADER_SIZE);
+    const header = decodeHeader(buf);
+    assert.equal(header.runTimestamp, 1713340800);
+    assert.equal(header.numHours, 2);
+    assert.equal(header.numLat, 2);
+    assert.equal(header.numLon, 2);
+  });
+
+  it('body contains 6 floats per point per hour', () => {
+    const grid = makeSimpleGrid();
+    const buf = encodeGridSubset(grid, {
+      bounds: { latMin: 40, latMax: 40.25, lonMin: -10, lonMax: -9.75 },
+      hours: [0],
+      runTimestamp: 1713340800,
+      nextRunExpectedUtc: 1713376800,
+      weatherStatus: 0,
+      blendAlpha: 0,
+    });
+    const bodySize = buf.byteLength - HEADER_SIZE;
+    assert.equal(bodySize, 2 * 2 * 6 * 4); // 2 rows × 2 cols × 6 floats × 4 bytes
+  });
+});
