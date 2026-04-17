@@ -209,7 +209,7 @@ export default function WindOverlay(): React.ReactElement {
         // Fade
         const fadeIn = Math.min(1, p.age / 15);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
-        const speedAlpha = p.speed < 3 ? 0.10 : p.speed < 8 ? 0.18 : p.speed < 18 ? 0.28 : 0.42;
+        const speedAlpha = p.speed < 3 ? 0.25 : p.speed < 8 ? 0.40 : p.speed < 18 ? 0.55 : 0.75;
         const alpha = fadeIn * fadeOut * speedAlpha;
         if (alpha < 0.02) continue;
 
