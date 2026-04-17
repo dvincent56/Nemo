@@ -12,8 +12,8 @@ import type { WeatherGrid } from '@/lib/store/types';
  * GPU only does the drawing (gl.LINES) — no texture-based simulation.
  */
 
-const MAX_PARTICLES = 10000;
-const TRAIL_LEN = 40;
+const MAX_PARTICLES = 8000;
+const TRAIL_LEN = 20;
 
 // Per-particle state (CPU-side)
 interface Particle {
@@ -193,6 +193,17 @@ export default function WindOverlay(): React.ReactElement {
 
       // Group particles by color bucket for batched drawing
       const colorBuckets: Map<string, { r: number; g: number; b: number; verts: number[]; alpha: number }> = new Map();
+
+      // Each frame, randomly reset ~1% of particles to fill new bounds evenly
+      // This prevents clustering when zooming out
+      const resetCount = Math.ceil(particles.length * 0.01);
+      for (let r = 0; r < resetCount; r++) {
+        const idx = Math.floor(Math.random() * particles.length);
+        const rp = particles[idx]!;
+        if (rp.len > 5) { // only reset particles that have lived a bit
+          resetParticle(rp, vBounds);
+        }
+      }
 
       for (const p of particles) {
         const lon = p.lons[p.head]!;
