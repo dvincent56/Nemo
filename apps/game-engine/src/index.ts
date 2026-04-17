@@ -10,6 +10,8 @@ import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { connectRedis } from './infra/redis.js';
+import { createFixtureProvider } from './weather/provider.js';
+import { registerWeatherRoutes } from './routes/weather.js';
 
 const log = pino({ name: 'game-engine' });
 
@@ -36,8 +38,8 @@ function createDemoRuntime(): BoatRuntime {
     boat,
     raceId: 'r-vendee-2026',
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
-    sailState: { active: 'SPI', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
-    segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
+    sailState: { active: 'GEN', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
+    segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 216, twaLock: null, sail: 'GEN', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
     loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
@@ -87,6 +89,9 @@ async function main() {
   registerAuthRoutes(app);
   registerRaceRoutes(app);
   await seedRacesIfEmpty();
+
+  const weather = await createFixtureProvider();
+  registerWeatherRoutes(app, () => weather);
 
   const port = Number(process.env['PORT'] ?? 3001);
   await app.listen({ port, host: '0.0.0.0' });
