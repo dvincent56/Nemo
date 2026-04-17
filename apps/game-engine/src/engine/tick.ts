@@ -16,6 +16,8 @@ import type { SailId } from '@nemo/shared-types';
 import { buildSegments, type SegmentState, type TickSegment } from './segments.js';
 import { applyZones, getZonesAtPosition, type IndexedZone } from './zones.js';
 import type { WeatherProvider } from '../weather/provider.js';
+import { aggregateEffects, type BoatLoadout } from './loadout.js';
+import { bandFor } from './bands.js';
 
 export interface BoatRuntime {
   boat: Boat;
@@ -25,7 +27,7 @@ export interface BoatRuntime {
   segmentState: SegmentState;
   orderHistory: OrderEnvelope[];
   zonesAlerted: Set<string>;
-  upgrades: Set<string>;
+  loadout: BoatLoadout;
   prevTwa: number | null;
   maneuver: ManeuverPenaltyState | null;
 }
@@ -74,6 +76,9 @@ export function runTick(
     tickStartUnix,
   );
 
+  // --- Aggregated loadout effects (TWS-gated) ---
+  const aggEffects = aggregateEffects(runtime.loadout.items, { tws: weather.tws });
+
   // --- État voiles : intégrer les ordres SAIL/MODE du tick AVANT advance ---
   const twaAtStart = computeTWA(runtime.segmentState.heading, weather.twd);
   let sailState = runtime.sailState;
@@ -82,7 +87,7 @@ export function runTick(
     if (env.order.type === 'SAIL') {
       const target = env.order.value['sail'];
       if (typeof target === 'string' && target !== sailState.active && !sailState.pending) {
-        sailState = requestManualSailChange(sailState, target as SailId);
+        sailState = requestManualSailChange(sailState, target as SailId, aggEffects);
       }
     } else if (env.order.type === 'MODE') {
       const auto = env.order.value['auto'];
@@ -95,13 +100,14 @@ export function runTick(
     twaAtStart,
     weather.tws,
     tickDurationSec,
+    aggEffects,
   );
-  const transitionFactor = transitionSpeedFactor(sailState);
+  const transitionFactor = transitionSpeedFactor(sailState, aggEffects);
 
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
   if (runtime.prevTwa !== null) {
-    const detected = detectManeuver(runtime.prevTwa, twaAtStart, boat.boatClass, tickStartUnix);
+    const detected = detectManeuver(runtime.prevTwa, twaAtStart, boat.boatClass, tickStartUnix, aggEffects);
     if (detected) maneuver = detected;
   }
   const manEval = maneuverSpeedFactor(maneuver, tickStartUnix);
@@ -115,7 +121,15 @@ export function runTick(
   );
   const conditionFactor = conditionSpeedPenalty(runtime.condition);
 
-  const bspMultiplier = transitionFactor * overlapFactor * conditionFactor * manEval.factor;
+  const twaBand = bandFor(Math.abs(twaAtStart), [60, 90, 120, 150]);
+  const twsBand = bandFor(weather.tws, [10, 20]);
+
+  const bspMultiplier = transitionFactor
+    * overlapFactor
+    * conditionFactor
+    * manEval.factor
+    * aggEffects.speedByTwa[twaBand]!
+    * aggEffects.speedByTws[twsBand]!;
 
   // --- Modulateur zone par segment : calcule le speedMultiplier cumulé ---
   //     des zones WARN + PENALTY qui couvrent la position de DÉPART du segment.
@@ -179,7 +193,7 @@ export function runTick(
     endHeading,
     boat.driveMode,
     tickDurationSec,
-    runtime.upgrades,
+    aggEffects,
   );
   const newCondition = applyWear(runtime.condition, wearDelta);
 

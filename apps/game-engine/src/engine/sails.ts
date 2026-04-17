@@ -2,6 +2,7 @@ import type { BoatClass, SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import type { Polar } from '@nemo/shared-types';
 import { getPolarSpeed } from '@nemo/polar-lib';
+import type { AggregatedEffects } from './loadout.js';
 
 export interface SailRuntimeState {
   active: SailId;
@@ -66,9 +67,10 @@ function transitionKey(from: SailId, to: SailId): string {
   return `${from}_${to}`;
 }
 
-export function getTransitionDuration(from: SailId, to: SailId): number {
+export function getTransitionDuration(from: SailId, to: SailId, loadoutEffects?: AggregatedEffects): number {
   const times = GameBalance.sails.transitionTimes;
-  return times[transitionKey(from, to)] ?? 180;
+  const base = times[transitionKey(from, to)] ?? 180;
+  return loadoutEffects ? base * loadoutEffects.maneuverMul.sailChange.dur : base;
 }
 
 /**
@@ -83,6 +85,7 @@ export function advanceSailState(
   twa: number,
   tws: number,
   dtSec: number,
+  loadoutEffects?: AggregatedEffects,
 ): SailRuntimeState {
   const twaAbs = Math.min(Math.abs(twa), 180);
   const next: SailRuntimeState = { ...state };
@@ -107,25 +110,27 @@ export function advanceSailState(
     const optimal = pickOptimalSail(polar, twa, tws);
     if (optimal !== next.active && !isInOverlapZone(next.active, twaAbs)) {
       next.pending = optimal;
-      next.transitionRemainingSec = getTransitionDuration(next.active, optimal);
+      next.transitionRemainingSec = getTransitionDuration(next.active, optimal, loadoutEffects);
     }
   }
 
   return next;
 }
 
-export function requestManualSailChange(state: SailRuntimeState, target: SailId): SailRuntimeState {
+export function requestManualSailChange(state: SailRuntimeState, target: SailId, loadoutEffects?: AggregatedEffects): SailRuntimeState {
   if (state.pending || target === state.active) return state;
   return {
     ...state,
     pending: target,
-    transitionRemainingSec: getTransitionDuration(state.active, target),
+    transitionRemainingSec: getTransitionDuration(state.active, target, loadoutEffects),
   };
 }
 
 /** Pénalité de vitesse pendant une transition de voile (×0.7 par défaut). */
-export function transitionSpeedFactor(state: SailRuntimeState): number {
-  return state.pending ? GameBalance.sails.transitionPenalty : 1.0;
+export function transitionSpeedFactor(state: SailRuntimeState, loadoutEffects?: AggregatedEffects): number {
+  if (!state.pending) return 1.0;
+  const base = GameBalance.sails.transitionPenalty;
+  return loadoutEffects ? base * loadoutEffects.maneuverMul.sailChange.speed : base;
 }
 
 // ----------------------------------------------------------------------------
@@ -149,18 +154,23 @@ export function detectManeuver(
   newTwa: number,
   boatClass: BoatClass,
   nowUnix: number,
+  loadoutEffects?: AggregatedEffects,
 ): ManeuverPenaltyState | null {
   const prevSign = Math.sign(prevTwa);
   const newSign = Math.sign(newTwa);
   if (prevSign === 0 || newSign === 0 || prevSign === newSign) return null;
 
   const isTack = Math.abs(newTwa) < 90;
+  const kind: ManeuverKind = isTack ? 'TACK' : 'GYBE';
   const cfg = isTack ? GameBalance.maneuvers.tack : GameBalance.maneuvers.gybe;
+  const manKey = isTack ? 'tack' : 'gybe' as const;
+  const baseDuration = cfg.durationSec[boatClass];
+  const baseSpeed = cfg.speedFactor;
   return {
-    kind: isTack ? 'TACK' : 'GYBE',
-    speedFactor: cfg.speedFactor,
+    kind,
+    speedFactor: loadoutEffects ? baseSpeed * loadoutEffects.maneuverMul[manKey].speed : baseSpeed,
     startedAtUnix: nowUnix,
-    durationSec: cfg.durationSec[boatClass],
+    durationSec: loadoutEffects ? baseDuration * loadoutEffects.maneuverMul[manKey].dur : baseDuration,
   };
 }
 

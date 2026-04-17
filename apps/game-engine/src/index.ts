@@ -6,6 +6,7 @@ import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { TickManager } from './engine/manager.js';
 import type { BoatRuntime } from './engine/tick.js';
+import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { connectRedis } from './infra/redis.js';
@@ -39,7 +40,7 @@ function createDemoRuntime(): BoatRuntime {
     segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    upgrades: new Set(),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };
