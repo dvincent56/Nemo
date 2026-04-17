@@ -5,28 +5,40 @@ import { useGameStore } from '@/lib/store';
 import { getPointsAtTime } from '@/lib/weather/mockGrid';
 import { interpolateWind } from '@/lib/weather/interpolate';
 
-const PARTICLE_COUNT = 2000;
+/**
+ * Lightweight wind particle overlay — canvas with transparent background.
+ * Particles are small dots that drift with the wind, colored by speed.
+ * Uses clearRect each frame so the map underneath stays fully visible.
+ */
+
+const PARTICLE_COUNT = 1500;
+
 interface Particle {
   x: number;
   y: number;
-  prevX: number;
-  prevY: number;
   age: number;
   maxAge: number;
 }
 
-function windSpeedColor(speed: number): string {
-  if (speed < 8) return 'rgba(108,210,138,0.7)';
-  if (speed < 15) return 'rgba(201,216,96,0.7)';
-  if (speed < 22) return 'rgba(240,185,107,0.7)';
-  if (speed < 30) return 'rgba(217,119,6,0.7)';
-  return 'rgba(158,42,42,0.7)';
+/** Speed-based color: green (light) → yellow → orange → red (storm) */
+function windColor(speed: number, alpha: number): string {
+  if (speed < 8) return `rgba(108,210,138,${alpha})`;
+  if (speed < 15) return `rgba(180,210,80,${alpha})`;
+  if (speed < 22) return `rgba(240,185,107,${alpha})`;
+  if (speed < 30) return `rgba(217,119,6,${alpha})`;
+  return `rgba(180,50,50,${alpha})`;
+}
+
+function resetParticle(p: Particle, w: number, h: number): void {
+  p.x = Math.random() * w;
+  p.y = Math.random() * h;
+  p.age = 0;
+  p.maxAge = 40 + Math.floor(Math.random() * 40);
 }
 
 export default function WindOverlay(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const particlesRef = useRef<Particle[]>([]);
 
   const windVisible = useGameStore((s) => s.layers.wind);
   const hasGrid = useGameStore((s) => s.weather.gridData !== null);
@@ -35,6 +47,11 @@ export default function WindOverlay(): React.ReactElement {
     const canvas = canvasRef.current;
     if (!canvas || !windVisible || !hasGrid) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
+      // Clear canvas when turning off
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      }
       return;
     }
 
@@ -50,82 +67,70 @@ export default function WindOverlay(): React.ReactElement {
     resize();
     window.addEventListener('resize', resize);
 
-    // Initialize particles
+    // Init particles
     const particles: Particle[] = [];
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      particles.push({
-        x, y, prevX: x, prevY: y,
-        age: Math.floor(Math.random() * 80),
-        maxAge: 60 + Math.floor(Math.random() * 60),
-      });
+      particles.push({ x: 0, y: 0, age: 0, maxAge: 0 });
+      resetParticle(particles[i]!, canvas.width, canvas.height);
+      // Stagger initial ages so particles don't all appear at once
+      particles[i]!.age = Math.floor(Math.random() * particles[i]!.maxAge);
     }
-    particlesRef.current = particles;
 
     const animate = () => {
       const store = useGameStore.getState();
       const grid = store.weather.gridData;
-      if (!grid || !ctx) {
-        animRef.current = requestAnimationFrame(animate);
-        return;
-      }
+      if (!grid) { animRef.current = requestAnimationFrame(animate); return; }
 
       const time = store.timeline.currentTime.getTime();
       const points = getPointsAtTime(grid, time);
       const { width, height } = canvas;
 
-      // CLEAR canvas each frame — map stays visible underneath
+      // Fully clear — map visible underneath
       ctx.clearRect(0, 0, width, height);
 
-      const mapState = store.map;
-      const [cLon, cLat] = mapState.center;
-      const span = 180 / Math.pow(2, mapState.zoom);
+      // Approximate geo bounds from map state
+      const [cLon, cLat] = store.map.center;
+      const span = 180 / Math.pow(2, store.map.zoom);
       const lonMin = cLon - span;
       const lonMax = cLon + span;
       const latMin = cLat - span * 0.6;
       const latMax = cLat + span * 0.6;
 
       for (const p of particles) {
+        // Geo position of this pixel
         const lon = lonMin + (p.x / width) * (lonMax - lonMin);
         const lat = latMax - (p.y / height) * (latMax - latMin);
 
         const wind = interpolateWind(points, lat, lon);
         const speed = wind.tws;
 
-        // Save previous position
-        p.prevX = p.x;
-        p.prevY = p.y;
-
-        // Move particle by wind vector
-        const scale = 0.4 + speed * 0.1;
+        // Move: small displacement per frame
         const toRad = Math.PI / 180;
+        const scale = 0.15 + speed * 0.04;
         p.x += -Math.sin(wind.twd * toRad) * scale;
         p.y += Math.cos(wind.twd * toRad) * scale;
         p.age++;
 
-        // Reset if out of bounds or too old
-        if (p.age > p.maxAge || p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
-          p.x = Math.random() * width;
-          p.y = Math.random() * height;
-          p.prevX = p.x;
-          p.prevY = p.y;
-          p.age = 0;
-          p.maxAge = 60 + Math.floor(Math.random() * 60);
+        // Reset if dead or off-screen
+        if (p.age > p.maxAge || p.x < -5 || p.x > width + 5 || p.y < -5 || p.y > height + 5) {
+          resetParticle(p, width, height);
+          continue; // don't draw the reset frame
         }
 
-        // Draw trail line (not a fading fill — fully transparent background)
-        const alpha = Math.min(0.8, (p.maxAge - p.age) / 20, p.age / 8);
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = windSpeedColor(speed);
-        ctx.lineWidth = 1.2;
+        // Fade in/out
+        const fadeIn = Math.min(1, p.age / 6);
+        const fadeOut = Math.min(1, (p.maxAge - p.age) / 10);
+        const alpha = fadeIn * fadeOut * 0.6;
+        if (alpha < 0.02) continue;
+
+        // Draw a small dot (not a line — avoids the "thick strokes" problem)
+        const radius = speed > 20 ? 1.5 : 1;
+        ctx.fillStyle = windColor(speed, alpha);
         ctx.beginPath();
-        ctx.moveTo(p.prevX, p.prevY);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      ctx.globalAlpha = 1;
       animRef.current = requestAnimationFrame(animate);
     };
 
