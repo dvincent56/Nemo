@@ -164,10 +164,12 @@ export default function WindOverlay(): React.ReactElement {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    // Init particles
+    // Init particles — fewer on mobile for performance
+    const isMobile = canvas.width < 768;
+    const particleCount = isMobile ? 2500 : MAX_PARTICLES;
     const bounds = useGameStore.getState().map.bounds;
     const particles: Particle[] = [];
-    for (let i = 0; i < MAX_PARTICLES; i++) particles.push(makeParticle(bounds));
+    for (let i = 0; i < particleCount; i++) particles.push(makeParticle(bounds));
 
     // Mercator helpers
     const toRad = Math.PI / 180;
