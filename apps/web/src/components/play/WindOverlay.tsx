@@ -12,8 +12,8 @@ import type { WeatherGrid } from '@/lib/store/types';
  * Color encodes wind speed (blue → green → yellow → orange → red).
  */
 
-const PARTICLE_COUNT = 5000;
-const MAX_TRAIL = 12; // max positions stored per particle
+const PARTICLE_COUNT = 2000;
+const MAX_TRAIL = 6; // max positions stored per particle
 
 interface Particle {
   trail: Float64Array; // [x0,y0, x1,y1, ...] — ring buffer
@@ -120,14 +120,11 @@ export default function WindOverlay(): React.ReactElement {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const mapState = useGameStore.getState().map;
-      const [cLon, cLat] = mapState.center;
-      const span = 180 / Math.pow(2, mapState.zoom);
-      const ar = height / width;
-      const lonMin = cLon - span;
-      const lonMax = cLon + span;
-      const latMax = cLat + span * ar;
-      const latMin = cLat - span * ar;
+      const { bounds } = useGameStore.getState().map;
+      const lonMin = bounds.west;
+      const lonMax = bounds.east;
+      const latMin = bounds.south;
+      const latMax = bounds.north;
       const lonRange = lonMax - lonMin;
       const latRange = latMax - latMin;
 
@@ -168,33 +165,21 @@ export default function WindOverlay(): React.ReactElement {
         // Fade
         const fadeIn = Math.min(1, p.age / 10);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 15);
-        const baseAlpha = fadeIn * fadeOut;
-        if (baseAlpha < 0.03) continue;
+        const alpha = fadeIn * fadeOut * 0.6;
+        if (alpha < 0.03) continue;
 
-        // Draw trail as polyline with fading segments
-        const colorBase = windColor(p.speed);
-        const lineWidth = p.speed > 25 ? 1.8 : p.speed > 15 ? 1.3 : 0.9;
-        ctx.lineWidth = lineWidth;
-
+        // Draw entire trail as a single path (1 stroke call per particle)
+        ctx.strokeStyle = `${windColor(p.speed)}${alpha.toFixed(2)})`;
+        ctx.lineWidth = p.speed > 25 ? 1.6 : p.speed > 15 ? 1.2 : 0.8;
+        ctx.beginPath();
+        // Start from oldest point in trail, draw to head
+        const oldest = (p.head - p.len + 1 + MAX_TRAIL) % MAX_TRAIL;
+        ctx.moveTo(p.trail[oldest * 2]!, p.trail[oldest * 2 + 1]!);
         for (let s = 1; s < p.len; s++) {
-          // Walk backwards from head
-          const i1 = ((p.head - s + MAX_TRAIL) % MAX_TRAIL);
-          const i0 = ((p.head - s + 1 + MAX_TRAIL) % MAX_TRAIL);
-          const x0 = p.trail[i0 * 2]!;
-          const y0 = p.trail[i0 * 2 + 1]!;
-          const x1 = p.trail[i1 * 2]!;
-          const y1 = p.trail[i1 * 2 + 1]!;
-
-          // Each segment fades out toward the tail
-          const segAlpha = baseAlpha * (1 - s / p.len) * 0.7;
-          if (segAlpha < 0.02) break;
-
-          ctx.strokeStyle = `${colorBase}${segAlpha.toFixed(2)})`;
-          ctx.beginPath();
-          ctx.moveTo(x0, y0);
-          ctx.lineTo(x1, y1);
-          ctx.stroke();
+          const idx = (oldest + s) % MAX_TRAIL;
+          ctx.lineTo(p.trail[idx * 2]!, p.trail[idx * 2 + 1]!);
         }
+        ctx.stroke();
       }
 
       animRef.current = requestAnimationFrame(animate);

@@ -30,10 +30,18 @@ export interface SailSliceState {
   sailAvailability: Record<SailId, SailAvailability>;
 }
 
+export interface MapBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
 export interface MapState {
   center: [lon: number, lat: number];
   zoom: number;
   isFollowingBoat: boolean;
+  bounds: MapBounds;
 }
 
 export interface SelectionState {
@@ -128,6 +136,7 @@ export interface GameStore {
   setSail: (patch: Partial<SailSliceState>) => void;
   toggleSailAuto: () => void;
   setMapView: (center: [number, number], zoom: number) => void;
+  setMapBounds: (bounds: MapBounds) => void;
   setFollowBoat: (follow: boolean) => void;
   toggleBoat: (id: string) => void;
   clearSelection: () => void;

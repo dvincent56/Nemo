@@ -82,6 +82,24 @@ export default function MapCanvas(): React.ReactElement {
       useGameStore.getState().setFollowBoat(false);
     });
 
+    // Sync map bounds to store so overlays (WindOverlay) can geo-reference
+    const syncMapState = () => {
+      const store = useGameStore.getState();
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      const b = map.getBounds();
+      store.setMapView([center.lng, center.lat], zoom);
+      store.setMapBounds({
+        north: b.getNorth(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        west: b.getWest(),
+      });
+    };
+    map.on('moveend', syncMapState);
+    map.on('zoomend', syncMapState);
+    map.once('load', syncMapState);
+
     return () => {
       map.remove();
       mapRef.current = null;
