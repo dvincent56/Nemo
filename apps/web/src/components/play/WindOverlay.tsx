@@ -13,7 +13,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  */
 
 const MAX_PARTICLES = 8000;
-const TRAIL_LEN = 20;
+const TRAIL_LEN = 60;
 
 // Per-particle state (CPU-side)
 interface Particle {
