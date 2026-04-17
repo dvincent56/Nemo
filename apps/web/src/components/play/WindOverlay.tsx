@@ -173,6 +173,8 @@ export default function WindOverlay(): React.ReactElement {
     const toRad = Math.PI / 180;
     const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
 
+    let lastLonRange = 0;
+
     const animate = () => {
       const grid = gridRef.current;
       const map = mapInstance;
@@ -195,6 +197,12 @@ export default function WindOverlay(): React.ReactElement {
       const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
       const PIXELS_PER_FRAME = 0.8;
       const degPerFrame = PIXELS_PER_FRAME / pxPerLon;
+
+      // Detect zoom out: lonRange increased → redistribute ALL particles
+      if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
+        for (const p of particles) resetParticle(p, vBounds);
+      }
+      lastLonRange = lonRange;
 
       // Lon/lat → clip space [-1, 1]
       const lonToClip = (lon: number) => ((lon - vBounds.west) / lonRange) * 2 - 1;
@@ -332,28 +340,7 @@ export default function WindOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
-    // Reset all particles on ANY map movement (zoom, pan, during + end)
-    const map = mapInstance;
-    let prevZoom = map?.getZoom() ?? 5;
-    const onMove = () => {
-      if (!map) return;
-      const newZoom = map.getZoom();
-      const isZoomOut = newZoom < prevZoom - 0.05;
-      prevZoom = newZoom;
-
-      if (isZoomOut) {
-        // Dezoom: reset ALL particles in new bounds for uniform density
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        const nb = map.getBounds();
-        const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
-        for (const p of particles) resetParticle(p, newBounds);
-      }
-    };
-    map?.on('move', onMove);
-
     return () => {
-      map?.off('move', onMove);
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
     };
