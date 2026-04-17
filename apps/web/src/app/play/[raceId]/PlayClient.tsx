@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
+import { fetchMyBoat } from '@/lib/api';
 import { connectRace, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
@@ -24,6 +25,9 @@ import LayersWidget from '@/components/play/LayersWidget';
 import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
+import { interpolateGfsWind } from '@/lib/weather/gfsParser';
+import { loadPolar } from '@/lib/polar';
+import { Trophy, Sailboat, Route, LocateFixed, Plus, Minus } from 'lucide-react';
 import styles from './page.module.css';
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
@@ -35,34 +39,51 @@ const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
   ),
 });
 
-function useTicker(raceId: string): void {
+/**
+ * Fetch initial boat state from API, seed the store, then open WS for deltas.
+ */
+function useBoatInit(raceId: string): void {
   useEffect(() => {
     const store = useGameStore.getState();
-
-    // Initialize timeline (weather grid is loaded by WindOverlay from GFS data)
     store.goLive();
+    let cancelled = false;
 
-    const live = process.env['NEXT_PUBLIC_WS_LIVE'] === '1';
-    if (live) {
-      const token = document.cookie
-        .split(';')
-        .map((c) => c.trim())
-        .find((c) => c.startsWith('nemo_access_token='))
-        ?.slice('nemo_access_token='.length);
-      const conn = connectRace(raceId, token);
-      return () => conn.close();
-    }
-    // Dev stub — seed HUD with mock data
-    store.setHud({
-      lat: 47.0, lon: -3.0, twd: 270, tws: 18, hdg: 216,
-      twa: 128, twaColor: 'optimal', bsp: 11.4, vmg: 9.8,
-      dtf: 1642, overlapFactor: 0.94, rank: 12, totalParticipants: 428,
-      rankTrend: 2, wearGlobal: 82,
-      wearDetail: { hull: 88, rig: 79, sails: 75, electronics: 86 },
+    fetchMyBoat(raceId).then((boat) => {
+      if (cancelled || !boat) return;
+      store.setHud({
+        boatClass: boat.boatClass,
+        lat: boat.lat, lon: boat.lon, hdg: boat.hdg, bsp: boat.bsp,
+        twd: boat.twd, tws: boat.tws, twa: boat.twa, vmg: boat.vmg,
+        dtf: boat.dtf, overlapFactor: boat.overlapFactor,
+        rank: boat.rank, totalParticipants: boat.totalParticipants,
+        rankTrend: boat.rankTrend, wearGlobal: boat.wearGlobal,
+        wearDetail: boat.wearDetail,
+      });
+      store.setSail({
+        currentSail: boat.currentSail,
+        sailAuto: boat.sailAuto,
+        transitionStartMs: boat.transitionStartMs,
+        transitionEndMs: boat.transitionEndMs,
+      });
+      store.setConnection('open');
+
+      // Pre-load polar data for this boat class (cached for Compass estimation)
+      loadPolar(boat.boatClass).catch(() => {});
+
+
+      // Once initial state is loaded, open WS for live deltas
+      const live = process.env['NEXT_PUBLIC_WS_LIVE'] === '1';
+      if (live) {
+        const token = document.cookie
+          .split(';')
+          .map((c) => c.trim())
+          .find((c) => c.startsWith('nemo_access_token='))
+          ?.slice('nemo_access_token='.length);
+        connectRace(raceId, token);
+      }
     });
-    store.setSail({ currentSail: 'GEN' });
-    store.setConnection('open');
-    return undefined;
+
+    return () => { cancelled = true; };
   }, [raceId]);
 }
 
@@ -86,8 +107,22 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const banner = spectateBanner(access);
   const canInteract = access.kind === 'play';
 
-  useTicker(race.id);
+  useBoatInit(race.id);
   useHotkeys(canInteract);
+
+  // Sync HUD wind values from GFS grid at boat position
+  const gridData = useGameStore((s) => s.weather.gridData);
+  const boatLat = useGameStore((s) => s.hud.lat);
+  const boatLon = useGameStore((s) => s.hud.lon);
+  const boatHdg = useGameStore((s) => s.hud.hdg);
+  useEffect(() => {
+    if (!gridData || (!boatLat && !boatLon)) return;
+    const wind = interpolateGfsWind(gridData, boatLat, boatLon);
+    const twd = Math.round(wind.twd);
+    const tws = Math.round(wind.tws * 10) / 10;
+    const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
+    useGameStore.getState().setHud({ twd, tws, twa });
+  }, [gridData, boatLat, boatLon, boatHdg]);
 
   if (access.kind === 'blocked') {
     return (
@@ -142,11 +177,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           </div>
         )}
 
-        {/* Map widgets — bottom-left */}
-        <WindLegend />
-        <LayersWidget isSpectator={!canInteract} />
+        {/* Map widgets — bottom-left stack */}
+        <div className={styles.leftStack}>
+          <WindLegend />
+          <LayersWidget isSpectator={!canInteract} />
+        </div>
 
-        {/* Ranking tab (left edge) */}
+        {/* Ranking tab (left edge — desktop) */}
         <Tooltip text="Classement" shortcut="C" position="right" className={styles.rankingTabWrap ?? ''}>
           <button
             className={styles.rankingTab}
@@ -160,6 +197,17 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <span className={styles.rankingTabRank}>{rank}</span>
           </button>
         </Tooltip>
+
+        {/* Ranking FAB (mobile) */}
+        <button
+          className={styles.rankingFab}
+          onClick={() => handlePanelToggle('ranking')}
+          type="button"
+          aria-label="Classement"
+        >
+          <Trophy size={14} strokeWidth={2.5} />
+          <span className={styles.rankingFabRank}>{rank}</span>
+        </button>
 
         {/* Slide-out panels */}
         <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()}>
@@ -187,7 +235,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   onClick={() => handlePanelToggle('sails')}
                   type="button"
                 >
-                  <span className={styles.actionBtnIcon}>⛵</span>
+                  <Sailboat size={18} strokeWidth={2} className={styles.actionBtnIcon} />
                   <span>Voiles</span>
                 </button>
               </Tooltip>
@@ -197,7 +245,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   onClick={() => handlePanelToggle('programming')}
                   type="button"
                 >
-                  <span className={styles.actionBtnIcon}>≡</span>
+                  <Route size={18} strokeWidth={2} className={styles.actionBtnIcon} />
                   <span>Prog.</span>
                 </button>
               </Tooltip>
@@ -207,13 +255,29 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   onClick={() => useGameStore.getState().setFollowBoat(true)}
                   type="button"
                 >
-                  <span className={styles.actionBtnIcon}>⊕</span>
+                  <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
                   <span>Centrer</span>
                 </button>
               </Tooltip>
               <div className={styles.zoomGroup}>
-                <button className={styles.zoomBtn} title="Zoom +" type="button">+</button>
-                <button className={styles.zoomBtn} title="Zoom −" type="button">−</button>
+                <button
+                  className={styles.zoomBtn}
+                  title="Zoom +"
+                  type="button"
+                  onClick={() => {
+                    const { center, zoom } = useGameStore.getState().map;
+                    useGameStore.getState().setMapView(center, Math.min(zoom + 1, 18));
+                  }}
+                ><Plus size={18} strokeWidth={2.5} /></button>
+                <button
+                  className={styles.zoomBtn}
+                  title="Zoom −"
+                  type="button"
+                  onClick={() => {
+                    const { center, zoom } = useGameStore.getState().map;
+                    useGameStore.getState().setMapView(center, Math.max(zoom - 1, 1));
+                  }}
+                ><Minus size={18} strokeWidth={2.5} /></button>
               </div>
             </div>
             <Compass />

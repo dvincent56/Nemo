@@ -1,7 +1,4 @@
 .legend {
-  position: absolute;
-  left: 16px;
-  bottom: 210px;
   background: rgba(12, 20, 36, 0.78);
   border: 1px solid rgba(245, 240, 232, 0.16);
   border-radius: 4px;
@@ -9,8 +6,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 15;
   min-width: 170px;
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -49,8 +46,6 @@
 /* Phone */
 @media (max-width: 600px) {
   .legend {
-    left: 8px;
-    bottom: 120px;
     padding: 6px 8px;
     gap: 6px;
     min-width: auto;
