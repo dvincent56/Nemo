@@ -416,33 +416,16 @@ export class WindGL {
     bindTexture(gl, this.windTexture, 0);
     bindTexture(gl, this.particleStateTexture0, 1);
 
-    this.drawScreen(matrix);
+    // Draw particles directly with blending (no framebuffer accumulation)
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.drawParticles(matrix);
+    gl.disable(gl.BLEND);
+
     this.updateParticles();
 
     // Restore GL state for MapLibre
     gl.enable(gl.DEPTH_TEST);
-  }
-
-  private drawScreen(matrix?: Float32Array | Float64Array | number[]): void {
-    const gl = this.gl;
-    // draw the screen into a temporary framebuffer to retain it as the background on the next frame
-    bindFramebuffer(gl, this.framebuffer, this.screenTexture);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    this.drawTexture(this.backgroundTexture, this.fadeOpacity);
-    this.drawParticles(matrix);
-
-    bindFramebuffer(gl, null);
-    // enable blending to support drawing on top of an existing background (e.g. a map)
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    this.drawTexture(this.screenTexture, 1.0);
-    gl.disable(gl.BLEND);
-
-    // save the current screen as the background for the next frame
-    const temp = this.backgroundTexture;
-    this.backgroundTexture = this.screenTexture;
-    this.screenTexture = temp;
   }
 
   private drawTexture(texture: WebGLTexture, opacity: number): void {
