@@ -333,6 +333,9 @@ export default function WindOverlay(): React.ReactElement {
     const map = mapInstance;
     const onMove = () => {
       if (!map) return;
+      // Clear screen immediately + reset all particles in new bounds
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
       const nb = map.getBounds();
       const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
       for (const p of particles) resetParticle(p, newBounds);
