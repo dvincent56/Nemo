@@ -342,7 +342,13 @@ export default function WindOverlay(): React.ReactElement {
 
     return () => {
       cancelAnimationFrame(animRef.current);
+      animRef.current = 0;
       window.removeEventListener('resize', onResize);
+      // Clear canvas on unmount
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      // Lose GL context to free resources
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [windVisible]);
 
