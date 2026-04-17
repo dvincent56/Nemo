@@ -1,0 +1,145 @@
+.timeline {
+  height: 100%;
+  background: #1a2840;
+  border-top: 1px solid rgba(245, 240, 232, 0.16);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 clamp(12px, 2vw, 24px);
+}
+
+.now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #f5f0e8;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.nowDay {
+  color: #c9a227;
+  font-size: 13px;
+}
+
+.track {
+  flex: 1;
+  position: relative;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.trackBar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(245, 240, 232, 0.16);
+  transform: translateY(-50%);
+}
+
+.trackProgress {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 2px;
+  background: #c9a227;
+  transform: translateY(-50%);
+  transition: width 100ms;
+}
+
+.trackNowMark {
+  position: absolute;
+  top: 50%;
+  height: 12px;
+  width: 2px;
+  background: #c9a227;
+  transform: translate(-50%, -50%);
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: #c9a227;
+  border: 2px solid #1a2840;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 2px #c9a227;
+  cursor: grab;
+  z-index: 2;
+}
+
+.thumb:active {
+  cursor: grabbing;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  color: rgba(245, 240, 232, 0.72);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+
+.btn:hover {
+  color: #f5f0e8;
+  border-color: rgba(245, 240, 232, 0.28);
+}
+
+.btnActive {
+  background: #c9a227;
+  color: #1a2840;
+  border-color: #c9a227;
+}
+
+.speedBtn {
+  composes: btn;
+  width: auto;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+}
+
+.liveBtn {
+  composes: btn;
+  width: auto;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.liveBtnActive {
+  composes: btnActive;
+  background: #6cd28a;
+  border-color: #6cd28a;
+}

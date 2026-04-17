@@ -1,0 +1,44 @@
+.legend {
+  position: absolute;
+  left: 16px;
+  bottom: 160px;
+  background: rgba(12, 20, 36, 0.78);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 15;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: rgba(245, 240, 232, 0.72);
+  text-transform: uppercase;
+}
+
+.bar {
+  width: 100px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.windBar {
+  background: linear-gradient(90deg, #6cd28a 0%, #c9d860 25%, #f0b96b 50%, #d97706 75%, #9e2a2a 100%);
+}
+
+.swellBar {
+  background: linear-gradient(90deg, #285090 0%, #3ca0b4 33%, #c8b43c 66%, #b43232 100%);
+}
+
+.ticks {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  color: rgba(245, 240, 232, 0.42);
+  letter-spacing: 0.06em;
+}

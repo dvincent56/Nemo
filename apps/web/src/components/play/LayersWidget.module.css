@@ -1,0 +1,80 @@
+.widget {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+  min-width: 170px;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: rgba(245, 240, 232, 0.42);
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.rowLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f5f0e8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowLabelOff {
+  color: rgba(245, 240, 232, 0.5);
+}
+
+.icon {
+  font-size: 14px;
+  color: rgba(245, 240, 232, 0.72);
+}
+
+.switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  background: rgba(245, 240, 232, 0.15);
+  border-radius: 999px;
+  transition: background 150ms;
+  flex-shrink: 0;
+}
+
+.switchOn {
+  background: #c9a227;
+}
+
+.switchDot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #f5f0e8;
+  border-radius: 50%;
+  transition: transform 150ms, background 150ms;
+}
+
+.switchOn .switchDot {
+  transform: translateX(14px);
+  background: #1a2840;
+}
