@@ -410,18 +410,36 @@ export class WindGL {
 
   draw(matrix?: Float32Array | Float64Array | number[]): void {
     const gl = this.gl;
+
+    // Save MapLibre's current framebuffer
+    const prevFb = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.STENCIL_TEST);
 
     bindTexture(gl, this.windTexture, 0);
     bindTexture(gl, this.particleStateTexture0, 1);
 
-    // Draw particles directly with blending (no framebuffer accumulation)
+    // 1) Render faded background + new particles into our internal framebuffer
+    bindFramebuffer(gl, this.framebuffer, this.screenTexture);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    this.drawTexture(this.backgroundTexture, this.fadeOpacity);
+    this.drawParticles(matrix);
+
+    // 2) Swap background ↔ screen for next frame's fade
+    const temp = this.backgroundTexture;
+    this.backgroundTexture = this.screenTexture;
+    this.screenTexture = temp;
+
+    // 3) Restore MapLibre's framebuffer and blit our result with blending
+    gl.bindFramebuffer(gl.FRAMEBUFFER, prevFb);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    this.drawParticles(matrix);
+    this.drawTexture(this.backgroundTexture, 1.0);
     gl.disable(gl.BLEND);
 
+    // 4) Update particle positions for next frame
     this.updateParticles();
 
     // Restore GL state for MapLibre
