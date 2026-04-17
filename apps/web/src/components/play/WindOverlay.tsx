@@ -202,7 +202,7 @@ export default function WindOverlay(): React.ReactElement {
       // Fixed speed: 0.5px per frame on a 1920px screen, converted to degrees
       // pxPerLon converts pixels to degrees at current zoom
       const pxPerLon = lonRange !== 0 ? 1920 / lonRange : 1; // always use 1920 as reference
-      const degPerFrame = 0.5 / pxPerLon;
+      const degPerFrame = 0.3 / pxPerLon;
 
       // Detect zoom out: lonRange increased → redistribute ALL particles
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
@@ -267,7 +267,8 @@ export default function WindOverlay(): React.ReactElement {
         const batch = batches[batchIdx]!;
 
         // Comet shape: head is thick + opaque, tail tapers + fades
-        const maxWidth = 2.0 / width * 2; // ~2px at head in clip space
+        // Fixed 2px head width in pixels, converted to clip space
+        const maxWidth = 2.0 / Math.min(width, height) * 2;
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
 
         for (let s = 0; s < p.len - 1; s++) {
