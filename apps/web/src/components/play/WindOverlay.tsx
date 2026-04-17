@@ -200,8 +200,8 @@ export default function WindOverlay(): React.ReactElement {
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
       const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
-      // Scale speed to screen width so it looks the same on all devices
-      const PIXELS_PER_FRAME = width * 0.0004; // ~0.77 on 1920px, ~0.41 on 1024px, ~0.16 on 390px
+      // Scale speed to screen width with a floor so mobile still has visible trails
+      const PIXELS_PER_FRAME = Math.max(0.35, width * 0.0004);
       const degPerFrame = PIXELS_PER_FRAME / pxPerLon;
 
       // Detect zoom out: lonRange increased → redistribute ALL particles
