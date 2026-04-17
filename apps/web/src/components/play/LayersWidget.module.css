@@ -80,3 +80,38 @@
   transform: translateX(14px);
   background: #1a2840;
 }
+
+.gfsStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(245, 240, 232, 0.10);
+}
+
+.gfsLine {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(245, 240, 232, 0.55);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+/* Phone — compact: icon + toggle only */
+@media (max-width: 600px) {
+  .widget {
+    left: 8px;
+    bottom: 8px;
+    padding: 6px 8px;
+    gap: 5px;
+    min-width: auto;
+  }
+  .title { display: none; }
+  .gfsStatus { display: none; }
+  .row { gap: 8px; }
+  .rowLabel { font-size: 0; gap: 0; }
+  .icon { font-size: 13px; }
+  .switch { width: 28px; height: 16px; }
+  .switchDot { width: 12px; height: 12px; }
+  .switchOn .switchDot { transform: translateX(12px); }
+}
