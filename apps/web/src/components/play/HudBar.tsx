@@ -23,7 +23,7 @@ function Cell(props: { label: string; value: string; className?: string | undefi
 
 function HudBarInner(): React.ReactElement {
   const hud = useGameStore((s) => s.hud);
-  const conn = useGameStore((s) => s.connection);
+  const conn = useGameStore((s) => s.connection.wsState);
 
   return (
     <div className={styles.bar} role="toolbar" aria-label="HUD navigation">

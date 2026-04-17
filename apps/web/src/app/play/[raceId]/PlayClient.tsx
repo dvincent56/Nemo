@@ -40,8 +40,9 @@ function useTicker(raceId: string): void {
     setHud({
       lat: 47.0, lon: -3.0, twd: 270, tws: 18, hdg: 90,
       twa: -180, twaColor: 'optimal', bsp: 7.55, vmg: 7.55,
-      dtf: 2341.672, overlapFactor: 1.0, sail: 'SPI', rank: 42,
+      dtf: 2341.672, overlapFactor: 1.0, rank: 42,
     });
+    useGameStore.getState().setSail({ currentSail: 'SPI' });
     useGameStore.getState().setConnection('open');
     const id = setInterval(() => {
       const hud = useGameStore.getState().hud;

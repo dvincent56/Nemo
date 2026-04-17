@@ -74,9 +74,9 @@ export default function Compass(): React.ReactElement {
   const [lockedTwa, setLockedTwa] = useState<number>(0);
 
   const hud = useGameStore((s) => s.hud);
+  const sail = useGameStore((s) => s.sail.currentSail);
   const currentHdg = hud.hdg;
   const twd = hud.twd;
-  const sail = hud.sail;
 
   // --- Mise à jour directe du SVG (hors React) ---
   const writeSvg = (targetHdg: number): void => {

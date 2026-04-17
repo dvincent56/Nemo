@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { sendOrder, useGameStore, type HudState } from '@/lib/store';
+import type { SailId } from '@nemo/shared-types';
+import { sendOrder, useGameStore } from '@/lib/store';
 import styles from './SailPanel.module.css';
-
-type SailId = HudState['sail'];
 
 const SAILS: { id: SailId; twa: string }[] = [
   { id: 'LW', twa: '0–60°' },
@@ -16,8 +15,8 @@ const SAILS: { id: SailId; twa: string }[] = [
 ];
 
 export default function SailPanel(): React.ReactElement {
-  const hud = useGameStore((s) => s.hud);
-  const { sail, sailAuto, transitionRemainingSec } = hud;
+  const sailState = useGameStore((s) => s.sail);
+  const { currentSail: sail, sailAuto, transitionRemainingSec } = sailState;
 
   const [candidateSail, setCandidateSail] = useState<SailId | null>(null);
   const [autoPending, setAutoPending] = useState(false);
@@ -32,7 +31,7 @@ export default function SailPanel(): React.ReactElement {
   const confirmSail = (): void => {
     if (!candidateSail) return;
     sendOrder({ type: 'SAIL', value: { sail: candidateSail } });
-    useGameStore.getState().setSailPending(candidateSail);
+    useGameStore.getState().setSail({ sailPending: candidateSail });
     setCandidateSail(null);
   };
 
