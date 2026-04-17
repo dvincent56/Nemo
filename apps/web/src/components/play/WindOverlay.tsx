@@ -12,8 +12,8 @@ import type { WeatherGrid } from '@/lib/store/types';
  * GPU only does the drawing (gl.LINES) — no texture-based simulation.
  */
 
-const MAX_PARTICLES = 8000;
-const TRAIL_LEN = 20;
+const MAX_PARTICLES = 10000;
+const TRAIL_LEN = 40;
 
 // Per-particle state (CPU-side)
 interface Particle {
@@ -241,14 +241,34 @@ export default function WindOverlay(): React.ReactElement {
         // Use the max alpha for this bucket (simplification)
         if (alpha > bucket.alpha) bucket.alpha = alpha;
 
-        // Build LINE segments — uniform alpha for the whole trail
+        // Build thick line segments as quads (2 triangles per segment)
+        // lineWidth in clip space — ~1.5px
+        const lw = 1.5 / width * 2; // convert pixels to clip space
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
         for (let s = 0; s < p.len - 1; s++) {
           const i0 = (oldest + s) % TRAIL_LEN;
           const i1 = (oldest + s + 1) % TRAIL_LEN;
+          const x0 = lonToClip(p.lons[i0]!);
+          const y0 = latToClip(p.lats[i0]!);
+          const x1 = lonToClip(p.lons[i1]!);
+          const y1 = latToClip(p.lats[i1]!);
+
+          // Normal perpendicular to segment
+          const dx = x1 - x0;
+          const dy = y1 - y0;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len < 0.0001) continue;
+          const nx = -dy / len * lw;
+          const ny = dx / len * lw;
+
+          // 2 triangles forming a quad
           bucket.verts.push(
-            lonToClip(p.lons[i0]!), latToClip(p.lats[i0]!),
-            lonToClip(p.lons[i1]!), latToClip(p.lats[i1]!),
+            x0 - nx, y0 - ny,
+            x0 + nx, y0 + ny,
+            x1 - nx, y1 - ny,
+            x1 - nx, y1 - ny,
+            x0 + nx, y0 + ny,
+            x1 + nx, y1 + ny,
           );
         }
       }
@@ -262,7 +282,7 @@ export default function WindOverlay(): React.ReactElement {
         gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
         gl.uniform4f(uColor, bucket.r, bucket.g, bucket.b, bucket.alpha);
-        gl.drawArrays(gl.LINES, 0, data.length / 2);
+        gl.drawArrays(gl.TRIANGLES, 0, data.length / 2);
       }
 
       animRef.current = requestAnimationFrame(animate);
