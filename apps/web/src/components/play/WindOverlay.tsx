@@ -14,7 +14,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  * Windy-style: thin trailing lines on transparent background.
  */
 
-const MAX_PARTICLES = 12000;
+const MAX_PARTICLES = 8000;
 const TRAIL_LEN = 30;
 
 interface Particle {
@@ -129,23 +129,30 @@ export default function WindOverlay(): React.ReactElement {
         east: b.getEast(), west: b.getWest(),
       };
 
+      // ── Fast projection: compute lon/lat → pixel once via 2 reference points ──
+      // Instead of calling map.project() per trail point (240k calls/frame),
+      // project 2 corners and build a linear transform. Accurate enough for
+      // the small viewport area (Mercator is ~linear at this scale).
+      const topLeft = map.project([bounds.west, bounds.north]);
+      const bottomRight = map.project([bounds.east, bounds.south]);
+      const lonRange = bounds.east - bounds.west;
+      const latRange = bounds.north - bounds.south;
+      const pxPerLon = lonRange !== 0 ? (bottomRight.x - topLeft.x) / lonRange : 1;
+      const pxPerLat = latRange !== 0 ? (bottomRight.y - topLeft.y) / -latRange : 1; // negative because lat↑ = pixel↓
+      const lonToX = (lon: number) => topLeft.x + (lon - bounds.west) * pxPerLon;
+      const latToY = (lat: number) => topLeft.y + (bounds.north - lat) * pxPerLat;
+
       ctx.lineCap = 'round';
 
-      // Constant pixel speed: all particles move at ~0.4 px/frame in the wind direction.
-      // The DIRECTION comes from wind data, but the SPEED is constant.
-      // Wind strength is encoded visually: thickness, opacity, trail length.
-      const lonRange = bounds.east - bounds.west;
-      const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
-      // Fixed pixel velocity → convert to degrees
+      // Pixel speed adapted to zoom
       const PIXELS_PER_FRAME = 0.3;
-      const degPerFrame = PIXELS_PER_FRAME / pixelsPerDeg;
+      const degPerFrame = lonRange !== 0 ? PIXELS_PER_FRAME / pxPerLon : 0.001;
 
-      // Active count adapts to zoom
-      const zoom = map.getZoom();
-      // Always use all particles — they respawn within visible bounds anyway
-      const activeCount = MAX_PARTICLES;
+      // Detect mobile: fewer particles
+      const isMobile = width < 768;
+      const activeCount = isMobile ? Math.min(3000, particles.length) : particles.length;
 
-      for (let pi = 0; pi < activeCount && pi < particles.length; pi++) {
+      for (let pi = 0; pi < activeCount; pi++) {
         const p = particles[pi]!;
         const lon = p.lons[p.head]!;
         const lat = p.lats[p.head]!;
@@ -153,7 +160,7 @@ export default function WindOverlay(): React.ReactElement {
         const wind = interpolateGfsWind(grid, lat, lon);
         p.speed = wind.tws;
 
-        // Move in wind direction — slightly faster for strong wind
+        // Move in wind direction — faster for strong wind
         const dirRad = Math.atan2(wind.u, wind.v);
         const speedBoost = p.speed < 5 ? 0.8 : p.speed < 15 ? 1.2 : 1.8;
         const step = degPerFrame * speedBoost;
@@ -174,14 +181,13 @@ export default function WindOverlay(): React.ReactElement {
           continue;
         }
 
-        // Opacity: calm zones are faint blue, strong wind is more opaque
+        // Opacity: calm = faint blue, strong = more opaque
         const fadeIn = Math.min(1, p.age / 15);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
         const speedAlpha = p.speed < 3 ? 0.08 : p.speed < 8 ? 0.15 : p.speed < 18 ? 0.25 : 0.4;
         const alpha = fadeIn * fadeOut * speedAlpha;
         if (alpha < 0.01) continue;
 
-        // Full trail length for everyone
         const drawLen = Math.min(p.len, TRAIL_LEN);
         if (drawLen < 2) continue;
 
@@ -193,13 +199,10 @@ export default function WindOverlay(): React.ReactElement {
         const oldest = (p.head - drawLen + 1 + TRAIL_LEN) % TRAIL_LEN;
         for (let s = 0; s < drawLen; s++) {
           const idx = (oldest + s) % TRAIL_LEN;
-          const pt = map.project([p.lons[idx]!, p.lats[idx]!]);
-          if (!started) {
-            ctx.moveTo(pt.x, pt.y);
-            started = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
-          }
+          const px = lonToX(p.lons[idx]!);
+          const py = latToY(p.lats[idx]!);
+          if (!started) { ctx.moveTo(px, py); started = true; }
+          else { ctx.lineTo(px, py); }
         }
         ctx.stroke();
       }
