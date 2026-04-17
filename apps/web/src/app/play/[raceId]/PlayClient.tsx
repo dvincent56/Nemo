@@ -37,6 +37,13 @@ const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
 
 function useTicker(raceId: string): void {
   useEffect(() => {
+    const store = useGameStore.getState();
+
+    // Always initialize timeline + mock weather (regardless of WS mode)
+    store.goLive();
+    const grid = generateMockWeatherGrid();
+    store.setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+
     const live = process.env['NEXT_PUBLIC_WS_LIVE'] === '1';
     if (live) {
       const token = document.cookie
@@ -47,7 +54,7 @@ function useTicker(raceId: string): void {
       const conn = connectRace(raceId, token);
       return () => conn.close();
     }
-    const store = useGameStore.getState();
+    // Dev stub — seed HUD with mock data
     store.setHud({
       lat: 47.0, lon: -3.0, twd: 270, tws: 18, hdg: 216,
       twa: 128, twaColor: 'optimal', bsp: 11.4, vmg: 9.8,
@@ -57,11 +64,6 @@ function useTicker(raceId: string): void {
     });
     store.setSail({ currentSail: 'GEN' });
     store.setConnection('open');
-    // Initialize timeline to "now" (avoids SSR hydration mismatch)
-    store.goLive();
-    // Initialize mock weather data
-    const grid = generateMockWeatherGrid();
-    store.setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
     return undefined;
   }, [raceId]);
 }
@@ -146,7 +148,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         <LayersWidget isSpectator={!canInteract} />
 
         {/* Ranking tab (left edge) */}
-        <Tooltip text="Classement" shortcut="C" position="right">
+        <Tooltip text="Classement" shortcut="C" position="right" className={styles.rankingTabWrap ?? ''}>
           <button
             className={styles.rankingTab}
             onClick={() => handlePanelToggle('ranking')}

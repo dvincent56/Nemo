@@ -107,11 +107,15 @@
 .zoomBtn + .zoomBtn { border-top: 1px solid rgba(245, 240, 232, 0.16); }
 
 /* ── Ranking tab (left edge) ─────────────────────────── */
-.rankingTab {
+.rankingTabWrap {
   position: absolute;
   top: 50%;
   left: 0;
   transform: translateY(-50%);
+  z-index: 20;
+}
+
+.rankingTab {
   background: rgba(12, 20, 36, 0.92);
   border: 1px solid rgba(245, 240, 232, 0.16);
   border-left: none;
@@ -123,7 +127,6 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  z-index: 20;
   transition: background 150ms;
 }
 .rankingTab:hover { background: #0c1424; }

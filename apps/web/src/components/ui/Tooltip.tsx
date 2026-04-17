@@ -10,6 +10,7 @@ interface TooltipProps {
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
+  className?: string;
 }
 
 export default function Tooltip({
@@ -18,6 +19,7 @@ export default function Tooltip({
   children,
   position = 'bottom',
   delay = 400,
+  className,
 }: TooltipProps): React.ReactElement {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -106,7 +108,7 @@ export default function Tooltip({
   return (
     <div
       ref={wrapperRef}
-      className={styles.wrapper}
+      className={`${styles.wrapper} ${className ?? ''}`}
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
