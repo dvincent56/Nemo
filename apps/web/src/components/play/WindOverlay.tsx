@@ -155,7 +155,7 @@ export default function WindOverlay(): React.ReactElement {
 
         // Move in wind direction — slightly faster for strong wind
         const dirRad = Math.atan2(wind.u, wind.v);
-        const speedBoost = p.speed < 5 ? 0.7 : p.speed < 15 ? 1.0 : 1.4;
+        const speedBoost = p.speed < 5 ? 0.8 : p.speed < 15 ? 1.2 : 1.8;
         const step = degPerFrame * speedBoost;
         const newLon = lon + Math.sin(dirRad) * step;
         const newLat = lat + Math.cos(dirRad) * step;
