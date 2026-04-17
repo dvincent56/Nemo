@@ -140,9 +140,9 @@ export default function WindOverlay(): React.ReactElement {
       // pixelsPerDegree ≈ width / lonRange
       const lonRange = bounds.east - bounds.west;
       const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
-      // We want ~2px movement per 10kt wind per frame
-      // 10kt ≈ 5 m/s, so scale = 2px / (5 * pixelsPerDeg) = 0.4 / pixelsPerDeg
-      const moveScale = 0.4 / pixelsPerDeg;
+      // Target: ~0.5px movement per 10kt wind per frame (subtle drift)
+      // 10kt ≈ 5 m/s, so scale = 0.5px / (5 * pixelsPerDeg) = 0.1 / pixelsPerDeg
+      const moveScale = 0.1 / pixelsPerDeg;
 
       for (let pi = 0; pi < activeCount && pi < particles.length; pi++) {
         const p = particles[pi]!;
