@@ -13,7 +13,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  */
 
 const MAX_PARTICLES = 8000;
-const TRAIL_LEN = 60;
+const TRAIL_LEN = 25;
 
 // Per-particle state (CPU-side)
 interface Particle {
@@ -202,7 +202,7 @@ export default function WindOverlay(): React.ReactElement {
       // Fixed speed: 0.5px per frame on a 1920px screen, converted to degrees
       // pxPerLon converts pixels to degrees at current zoom
       const pxPerLon = lonRange !== 0 ? 1920 / lonRange : 1; // always use 1920 as reference
-      const degPerFrame = 0.3 / pxPerLon;
+      const degPerFrame = 0.6 / pxPerLon;
 
       // Detect zoom out: lonRange increased → redistribute ALL particles
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
