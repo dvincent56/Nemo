@@ -21,18 +21,22 @@ const log = pino({ name: 'tick-worker' });
 
 async function createWeather(): Promise<WeatherProvider> {
   if (process.env.NEMO_WEATHER_MODE === 'noaa') {
-    // For NOAA mode, we need ioredis. Import dynamically to avoid requiring it in fixture mode.
-    const { default: Redis } = await import('ioredis');
-    const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
-    const sub = new Redis(redisUrl);
-    const client = new Redis(redisUrl);
-    const redis = {
-      get: (k: string) => client.get(k),
-      keys: (p: string) => client.keys(p),
-      subscribe: (ch: string) => sub.subscribe(ch),
-      on: (ev: string, cb: (ch: string, msg: string) => void) => sub.on(ev as 'message', cb),
-    };
-    return createNoaaProvider(redis);
+    try {
+      const { default: Redis } = await import('ioredis');
+      const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+      const sub = new Redis(redisUrl);
+      const client = new Redis(redisUrl);
+      const redis = {
+        get: (k: string) => client.get(k),
+        keys: (p: string) => client.keys(p),
+        subscribe: (ch: string) => sub.subscribe(ch),
+        on: (ev: string, cb: (ch: string, msg: string) => void) => sub.on(ev as 'message', cb),
+      };
+      return await createNoaaProvider(redis);
+    } catch (err) {
+      log.warn({ err }, 'NOAA provider failed, falling back to fixture');
+      return createFixtureProvider();
+    }
   }
   return createFixtureProvider();
 }
@@ -42,7 +46,7 @@ async function main() {
   const init = workerData as WorkerInit;
 
   await GameBalance.loadFromDisk();
-  const polar: Polar = await loadPolar('CLASS40');
+  const polar: Polar = await loadPolar('IMOCA60');
   const weather: WeatherProvider = await createWeather();
   const zones: IndexedZone[] = buildZoneIndex([]);
 
