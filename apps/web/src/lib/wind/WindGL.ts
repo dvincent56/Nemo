@@ -92,8 +92,10 @@ varying vec2 v_tex_pos;
 
 void main() {
     vec4 color = texture2D(u_screen, 1.0 - v_tex_pos);
-    // a hack to guarantee opacity fade out even with a value close to 1.0
-    gl_FragColor = vec4(floor(255.0 * color * u_opacity) / 255.0);
+    vec3 rgb = floor(255.0 * color.rgb * u_opacity) / 255.0;
+    // Use luminance as alpha so dark/empty areas are transparent (map shows through)
+    float a = max(rgb.r, max(rgb.g, rgb.b));
+    gl_FragColor = vec4(rgb, a);
 }
 `;
 
@@ -326,7 +328,7 @@ export interface WindData {
 export class WindGL {
   private gl: WebGLRenderingContext;
 
-  fadeOpacity = 0.996;
+  fadeOpacity = 0.985;
   speedFactor = 0.25;
   dropRate = 0.003;
   dropRateBump = 0.01;
@@ -416,6 +418,9 @@ export class WindGL {
 
     this.drawScreen(matrix);
     this.updateParticles();
+
+    // Restore GL state for MapLibre
+    gl.enable(gl.DEPTH_TEST);
   }
 
   private drawScreen(matrix?: Float32Array | Float64Array | number[]): void {
