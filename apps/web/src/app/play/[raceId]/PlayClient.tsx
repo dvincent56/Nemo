@@ -11,6 +11,7 @@ import {
 } from '@/lib/access';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
+import CoordsDisplay from '@/components/play/CoordsDisplay';
 import styles from './page.module.css';
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
@@ -104,6 +105,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       {/* Row 2 — Map + floating elements */}
       <div className={styles.mapArea}>
         <MapCanvas />
+        {canInteract && <CoordsDisplay />}
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
