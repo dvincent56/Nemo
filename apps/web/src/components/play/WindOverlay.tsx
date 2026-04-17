@@ -164,9 +164,12 @@ export default function WindOverlay(): React.ReactElement {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    // Init particles — fewer on mobile for performance
-    const isMobile = canvas.width < 768;
-    const particleCount = isMobile ? 2500 : MAX_PARTICLES;
+    // Scale particle count to screen area (pixels)
+    // Desktop 1920×1080 ≈ 2M px → 8000 particles
+    // Tablet 1024×768 ≈ 800k px → 3200 particles
+    // Phone 390×844 ≈ 330k px → 1300 particles
+    const screenArea = canvas.width * canvas.height;
+    const particleCount = Math.min(MAX_PARTICLES, Math.max(800, Math.round(screenArea / 260)));
     const bounds = useGameStore.getState().map.bounds;
     const particles: Particle[] = [];
     for (let i = 0; i < particleCount; i++) particles.push(makeParticle(bounds));
