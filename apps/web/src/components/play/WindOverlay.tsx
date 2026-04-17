@@ -183,7 +183,7 @@ export default function WindOverlay(): React.ReactElement {
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
       const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
-      const PIXELS_PER_FRAME = 0.3;
+      const PIXELS_PER_FRAME = 0.5;
       const degPerFrame = PIXELS_PER_FRAME / pxPerLon;
 
       // Lon/lat → clip space [-1, 1]
@@ -300,18 +300,18 @@ export default function WindOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
-    // Reset all particles on zoom/pan end
+    // Reset all particles on ANY map movement (zoom, pan, during + end)
     const map = mapInstance;
-    const onMoveEnd = () => {
+    const onMove = () => {
       if (!map) return;
       const nb = map.getBounds();
       const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
       for (const p of particles) resetParticle(p, newBounds);
     };
-    map?.on('moveend', onMoveEnd);
+    map?.on('move', onMove);
 
     return () => {
-      map?.off('moveend', onMoveEnd);
+      map?.off('move', onMove);
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
     };
