@@ -129,18 +129,25 @@ export default function WindOverlay(): React.ReactElement {
         east: b.getEast(), west: b.getWest(),
       };
 
-      // ── Fast projection: compute lon/lat → pixel once via 2 reference points ──
-      // Instead of calling map.project() per trail point (240k calls/frame),
-      // project 2 corners and build a linear transform. Accurate enough for
-      // the small viewport area (Mercator is ~linear at this scale).
+      // ── Fast Mercator projection ──
+      // Longitude is linear in Mercator, but latitude is NOT.
+      // Use the Mercator formula: y = ln(tan(π/4 + lat/2))
+      // Project 2 reference points to get the pixel scale, then convert
+      // any lat via Mercator math (no map.project calls in the loop).
       const topLeft = map.project([bounds.west, bounds.north]);
       const bottomRight = map.project([bounds.east, bounds.south]);
       const lonRange = bounds.east - bounds.west;
-      const latRange = bounds.north - bounds.south;
       const pxPerLon = lonRange !== 0 ? (bottomRight.x - topLeft.x) / lonRange : 1;
-      const pxPerLat = latRange !== 0 ? (bottomRight.y - topLeft.y) / -latRange : 1; // negative because lat↑ = pixel↓
+
+      const toRad = Math.PI / 180;
+      const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
+      const mercNorth = mercY(bounds.north);
+      const mercSouth = mercY(bounds.south);
+      const mercRange = mercNorth - mercSouth;
+      const pxPerMerc = mercRange !== 0 ? (bottomRight.y - topLeft.y) / -mercRange : 1;
+
       const lonToX = (lon: number) => topLeft.x + (lon - bounds.west) * pxPerLon;
-      const latToY = (lat: number) => topLeft.y + (bounds.north - lat) * pxPerLat;
+      const latToY = (lat: number) => topLeft.y + (mercNorth - mercY(lat)) * -pxPerMerc;
 
       ctx.lineCap = 'round';
 
