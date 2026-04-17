@@ -17,6 +17,12 @@ import SlidePanel from '@/components/play/SlidePanel';
 import SailPanel from '@/components/play/SailPanel';
 import ProgPanel from '@/components/play/ProgPanel';
 import RankingPanel from '@/components/play/RankingPanel';
+import WindOverlay from '@/components/play/WindOverlay';
+import SwellOverlay from '@/components/play/SwellOverlay';
+import LayersWidget from '@/components/play/LayersWidget';
+import WindLegend from '@/components/play/WindLegend';
+import WeatherTimeline from '@/components/play/WeatherTimeline';
+import { generateMockWeatherGrid } from '@/lib/weather/mockGrid';
 import styles from './page.module.css';
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
@@ -50,6 +56,9 @@ function useTicker(raceId: string): void {
     });
     store.setSail({ currentSail: 'GEN' });
     store.setConnection('open');
+    // Initialize mock weather data
+    const grid = generateMockWeatherGrid();
+    store.setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
     return undefined;
   }, [raceId]);
 }
@@ -111,6 +120,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       {/* Row 2 — Map + floating elements */}
       <div className={styles.mapArea}>
         <MapCanvas />
+        {/* Weather overlays — below boats, above map */}
+        <WindOverlay />
+        <SwellOverlay />
         {canInteract && <CoordsDisplay />}
 
         {banner && access.kind === 'spectate' && (
@@ -125,6 +137,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             )}
           </div>
         )}
+
+        {/* Map widgets — bottom-left */}
+        <WindLegend />
+        <LayersWidget isSpectator={!canInteract} />
 
         {/* Ranking tab (left edge) */}
         <button
@@ -197,9 +213,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         )}
       </div>
 
-      {/* Row 3 — Timeline placeholder */}
+      {/* Row 3 — Weather timeline */}
       <div className={styles.timelineRow}>
-        <span className={styles.timelinePlaceholder}>Timeline météo — à venir</span>
+        <WeatherTimeline />
       </div>
     </div>
   );
