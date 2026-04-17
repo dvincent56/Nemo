@@ -57,8 +57,6 @@ export default function MapCanvas(): React.ReactElement {
     });
     mapRef.current = map;
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-
     map.once('load', () => {
       // Trail source + layer
       map.addSource('my-trail', {

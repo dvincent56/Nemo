@@ -30,10 +30,11 @@ export default function WindOverlay(): React.ReactElement {
   const particlesRef = useRef<Particle[]>([]);
 
   const windVisible = useGameStore((s) => s.layers.wind);
+  const hasGrid = useGameStore((s) => s.weather.gridData !== null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !windVisible) {
+    if (!canvas || !windVisible || !hasGrid) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -134,7 +135,7 @@ export default function WindOverlay(): React.ReactElement {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [windVisible]);
+  }, [windVisible, hasGrid]);
 
   if (!windVisible) return <></>;
 

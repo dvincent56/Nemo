@@ -20,9 +20,9 @@ function HudBarInner(): React.ReactElement {
   return (
     <div className={styles.bar} role="toolbar" aria-label="Tableau de bord course">
       {/* Brand */}
-      <span className={styles.brand}>
+      <Link href="/" className={styles.brand}>
         NE<span className={styles.brandAccent}>M</span>O
-      </span>
+      </Link>
 
       {/* Rank hero */}
       <div className={styles.rankHero} aria-label="Rang actuel">
@@ -36,31 +36,31 @@ function HudBarInner(): React.ReactElement {
 
       {/* Stats */}
       <div className={styles.stats}>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="Boat Speed — Vitesse du bateau sur l'eau">
           <span className={styles.statLabel}>BSP</span>
           <span className={`${styles.statValue} ${styles.live}`}>{hud.bsp.toFixed(1)} <small>nds</small></span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="True Wind Speed — Vitesse réelle du vent">
           <span className={styles.statLabel}>TWS</span>
           <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="True Wind Angle — Angle du vent par rapport au bateau">
           <span className={styles.statLabel}>TWA</span>
           <span className={styles.statValue}>{Math.round(hud.twa)}°</span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="Heading — Cap du bateau">
           <span className={styles.statLabel}>HDG</span>
           <span className={styles.statValue}>{Math.round(hud.hdg)}°</span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="Velocity Made Good — Vitesse d'avancée vers le waypoint">
           <span className={styles.statLabel}>VMG</span>
           <span className={`${styles.statValue} ${styles.gold}`}>{hud.vmg.toFixed(1)} <small>nds</small></span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="Distance To Finish — Distance restante">
           <span className={styles.statLabel}>DTF</span>
           <span className={styles.statValue}>{Math.round(hud.dtf).toLocaleString('fr-FR')} <small>NM</small></span>
         </div>
-        <div className={styles.stat}>
+        <div className={styles.stat} title="Overlap Factor — Facteur de performance voile">
           <span className={styles.statLabel}>Factor</span>
           <span className={`${styles.statValue} ${hud.overlapFactor < 1 ? styles.warn : ''}`}>
             {hud.overlapFactor.toFixed(2)}×

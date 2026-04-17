@@ -26,6 +26,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: var(--timeline-h, 64px);
 }
 .timelinePlaceholder {
   font-family: var(--font-mono);
@@ -312,13 +313,11 @@
 }
 
 /* ── Responsive: phone portrait — minimal mode ───────── */
-@media (max-width: 600px) and (orientation: portrait) {
+@media (max-width: 480px) and (orientation: portrait) {
   .app {
     --hud-h: 44px;
-    --timeline-h: 0px;
+    --timeline-h: 44px;
   }
-
-  .timelineRow { display: none; }
 
   .rightStack {
     bottom: 10px;

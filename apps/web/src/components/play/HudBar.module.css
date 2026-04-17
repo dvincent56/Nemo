@@ -18,6 +18,8 @@
   letter-spacing: 0.08em;
   color: #f5f0e8;
   flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
 }
 .brandAccent { color: #c9a227; }
 
