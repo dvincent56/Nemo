@@ -20,9 +20,11 @@ attribute float a_index;
 
 uniform sampler2D u_particles;
 uniform float u_particles_res;
-uniform mat4 u_matrix;
+uniform vec4 u_bounds; // x=west(lon), y=mercSouth, z=east(lon), w=mercNorth
 
 varying vec2 v_particle_pos;
+
+const float PI = 3.14159265;
 
 void main() {
     vec4 color = texture2D(u_particles, vec2(
@@ -33,16 +35,20 @@ void main() {
         color.r / 255.0 + color.b,
         color.g / 255.0 + color.a);
 
-    // x is linear in longitude (same in equirectangular and Mercator)
-    float merc_x = v_particle_pos.x;
-
-    // Convert equirectangular y to Mercator y
+    // Equirectangular pos [0,1] -> lon/lat degrees
+    float lon = v_particle_pos.x * 360.0 - 180.0;
     float lat_deg = 90.0 - v_particle_pos.y * 180.0;
+
+    // Lat -> Mercator Y
     float lat_rad = radians(clamp(lat_deg, -85.0, 85.0));
-    float merc_y = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / 3.14159265) / 2.0;
+    float merc_y = log(tan(PI / 4.0 + lat_rad / 2.0));
+
+    // Map to clip space [-1,1] using visible bounds
+    float clip_x = (lon - u_bounds.x) / (u_bounds.z - u_bounds.x) * 2.0 - 1.0;
+    float clip_y = (merc_y - u_bounds.y) / (u_bounds.w - u_bounds.y) * 2.0 - 1.0;
 
     gl_PointSize = 1.0;
-    gl_Position = u_matrix * vec4(merc_x, merc_y, 0.0, 1.0);
+    gl_Position = vec4(clip_x, clip_y, 0.0, 1.0);
 }
 `;
 
@@ -92,10 +98,7 @@ varying vec2 v_tex_pos;
 
 void main() {
     vec4 color = texture2D(u_screen, 1.0 - v_tex_pos);
-    vec3 rgb = floor(255.0 * color.rgb * u_opacity) / 255.0;
-    // Use luminance as alpha so dark/empty areas are transparent (map shows through)
-    float a = max(rgb.r, max(rgb.g, rgb.b));
-    gl_FragColor = vec4(rgb, a);
+    gl_FragColor = vec4(floor(255.0 * color * u_opacity) / 255.0);
 }
 `;
 
@@ -278,14 +281,14 @@ function bindFramebuffer(gl: WebGLRenderingContext, framebuffer: WebGLFramebuffe
 // ---------------------------------------------------------------------------
 
 const defaultRampColors: Record<number, string> = {
-  0.0: '#3288bd',
-  0.1: '#66c2a5',
-  0.2: '#abdda4',
-  0.3: '#e6f598',
-  0.4: '#fee08b',
-  0.5: '#fdae61',
-  0.6: '#f46d43',
-  1.0: '#d53e4f',
+  0.0: '#1a3a5c',  // very light — dark blue
+  0.1: '#3388bd',  // light — blue
+  0.2: '#50b5a0',  // moderate — teal
+  0.3: '#7ecba4',  // fresh — green
+  0.5: '#c8e87a',  // strong — yellow-green
+  0.7: '#f0c040',  // very strong — yellow
+  0.85: '#e07020', // gale — orange
+  1.0: '#c03030',  // storm — red
 };
 
 function getColorRamp(colors: Record<number, string>): Uint8Array {
@@ -328,7 +331,7 @@ export interface WindData {
 export class WindGL {
   private gl: WebGLRenderingContext;
 
-  fadeOpacity = 0.985;
+  fadeOpacity = 0.996;
   speedFactor = 0.25;
   dropRate = 0.003;
   dropRateBump = 0.01;
@@ -408,42 +411,35 @@ export class WindGL {
     this.windTexture = createTexture(this.gl, this.gl.LINEAR, windData.image);
   }
 
-  draw(matrix?: Float32Array | Float64Array | number[]): void {
+  draw(bounds: { west: number; south: number; east: number; north: number }): void {
     const gl = this.gl;
-
-    // Save MapLibre's current framebuffer
-    const prevFb = gl.getParameter(gl.FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
-
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.STENCIL_TEST);
 
     bindTexture(gl, this.windTexture, 0);
     bindTexture(gl, this.particleStateTexture0, 1);
 
-    // 1) Render faded background + new particles into our internal framebuffer
+    this.drawScreen(bounds);
+    this.updateParticles();
+  }
+
+  private drawScreen(bounds: { west: number; south: number; east: number; north: number }): void {
+    const gl = this.gl;
     bindFramebuffer(gl, this.framebuffer, this.screenTexture);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    this.drawTexture(this.backgroundTexture, this.fadeOpacity);
-    this.drawParticles(matrix);
 
-    // 2) Swap background ↔ screen for next frame's fade
+    this.drawTexture(this.backgroundTexture, this.fadeOpacity);
+    this.drawParticles(bounds);
+
+    bindFramebuffer(gl, null);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    this.drawTexture(this.screenTexture, 1.0);
+    gl.disable(gl.BLEND);
+
     const temp = this.backgroundTexture;
     this.backgroundTexture = this.screenTexture;
     this.screenTexture = temp;
-
-    // 3) Restore MapLibre's framebuffer and blit our result with blending
-    gl.bindFramebuffer(gl.FRAMEBUFFER, prevFb);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    this.drawTexture(this.backgroundTexture, 1.0);
-    gl.disable(gl.BLEND);
-
-    // 4) Update particle positions for next frame
-    this.updateParticles();
-
-    // Restore GL state for MapLibre
-    gl.enable(gl.DEPTH_TEST);
   }
 
   private drawTexture(texture: WebGLTexture, opacity: number): void {
@@ -459,7 +455,7 @@ export class WindGL {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  private drawParticles(matrix?: Float32Array | Float64Array | number[]): void {
+  private drawParticles(bounds: { west: number; south: number; east: number; north: number }): void {
     const gl = this.gl;
     const program = this.drawProgram;
     gl.useProgram(program.program as WebGLProgram);
@@ -475,9 +471,13 @@ export class WindGL {
     gl.uniform2f(program.u_wind_min as WebGLUniformLocation, this.windData!.uMin, this.windData!.vMin);
     gl.uniform2f(program.u_wind_max as WebGLUniformLocation, this.windData!.uMax, this.windData!.vMax);
 
-    if (matrix) {
-      gl.uniformMatrix4fv(program.u_matrix as WebGLUniformLocation, false, new Float32Array(matrix));
-    }
+    // Convert lat bounds to Mercator Y
+    const toRad = Math.PI / 180;
+    const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
+    gl.uniform4f(
+      program.u_bounds as WebGLUniformLocation,
+      bounds.west, mercY(bounds.south), bounds.east, mercY(bounds.north),
+    );
 
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }
