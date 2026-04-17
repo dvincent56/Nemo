@@ -14,7 +14,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  * Windy-style: thin trailing lines on transparent background.
  */
 
-const PARTICLE_COUNT = 3000;
+const MAX_PARTICLES = 4000;
 const TRAIL_LEN = 8;
 
 interface Particle {
@@ -106,7 +106,7 @@ export default function WindOverlay(): React.ReactElement {
     // Init particles when bounds are available
     const bounds = useGameStore.getState().map.bounds;
     const particles: Particle[] = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    for (let i = 0; i < MAX_PARTICLES; i++) {
       particles.push(makeParticle(bounds));
     }
     particlesRef.current = particles;
@@ -131,22 +131,31 @@ export default function WindOverlay(): React.ReactElement {
 
       ctx.lineCap = 'round';
 
-      for (const p of particles) {
-        // Current head position (geo)
+      // Adapt particle count to zoom — more particles when zoomed in
+      const zoom = map.getZoom();
+      const activeCount = Math.min(MAX_PARTICLES, Math.floor(800 + zoom * 400));
+
+      // Adapt speed to zoom: at zoom 5 we see ~20° of longitude,
+      // at zoom 8 we see ~2.5°. The scale should produce ~3-5px movement per frame.
+      // pixelsPerDegree ≈ width / lonRange
+      const lonRange = bounds.east - bounds.west;
+      const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
+      // We want ~2px movement per 10kt wind per frame
+      // 10kt ≈ 5 m/s, so scale = 2px / (5 * pixelsPerDeg) = 0.4 / pixelsPerDeg
+      const moveScale = 0.4 / pixelsPerDeg;
+
+      for (let pi = 0; pi < activeCount && pi < particles.length; pi++) {
+        const p = particles[pi]!;
         const lon = p.lons[p.head]!;
         const lat = p.lats[p.head]!;
 
-        // Wind at this geo position
         const wind = interpolateGfsWind(grid, lat, lon);
         p.speed = wind.tws;
 
-        // Advance in geo coords — u is m/s east, v is m/s north
-        // Scale factor: ~0.00001 degree per m/s per frame at 60fps
-        const scale = 0.0015;
-        const newLon = lon + wind.u * scale;
-        const newLat = lat + wind.v * scale;
+        // Advance — zoom-adaptive speed
+        const newLon = lon + wind.u * moveScale;
+        const newLat = lat + wind.v * moveScale;
 
-        // Push to trail ring buffer
         const newHead = (p.head + 1) % TRAIL_LEN;
         p.lons[newHead] = newLon;
         p.lats[newHead] = newLat;
@@ -154,11 +163,10 @@ export default function WindOverlay(): React.ReactElement {
         p.len = Math.min(p.len + 1, TRAIL_LEN);
         p.age++;
 
-        // Reset if out of expanded bounds or too old
-        const margin = 2;
+        // Reset if out of visible bounds or too old
         if (p.age > p.maxAge ||
-            newLon < bounds.west - margin || newLon > bounds.east + margin ||
-            newLat < bounds.south - margin || newLat > bounds.north + margin) {
+            newLon < bounds.west - 1 || newLon > bounds.east + 1 ||
+            newLat < bounds.south - 1 || newLat > bounds.north + 1) {
           resetParticle(p, bounds);
           continue;
         }
