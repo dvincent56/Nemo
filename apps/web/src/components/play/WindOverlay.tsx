@@ -153,10 +153,12 @@ export default function WindOverlay(): React.ReactElement {
         const wind = interpolateGfsWind(grid, lat, lon);
         p.speed = wind.tws;
 
-        // Move at constant pixel speed in wind direction
-        const dirRad = Math.atan2(wind.u, wind.v); // angle in radians
-        const newLon = lon + Math.sin(dirRad) * degPerFrame;
-        const newLat = lat + Math.cos(dirRad) * degPerFrame;
+        // Move in wind direction — slightly faster for strong wind
+        const dirRad = Math.atan2(wind.u, wind.v);
+        const speedBoost = p.speed < 5 ? 0.7 : p.speed < 15 ? 1.0 : 1.4;
+        const step = degPerFrame * speedBoost;
+        const newLon = lon + Math.sin(dirRad) * step;
+        const newLat = lat + Math.cos(dirRad) * step;
 
         const newHead = (p.head + 1) % TRAIL_LEN;
         p.lons[newHead] = newLon;
