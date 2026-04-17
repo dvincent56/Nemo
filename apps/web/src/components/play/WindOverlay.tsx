@@ -2,16 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
-import { getPointsAtTime } from '@/lib/weather/mockGrid';
-import { interpolateWind } from '@/lib/weather/interpolate';
+import { parseGfsWind, interpolateGfsWind } from '@/lib/weather/gfsParser';
+import type { WeatherGrid } from '@/lib/store/types';
 
 /**
- * Lightweight wind particle overlay — canvas with transparent background.
- * Particles are small dots that drift with the wind, colored by speed.
- * Uses clearRect each frame so the map underneath stays fully visible.
+ * Wind particle overlay using real GFS data.
+ * Loads /data/wind.json (grib2json format), parses it, and animates
+ * particles that follow the actual wind field.
  */
 
-const PARTICLE_COUNT = 1500;
+const PARTICLE_COUNT = 2500;
 
 interface Particle {
   x: number;
@@ -20,34 +20,44 @@ interface Particle {
   maxAge: number;
 }
 
-/** Speed-based color: green (light) → yellow → orange → red (storm) */
 function windColor(speed: number, alpha: number): string {
-  if (speed < 8) return `rgba(108,210,138,${alpha})`;
-  if (speed < 15) return `rgba(180,210,80,${alpha})`;
-  if (speed < 22) return `rgba(240,185,107,${alpha})`;
-  if (speed < 30) return `rgba(217,119,6,${alpha})`;
-  return `rgba(180,50,50,${alpha})`;
+  if (speed < 5) return `rgba(98,180,230,${alpha})`;    // very light — pale blue
+  if (speed < 10) return `rgba(108,210,138,${alpha})`;   // light — green
+  if (speed < 18) return `rgba(200,210,80,${alpha})`;    // moderate — yellow-green
+  if (speed < 25) return `rgba(240,185,107,${alpha})`;   // fresh — orange
+  if (speed < 35) return `rgba(217,119,6,${alpha})`;     // strong — dark orange
+  return `rgba(180,50,50,${alpha})`;                      // storm — red
 }
 
 function resetParticle(p: Particle, w: number, h: number): void {
   p.x = Math.random() * w;
   p.y = Math.random() * h;
   p.age = 0;
-  p.maxAge = 40 + Math.floor(Math.random() * 40);
+  p.maxAge = 50 + Math.floor(Math.random() * 50);
 }
 
 export default function WindOverlay(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
+  const gridRef = useRef<WeatherGrid | null>(null);
 
   const windVisible = useGameStore((s) => s.layers.wind);
-  const hasGrid = useGameStore((s) => s.weather.gridData !== null);
+
+  // Load GFS data once
+  useEffect(() => {
+    if (gridRef.current) return;
+    fetch('/data/wind.json')
+      .then((res) => res.json())
+      .then((json) => {
+        gridRef.current = parseGfsWind(json);
+      })
+      .catch((err) => console.warn('Failed to load wind data:', err));
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !windVisible || !hasGrid) {
+    if (!canvas || !windVisible) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
-      // Clear canvas when turning off
       if (canvas) {
         const ctx = canvas.getContext('2d');
         ctx?.clearRect(0, 0, canvas.width, canvas.height);
@@ -70,61 +80,62 @@ export default function WindOverlay(): React.ReactElement {
     // Init particles
     const particles: Particle[] = [];
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push({ x: 0, y: 0, age: 0, maxAge: 0 });
-      resetParticle(particles[i]!, canvas.width, canvas.height);
-      // Stagger initial ages so particles don't all appear at once
-      particles[i]!.age = Math.floor(Math.random() * particles[i]!.maxAge);
+      const p: Particle = { x: 0, y: 0, age: 0, maxAge: 0 };
+      resetParticle(p, canvas.width, canvas.height);
+      p.age = Math.floor(Math.random() * p.maxAge); // stagger
+      particles.push(p);
     }
 
     const animate = () => {
-      const store = useGameStore.getState();
-      const grid = store.weather.gridData;
-      if (!grid) { animRef.current = requestAnimationFrame(animate); return; }
+      const grid = gridRef.current;
+      if (!grid) {
+        // Data not loaded yet — retry next frame
+        animRef.current = requestAnimationFrame(animate);
+        return;
+      }
 
-      const time = store.timeline.currentTime.getTime();
-      const points = getPointsAtTime(grid, time);
       const { width, height } = canvas;
-
-      // Fully clear — map visible underneath
       ctx.clearRect(0, 0, width, height);
 
-      // Approximate geo bounds from map state
-      const [cLon, cLat] = store.map.center;
-      const span = 180 / Math.pow(2, store.map.zoom);
+      // Get map bounds from store
+      const mapState = useGameStore.getState().map;
+      const [cLon, cLat] = mapState.center;
+      const span = 180 / Math.pow(2, mapState.zoom);
+      const aspectRatio = height / width;
       const lonMin = cLon - span;
       const lonMax = cLon + span;
-      const latMin = cLat - span * 0.6;
-      const latMax = cLat + span * 0.6;
+      const latMin = cLat - span * aspectRatio;
+      const latMax = cLat + span * aspectRatio;
 
       for (const p of particles) {
-        // Geo position of this pixel
+        // Pixel → geo
         const lon = lonMin + (p.x / width) * (lonMax - lonMin);
         const lat = latMax - (p.y / height) * (latMax - latMin);
 
-        const wind = interpolateWind(points, lat, lon);
+        // Interpolate real wind at this position
+        const wind = interpolateGfsWind(grid, lat, lon);
         const speed = wind.tws;
 
-        // Move: small displacement per frame
+        // Move particle following wind
         const toRad = Math.PI / 180;
-        const scale = 0.15 + speed * 0.04;
+        const scale = 0.08 + speed * 0.03;
         p.x += -Math.sin(wind.twd * toRad) * scale;
         p.y += Math.cos(wind.twd * toRad) * scale;
         p.age++;
 
-        // Reset if dead or off-screen
-        if (p.age > p.maxAge || p.x < -5 || p.x > width + 5 || p.y < -5 || p.y > height + 5) {
+        if (p.age > p.maxAge || p.x < -10 || p.x > width + 10 || p.y < -10 || p.y > height + 10) {
           resetParticle(p, width, height);
-          continue; // don't draw the reset frame
+          continue;
         }
 
         // Fade in/out
-        const fadeIn = Math.min(1, p.age / 6);
-        const fadeOut = Math.min(1, (p.maxAge - p.age) / 10);
-        const alpha = fadeIn * fadeOut * 0.6;
+        const fadeIn = Math.min(1, p.age / 8);
+        const fadeOut = Math.min(1, (p.maxAge - p.age) / 12);
+        const alpha = fadeIn * fadeOut * 0.55;
         if (alpha < 0.02) continue;
 
-        // Draw a small dot (not a line — avoids the "thick strokes" problem)
-        const radius = speed > 20 ? 1.5 : 1;
+        // Draw small dot
+        const radius = speed > 25 ? 1.5 : 1;
         ctx.fillStyle = windColor(speed, alpha);
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
@@ -140,7 +151,7 @@ export default function WindOverlay(): React.ReactElement {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', resize);
     };
-  }, [windVisible, hasGrid]);
+  }, [windVisible]);
 
   if (!windVisible) return <></>;
 
