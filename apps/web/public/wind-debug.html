@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Wind Data Debug — Atlantic</title>
+<style>
+body { margin: 0; background: #0a1628; color: #f5f0e8; font-family: monospace; }
+#info { position: fixed; top: 10px; left: 10px; font-size: 11px; z-index: 10; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 4px; max-width: 400px; }
+#hover { position: fixed; bottom: 10px; left: 10px; font-size: 11px; z-index: 10; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; }
+canvas { display: block; cursor: crosshair; }
+</style>
+</head>
+<body>
+<div id="info">Loading...</div>
+<div id="hover">Hover over map</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const info = document.getElementById('info');
+const hover = document.getElementById('hover');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// View: Atlantic / Europe focus
+const VIEW = { lonMin: -40, lonMax: 20, latMin: 25, latMax: 65 };
+
+function lonToX(lon) { return ((lon - VIEW.lonMin) / (VIEW.lonMax - VIEW.lonMin)) * canvas.width; }
+function latToY(lat) { return ((VIEW.latMax - lat) / (VIEW.latMax - VIEW.latMin)) * canvas.height; }
+function xToLon(x) { return VIEW.lonMin + (x / canvas.width) * (VIEW.lonMax - VIEW.lonMin); }
+function yToLat(y) { return VIEW.latMax - (y / canvas.height) * (VIEW.latMax - VIEW.latMin); }
+
+let uData, vData, header;
+
+fetch('/data/wind.json')
+  .then(r => r.json())
+  .then(json => {
+    const uRec = json[0];
+    const vRec = json[1];
+    header = uRec.header;
+    uData = uRec.data;
+    vData = vRec.data;
+
+    info.innerHTML = `Grid: ${header.nx}x${header.ny}<br>
+      Lon: ${header.lo1} → ${header.lo2} (dx: ${header.dx})<br>
+      Lat: ${header.la1} → ${header.la2} (dy: ${header.dy})<br>
+      View: ${VIEW.lonMin}°E to ${VIEW.lonMax}°E, ${VIEW.latMin}°N to ${VIEW.latMax}°N<br>
+      Date: 2020-06-20T00:00Z (GFS)`;
+
+    draw();
+  });
+
+function getWindAt(lat, lon) {
+  if (!header) return { u: 0, v: 0 };
+  // Grid index: la1 is south pole (-90.5), data rows go south to north
+  const j = Math.round((lat - header.la1) / Math.abs(header.dy));
+  // Normalize longitude to grid range
+  let normLon = lon;
+  if (normLon < header.lo1) normLon += 360;
+  const i = Math.round((normLon - header.lo1) / header.dx);
+  if (j < 0 || j >= header.ny || i < 0 || i >= header.nx) return { u: 0, v: 0 };
+  const idx = j * header.nx + i;
+  return { u: uData[idx] || 0, v: vData[idx] || 0 };
+}
+
+function draw() {
+  ctx.fillStyle = '#0a1628';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw coastlines (simplified major features)
+  ctx.strokeStyle = 'rgba(245,240,232,0.15)';
+  ctx.lineWidth = 1;
+  // Europe rough outline
+  const coasts = [
+    // Iberian peninsula
+    [[-9,37],[-9,43],[-2,43],[0,41],[3,42],[3,38],[-1,36],[-5,36],[-9,37]],
+    // France
+    [[-2,43],[-1,46],[0,48],[-4,48],[-5,48],[-3,47],[-2,47],[-2,43]],
+    // UK
+    [[-5,50],[-6,52],[-5,54],[-3,55],[-2,57],[0,58],[1,53],[0,51],[-5,50]],
+    // Ireland
+    [[-10,51],[-10,54],[-7,55],[-6,52],[-10,51]],
+    // Scandinavia
+    [[5,58],[5,62],[8,63],[12,64],[15,66],[18,68],[20,65],[18,60],[12,56],[8,56],[5,58]],
+    // Italy
+    [[8,44],[10,44],[13,42],[16,39],[16,38],[12,37],[8,39],[7,43],[8,44]],
+    // NW Africa
+    [[-17,28],[-13,28],[-10,32],[-6,35],[-5,36],[-2,35],[0,35],[5,37],[10,37],[10,32],[5,30],[-5,28],[-13,26],[-17,28]],
+    // Iceland
+    [[-24,64],[-22,66],[-18,66],[-14,65],[-14,64],[-18,63],[-24,64]],
+  ];
+  for (const coast of coasts) {
+    ctx.beginPath();
+    for (let k = 0; k < coast.length; k++) {
+      const [lon, lat] = coast[k];
+      const x = lonToX(lon);
+      const y = latToY(lat);
+      if (k === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Draw wind arrows
+  const stepDeg = 1; // one arrow per degree
+  for (let lat = VIEW.latMin; lat <= VIEW.latMax; lat += stepDeg) {
+    for (let lon = VIEW.lonMin; lon <= VIEW.lonMax; lon += stepDeg) {
+      const wind = getWindAt(lat, lon);
+      const speed = Math.sqrt(wind.u * wind.u + wind.v * wind.v);
+
+      const px = lonToX(lon);
+      const py = latToY(lat);
+
+      // Color by speed (m/s)
+      let color;
+      if (speed < 2) color = 'rgba(80,80,120,0.3)';
+      else if (speed < 4) color = 'rgba(98,170,220,0.5)';
+      else if (speed < 7) color = 'rgba(108,210,138,0.6)';
+      else if (speed < 10) color = 'rgba(200,210,80,0.6)';
+      else if (speed < 14) color = 'rgba(240,185,107,0.7)';
+      else color = 'rgba(217,119,6,0.8)';
+
+      // Draw arrow: u=east component, v=north component
+      // Screen: x→right (east), y→down (south)
+      const scale = 2.5;
+      const dx = wind.u * scale;
+      const dy = -wind.v * scale; // flip v for screen coords
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = speed > 10 ? 1.5 : 1;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + dx, py + dy);
+      ctx.stroke();
+
+      // Small arrowhead
+      if (speed > 2) {
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(px + dx, py + dy);
+        ctx.lineTo(px + dx - 3 * Math.cos(angle - 0.5), py + dy - 3 * Math.sin(angle - 0.5));
+        ctx.moveTo(px + dx, py + dy);
+        ctx.lineTo(px + dx - 3 * Math.cos(angle + 0.5), py + dy - 3 * Math.sin(angle + 0.5));
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Grid labels
+  ctx.fillStyle = 'rgba(245,240,232,0.3)';
+  ctx.font = '10px monospace';
+  for (let lon = -40; lon <= 20; lon += 10) {
+    ctx.fillText(`${lon}°`, lonToX(lon), canvas.height - 5);
+  }
+  for (let lat = 25; lat <= 65; lat += 5) {
+    ctx.fillText(`${lat}°N`, 5, latToY(lat) + 4);
+  }
+}
+
+// Hover: show wind data at cursor position
+canvas.addEventListener('mousemove', (e) => {
+  const lon = xToLon(e.clientX);
+  const lat = yToLat(e.clientY);
+  const wind = getWindAt(lat, lon);
+  const speed = Math.sqrt(wind.u * wind.u + wind.v * wind.v);
+  const dir = ((Math.atan2(-wind.u, -wind.v) * 180 / Math.PI) + 360) % 360;
+  const knots = speed * 1.94384;
+  hover.innerHTML = `${lat.toFixed(1)}°N ${lon.toFixed(1)}°E | U=${wind.u.toFixed(1)} V=${wind.v.toFixed(1)} | ${knots.toFixed(0)}kt from ${dir.toFixed(0)}°`;
+});
+</script>
+</body>
+</html>

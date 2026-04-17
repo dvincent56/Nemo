@@ -96,8 +96,7 @@ export default function MapCanvas(): React.ReactElement {
         west: b.getWest(),
       });
     };
-    map.on('moveend', syncMapState);
-    map.on('zoomend', syncMapState);
+    map.on('move', syncMapState);  // continuous sync during pan/zoom
     map.once('load', syncMapState);
 
     return () => {
