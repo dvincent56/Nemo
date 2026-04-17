@@ -331,10 +331,10 @@ export interface WindData {
 export class WindGL {
   private gl: WebGLRenderingContext;
 
-  fadeOpacity = 0.980;   // faster fade = shorter trails (Canvas 2D style)
-  speedFactor = 0.10;    // slower particles (was 0.25)
-  dropRate = 0.005;      // slightly more respawn for density
-  dropRateBump = 0.005;  // less speed-dependent drop
+  fadeOpacity = 0.993;   // moderate trails
+  speedFactor = 0.03;    // very slow drift like VR/Canvas 2D
+  dropRate = 0.003;      // respawn rate
+  dropRateBump = 0.002;  // minimal speed-dependent drop
 
   private drawProgram: ProgramInfo;
   private screenProgram: ProgramInfo;
