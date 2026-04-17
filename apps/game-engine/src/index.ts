@@ -6,6 +6,7 @@ import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { TickManager } from './engine/manager.js';
 import type { BoatRuntime } from './engine/tick.js';
+import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { connectRedis } from './infra/redis.js';
@@ -39,15 +40,36 @@ function createDemoRuntime(): BoatRuntime {
     segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    upgrades: new Set(),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };
 }
 
+function validateCatalogCoverage(): void {
+  const cat = GameBalance.upgrades;
+  const errors: string[] = [];
+  for (const [boatClass, slots] of Object.entries(cat.slotsByClass)) {
+    for (const [slot, availability] of Object.entries(slots)) {
+      if (availability === 'absent') continue;
+      const hasSerie = cat.items.some(
+        (it) => it.slot === slot && it.tier === 'SERIE' && it.compat.includes(boatClass as any),
+      );
+      if (!hasSerie) {
+        errors.push(`No SERIE item for ${slot}/${boatClass}`);
+      }
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`Upgrade catalog incomplete:\n${errors.map((e) => `  - ${e}`).join('\n')}`);
+  }
+  console.log(`[engine] Upgrade catalog validated: ${cat.items.length} items, ${Object.keys(cat.slotsByClass).length} classes`);
+}
+
 async function main() {
   await GameBalance.loadFromDisk();
   log.info({ version: GameBalance.version }, 'game-balance loaded');
+  validateCatalogCoverage();
 
   const app = Fastify({ logger: false });
   await app.register(cookie);

@@ -1,5 +1,6 @@
 import type { DriveMode, WeatherPoint } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
+import type { AggregatedEffects } from './loadout.js';
 
 export interface ConditionState {
   hull: number;
@@ -37,31 +38,18 @@ export function computeWearDelta(
   heading: number,
   driveMode: DriveMode,
   dtSec: number,
-  upgrades: ReadonlySet<string>,
+  loadoutEffects: AggregatedEffects,
 ): ConditionState {
   const wear = GameBalance.wear;
   const hoursFraction = dtSec / 3600;
   const windMul = windMultiplier(weather.tws);
   const swellMul = swellMultiplier(weather, heading);
   const driveMul = wear.driveModeMultipliers[driveMode];
-  const mult = wear.upgradeMultipliers;
 
-  let hullMul = windMul * swellMul;
-  let rigMul = windMul;
-  let sailsMul = windMul;
-  const elecMul = 1.0;
-
-  if (upgrades.has('FOILS')) { rigMul *= mult['foils_rig'] ?? 1; hullMul *= mult['foils_hull'] ?? 1; }
-  if (upgrades.has('REINFORCED_HULL')) { hullMul *= mult['reinforced_hull'] ?? 1; }
-  if (upgrades.has('KEVLAR_SAILS')) { sailsMul *= mult['kevlar_sails'] ?? 1; }
-  if (upgrades.has('CARBON_RIG')) {
-    const threshold = mult['carbon_threshold_kts'] ?? 30;
-    rigMul *= weather.tws > threshold ? (mult['carbon_rig_strong'] ?? 1) : (mult['carbon_rig_normal'] ?? 1);
-  }
-  if (upgrades.has('HEAVY_WEATHER_KIT')) {
-    rigMul *= mult['heavy_weather_rig'] ?? 1;
-    sailsMul *= mult['heavy_weather_sails'] ?? 1;
-  }
+  const hullMul  = windMul * swellMul * loadoutEffects.wearMul.hull;
+  const rigMul   = windMul            * loadoutEffects.wearMul.rig;
+  const sailsMul = windMul            * loadoutEffects.wearMul.sail;
+  const elecMul  = loadoutEffects.wearMul.elec; // no weather multiplier on electronics (by design)
 
   return {
     hull: wear.baseRatesPerHour.hull * hoursFraction * hullMul * driveMul,

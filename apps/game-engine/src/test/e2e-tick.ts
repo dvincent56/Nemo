@@ -3,6 +3,7 @@ import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { haversineNM, loadPolar } from '@nemo/polar-lib';
 import { runTick, type BoatRuntime } from '../engine/tick.js';
+import { resolveBoatLoadout } from '../engine/loadout.js';
 import { buildZoneIndex } from '../engine/zones.js';
 import { createFixtureProvider } from '../weather/provider.js';
 
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
     },
     orderHistory: [],
     zonesAlerted: new Set(),
-    upgrades: new Set(),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };

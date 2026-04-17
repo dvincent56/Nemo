@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
 import { runTick, type BoatRuntime } from '../engine/tick.js';
+import { resolveBoatLoadout } from '../engine/loadout.js';
 import { buildZoneIndex } from '../engine/zones.js';
 import { createFixtureProvider } from '../weather/provider.js';
 
@@ -68,7 +69,7 @@ async function main(): Promise<void> {
     segmentState: { position: { ...start }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
     orderHistory,
     zonesAlerted: new Set(),
-    upgrades: new Set(),
+    loadout: resolveBoatLoadout('test-boat', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };

@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776377693887,
+      "tag": "0000_marina_upgrades_phase_a",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776379649871,
+      "tag": "0001_marina_upgrades_phase_a",
+      "breakpoints": true
+    }
+  ]
+}

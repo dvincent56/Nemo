@@ -2,6 +2,7 @@ import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
 import { runTick, type BoatRuntime, type TickOutcome } from '../engine/tick.js';
+import { resolveBoatLoadout } from '../engine/loadout.js';
 import { buildZoneIndex } from '../engine/zones.js';
 import { createFixtureProvider } from '../weather/provider.js';
 import { buildFullUpdate } from '../broadcast/payload.js';
@@ -45,7 +46,7 @@ function buildRuntime(i: number, raceId: string): BoatRuntime {
     segmentState: { position: { ...pos }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    upgrades: new Set(),
+    loadout: resolveBoatLoadout(`bench-boat-${i}`, [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };
