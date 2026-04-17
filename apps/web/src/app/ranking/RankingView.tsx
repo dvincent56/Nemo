@@ -50,18 +50,18 @@ function displayUsername(r: SkipperRanking, meUsername: string | null): string {
   return r.username;
 }
 
-export interface ClassementViewProps {
+export interface RankingViewProps {
   totalSkippers: number;
   /** Non authentifié : cache "Ta position", filtre les scopes à GENERAL. */
   isVisitor: boolean;
   meUsername: string | null;
 }
 
-export default function ClassementView({
+export default function RankingView({
   totalSkippers,
   isVisitor,
   meUsername,
-}: ClassementViewProps): React.ReactElement {
+}: RankingViewProps): React.ReactElement {
   const [classFilter, setClassFilter] = useState<ClassFilter>('ALL');
   const [scope, setScope] = useState<ScopeFilter>('GENERAL');
 
@@ -148,11 +148,11 @@ export default function ClassementView({
       <div className={styles.viewSwitch}>
         <button type="button" className={`${styles.viewBtn} ${styles.active}`}>Saison</button>
         <Link
-          href={'/classement/courses' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Par course</Link>
         <Link
-          href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking/teams' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Équipes</Link>
       </div>

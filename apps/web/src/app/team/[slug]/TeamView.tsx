@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Eyebrow, Pagination } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import { profileHref } from '@/lib/routes';
-import type { BoatClass } from '@/app/classement/data';
+import type { BoatClass } from '@/app/ranking/data';
 import type { TeamMember, TeamProfile } from '../data';
 import styles from './page.module.css';
 
@@ -107,7 +107,7 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
             </h2>
           </div>
           <Link
-            href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
+            href={'/ranking/teams' as Parameters<typeof Link>[0]['href']}
             className={styles.sectionLink}
           >
             Classement des équipes →

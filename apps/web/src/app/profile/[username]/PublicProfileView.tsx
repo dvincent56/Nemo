@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button, Flag } from '@/components/ui';
-import type { PublicProfile, BoatClass } from '@/app/classement/data';
+import type { PublicProfile, BoatClass } from '@/app/ranking/data';
 import baseStyles from '../page.module.css';
 import styles from './page.module.css';
 
@@ -142,7 +142,7 @@ export default function PublicProfileView({
             <p className={baseStyles.sectionEyebrow}>Performance par classe</p>
             <h2 className={baseStyles.sectionTitle}>Palmarès par flotte</h2>
           </div>
-          <Link href={'/classement' as Parameters<typeof Link>[0]['href']} className={baseStyles.sectionLink}>
+          <Link href={'/ranking' as Parameters<typeof Link>[0]['href']} className={baseStyles.sectionLink}>
             Voir le classement complet →
           </Link>
         </header>

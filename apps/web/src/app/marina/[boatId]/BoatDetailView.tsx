@@ -341,7 +341,7 @@ function HistoryRow({ entry }: { entry: BoatRaceHistoryEntry }): React.ReactElem
   });
   return (
     <Link
-      href={`/classement/${entry.raceId}` as Parameters<typeof Link>[0]['href']}
+      href={`/ranking/${entry.raceId}` as Parameters<typeof Link>[0]['href']}
       className={styles.historyRow}
     >
       <span className={`${styles.historyPos} ${isPodium ? styles.historyPosPodium : ''}`}>

@@ -125,7 +125,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       {/* Row 2 — Map + floating elements */}
       <div className={styles.mapArea}>
         <MapCanvas />
-        {/* Weather overlays — below boats, above map */}
+        {/* Weather overlays — canvas on top of map, transparent background */}
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}

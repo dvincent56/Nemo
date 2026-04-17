@@ -4,7 +4,7 @@ import { fetchNews, fetchRaces } from '@/lib/api';
 import { parseDevToken } from '@/lib/access';
 import HomeView from './HomeView';
 import { HERO_STATS } from './home-data';
-import { getRanking } from './classement/data';
+import { getRanking } from './ranking/data';
 
 export const dynamic = 'force-dynamic';
 

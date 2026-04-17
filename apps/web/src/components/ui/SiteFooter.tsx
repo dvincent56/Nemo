@@ -10,7 +10,7 @@ interface FooterLink {
 
 const PRODUIT_LINKS: FooterLink[] = [
   { label: 'Courses', href: '/races' },
-  { label: 'Classement', href: '/classement' },
+  { label: 'Classement', href: '/ranking' },
   { label: 'Marina', href: '/marina' },
   { label: 'Mode carrière', href: '/subscribe' as Href },
   { label: 'Mode spectateur', href: '/races' },

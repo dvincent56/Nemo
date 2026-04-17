@@ -12,7 +12,7 @@ function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };
 }
 
-export default async function ClassementEquipesPage(): Promise<React.ReactElement> {
+export default async function RankingTeamsPage(): Promise<React.ReactElement> {
   const cookieStore = await cookies();
   const token = cookieStore.get('nemo_access_token')?.value ?? null;
   const session = parseDevToken(token);
@@ -65,11 +65,11 @@ export default async function ClassementEquipesPage(): Promise<React.ReactElemen
 
       <div className={styles.viewSwitch}>
         <Link
-          href={'/classement' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Saison</Link>
         <Link
-          href={'/classement/courses' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Par course</Link>
         <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Équipes</button>

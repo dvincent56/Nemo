@@ -88,7 +88,7 @@ export default function NewsArticle({
         </Link>
         <nav className={styles.nav} aria-label="Principal">
           <Link href="/races">Courses</Link>
-          <Link href="/classement">Classement</Link>
+          <Link href="/ranking">Classement</Link>
         </nav>
         <Link href="/login" className={styles.loginCta}>
           Se connecter

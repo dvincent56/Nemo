@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { SiteShell } from '@/components/ui/SiteShell';
 import { parseDevToken } from '@/lib/access';
-import { getPublicProfile } from '@/app/classement/data';
+import { getPublicProfile } from '@/app/ranking/data';
 import PublicProfileView from './PublicProfileView';
 
 export const dynamic = 'force-dynamic';

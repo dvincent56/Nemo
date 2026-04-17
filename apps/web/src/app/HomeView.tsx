@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Flag, NewsCard } from '@/components/ui';
 import type { RaceSummary } from '@/lib/api';
 import type { NewsItem } from './home-data';
-import type { SkipperRanking } from './classement/data';
+import type { SkipperRanking } from './ranking/data';
 import styles from './page.module.css';
 
 type LinkHref = Parameters<typeof Link>[0]['href'];
@@ -96,7 +96,7 @@ function Hero({
         </Link>
         <nav aria-label="Principal">
           <Link href="/races">Courses</Link>
-          <Link href="/classement">Classement</Link>
+          <Link href="/ranking">Classement</Link>
           {!isVisitor && <Link href="/marina">Marina</Link>}
           {!isVisitor && <Link href="/profile">Profil</Link>}
         </nav>
@@ -736,7 +736,7 @@ function SeasonPodium({
           </p>
           <h2>Ils sont en tête.</h2>
         </div>
-        <Link href="/classement" className={styles.sectionLink}>
+        <Link href="/ranking" className={styles.sectionLink}>
           Classement complet <span>→</span>
         </Link>
       </header>

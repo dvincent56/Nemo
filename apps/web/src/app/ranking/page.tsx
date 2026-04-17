@@ -1,14 +1,10 @@
 import { cookies } from 'next/headers';
 import { SiteShell } from '@/components/ui/SiteShell';
 import { parseDevToken } from '@/lib/access';
-import ClassementRaceView from './ClassementRaceView';
+import RankingView from './RankingView';
+import { TOTAL_SKIPPERS } from './data';
 
-export default async function ClassementRacePage({
-  params,
-}: {
-  params: Promise<{ raceId: string }>;
-}): Promise<React.ReactElement> {
-  const { raceId } = await params;
+export default async function RankingPage(): Promise<React.ReactElement> {
   const cookieStore = await cookies();
   const token = cookieStore.get('nemo_access_token')?.value ?? null;
   const session = parseDevToken(token);
@@ -16,8 +12,8 @@ export default async function ClassementRacePage({
 
   return (
     <SiteShell>
-      <ClassementRaceView
-        raceId={raceId}
+      <RankingView
+        totalSkippers={TOTAL_SKIPPERS}
         isVisitor={isVisitor}
         meUsername={session.username}
       />

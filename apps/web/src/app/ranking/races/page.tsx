@@ -14,7 +14,7 @@ const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
   ULTIM: 'Ultim',
 };
 
-export default async function ClassementCoursesPage(): Promise<React.ReactElement> {
+export default async function RankingRacesPage(): Promise<React.ReactElement> {
   const all = await fetchRaces().catch(() => []);
   // Seules les courses en cours et terminées ont un classement consultable.
   // Les courses à venir (PUBLISHED, BRIEFING) sont exclues.
@@ -30,12 +30,12 @@ export default async function ClassementCoursesPage(): Promise<React.ReactElemen
 
       <div className={styles.viewSwitch}>
         <Link
-          href={'/classement' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Saison</Link>
         <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Par course</button>
         <Link
-          href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking/teams' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Équipes</Link>
       </div>
@@ -85,7 +85,7 @@ function RaceSection({
         {races.map((r) => (
           <Link
             key={r.id}
-            href={`/classement/${r.id}` as Parameters<typeof Link>[0]['href']}
+            href={`/ranking/${r.id}` as Parameters<typeof Link>[0]['href']}
             className={styles.row}
           >
             <div>

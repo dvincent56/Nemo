@@ -23,13 +23,13 @@ export interface TopbarProps {
 const PLAYER_LINKS: TopbarLink[] = [
   { href: '/races', label: 'Courses' },
   { href: '/marina', label: 'Marina' },
-  { href: '/classement', label: 'Classement' },
+  { href: '/ranking', label: 'Classement' },
   { href: '/profile', label: 'Profil' },
 ];
 
 const VISITOR_LINKS: TopbarLink[] = [
   { href: '/races', label: 'Courses' },
-  { href: '/classement', label: 'Classement' },
+  { href: '/ranking', label: 'Classement' },
 ];
 
 const LANGS = [

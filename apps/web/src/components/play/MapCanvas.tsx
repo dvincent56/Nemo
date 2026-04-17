@@ -22,23 +22,9 @@ const STYLE: maplibregl.StyleSpecification = {
     },
   },
   layers: [
-    {
-      id: 'background',
-      type: 'background',
-      paint: { 'background-color': '#0a1628' },
-    },
-    {
-      id: 'dark-tiles',
-      type: 'raster',
-      source: 'osm-tiles',
-      paint: { 'raster-opacity': 0.6 },
-    },
-    {
-      id: 'labels',
-      type: 'raster',
-      source: 'osm-labels',
-      paint: { 'raster-opacity': 0.5 },
-    },
+    { id: 'background', type: 'background', paint: { 'background-color': '#0a1628' } },
+    { id: 'dark-tiles', type: 'raster', source: 'osm-tiles', paint: { 'raster-opacity': 0.6 } },
+    { id: 'labels', type: 'raster', source: 'osm-labels', paint: { 'raster-opacity': 0.5 } },
   ],
 };
 
@@ -64,7 +50,6 @@ export default function MapCanvas(): React.ReactElement {
     mapRef.current = map;
 
     map.once('load', () => {
-      // Trail source + layer
       map.addSource('my-trail', {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
@@ -73,14 +58,9 @@ export default function MapCanvas(): React.ReactElement {
         id: 'my-trail-line',
         type: 'line',
         source: 'my-trail',
-        paint: {
-          'line-color': BOAT_COLOR,
-          'line-width': 2,
-          'line-opacity': 0.85,
-        },
+        paint: { 'line-color': BOAT_COLOR, 'line-width': 2, 'line-opacity': 0.85 },
       });
 
-      // My boat source + layer
       map.addSource('my-boat', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -98,7 +78,6 @@ export default function MapCanvas(): React.ReactElement {
       });
     });
 
-    // Disable follow on user pan
     map.on('dragstart', () => {
       useGameStore.getState().setFollowBoat(false);
     });
@@ -109,7 +88,6 @@ export default function MapCanvas(): React.ReactElement {
     };
   }, []);
 
-  // Subscribe to store updates
   useEffect(() => {
     return useGameStore.subscribe((s) => {
       const map = mapRef.current;
@@ -117,7 +95,6 @@ export default function MapCanvas(): React.ReactElement {
       const { lat, lon } = s.hud;
       if (!lat && !lon) return;
 
-      // Update boat position
       const boatSrc = map.getSource('my-boat') as maplibregl.GeoJSONSource | undefined;
       boatSrc?.setData({
         type: 'FeatureCollection',
@@ -128,7 +105,6 @@ export default function MapCanvas(): React.ReactElement {
         }],
       });
 
-      // Update trail
       trailCoords.push([lon, lat]);
       if (trailCoords.length > 1) {
         const trailSrc = map.getSource('my-trail') as maplibregl.GeoJSONSource | undefined;
@@ -139,7 +115,6 @@ export default function MapCanvas(): React.ReactElement {
         });
       }
 
-      // Follow boat
       if (s.map.isFollowingBoat) {
         map.easeTo({ center: [lon, lat], duration: 500 });
       }

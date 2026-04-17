@@ -81,6 +81,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@etalab/decoupage-administratif':
+        specifier: ^6.0.0
+        version: 6.0.0
       '@msgpack/msgpack':
         specifier: ^3.0.0
         version: 3.1.3
@@ -90,6 +93,12 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^19.0.0-beta-27714ef-20250124
         version: 19.0.0-beta-ebf51a3-20250411
+      country-flag-icons:
+        specifier: ^1.6.16
+        version: 1.6.16
+      country-state-city:
+        specifier: ^3.2.1
+        version: 3.2.1
       maplibre-gl:
         specifier: ^5.0.0
         version: 5.18.0
@@ -639,6 +648,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@etalab/decoupage-administratif@6.0.0':
+    resolution: {integrity: sha512-XavYsFlbcM/prKr8hNHPKER94IHw/dsxNM4nxjWMYk6PLFACpEedvn/7wK8Baozm0dCYhWWcf+7bcWpA5pmCaQ==}
+    engines: {node: '>= 10'}
+
   '@fastify/ajv-compiler@4.0.5':
     resolution: {integrity: sha512-KoWKW+MhvfTRWL4qrhUwAAZoaChluo0m0vbiJlGMt2GXvL4LVPQEjt8kSpHI3IBq5Rez8fg+XeH3cneztq+C7A==}
 
@@ -981,6 +994,12 @@ packages:
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
+
+  country-flag-icons@1.6.16:
+    resolution: {integrity: sha512-HxJVoE/aaZGcUMx1vK/u9430uKGB3ODZDDZJJOqVJQzoHk5v42c0fSp1rk4tDfyr1dVOJjwxRiaBPliBMo2Liw==}
+
+  country-state-city@3.2.1:
+    resolution: {integrity: sha512-kxbanqMc6izjhc/EHkGPCTabSPZ2G6eG4/97akAYHJUN4stzzFEvQPZoF8oXDQ+10gM/O/yUmISCR1ZVxyb6EA==}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -1740,6 +1759,8 @@ snapshots:
   '@esbuild/win32-x64@0.27.7':
     optional: true
 
+  '@etalab/decoupage-administratif@6.0.0': {}
+
   '@fastify/ajv-compiler@4.0.5':
     dependencies:
       ajv: 8.18.0
@@ -2042,6 +2063,10 @@ snapshots:
   cluster-key-slot@1.1.2: {}
 
   cookie@1.1.1: {}
+
+  country-flag-icons@1.6.16: {}
+
+  country-state-city@3.2.1: {}
 
   csstype@3.2.3: {}
 

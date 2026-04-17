@@ -14,7 +14,7 @@ import {
   COUNTRY_LABEL,
   type Player,
   type CountryCode,
-} from '@/app/classement/data';
+} from '@/app/ranking/data';
 
 export type TeamRole = 'CAPTAIN' | 'MODERATOR' | 'MEMBER';
 

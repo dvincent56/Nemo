@@ -1,4 +1,3 @@
-// apps/web/src/components/play/WindOverlay.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -6,22 +5,22 @@ import { useGameStore } from '@/lib/store';
 import { getPointsAtTime } from '@/lib/weather/mockGrid';
 import { interpolateWind } from '@/lib/weather/interpolate';
 
-const PARTICLE_COUNT = 3000;
-const FADE_RATE = 0.97;
-
+const PARTICLE_COUNT = 2000;
 interface Particle {
   x: number;
   y: number;
+  prevX: number;
+  prevY: number;
   age: number;
   maxAge: number;
 }
 
 function windSpeedColor(speed: number): string {
-  if (speed < 8) return 'rgba(108,210,138,0.6)';   // green — light
-  if (speed < 15) return 'rgba(201,216,96,0.6)';    // yellow-green
-  if (speed < 22) return 'rgba(240,185,107,0.6)';   // orange
-  if (speed < 30) return 'rgba(217,119,6,0.6)';     // dark orange
-  return 'rgba(158,42,42,0.6)';                      // red — storm
+  if (speed < 8) return 'rgba(108,210,138,0.7)';
+  if (speed < 15) return 'rgba(201,216,96,0.7)';
+  if (speed < 22) return 'rgba(240,185,107,0.7)';
+  if (speed < 30) return 'rgba(217,119,6,0.7)';
+  return 'rgba(158,42,42,0.7)';
 }
 
 export default function WindOverlay(): React.ReactElement {
@@ -42,7 +41,6 @@ export default function WindOverlay(): React.ReactElement {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Size canvas to container
     const resize = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
@@ -55,11 +53,12 @@ export default function WindOverlay(): React.ReactElement {
     // Initialize particles
     const particles: Particle[] = [];
     for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height;
       particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        age: Math.floor(Math.random() * 100),
-        maxAge: 80 + Math.floor(Math.random() * 60),
+        x, y, prevX: x, prevY: y,
+        age: Math.floor(Math.random() * 80),
+        maxAge: 60 + Math.floor(Math.random() * 60),
       });
     }
     particlesRef.current = particles;
@@ -76,53 +75,54 @@ export default function WindOverlay(): React.ReactElement {
       const points = getPointsAtTime(grid, time);
       const { width, height } = canvas;
 
-      // Fade existing content
-      ctx.fillStyle = `rgba(6,11,24,${1 - FADE_RATE})`;
-      ctx.fillRect(0, 0, width, height);
+      // CLEAR canvas each frame — map stays visible underneath
+      ctx.clearRect(0, 0, width, height);
 
-      // Get map bounds (approximate — map center + zoom)
       const mapState = store.map;
       const [cLon, cLat] = mapState.center;
-      const span = 180 / Math.pow(2, mapState.zoom); // approximate degrees visible
+      const span = 180 / Math.pow(2, mapState.zoom);
       const lonMin = cLon - span;
       const lonMax = cLon + span;
       const latMin = cLat - span * 0.6;
       const latMax = cLat + span * 0.6;
 
       for (const p of particles) {
-        // Convert pixel to geo
         const lon = lonMin + (p.x / width) * (lonMax - lonMin);
         const lat = latMax - (p.y / height) * (latMax - latMin);
 
-        // Get wind at this position
         const wind = interpolateWind(points, lat, lon);
         const speed = wind.tws;
 
-        // Move particle by wind vector (scaled)
-        const scale = 0.3 + speed * 0.08;
-        const toRad = Math.PI / 180;
-        const dx = -Math.sin(wind.twd * toRad) * scale;
-        const dy = Math.cos(wind.twd * toRad) * scale;
+        // Save previous position
+        p.prevX = p.x;
+        p.prevY = p.y;
 
-        p.x += dx;
-        p.y += dy;
+        // Move particle by wind vector
+        const scale = 0.4 + speed * 0.1;
+        const toRad = Math.PI / 180;
+        p.x += -Math.sin(wind.twd * toRad) * scale;
+        p.y += Math.cos(wind.twd * toRad) * scale;
         p.age++;
 
         // Reset if out of bounds or too old
         if (p.age > p.maxAge || p.x < 0 || p.x > width || p.y < 0 || p.y > height) {
           p.x = Math.random() * width;
           p.y = Math.random() * height;
+          p.prevX = p.x;
+          p.prevY = p.y;
           p.age = 0;
-          p.maxAge = 80 + Math.floor(Math.random() * 60);
+          p.maxAge = 60 + Math.floor(Math.random() * 60);
         }
 
-        // Draw
-        const alpha = Math.min(1, (p.maxAge - p.age) / 20, p.age / 10);
+        // Draw trail line (not a fading fill — fully transparent background)
+        const alpha = Math.min(0.8, (p.maxAge - p.age) / 20, p.age / 8);
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = windSpeedColor(speed);
+        ctx.strokeStyle = windSpeedColor(speed);
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(p.prevX, p.prevY);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
       }
 
       ctx.globalAlpha = 1;

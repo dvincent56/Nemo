@@ -9,7 +9,7 @@
  * les composants consommateurs n'ont rien à modifier.
  */
 
-import { PLAYERS, type CountryCode, type Player } from '@/app/classement/data';
+import { PLAYERS, type CountryCode, type Player } from '@/app/ranking/data';
 
 export interface SkipperSearchResult {
   username: string;

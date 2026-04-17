@@ -86,17 +86,17 @@ function TrendCell({ trend }: { trend: Trend }): React.ReactElement {
   return <span className={styles.trend}>—</span>;
 }
 
-export interface ClassementRaceViewProps {
+export interface RankingRaceViewProps {
   raceId: string;
   isVisitor: boolean;
   meUsername: string | null;
 }
 
-export default function ClassementRaceView({
+export default function RankingRaceView({
   raceId: _raceId,
   isVisitor,
   meUsername,
-}: ClassementRaceViewProps): React.ReactElement {
+}: RankingRaceViewProps): React.ReactElement {
   const [scope, setScope] = useState<Scope>('GENERAL');
 
   const scopeOptions = useMemo(
@@ -149,11 +149,11 @@ export default function ClassementRaceView({
 
       <div className={styles.viewSwitch}>
         <Link
-          href={'/classement' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Saison</Link>
         <Link
-          href={'/classement/courses' as Parameters<typeof Link>[0]['href']}
+          href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={`${styles.viewBtn} ${styles.viewBtnActive}`}
         >Par course</Link>
       </div>
@@ -176,7 +176,7 @@ export default function ClassementRaceView({
               En cours
             </span>
             <Link
-              href={'/classement/courses' as Parameters<typeof Link>[0]['href']}
+              href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
               className={styles.pickerChange}
             >
               Changer de course →
