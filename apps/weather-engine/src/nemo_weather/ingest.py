@@ -1,26 +1,29 @@
-"""NOAA GFS ingest — Phase 2 skeleton.
-
-Télécharge les runs GFS atmosphérique et GFS Wave les plus récents, convertit U10/V10
-en TWS/TWD, sérialise les plans (TWS, TWD, SWH, MWD, MWP) en Float32Array et pousse
-le résultat dans Redis (+ fichier JSON de backup).
-"""
+"""NOAA GFS ingest — continuous polling and ingestion."""
 
 from __future__ import annotations
 
-import base64
+import calendar
 import datetime as dt
-import io
-import json
 import logging
 import os
 import sys
-from dataclasses import dataclass
+import time
 from pathlib import Path
 from typing import Iterable
 
 import numpy as np
+import redis as redis_lib
 import requests
-import xarray as xr
+
+from .grid_builder import (
+    build_grid_payload,
+    decompose_mwd,
+    parse_atmos_grib,
+    parse_wave_grib,
+    uv_to_components,
+)
+from .persistence import load_from_disk, push_to_redis, save_to_disk
+from .poller import check_run_available, pick_target_run, wait_for_run
 
 LOG = logging.getLogger("nemo.weather")
 
@@ -33,91 +36,151 @@ NOAA_WAVE = (
     "gfs.{ymd}/{hh}/wave/gridded/gfswave.t{hh}z.global.0p16.f{fff}.grib2"
 )
 
-FORECAST_HOURS = [0, 3, 6, 12, 24, 48, 72, 120, 192, 240]
+# f000–f072 every 3h, f078–f240 every 6h (53 forecast hours)
+FORECAST_HOURS: list[int] = list(range(0, 73, 3)) + list(range(78, 241, 6))
+
+TMP_DIR = Path("/tmp/nemo-weather")
+FALLBACK_DIR = Path(os.environ.get("WEATHER_FALLBACK_DIR", "/data/weather-fallback"))
+MAX_RETRIES = 3
+RETRY_BACKOFF = [5, 15, 45]
+POLL_CYCLE_SEC = 300
 
 
-@dataclass(frozen=True)
-class GridMeta:
-    run_ts: int
-    bbox: dict
-    resolution: float
-    shape: dict
-    forecast_hours: list[int]
+def fetch_grib(url: str, dest: Path) -> Path:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    for attempt in range(MAX_RETRIES):
+        try:
+            LOG.info("downloading %s (attempt %d)", url, attempt + 1)
+            with requests.get(url, stream=True, timeout=120) as r:
+                r.raise_for_status()
+                with open(dest, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=1 << 20):
+                        f.write(chunk)
+            return dest
+        except requests.RequestException as e:
+            if attempt < MAX_RETRIES - 1:
+                wait = RETRY_BACKOFF[attempt]
+                LOG.warning("download failed: %s, retrying in %ds", e, wait)
+                time.sleep(wait)
+            else:
+                raise
+    return dest
 
 
-def pick_latest_run(now: dt.datetime | None = None) -> dt.datetime:
-    """Le run NOAA est publié avec ~4h de délai après son heure d'origine."""
-    now = now or dt.datetime.utcnow()
-    anchor = now - dt.timedelta(hours=4)
-    hh = (anchor.hour // 6) * 6
-    return anchor.replace(hour=hh, minute=0, second=0, microsecond=0)
+def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
+    ymd = run.strftime("%Y%m%d")
+    hh = f"{run.hour:02d}"
+    run_ts = int(calendar.timegm(run.timetuple()))
 
+    u_planes: list[np.ndarray] = []
+    v_planes: list[np.ndarray] = []
+    swh_planes: list[np.ndarray] = []
+    mwd_sin_planes: list[np.ndarray] = []
+    mwd_cos_planes: list[np.ndarray] = []
+    mwp_planes: list[np.ndarray] = []
+    ingested_hours: list[int] = []
 
-def fetch_grib(url: str, tmp: Path) -> Path:
-    tmp.parent.mkdir(parents=True, exist_ok=True)
-    LOG.info("download %s", url)
-    with requests.get(url, stream=True, timeout=120) as r:
-        r.raise_for_status()
-        with open(tmp, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 20):
-                f.write(chunk)
-    return tmp
+    target_lats: np.ndarray | None = None
+    target_lons: np.ndarray | None = None
 
+    for fh in FORECAST_HOURS:
+        fff = f"{fh:03d}"
+        try:
+            atmos_url = NOAA_ATMOS.format(ymd=ymd, hh=hh, fff=fff)
+            atmos_path = TMP_DIR / f"atmos_{ymd}_{hh}_f{fff}.grib2"
+            fetch_grib(atmos_url, atmos_path)
+            u10, v10, lats, lons = parse_atmos_grib(atmos_path)
 
-def uv_to_tws_twd(u: np.ndarray, v: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """U10/V10 (m/s) → TWS (kts), TWD (deg compass, d'où vient le vent)."""
-    speed_ms = np.sqrt(u * u + v * v)
-    tws_kts = speed_ms * 1.94384
-    # TWD "from": wind coming from
-    twd = (np.degrees(np.arctan2(-u, -v)) + 360.0) % 360.0
-    return tws_kts.astype(np.float32), twd.astype(np.float32)
+            if target_lats is None:
+                target_lats = lats
+                target_lons = lons
 
+            u, v = uv_to_components(u10, v10)
 
-def serialize(arr: np.ndarray) -> str:
-    return base64.b64encode(arr.astype(np.float32).tobytes()).decode("ascii")
+            wave_url = NOAA_WAVE.format(ymd=ymd, hh=hh, fff=fff)
+            wave_path = TMP_DIR / f"wave_{ymd}_{hh}_f{fff}.grib2"
+            fetch_grib(wave_url, wave_path)
+            swh, mwd_raw, mwp = parse_wave_grib(wave_path, target_lats, target_lons)
+            mwd_sin, mwd_cos = decompose_mwd(mwd_raw)
 
+            u_planes.append(u)
+            v_planes.append(v)
+            swh_planes.append(swh)
+            mwd_sin_planes.append(mwd_sin)
+            mwd_cos_planes.append(mwd_cos)
+            mwp_planes.append(mwp)
+            ingested_hours.append(fh)
 
-def build_grid(atmos_ds: xr.Dataset, wave_ds: xr.Dataset, meta: GridMeta) -> dict:
-    u10 = atmos_ds["u10"].values
-    v10 = atmos_ds["v10"].values
-    tws, twd = uv_to_tws_twd(u10, v10)
-    swh = wave_ds["swh"].values.astype(np.float32)
-    mwd = wave_ds["mwd"].values.astype(np.float32)
-    mwp = wave_ds["perpw"].values.astype(np.float32)
-    return {
-        "runTs": meta.run_ts,
-        "bbox": meta.bbox,
-        "resolution": meta.resolution,
-        "shape": meta.shape,
-        "forecastHours": meta.forecast_hours,
-        "variables": {
-            "tws": serialize(tws),
-            "twd": serialize(twd),
-            "swh": serialize(swh),
-            "mwd": serialize(mwd),
-            "mwp": serialize(mwp),
-        },
-    }
+            atmos_path.unlink(missing_ok=True)
+            wave_path.unlink(missing_ok=True)
 
+            LOG.info("ingested f%s (%d/%d)", fff, len(ingested_hours), len(FORECAST_HOURS))
 
-def push_to_redis(grid: dict) -> None:
-    import redis  # type: ignore[import-untyped]
+        except Exception:
+            LOG.exception("failed to ingest f%s, skipping", fff)
+            continue
 
-    url = os.environ.get("REDIS_URL", "redis://localhost:6379")
-    r = redis.from_url(url)
-    key = f"weather:grid:{grid['runTs']}"
-    r.set(key, json.dumps(grid), ex=6 * 3600)
-    r.publish("weather:grid:updated", str(grid["runTs"]))
-    LOG.info("pushed to redis key=%s", key)
+    if not ingested_hours:
+        LOG.error("no forecast hours ingested for run %s, aborting", run.isoformat())
+        return
+
+    rows = target_lats.shape[0] if target_lats is not None else 721
+    cols = target_lons.shape[0] if target_lons is not None else 1440
+    lat_min = float(target_lats[0]) if target_lats is not None else -90.0
+    lat_max = float(target_lats[-1]) if target_lats is not None else 90.0
+    lon_min = float(target_lons[0]) if target_lons is not None else -180.0
+    lon_max = float(target_lons[-1]) if target_lons is not None else 180.0
+
+    grid = build_grid_payload(
+        run_ts=run_ts,
+        forecast_hours=ingested_hours,
+        u_planes=u_planes,
+        v_planes=v_planes,
+        swh_planes=swh_planes,
+        mwd_sin_planes=mwd_sin_planes,
+        mwd_cos_planes=mwd_cos_planes,
+        mwp_planes=mwp_planes,
+        bbox={"latMin": lat_min, "latMax": lat_max, "lonMin": lon_min, "lonMax": lon_max},
+        resolution=0.25,
+        shape={"rows": rows, "cols": cols},
+    )
+
+    push_to_redis(grid, redis_client)
+    save_to_disk(grid, FALLBACK_DIR)
+    LOG.info("run %s complete: %d/%d forecast hours", run.isoformat(), len(ingested_hours), len(FORECAST_HOURS))
 
 
 def main(argv: Iterable[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    LOG.warning("Phase 2 skeleton — full ingest implementation pending")
-    run = pick_latest_run()
-    LOG.info("would ingest run %s", run.isoformat())
-    # TODO Phase 2 finale : itérer FORECAST_HOURS, télécharger, parser, pousser Redis.
-    return 0
+
+    redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
+    redis_client = redis_lib.from_url(redis_url)
+    LOG.info("connected to redis at %s", redis_url)
+
+    last_ingested_ts = 0
+
+    while True:
+        target = pick_target_run()
+        target_ts = int(calendar.timegm(target.timetuple()))
+
+        if target_ts <= last_ingested_ts:
+            LOG.debug("run %s already ingested, sleeping %ds", target.isoformat(), POLL_CYCLE_SEC)
+            time.sleep(POLL_CYCLE_SEC)
+            continue
+
+        if not check_run_available(target):
+            LOG.info("run %s not yet available, waiting...", target.isoformat())
+            if not wait_for_run(target):
+                time.sleep(POLL_CYCLE_SEC)
+                continue
+
+        try:
+            ingest_run(target, redis_client)
+            last_ingested_ts = target_ts
+        except Exception:
+            LOG.exception("failed to ingest run %s", target.isoformat())
+
+        time.sleep(POLL_CYCLE_SEC)
 
 
 if __name__ == "__main__":
