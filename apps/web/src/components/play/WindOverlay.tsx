@@ -29,7 +29,7 @@ export default function WindOverlay(): React.ReactElement {
     if (!gl) return;
 
     const wind = new WindGL(gl);
-    wind.numParticles = 65536;
+    wind.numParticles = 32768;
     windRef.current = wind;
 
     // Load wind data
@@ -65,9 +65,15 @@ export default function WindOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
+    // Clear and reset particles on map zoom/pan
+    const map = mapInstance;
+    const onMapMove = () => { wind.clear(); };
+    map?.on('moveend', onMapMove);
+
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
+      map?.off('moveend', onMapMove);
       windRef.current = null;
     };
   }, [windVisible]);

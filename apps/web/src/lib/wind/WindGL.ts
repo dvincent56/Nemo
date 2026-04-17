@@ -340,7 +340,7 @@ export class WindGL {
   private gl: WebGLRenderingContext;
 
   fadeOpacity = 0.993;   // moderate trails
-  speedFactor = 0.03;    // very slow drift like VR/Canvas 2D
+  speedFactor = 0.015;   // very slow drift like VR/Canvas 2D
   dropRate = 0.01;       // higher respawn = more visible particles in viewport
   dropRateBump = 0.005;  // slight speed-dependent respawn
 
@@ -408,6 +408,18 @@ export class WindGL {
     const particleIndices = new Float32Array(this._numParticles);
     for (let i = 0; i < this._numParticles; i++) particleIndices[i] = i;
     this.particleIndexBuffer = createBuffer(gl, particleIndices);
+  }
+
+  /** Reset all particle positions + clear screen buffers */
+  clear(): void {
+    const gl = this.gl;
+    const particleState = new Uint8Array(this._numParticles * 4);
+    for (let i = 0; i < particleState.length; i++) {
+      particleState[i] = Math.floor(Math.random() * 256);
+    }
+    this.particleStateTexture0 = createTexture(gl, gl.NEAREST, particleState, this.particleStateResolution, this.particleStateResolution);
+    this.particleStateTexture1 = createTexture(gl, gl.NEAREST, particleState, this.particleStateResolution, this.particleStateResolution);
+    this.resize();
   }
 
   get numParticles(): number {
