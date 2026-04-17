@@ -137,7 +137,7 @@ export default function WindOverlay(): React.ReactElement {
       const lonRange = bounds.east - bounds.west;
       const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
       // Fixed pixel velocity → convert to degrees
-      const PIXELS_PER_FRAME = 0.2;
+      const PIXELS_PER_FRAME = 0.3;
       const degPerFrame = PIXELS_PER_FRAME / pixelsPerDeg;
 
       // Active count adapts to zoom
