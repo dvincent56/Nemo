@@ -333,8 +333,8 @@ export class WindGL {
 
   fadeOpacity = 0.993;   // moderate trails
   speedFactor = 0.03;    // very slow drift like VR/Canvas 2D
-  dropRate = 0.003;      // respawn rate
-  dropRateBump = 0.002;  // minimal speed-dependent drop
+  dropRate = 0.01;       // higher respawn = more visible particles in viewport
+  dropRateBump = 0.005;  // slight speed-dependent respawn
 
   private drawProgram: ProgramInfo;
   private screenProgram: ProgramInfo;
