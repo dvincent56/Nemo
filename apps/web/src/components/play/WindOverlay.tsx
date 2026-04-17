@@ -199,9 +199,10 @@ export default function WindOverlay(): React.ReactElement {
       const mercN = mercY(vBounds.north);
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
-      // Speed as a fraction of visible longitude range — identical on all screens
-      // A particle crosses ~1% of the visible area per 20 frames (1 trail length)
-      const degPerFrame = lonRange * 0.0005;
+      // Fixed speed: 0.5px per frame on a 1920px screen, converted to degrees
+      // pxPerLon converts pixels to degrees at current zoom
+      const pxPerLon = lonRange !== 0 ? 1920 / lonRange : 1; // always use 1920 as reference
+      const degPerFrame = 0.5 / pxPerLon;
 
       // Detect zoom out: lonRange increased → redistribute ALL particles
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
