@@ -14,7 +14,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  * Windy-style: thin trailing lines on transparent background.
  */
 
-const MAX_PARTICLES = 8000;
+const MAX_PARTICLES = 12000;
 const TRAIL_LEN = 30;
 
 interface Particle {
@@ -142,7 +142,8 @@ export default function WindOverlay(): React.ReactElement {
 
       // Active count adapts to zoom
       const zoom = map.getZoom();
-      const activeCount = Math.min(MAX_PARTICLES, Math.floor(1500 + zoom * 800));
+      // Always use all particles — they respawn within visible bounds anyway
+      const activeCount = MAX_PARTICLES;
 
       for (let pi = 0; pi < activeCount && pi < particles.length; pi++) {
         const p = particles[pi]!;
