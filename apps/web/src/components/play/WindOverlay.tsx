@@ -65,15 +65,9 @@ export default function WindOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
-    // Clear and reset particles on map zoom/pan
-    const map = mapInstance;
-    const onMapMove = () => { wind.clear(); };
-    map?.on('moveend', onMapMove);
-
     return () => {
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
-      map?.off('moveend', onMapMove);
       windRef.current = null;
     };
   }, [windVisible]);

@@ -159,6 +159,10 @@ void main() {
     // drop rate is a chance a particle will restart at random position
     float drop_rate = u_drop_rate + speed_t * u_drop_rate_bump;
 
+    // Force-drop particles on land (speed ≈ 0) — prevents static clusters
+    float on_land = 1.0 - smoothstep(0.0, 0.02, speed_t);
+    drop_rate = mix(drop_rate, 0.3, on_land);
+
     // Force-drop particles outside visible bounds (recycle them into view)
     float outside = step(u_view_bounds.z, pos.x) + step(pos.x, u_view_bounds.x)
                    + step(u_view_bounds.w, pos.y) + step(pos.y, u_view_bounds.y);
