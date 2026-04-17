@@ -40,6 +40,21 @@ services:
       timeout: 3s
       retries: 20
 
+  weather-engine:
+    build:
+      context: ./apps/weather-engine
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WEATHER_FALLBACK_DIR=/data/weather-fallback
+    volumes:
+      - weather-fallback:/data/weather-fallback
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
+  weather-fallback:
