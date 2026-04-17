@@ -15,7 +15,7 @@ import type { WeatherGrid } from '@/lib/store/types';
  */
 
 const MAX_PARTICLES = 4000;
-const TRAIL_LEN = 8;
+const TRAIL_LEN = 30;
 
 interface Particle {
   lons: Float64Array; // ring buffer of longitudes
