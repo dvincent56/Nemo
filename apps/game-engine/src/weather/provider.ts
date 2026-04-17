@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { WeatherPoint } from '@nemo/shared-types';
-import { decodeGridFromBase64, getForecastAt, type WeatherGrid, type WeatherGridMeta } from './grid.js';
+import { decodeGridFromBase64, decodeGridFromBase64Legacy, getForecastAt, type WeatherGrid, type WeatherGridMeta } from './grid.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +21,7 @@ export async function createFixtureProvider(
 ): Promise<WeatherProvider> {
   const raw = await readFile(fixturePath, 'utf8');
   const parsed = JSON.parse(raw) as RawGridJson;
-  const grid: WeatherGrid = decodeGridFromBase64(parsed, parsed.variables);
+  const grid: WeatherGrid = decodeGridFromBase64Legacy(parsed, parsed.variables);
   return {
     mode: 'fixture',
     runTs: grid.runTs,
@@ -43,6 +43,10 @@ export interface RedisLike {
 }
 
 export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvider> {
+  type RawGridJsonUV = WeatherGridMeta & {
+    variables: { u: string; v: string; swh: string; mwdSin: string; mwdCos: string; mwp: string };
+  };
+
   async function loadLatest(): Promise<WeatherGrid> {
     const keys = await redis.keys('weather:grid:*');
     if (keys.length === 0) throw new Error('no weather grid in redis');
@@ -50,7 +54,7 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
     const key = keys[keys.length - 1] as string;
     const raw = await redis.get(key);
     if (!raw) throw new Error(`grid ${key} vanished`);
-    const parsed = JSON.parse(raw) as RawGridJson;
+    const parsed = JSON.parse(raw) as RawGridJsonUV;
     return decodeGridFromBase64(parsed, parsed.variables);
   }
 
