@@ -40,6 +40,47 @@ function bestSailForTwa(absT: number): string | null {
   return null;
 }
 
+/** Animated wind waves — ondulating arrows hitting the compass */
+function WindWaves({ twd, tws, cx, cy, r }: { twd: number; tws: number; cx: number; cy: number; r: number }): React.ReactElement {
+  const count = tws < 10 ? 1 : tws <= 25 ? 2 : 3;
+  const waves = [];
+  for (let i = 0; i < count; i++) {
+    const offset = r + 8 + i * 10; // stagger outward
+    waves.push(
+      <g key={i} transform={`rotate(${twd} ${cx} ${cy})`}>
+        <path
+          d={`M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset}`}
+          fill="none"
+          stroke="rgba(245,240,232,0.5)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <animate
+            attributeName="d"
+            values={`M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset};M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset + 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset - 3} ${cx + 8},${cy - offset};M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset}`}
+            dur={`${1.5 + i * 0.3}s`}
+            repeatCount="indefinite"
+          />
+        </path>
+        {/* Small arrowhead */}
+        <path
+          d={`M${cx + 6},${cy - offset} L${cx + 10},${cy - offset - 3} L${cx + 10},${cy - offset + 3} Z`}
+          fill="rgba(245,240,232,0.4)"
+          transform={`rotate(${twd} ${cx} ${cy})`}
+        >
+          <animate
+            attributeName="opacity"
+            values="0.4;0.7;0.4"
+            dur={`${1.5 + i * 0.3}s`}
+            repeatCount="indefinite"
+          />
+        </path>
+      </g>
+    );
+  }
+  return <g>{waves}</g>;
+}
+
 export default function Compass(): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
   const targetHdgRef = useRef<number | null>(null);
@@ -94,7 +135,6 @@ export default function Compass(): React.ReactElement {
     if (!svg) return;
     const boat = svg.querySelector<SVGGElement>('#boat');
     const ghost = svg.querySelector<SVGGElement>('#ghost');
-    const wind = svg.querySelector<SVGGElement>('#windArrow');
     const hubText = svg.querySelector<SVGTextElement>('#hubText');
 
     if (boat && targetHdgRef.current === null) {
@@ -104,7 +144,6 @@ export default function Compass(): React.ReactElement {
       ghost.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
       ghost.style.opacity = '0';
     }
-    if (wind) wind.setAttribute('transform', `rotate(${twd} ${CX} ${CY})`);
     if (hubText && targetHdgRef.current === null) hubText.textContent = `${Math.round(hdg)}°`;
   }, [hdg, twd]);
 
@@ -246,12 +285,6 @@ export default function Compass(): React.ReactElement {
     }
   };
 
-  // ── Wind direction label (French cardinal) ──
-  const windCardinal = (deg: number): string => {
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
-    return dirs[Math.round(deg / 45) % 8] ?? 'N';
-  };
-
   // ── Tick marks generation ──
   const ticks = [];
   for (let i = 0; i < 36; i++) {
@@ -339,23 +372,26 @@ export default function Compass(): React.ReactElement {
               );
             })}
 
-            {/* Wind arrow — OUTSIDE the circle */}
-            <g id="windArrow" transform={`rotate(${twd} ${CX} ${CY})`}>
-              <line x1={CX} y1={CY - R_OUTER - 10} x2={CX} y2={CY - R_OUTER - 2}
-                stroke="rgba(245,240,232,0.55)" strokeWidth="1.5" strokeLinecap="round" />
-              <path d={`M${CX},${CY - R_OUTER} L${CX - 4},${CY - R_OUTER - 8} L${CX},${CY - R_OUTER - 5} L${CX + 4},${CY - R_OUTER - 8} Z`}
-                fill="rgba(245,240,232,0.55)" />
-              <text x={CX} y={CY - R_OUTER - 14}
-                fontFamily="Space Mono,monospace" fontSize="7" fontWeight="700"
-                fill="rgba(245,240,232,0.45)" textAnchor="middle">
-                {windCardinal(twd)}
-              </text>
-            </g>
+            {/* Degree labels every 30° (except cardinals at 0/90/180/270) */}
+            {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
+              const p = pt(R_OUTER - 32, deg);
+              return (
+                <text key={`deg-${deg}`} x={p.x} y={p.y}
+                  fontFamily="Space Mono,monospace" fontSize="8" fontWeight="700"
+                  fill="rgba(245,240,232,0.35)"
+                  textAnchor="middle" dominantBaseline="central">
+                  {String(deg).padStart(3, '0')}
+                </text>
+              );
+            })}
+
+            {/* Wind waves — animated, OUTSIDE the circle */}
+            <WindWaves twd={twd} tws={tws} cx={CX} cy={CY} r={R_OUTER} />
 
             {/* Ghost of previous heading (shown during edit) */}
             <g id="ghost" transform={`rotate(${hdg} ${CX} ${CY})`} style={{ opacity: 0 }}>
               <g transform={`translate(${CX},${CX})`}>
-                <path d="M 0,-20 C 5.5,-18 7.5,-11 7.5,-2 C 7.5,7 5.5,13 3.5,18 L 0,21 L -3.5,18 C -5.5,13 -7.5,7 -7.5,-2 C -7.5,-11 -5.5,-18 0,-20 Z"
+                <path d="M 0,-26 C 7,-24 10,-15 10,-3 C 10,9 7,17 5,23 L 0,27 L -5,23 C -7,17 -10,9 -10,-3 C -10,-15 -7,-24 0,-26 Z"
                   fill="none" stroke="#f5f0e8" strokeWidth="1" strokeDasharray="3 2" />
               </g>
             </g>
@@ -363,7 +399,8 @@ export default function Compass(): React.ReactElement {
             {/* Boat silhouette — oriented by heading (or target during drag) */}
             <g id="boat" transform={`rotate(${hdg} ${CX} ${CY})`}>
               <g transform={`translate(${CX},${CX})`}>
-                <path d="M 0,-20 C 5.5,-18 7.5,-11 7.5,-2 C 7.5,7 5.5,13 3.5,18 L 0,21 L -3.5,18 C -5.5,13 -7.5,7 -7.5,-2 C -7.5,-11 -5.5,-18 0,-20 Z"
+                <line x1="0" y1="-26" x2="0" y2="-70" stroke="#f5f0e8" strokeWidth="1" opacity="0.5" strokeDasharray="4 3" />
+                <path d="M 0,-26 C 7,-24 10,-15 10,-3 C 10,9 7,17 5,23 L 0,27 L -5,23 C -7,17 -10,9 -10,-3 C -10,-15 -7,-24 0,-26 Z"
                   fill="#c9a227" stroke="#1a2840" strokeWidth="0.8" />
                 <line x1="0" y1="-16" x2="0" y2="16" stroke="#1a2840" strokeWidth="0.6" opacity="0.5" />
                 <circle cx="0" cy="-5" r="1.5" fill="#1a2840" />
