@@ -137,7 +137,7 @@ export default function WindOverlay(): React.ReactElement {
       const lonRange = bounds.east - bounds.west;
       const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
       // Fixed pixel velocity → convert to degrees
-      const PIXELS_PER_FRAME = 0.4;
+      const PIXELS_PER_FRAME = 0.2;
       const degPerFrame = PIXELS_PER_FRAME / pixelsPerDeg;
 
       // Active count adapts to zoom
@@ -164,8 +164,8 @@ export default function WindOverlay(): React.ReactElement {
         p.len = Math.min(p.len + 1, TRAIL_LEN);
         p.age++;
 
-        // Shorter life for weak wind (fewer trail segments visible)
-        const effectiveMaxAge = p.speed < 5 ? 30 : p.speed < 15 ? 50 : 80;
+        // Same trail length for all — life is the same regardless of wind
+        const effectiveMaxAge = 70;
 
         if (p.age > effectiveMaxAge ||
             newLon < bounds.west - 1 || newLon > bounds.east + 1 ||
@@ -174,16 +174,15 @@ export default function WindOverlay(): React.ReactElement {
           continue;
         }
 
-        // Opacity depends on wind speed: weak = faint, strong = solid
-        const fadeIn = Math.min(1, p.age / 6);
-        const fadeOut = Math.min(1, (effectiveMaxAge - p.age) / 10);
-        const speedAlpha = p.speed < 5 ? 0.15 : p.speed < 15 ? 0.3 : 0.5;
+        // Opacity: calm zones are faint blue, strong wind is more opaque
+        const fadeIn = Math.min(1, p.age / 8);
+        const fadeOut = Math.min(1, (effectiveMaxAge - p.age) / 12);
+        const speedAlpha = p.speed < 3 ? 0.08 : p.speed < 8 ? 0.15 : p.speed < 18 ? 0.25 : 0.4;
         const alpha = fadeIn * fadeOut * speedAlpha;
-        if (alpha < 0.02) continue;
+        if (alpha < 0.01) continue;
 
-        // Draw trail — only show last N segments based on wind strength
-        const trailVisible = p.speed < 5 ? 3 : p.speed < 15 ? 5 : TRAIL_LEN;
-        const drawLen = Math.min(p.len, trailVisible);
+        // Full trail length for everyone
+        const drawLen = Math.min(p.len, TRAIL_LEN);
         if (drawLen < 2) continue;
 
         ctx.strokeStyle = `${windColor(p.speed)}${alpha.toFixed(2)})`;
