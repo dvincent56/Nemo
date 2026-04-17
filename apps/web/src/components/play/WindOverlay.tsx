@@ -61,13 +61,32 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram {
   return p;
 }
 
+// Smooth color interpolation between stops instead of hard steps
+const COLOR_STOPS: [number, number, number, number][] = [
+  [0,  0.24, 0.55, 0.78],  // 0 kt — soft blue
+  [8,  0.31, 0.74, 0.66],  // 8 kt — teal
+  [15, 0.42, 0.82, 0.55],  // 15 kt — green
+  [22, 0.72, 0.80, 0.35],  // 22 kt — yellow-green
+  [30, 0.86, 0.65, 0.20],  // 30 kt — orange
+  [40, 0.78, 0.22, 0.16],  // 40 kt — red
+];
+
 function windColor(speed: number): [number, number, number] {
-  if (speed < 5) return [0.24, 0.55, 0.78];   // soft blue
-  if (speed < 10) return [0.31, 0.74, 0.66];   // teal
-  if (speed < 18) return [0.42, 0.82, 0.55];   // green
-  if (speed < 25) return [0.86, 0.78, 0.27];   // yellow
-  if (speed < 35) return [0.86, 0.59, 0.16];   // orange
-  return [0.78, 0.22, 0.16];                    // red
+  if (speed <= COLOR_STOPS[0]![0]) return [COLOR_STOPS[0]![1], COLOR_STOPS[0]![2], COLOR_STOPS[0]![3]];
+  for (let i = 1; i < COLOR_STOPS.length; i++) {
+    const prev = COLOR_STOPS[i - 1]!;
+    const curr = COLOR_STOPS[i]!;
+    if (speed <= curr[0]) {
+      const t = (speed - prev[0]) / (curr[0] - prev[0]);
+      return [
+        prev[1] + (curr[1] - prev[1]) * t,
+        prev[2] + (curr[2] - prev[2]) * t,
+        prev[3] + (curr[3] - prev[3]) * t,
+      ];
+    }
+  }
+  const last = COLOR_STOPS[COLOR_STOPS.length - 1]!;
+  return [last[1], last[2], last[3]];
 }
 
 function randomInBounds(b: { west: number; east: number; south: number; north: number }): [number, number] {
@@ -209,7 +228,7 @@ export default function WindOverlay(): React.ReactElement {
         // Fade
         const fadeIn = Math.min(1, p.age / 15);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
-        const speedAlpha = p.speed < 3 ? 0.25 : p.speed < 8 ? 0.40 : p.speed < 18 ? 0.55 : 0.75;
+        const speedAlpha = p.speed < 3 ? 0.18 : p.speed < 8 ? 0.30 : p.speed < 18 ? 0.42 : 0.60;
         const alpha = fadeIn * fadeOut * speedAlpha;
         if (alpha < 0.02) continue;
 
@@ -222,7 +241,7 @@ export default function WindOverlay(): React.ReactElement {
         // Use the max alpha for this bucket (simplification)
         if (alpha > bucket.alpha) bucket.alpha = alpha;
 
-        // Build LINE_STRIP as pairs of LINE segments
+        // Build LINE segments — uniform alpha for the whole trail
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
         for (let s = 0; s < p.len - 1; s++) {
           const i0 = (oldest + s) % TRAIL_LEN;
