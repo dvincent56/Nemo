@@ -53,7 +53,7 @@ function makeParticle(b: { north: number; south: number; east: number; west: num
   return {
     lons, lats, head: 0, len: 1,
     age: Math.floor(Math.random() * 70),
-    maxAge: 50 + Math.floor(Math.random() * 70),
+    maxAge: 150 + Math.floor(Math.random() * 100),
     speed: 0,
   };
 }
@@ -164,10 +164,7 @@ export default function WindOverlay(): React.ReactElement {
         p.len = Math.min(p.len + 1, TRAIL_LEN);
         p.age++;
 
-        // Same trail length for all — life is the same regardless of wind
-        const effectiveMaxAge = 70;
-
-        if (p.age > effectiveMaxAge ||
+        if (p.age > p.maxAge ||
             newLon < bounds.west - 1 || newLon > bounds.east + 1 ||
             newLat < bounds.south - 1 || newLat > bounds.north + 1) {
           resetParticle(p, bounds);
@@ -175,8 +172,8 @@ export default function WindOverlay(): React.ReactElement {
         }
 
         // Opacity: calm zones are faint blue, strong wind is more opaque
-        const fadeIn = Math.min(1, p.age / 8);
-        const fadeOut = Math.min(1, (effectiveMaxAge - p.age) / 12);
+        const fadeIn = Math.min(1, p.age / 15);
+        const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
         const speedAlpha = p.speed < 3 ? 0.08 : p.speed < 8 ? 0.15 : p.speed < 18 ? 0.25 : 0.4;
         const alpha = fadeIn * fadeOut * speedAlpha;
         if (alpha < 0.01) continue;
