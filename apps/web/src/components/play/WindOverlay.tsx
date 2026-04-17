@@ -109,9 +109,12 @@ function makeParticle(b: { west: number; east: number; south: number; north: num
 
 function resetParticle(p: Particle, b: { west: number; east: number; south: number; north: number }): void {
   const [lon, lat] = randomInBounds(b);
-  p.lons[0] = lon; p.lats[0] = lat;
+  // Fill ALL trail slots with the same position so no old trail segments remain
+  for (let i = 0; i < TRAIL_LEN; i++) {
+    p.lons[i] = lon;
+    p.lats[i] = lat;
+  }
   p.head = 0; p.len = 1;
-  // Random age so particles don't all appear at once, skip fade-in delay
   p.age = 20 + Math.floor(Math.random() * 80);
   p.maxAge = p.age + 80 + Math.floor(Math.random() * 80);
 }
