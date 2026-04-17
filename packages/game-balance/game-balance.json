@@ -112,48 +112,35 @@
     "electronics": { "costPer10pts": 30,  "durationHours": 3 }
   },
   "upgrades": {
-    "AUTO_SAIL": {
-      "cost": 800,
-      "description": "Voiles automatiques + recouvrement"
+    "slots": ["HULL", "MAST", "SAILS", "FOILS", "KEEL", "ELECTRONICS", "REINFORCEMENT"],
+
+    "tiers": {
+      "SERIE":  { "priceRange": [0, 0],         "maintenanceMul": 1.0 },
+      "BRONZE": { "priceRange": [1500, 3500],   "maintenanceMul": 1.5 },
+      "SILVER": { "priceRange": [4500, 8000],   "maintenanceMul": 2.0 },
+      "GOLD":   { "priceRange": [10000, 15000], "maintenanceMul": 3.0 },
+      "PROTO":  { "priceRange": null,           "maintenanceMul": 4.5 }
     },
-    "FOILS": {
-      "cost": 3000,
-      "description": "Foils de compétition IMOCA",
-      "speedByTWA": {
-        "upwind_0_60":    -3,
-        "close_60_90":     2,
-        "beam_90_120":    10,
-        "reach_120_150":  15,
-        "run_150_180":     5
-      },
-      "activeMinTWS": 14,
-      "wearRigMultiplier": 1.8,
-      "wearHullMultiplier": 1.3
+
+    "slotsByClass": {
+      "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
+                       "FOILS": "monotype", "KEEL": "monotype",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
+      "CLASS40":     { "HULL": "open", "MAST": "open", "SAILS": "open",
+                       "FOILS": "open", "KEEL": "open",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
+      "OCEAN_FIFTY": { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
+                       "FOILS": "monotype", "KEEL": "absent",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
+      "IMOCA60":     { "HULL": "open", "MAST": "open", "SAILS": "open",
+                       "FOILS": "open", "KEEL": "open",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
+      "ULTIM":       { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
+                       "FOILS": "open", "KEEL": "absent",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "open" }
     },
-    "CARBON_RIG": {
-      "cost": 2500,
-      "speedAllPct": 4,
-      "speedLightAirBonus": 2,
-      "wearRigHeavyMultiplier": 1.6,
-      "heavyTwsThresholdKts": 35
-    },
-    "KEVLAR_SAILS": {
-      "cost": 2000,
-      "speedAllPct": 3,
-      "wearSailMultiplier": 0.35
-    },
-    "REINFORCED_HULL": {
-      "cost": 1500,
-      "speedAllPct": -2,
-      "wearHullMultiplier": 0.45
-    },
-    "HEAVY_WEATHER_KIT": {
-      "cost": 1200,
-      "speedLightAirPct": -4,
-      "speedHeavyAirBonus": 3,
-      "activeThresholdTWS": 25,
-      "wearRigSailMultiplier": 0.55
-    }
+
+    "items": []
   },
   "maneuvers": {
     "sailChange": {
@@ -206,6 +193,10 @@
       "win": 500,
       "podium": 150,
       "top10": 30
+    },
+    "completionBonus": {
+      "FIGARO": 200, "CLASS40": 300, "OCEAN_FIFTY": 500,
+      "IMOCA60": 450, "ULTIM": 700
     }
   },
   "tick": {
