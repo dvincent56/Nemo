@@ -114,6 +114,7 @@ uniform float u_rand_seed;
 uniform float u_speed_factor;
 uniform float u_drop_rate;
 uniform float u_drop_rate_bump;
+uniform vec4 u_view_bounds; // x=minX, y=minY, z=maxX, w=maxY in equirectangular [0,1]
 
 varying vec2 v_tex_pos;
 
@@ -155,13 +156,20 @@ void main() {
     // a random seed to use for the particle drop
     vec2 seed = (pos + v_tex_pos) * u_rand_seed;
 
-    // drop rate is a chance a particle will restart at random position, to avoid degeneration
+    // drop rate is a chance a particle will restart at random position
     float drop_rate = u_drop_rate + speed_t * u_drop_rate_bump;
+
+    // Force-drop particles outside visible bounds (recycle them into view)
+    float outside = step(u_view_bounds.z, pos.x) + step(pos.x, u_view_bounds.x)
+                   + step(u_view_bounds.w, pos.y) + step(pos.y, u_view_bounds.y);
+    drop_rate = mix(drop_rate, 1.0, clamp(outside, 0.0, 1.0));
+
     float drop = step(1.0 - drop_rate, rand(seed));
 
+    // Respawn within visible bounds (not the whole globe)
     vec2 random_pos = vec2(
-        rand(seed + 1.3),
-        rand(seed + 2.1));
+        mix(u_view_bounds.x, u_view_bounds.z, rand(seed + 1.3)),
+        mix(u_view_bounds.y, u_view_bounds.w, rand(seed + 2.1)));
     pos = mix(pos, random_pos, drop);
 
     // encode the new particle position back into RGBA
@@ -420,7 +428,7 @@ export class WindGL {
     bindTexture(gl, this.particleStateTexture0, 1);
 
     this.drawScreen(bounds);
-    this.updateParticles();
+    this.updateParticles(bounds);
   }
 
   private drawScreen(bounds: { west: number; south: number; east: number; north: number }): void {
@@ -482,7 +490,7 @@ export class WindGL {
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }
 
-  private updateParticles(): void {
+  private updateParticles(bounds: { west: number; south: number; east: number; north: number }): void {
     const gl = this.gl;
     bindFramebuffer(gl, this.framebuffer, this.particleStateTexture1);
     gl.viewport(0, 0, this.particleStateResolution, this.particleStateResolution);
@@ -502,6 +510,13 @@ export class WindGL {
     gl.uniform1f(program.u_speed_factor as WebGLUniformLocation, this.speedFactor);
     gl.uniform1f(program.u_drop_rate as WebGLUniformLocation, this.dropRate);
     gl.uniform1f(program.u_drop_rate_bump as WebGLUniformLocation, this.dropRateBump);
+
+    // Convert geo bounds to equirectangular [0,1] for the update shader
+    const viewMinX = (bounds.west + 180) / 360;
+    const viewMaxX = (bounds.east + 180) / 360;
+    const viewMinY = (90 - bounds.north) / 180; // north = smaller y in equirect
+    const viewMaxY = (90 - bounds.south) / 180;
+    gl.uniform4f(program.u_view_bounds as WebGLUniformLocation, viewMinX, viewMinY, viewMaxX, viewMaxY);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
