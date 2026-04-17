@@ -7,33 +7,58 @@ import type { WeatherGrid } from '@/lib/store/types';
 
 /**
  * Wind particle overlay using real GFS data.
- * Loads /data/wind.json (grib2json format), parses it, and animates
- * particles that follow the actual wind field.
+ * Each particle keeps a trail of previous positions drawn as a
+ * polyline — longer and faster when wind is strong.
+ * Color encodes wind speed (blue → green → yellow → orange → red).
  */
 
-const PARTICLE_COUNT = 2500;
+const PARTICLE_COUNT = 5000;
+const MAX_TRAIL = 12; // max positions stored per particle
 
 interface Particle {
-  x: number;
-  y: number;
+  trail: Float64Array; // [x0,y0, x1,y1, ...] — ring buffer
+  head: number;        // current write index (0..MAX_TRAIL-1)
+  len: number;         // how many trail segments filled so far
   age: number;
   maxAge: number;
+  speed: number;       // cached last wind speed (for color)
 }
 
-function windColor(speed: number, alpha: number): string {
-  if (speed < 5) return `rgba(98,180,230,${alpha})`;    // very light — pale blue
-  if (speed < 10) return `rgba(108,210,138,${alpha})`;   // light — green
-  if (speed < 18) return `rgba(200,210,80,${alpha})`;    // moderate — yellow-green
-  if (speed < 25) return `rgba(240,185,107,${alpha})`;   // fresh — orange
-  if (speed < 35) return `rgba(217,119,6,${alpha})`;     // strong — dark orange
-  return `rgba(180,50,50,${alpha})`;                      // storm — red
+function windColor(speed: number): string {
+  if (speed < 5) return 'rgba(98,170,220,';     // very light — pale blue
+  if (speed < 10) return 'rgba(108,210,138,';    // light — green
+  if (speed < 18) return 'rgba(200,210,80,';     // moderate — yellow-green
+  if (speed < 25) return 'rgba(240,185,107,';    // fresh — orange
+  if (speed < 35) return 'rgba(217,119,6,';      // strong — dark orange
+  return 'rgba(180,50,50,';                       // storm — red
+}
+
+function makeParticle(w: number, h: number): Particle {
+  const trail = new Float64Array(MAX_TRAIL * 2);
+  const x = Math.random() * w;
+  const y = Math.random() * h;
+  trail[0] = x;
+  trail[1] = y;
+  return {
+    trail,
+    head: 0,
+    len: 1,
+    age: Math.floor(Math.random() * 80),
+    maxAge: 60 + Math.floor(Math.random() * 60),
+    speed: 0,
+  };
 }
 
 function resetParticle(p: Particle, w: number, h: number): void {
-  p.x = Math.random() * w;
-  p.y = Math.random() * h;
+  const x = Math.random() * w;
+  const y = Math.random() * h;
+  p.trail[0] = x;
+  p.trail[1] = y;
+  p.head = 0;
+  p.len = 1;
   p.age = 0;
-  p.maxAge = 50 + Math.floor(Math.random() * 50);
+  p.maxAge = 60 + Math.floor(Math.random() * 60);
+  p.speed = 0;
 }
 
 export default function WindOverlay(): React.ReactElement {
@@ -80,16 +105,14 @@ export default function WindOverlay(): React.ReactElement {
     // Init particles
     const particles: Particle[] = [];
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const p: Particle = { x: 0, y: 0, age: 0, maxAge: 0 };
-      resetParticle(p, canvas.width, canvas.height);
-      p.age = Math.floor(Math.random() * p.maxAge); // stagger
-      particles.push(p);
+      particles.push(makeParticle(canvas.width, canvas.height));
     }
+
+    const toRad = Math.PI / 180;
 
     const animate = () => {
       const grid = gridRef.current;
       if (!grid) {
-        // Data not loaded yet — retry next frame
         animRef.current = requestAnimationFrame(animate);
         return;
       }
@@ -97,49 +120,81 @@ export default function WindOverlay(): React.ReactElement {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      // Get map bounds from store
       const mapState = useGameStore.getState().map;
       const [cLon, cLat] = mapState.center;
       const span = 180 / Math.pow(2, mapState.zoom);
-      const aspectRatio = height / width;
+      const ar = height / width;
       const lonMin = cLon - span;
       const lonMax = cLon + span;
-      const latMin = cLat - span * aspectRatio;
-      const latMax = cLat + span * aspectRatio;
+      const latMax = cLat + span * ar;
+      const latMin = cLat - span * ar;
+      const lonRange = lonMax - lonMin;
+      const latRange = latMax - latMin;
+
+      ctx.lineCap = 'round';
 
       for (const p of particles) {
+        // Current head position
+        const hx = p.trail[p.head * 2]!;
+        const hy = p.trail[p.head * 2 + 1]!;
+
         // Pixel → geo
-        const lon = lonMin + (p.x / width) * (lonMax - lonMin);
-        const lat = latMax - (p.y / height) * (latMax - latMin);
+        const lon = lonMin + (hx / width) * lonRange;
+        const lat = latMax - (hy / height) * latRange;
 
-        // Interpolate real wind at this position
+        // Interpolate wind
         const wind = interpolateGfsWind(grid, lat, lon);
-        const speed = wind.tws;
+        p.speed = wind.tws;
 
-        // Move particle following wind
-        const toRad = Math.PI / 180;
-        const scale = 0.08 + speed * 0.03;
-        p.x += -Math.sin(wind.twd * toRad) * scale;
-        p.y += Math.cos(wind.twd * toRad) * scale;
+        // Advance position — faster when wind is stronger
+        const scale = 0.15 + wind.tws * 0.05;
+        const nx = hx + (-Math.sin(wind.twd * toRad) * scale);
+        const ny = hy + (Math.cos(wind.twd * toRad) * scale);
+
+        // Push new position into trail ring buffer
+        const newHead = (p.head + 1) % MAX_TRAIL;
+        p.trail[newHead * 2] = nx;
+        p.trail[newHead * 2 + 1] = ny;
+        p.head = newHead;
+        p.len = Math.min(p.len + 1, MAX_TRAIL);
         p.age++;
 
-        if (p.age > p.maxAge || p.x < -10 || p.x > width + 10 || p.y < -10 || p.y > height + 10) {
+        // Reset if dead or off-screen
+        if (p.age > p.maxAge || nx < -20 || nx > width + 20 || ny < -20 || ny > height + 20) {
           resetParticle(p, width, height);
           continue;
         }
 
-        // Fade in/out
-        const fadeIn = Math.min(1, p.age / 8);
-        const fadeOut = Math.min(1, (p.maxAge - p.age) / 12);
-        const alpha = fadeIn * fadeOut * 0.55;
-        if (alpha < 0.02) continue;
+        // Fade
+        const fadeIn = Math.min(1, p.age / 10);
+        const fadeOut = Math.min(1, (p.maxAge - p.age) / 15);
+        const baseAlpha = fadeIn * fadeOut;
+        if (baseAlpha < 0.03) continue;
 
-        // Draw small dot
-        const radius = speed > 25 ? 1.5 : 1;
-        ctx.fillStyle = windColor(speed, alpha);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw trail as polyline with fading segments
+        const colorBase = windColor(p.speed);
+        const lineWidth = p.speed > 25 ? 1.8 : p.speed > 15 ? 1.3 : 0.9;
+        ctx.lineWidth = lineWidth;
+
+        for (let s = 1; s < p.len; s++) {
+          // Walk backwards from head
+          const i1 = ((p.head - s + MAX_TRAIL) % MAX_TRAIL);
+          const i0 = ((p.head - s + 1 + MAX_TRAIL) % MAX_TRAIL);
+          const x0 = p.trail[i0 * 2]!;
+          const y0 = p.trail[i0 * 2 + 1]!;
+          const x1 = p.trail[i1 * 2]!;
+          const y1 = p.trail[i1 * 2 + 1]!;
+
+          // Each segment fades out toward the tail
+          const segAlpha = baseAlpha * (1 - s / p.len) * 0.7;
+          if (segAlpha < 0.02) break;
+
+          ctx.strokeStyle = `${colorBase}${segAlpha.toFixed(2)})`;
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
       }
 
       animRef.current = requestAnimationFrame(animate);
