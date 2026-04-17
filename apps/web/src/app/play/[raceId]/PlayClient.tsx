@@ -12,6 +12,10 @@ import {
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
 import CoordsDisplay from '@/components/play/CoordsDisplay';
+import SlidePanel from '@/components/play/SlidePanel';
+import SailPanel from '@/components/play/SailPanel';
+import ProgPanel from '@/components/play/ProgPanel';
+import RankingPanel from '@/components/play/RankingPanel';
 import styles from './page.module.css';
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
@@ -133,6 +137,22 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           <span className={styles.rankingTabLabel}>CLASSEMENT</span>
           <span className={styles.rankingTabRank}>{rank}</span>
         </button>
+
+        {/* Slide-out panels */}
+        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()}>
+          <RankingPanel />
+        </SlidePanel>
+
+        {canInteract && (
+          <>
+            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()}>
+              <SailPanel />
+            </SlidePanel>
+            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()}>
+              <ProgPanel />
+            </SlidePanel>
+          </>
+        )}
 
         {/* Right stack — action buttons + compass */}
         {canInteract && (
