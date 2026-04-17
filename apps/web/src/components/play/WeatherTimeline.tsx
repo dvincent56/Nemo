@@ -5,6 +5,9 @@ import { useGameStore } from '@/lib/store';
 import type { PlaybackSpeed } from '@/lib/store';
 import styles from './WeatherTimeline.module.css';
 
+/** Stable placeholder for SSR — avoids hydration mismatch */
+const SSR_PLACEHOLDER = { day: '—', time: '—' };
+
 /** Format a Date for display */
 function formatTime(date: Date): { day: string; time: string } {
   const now = new Date();
@@ -22,27 +25,30 @@ function formatTime(date: Date): { day: string; time: string } {
 export default function WeatherTimeline(): React.ReactElement {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const currentTime = useGameStore((s) => s.timeline.currentTime);
   const isLive = useGameStore((s) => s.timeline.isLive);
   const playbackSpeed = useGameStore((s) => s.timeline.playbackSpeed);
   const grid = useGameStore((s) => s.weather.gridData);
 
-  // Determine timeline range
+  // Determine timeline range — use stable defaults during SSR
   const timestamps = grid?.timestamps ?? [];
-  const rangeStart = timestamps.length > 0 ? timestamps[0]! : Date.now() - 86400000;
-  const rangeEnd = timestamps.length > 0 ? timestamps[timestamps.length - 1]! : Date.now() + 7 * 86400000;
-  const totalRange = rangeEnd - rangeStart;
-  const nowMs = Date.now();
+  const rangeStart = timestamps.length > 0 ? timestamps[0]! : (mounted ? Date.now() - 86400000 : 0);
+  const rangeEnd = timestamps.length > 0 ? timestamps[timestamps.length - 1]! : (mounted ? Date.now() + 7 * 86400000 : 1);
+  const totalRange = rangeEnd - rangeStart || 1;
+  const nowMs = mounted ? Date.now() : 0;
 
   // Position of "now" marker on the track (percentage)
-  const nowPercent = Math.max(0, Math.min(100, ((nowMs - rangeStart) / totalRange) * 100));
+  const nowPercent = mounted ? Math.max(0, Math.min(100, ((nowMs - rangeStart) / totalRange) * 100)) : 50;
 
   // Position of current scrubber
   const currentMs = currentTime.getTime();
-  const scrubPercent = Math.max(0, Math.min(100, ((currentMs - rangeStart) / totalRange) * 100));
+  const scrubPercent = mounted ? Math.max(0, Math.min(100, ((currentMs - rangeStart) / totalRange) * 100)) : 50;
 
-  const { day, time } = formatTime(currentTime);
+  const { day, time } = mounted ? formatTime(currentTime) : SSR_PLACEHOLDER;
 
   // Scrub via click/drag on track
   const scrubFromEvent = useCallback((clientX: number) => {

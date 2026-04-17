@@ -1,7 +1,9 @@
 'use client';
 import type { TimelineState, PlaybackSpeed, GameStore } from './types';
 
-export const INITIAL_TIMELINE: TimelineState = { currentTime: new Date(), isLive: true, playbackSpeed: 1 };
+// Use epoch 0 as initial value to avoid SSR/CSR hydration mismatch.
+// The actual "now" is set when the play screen mounts (via goLive or useTicker).
+export const INITIAL_TIMELINE: TimelineState = { currentTime: new Date(0), isLive: true, playbackSpeed: 1 };
 
 export function createTimelineSlice(set: (fn: (s: GameStore) => Partial<GameStore>) => void) {
   return {

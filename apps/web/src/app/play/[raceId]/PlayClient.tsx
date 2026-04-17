@@ -56,6 +56,8 @@ function useTicker(raceId: string): void {
     });
     store.setSail({ currentSail: 'GEN' });
     store.setConnection('open');
+    // Initialize timeline to "now" (avoids SSR hydration mismatch)
+    store.goLive();
     // Initialize mock weather data
     const grid = generateMockWeatherGrid();
     store.setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
