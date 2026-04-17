@@ -18,6 +18,7 @@ import SlidePanel from '@/components/play/SlidePanel';
 import SailPanel from '@/components/play/SailPanel';
 import ProgPanel from '@/components/play/ProgPanel';
 import RankingPanel from '@/components/play/RankingPanel';
+import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import LayersWidget from '@/components/play/LayersWidget';
 import WindLegend from '@/components/play/WindLegend';
@@ -125,6 +126,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       <div className={styles.mapArea}>
         <MapCanvas />
         {/* Weather overlays — canvas on top of map, transparent background */}
+        <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}
 

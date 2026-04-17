@@ -2,11 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
-import type { CustomRenderMethodInput } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
-import { WindGL } from '@/lib/wind/WindGL';
-import type { WindData } from '@/lib/wind/WindGL';
 import styles from './MapCanvas.module.css';
 
 const STYLE: maplibregl.StyleSpecification = {
@@ -34,6 +31,9 @@ const STYLE: maplibregl.StyleSpecification = {
 const BOAT_COLOR = '#c9a227';
 const trailCoords: [number, number][] = [];
 
+/** Expose the MapLibre map instance for other components (WindOverlay) */
+export let mapInstance: maplibregl.Map | null = null;
+
 export default function MapCanvas(): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -51,6 +51,7 @@ export default function MapCanvas(): React.ReactElement {
       pitchWithRotate: false,
     });
     mapRef.current = map;
+    mapInstance = map;
 
     map.once('load', () => {
       map.addSource('my-trail', {
@@ -79,64 +80,12 @@ export default function MapCanvas(): React.ReactElement {
           'circle-stroke-width': 2,
         },
       });
-
-      // Wind particle layer (webgl-wind as MapLibre custom layer)
-      let windGL: WindGL | null = null;
-
-      const windCustomLayer: maplibregl.CustomLayerInterface = {
-        id: 'wind-particles',
-        type: 'custom',
-        renderingMode: '2d',
-
-        onAdd(_map: maplibregl.Map, gl: WebGLRenderingContext | WebGL2RenderingContext) {
-          windGL = new WindGL(gl as WebGLRenderingContext);
-          windGL.numParticles = 16384;
-
-          // Load wind data (PNG texture + JSON metadata)
-          fetch('/data/2016112000.json')
-            .then((res) => res.json())
-            .then((meta: Omit<WindData, 'image'>) => {
-              const img = new Image();
-              img.crossOrigin = 'anonymous';
-              img.src = '/data/2016112000.png';
-              img.onload = () => {
-                if (windGL) {
-                  windGL.setWind({ ...meta, image: img });
-                }
-              };
-            });
-        },
-
-        render(_gl: WebGLRenderingContext | WebGL2RenderingContext, options: CustomRenderMethodInput) {
-          if (windGL?.windData) {
-            const matrix = options.defaultProjectionData.mainMatrix;
-            windGL.draw(matrix as unknown as Float32Array);
-            map.triggerRepaint();
-          }
-        },
-      };
-
-      // Add wind layer BEFORE boat layers so particles appear underneath
-      map.addLayer(windCustomLayer, 'my-trail-line');
-
-      // Toggle wind layer visibility based on store
-      const initialWindVisible = useGameStore.getState().layers.wind;
-      if (!initialWindVisible) {
-        map.setLayoutProperty('wind-particles', 'visibility', 'none');
-      }
-
-      useGameStore.subscribe((s, prev) => {
-        if (s.layers.wind !== prev.layers.wind) {
-          map.setLayoutProperty('wind-particles', 'visibility', s.layers.wind ? 'visible' : 'none');
-        }
-      });
     });
 
     map.on('dragstart', () => {
       useGameStore.getState().setFollowBoat(false);
     });
 
-    // Sync map bounds to store so overlays can geo-reference
     const syncMapState = () => {
       const store = useGameStore.getState();
       const center = map.getCenter();
@@ -150,12 +99,13 @@ export default function MapCanvas(): React.ReactElement {
         west: b.getWest(),
       });
     };
-    map.on('move', syncMapState);  // continuous sync during pan/zoom
+    map.on('move', syncMapState);
     map.once('load', syncMapState);
 
     return () => {
       map.remove();
       mapRef.current = null;
+      mapInstance = null;
     };
   }, []);
 
