@@ -46,9 +46,30 @@ function createDemoRuntime(): BoatRuntime {
   };
 }
 
+function validateCatalogCoverage(): void {
+  const cat = GameBalance.upgrades;
+  const errors: string[] = [];
+  for (const [boatClass, slots] of Object.entries(cat.slotsByClass)) {
+    for (const [slot, availability] of Object.entries(slots)) {
+      if (availability === 'absent') continue;
+      const hasSerie = cat.items.some(
+        (it) => it.slot === slot && it.tier === 'SERIE' && it.compat.includes(boatClass as any),
+      );
+      if (!hasSerie) {
+        errors.push(`No SERIE item for ${slot}/${boatClass}`);
+      }
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`Upgrade catalog incomplete:\n${errors.map((e) => `  - ${e}`).join('\n')}`);
+  }
+  console.log(`[engine] Upgrade catalog validated: ${cat.items.length} items, ${Object.keys(cat.slotsByClass).length} classes`);
+}
+
 async function main() {
   await GameBalance.loadFromDisk();
   log.info({ version: GameBalance.version }, 'game-balance loaded');
+  validateCatalogCoverage();
 
   const app = Fastify({ logger: false });
   await app.register(cookie);
