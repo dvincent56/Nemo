@@ -31,16 +31,20 @@ interface Particle {
 const VERT = `
 attribute vec2 a_position;
 attribute float a_alpha;
+varying float v_alpha;
 void main() {
+  v_alpha = a_alpha;
   gl_Position = vec4(a_position, 0.0, 1.0);
 }
 `;
 
 const FRAG = `
 precision mediump float;
-uniform vec4 u_color;
+uniform vec3 u_color;
+uniform float u_baseAlpha;
+varying float v_alpha;
 void main() {
-  gl_FragColor = u_color;
+  gl_FragColor = vec4(u_color, u_baseAlpha * v_alpha);
 }
 `;
 
@@ -147,8 +151,11 @@ export default function WindOverlay(): React.ReactElement {
 
     const prog = createProgram(gl);
     const aPos = gl.getAttribLocation(prog, 'a_position');
+    const aAlpha = gl.getAttribLocation(prog, 'a_alpha');
     const uColor = gl.getUniformLocation(prog, 'u_color');
+    const uBaseAlpha = gl.getUniformLocation(prog, 'u_baseAlpha');
     const posBuf = gl.createBuffer()!;
+    const alphaBuf = gl.createBuffer()!;
 
     gl.useProgram(prog);
     gl.enable(gl.BLEND);
@@ -183,7 +190,7 @@ export default function WindOverlay(): React.ReactElement {
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
       const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
-      const PIXELS_PER_FRAME = 0.5;
+      const PIXELS_PER_FRAME = 0.8;
       const degPerFrame = PIXELS_PER_FRAME / pxPerLon;
 
       // Lon/lat → clip space [-1, 1]
@@ -193,8 +200,9 @@ export default function WindOverlay(): React.ReactElement {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Group particles by color bucket for batched drawing
-      const colorBuckets: Map<string, { r: number; g: number; b: number; verts: number[]; alpha: number }> = new Map();
+      // Batch by color, per-vertex alpha for comet shape
+      const batches: { r: number; g: number; b: number; baseAlpha: number; verts: number[]; alphas: number[] }[] = [];
+      const colorMap = new Map<string, number>(); // key → batch index
 
       for (const p of particles) {
         const lon = p.lons[p.head]!;
@@ -203,7 +211,6 @@ export default function WindOverlay(): React.ReactElement {
         const wind = interpolateGfsWind(grid, lat, lon);
         p.speed = wind.tws;
 
-        // Move at constant pixel speed in wind direction
         const dirRad = Math.atan2(wind.u, wind.v);
         const speedBoost = p.speed < 5 ? 0.8 : p.speed < 15 ? 1.2 : 1.8;
         const step = degPerFrame * speedBoost;
@@ -217,7 +224,6 @@ export default function WindOverlay(): React.ReactElement {
         p.len = Math.min(p.len + 1, TRAIL_LEN);
         p.age++;
 
-        // Recycle if out of bounds or old
         if (p.age > p.maxAge ||
             newLon < vBounds.west - 2 || newLon > vBounds.east + 2 ||
             newLat < vBounds.south - 2 || newLat > vBounds.north + 2) {
@@ -227,26 +233,26 @@ export default function WindOverlay(): React.ReactElement {
 
         if (p.len < 3) continue;
 
-        // Fade
         const fadeIn = Math.min(1, p.age / 5);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
-        const speedAlpha = p.speed < 3 ? 0.18 : p.speed < 8 ? 0.30 : p.speed < 18 ? 0.42 : 0.60;
-        const alpha = fadeIn * fadeOut * speedAlpha;
-        if (alpha < 0.02) continue;
+        const speedAlpha = p.speed < 3 ? 0.20 : p.speed < 8 ? 0.35 : p.speed < 18 ? 0.50 : 0.70;
+        const baseAlpha = fadeIn * fadeOut * speedAlpha;
+        if (baseAlpha < 0.02) continue;
 
-        // Color
         const [r, g, bv] = windColor(p.speed);
-        const key = `${r},${g},${bv}`;
-        if (!colorBuckets.has(key)) colorBuckets.set(key, { r, g, b: bv, verts: [], alpha });
+        const key = `${r.toFixed(2)},${g.toFixed(2)},${bv.toFixed(2)}`;
+        let batchIdx = colorMap.get(key);
+        if (batchIdx === undefined) {
+          batchIdx = batches.length;
+          colorMap.set(key, batchIdx);
+          batches.push({ r, g, b: bv, baseAlpha: 1, verts: [], alphas: [] });
+        }
+        const batch = batches[batchIdx]!;
 
-        const bucket = colorBuckets.get(key)!;
-        // Use the max alpha for this bucket (simplification)
-        if (alpha > bucket.alpha) bucket.alpha = alpha;
-
-        // Build thick line segments as quads (2 triangles per segment)
-        // lineWidth in clip space — ~1.5px
-        const lw = 1.2 / width * 2; // convert pixels to clip space
+        // Comet shape: head is thick + opaque, tail tapers + fades
+        const maxWidth = 2.0 / width * 2; // ~2px at head in clip space
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
+
         for (let s = 0; s < p.len - 1; s++) {
           const i0 = (oldest + s) % TRAIL_LEN;
           const i1 = (oldest + s + 1) % TRAIL_LEN;
@@ -255,36 +261,59 @@ export default function WindOverlay(): React.ReactElement {
           const x1 = lonToClip(p.lons[i1]!);
           const y1 = latToClip(p.lats[i1]!);
 
-          // Normal perpendicular to segment
           const dx = x1 - x0;
           const dy = y1 - y0;
-          const len = Math.sqrt(dx * dx + dy * dy);
-          if (len < 0.0001) continue;
-          const nx = -dy / len * lw;
-          const ny = dx / len * lw;
+          const segLen = Math.sqrt(dx * dx + dy * dy);
+          if (segLen < 0.00001) continue;
 
-          // 2 triangles forming a quad
-          bucket.verts.push(
-            x0 - nx, y0 - ny,
-            x0 + nx, y0 + ny,
-            x1 - nx, y1 - ny,
-            x1 - nx, y1 - ny,
-            x0 + nx, y0 + ny,
-            x1 + nx, y1 + ny,
+          // Progress: 0 = tail, 1 = head
+          const t0 = s / (p.len - 1);
+          const t1 = (s + 1) / (p.len - 1);
+
+          // Width tapers: head = maxWidth, tail = 0.2 * maxWidth
+          const w0 = maxWidth * (0.2 + 0.8 * t0);
+          const w1 = maxWidth * (0.2 + 0.8 * t1);
+
+          // Alpha tapers: head = baseAlpha, tail = baseAlpha * 0.1
+          const a0 = baseAlpha * (0.1 + 0.9 * t0 * t0);
+          const a1 = baseAlpha * (0.1 + 0.9 * t1 * t1);
+
+          // Normal perpendicular
+          const nx = -dy / segLen;
+          const ny = dx / segLen;
+
+          // 6 vertices = 2 triangles
+          batch.verts.push(
+            x0 - nx * w0, y0 - ny * w0,
+            x0 + nx * w0, y0 + ny * w0,
+            x1 - nx * w1, y1 - ny * w1,
+            x1 - nx * w1, y1 - ny * w1,
+            x0 + nx * w0, y0 + ny * w0,
+            x1 + nx * w1, y1 + ny * w1,
           );
+          batch.alphas.push(a0, a0, a1, a1, a0, a1);
         }
       }
 
-      // Draw each color bucket in one call
+      // Draw batches
       gl.enableVertexAttribArray(aPos);
-      for (const bucket of colorBuckets.values()) {
-        if (bucket.verts.length === 0) continue;
-        const data = new Float32Array(bucket.verts);
+      gl.enableVertexAttribArray(aAlpha);
+      for (const batch of batches) {
+        if (batch.verts.length === 0) continue;
+        const posData = new Float32Array(batch.verts);
+        const alphaData = new Float32Array(batch.alphas);
+
         gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, posData, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-        gl.uniform4f(uColor, bucket.r, bucket.g, bucket.b, bucket.alpha);
-        gl.drawArrays(gl.TRIANGLES, 0, data.length / 2);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, alphaData, gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 0, 0);
+
+        gl.uniform3f(uColor, batch.r, batch.g, batch.b);
+        gl.uniform1f(uBaseAlpha, 1.0);
+        gl.drawArrays(gl.TRIANGLES, 0, posData.length / 2);
       }
 
       animRef.current = requestAnimationFrame(animate);
