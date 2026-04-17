@@ -334,27 +334,18 @@ export default function WindOverlay(): React.ReactElement {
     let prevZoom = map?.getZoom() ?? 5;
     const onMove = () => {
       if (!map) return;
-      const nb = map.getBounds();
-      const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
       const newZoom = map.getZoom();
-      const isZoomOut = newZoom < prevZoom - 0.1;
+      const isZoomOut = newZoom < prevZoom - 0.05;
       prevZoom = newZoom;
 
       if (isZoomOut) {
-        // Dezoom: only reset particles that are OUTSIDE the new visible bounds
-        // Keep existing ones that are still visible (they have trails already)
-        for (const p of particles) {
-          const lon = p.lons[p.head]!;
-          const lat = p.lats[p.head]!;
-          // If particle is in a tight cluster (old bounds), spread ~30% out
-          if (Math.random() < 0.3 ||
-              lon < newBounds.west || lon > newBounds.east ||
-              lat < newBounds.south || lat > newBounds.north) {
-            resetParticle(p, newBounds);
-          }
-        }
+        // Dezoom: reset ALL particles in new bounds for uniform density
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        const nb = map.getBounds();
+        const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
+        for (const p of particles) resetParticle(p, newBounds);
       }
-      // Pan: particles follow naturally via projection, no reset needed
     };
     map?.on('move', onMove);
 
