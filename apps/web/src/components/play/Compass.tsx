@@ -1,152 +1,122 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { sendOrder, useGameStore } from '@/lib/store';
 import styles from './Compass.module.css';
 
-/**
- * Compas VR-style — implémentation fidèle à l'addendum V3 §2.
- * - Toute la scène SVG est mise à jour par manipulation DOM directe
- *   (pas de React re-render pendant le drag → 60 fps garanti).
- * - Drag absolu sur l'anneau : le cap cible = angle pointé (pas delta).
- * - Scroll wheel sur desktop pour la précision ±1°.
- * - Bouton APPLIQUER obligatoire — aucun changement de cap n'est émis
- *   tant que l'utilisateur n'a pas confirmé.
- * - Lock CAP / TWA / VMG AUTO via les trois cellules du header.
- *
- * Les zones VMG et voile sont calculées une seule fois par changement de
- * TWD ou de voile puis écrites directement dans leurs <path>.
- */
-
-const VB = 300;
+/* ── Constants ────────────────────────────────────── */
+const VB = 220; // viewBox size
 const CX = VB / 2;
 const CY = VB / 2;
-const R_OUTER = 140;
-const R_GRAD = 125;
-const R_SAIL = 100;
-const R_VMG = 115;
-const R_TWA = 88;
-const R_HUB = 34;
+const R_OUTER = 96;
+const R_INNER = 82;
 
 const SAIL_RANGES: Record<string, [number, number]> = {
-  LW: [0, 60], JIB: [30, 100], GEN: [50, 140], C0: [60, 150], HG: [100, 170], SPI: [120, 180],
+  LW: [0, 60], JIB: [30, 100], GEN: [50, 140],
+  C0: [60, 150], HG: [100, 170], SPI: [120, 180],
 };
-
-type LockMode = 'CAP' | 'TWA' | 'VMG';
 
 function pt(r: number, deg: number): { x: number; y: number } {
   const rad = ((deg - 90) * Math.PI) / 180;
-  // Arrondi au 4ème décimal pour éviter les mismatches SSR/CSR dus à la
-  // précision flottante (Node et V8 navigateur peuvent différer au dernier ULP).
-  const round = (n: number): number => Math.round(n * 10000) / 10000;
-  return { x: round(CX + r * Math.cos(rad)), y: round(CY + r * Math.sin(rad)) };
+  return {
+    x: Math.round((CX + r * Math.cos(rad)) * 100) / 100,
+    y: Math.round((CY + r * Math.sin(rad)) * 100) / 100,
+  };
 }
 
-function sector(r: number, d1: number, d2: number): string {
-  const span = ((d2 - d1 + 360) % 360);
-  const s = pt(r, d1);
-  const e = pt(r, d2);
-  return `M${CX},${CY} L${s.x.toFixed(1)},${s.y.toFixed(1)} A${r},${r},0,${span > 180 ? 1 : 0},1,${e.x.toFixed(1)},${e.y.toFixed(1)} Z`;
-}
-
-function shortSector(r: number, d1: number, d2: number): string {
-  const diff = ((d2 - d1 + 360) % 360);
-  return diff <= 180 ? sector(r, d1, d2) : sector(r, d2, d1);
-}
-
-function qualityColor(hdg: number, twd: number): { color: string; label: string } {
-  let twa = ((hdg - twd + 360) % 360);
-  if (twa > 180) twa -= 360;
+/** Check if current TWA is in VMG optimal zone */
+function isInVmgZone(twa: number): boolean {
   const a = Math.abs(twa);
-  if (a < 28) return { color: '#f87171', label: 'ZONE MORTE' };
-  if (a >= 38 && a <= 54) return { color: '#4ade80', label: 'VMG ↑' };
-  if (a >= 140 && a <= 162) return { color: '#4ade80', label: 'VMG ↓' };
-  if (a > 54 && a < 140) return { color: '#00d4ff', label: 'OPTIMAL' };
-  return { color: 'rgba(232,244,255,.6)', label: 'CAP' };
+  return (a >= 38 && a <= 54) || (a >= 140 && a <= 162);
+}
+
+/** Determine which sail would be selected for a given TWA in auto mode */
+function bestSailForTwa(absT: number): string | null {
+  const order = ['SPI', 'C0', 'HG', 'GEN', 'JIB', 'LW'];
+  for (const s of order) {
+    const [mn, mx] = SAIL_RANGES[s]!;
+    if (absT >= mn && absT <= mx) return s;
+  }
+  return null;
 }
 
 export default function Compass(): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
   const targetHdgRef = useRef<number | null>(null);
   const [applyActive, setApplyActive] = useState(false);
-  const [flashing, setFlashing] = useState(false);
-  const [lockMode, setLockMode] = useState<LockMode>('CAP');
-  const [lockedTwa, setLockedTwa] = useState<number>(0);
+  const [twaLocked, setTwaLocked] = useState(false);
+  const [lockedTwa, setLockedTwa] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [pendingSailChange, setPendingSailChange] = useState<string | null>(null);
 
-  const hud = useGameStore((s) => s.hud);
-  const sail = useGameStore((s) => s.sail.currentSail);
-  const currentHdg = hud.hdg;
-  const twd = hud.twd;
+  // Store subscriptions
+  const hdg = useGameStore((s) => s.hud.hdg);
+  const twd = useGameStore((s) => s.hud.twd);
+  const tws = useGameStore((s) => s.hud.tws);
+  const bsp = useGameStore((s) => s.hud.bsp);
+  const twa = useGameStore((s) => s.hud.twa);
+  const currentSail = useGameStore((s) => s.sail.currentSail);
+  const sailAuto = useGameStore((s) => s.sail.sailAuto);
 
-  // --- Mise à jour directe du SVG (hors React) ---
-  const writeSvg = (targetHdg: number): void => {
+  // Computed
+  const vmgGlow = isInVmgZone(twa);
+  const targetHdg = targetHdgRef.current;
+  const targetTwa = targetHdg !== null ? ((targetHdg - twd + 540) % 360) - 180 : null;
+
+  // Check sail change implication when editing
+  const checkSailChange = useCallback((newHdg: number) => {
+    if (!sailAuto) { setPendingSailChange(null); return; }
+    const newTwa = Math.abs(((newHdg - twd + 540) % 360) - 180);
+    const newBest = bestSailForTwa(newTwa);
+    if (newBest && newBest !== currentSail) {
+      setPendingSailChange(`${currentSail} → ${newBest}`);
+    } else {
+      setPendingSailChange(null);
+    }
+  }, [sailAuto, twd, currentSail]);
+
+  // ── SVG direct DOM update (60fps during drag) ──
+  const writeSvg = useCallback((target: number) => {
     const svg = svgRef.current;
     if (!svg) return;
-    const q = qualityColor(targetHdg, twd);
+    const boat = svg.querySelector<SVGGElement>('#boat');
+    const ghost = svg.querySelector<SVGGElement>('#ghost');
+    const hubText = svg.querySelector<SVGTextElement>('#hubText');
 
-    const boatTarget = svg.querySelector<SVGGElement>('#boatTarget');
-    const twaArcTarget = svg.querySelector<SVGPathElement>('#twaArcTarget');
-    const hubLabel = svg.querySelector<SVGTextElement>('#hubLabel');
-    const hubValue = svg.querySelector<SVGTextElement>('#hubValue');
-    const hubSub = svg.querySelector<SVGTextElement>('#hubSub');
+    if (boat) boat.setAttribute('transform', `rotate(${target} ${CX} ${CY})`);
+    if (ghost) ghost.style.opacity = target === hdg ? '0' : '0.2';
+    if (hubText) hubText.textContent = `${Math.round(target)}°`;
+  }, [hdg]);
 
-    if (boatTarget) {
-      boatTarget.setAttribute('transform', `rotate(${targetHdg} ${CX} ${CY})`);
-      boatTarget.style.opacity = targetHdg === currentHdg ? '0' : '1';
-    }
-    if (twaArcTarget) {
-      twaArcTarget.setAttribute('d', shortSector(R_TWA, twd, targetHdg));
-      twaArcTarget.setAttribute('fill', q.color);
-      twaArcTarget.style.opacity = targetHdg === currentHdg ? '0' : '0.20';
-    }
-    if (hubValue) hubValue.textContent = `${Math.round(targetHdg)}°`;
-    if (hubSub) { hubSub.textContent = q.label; hubSub.setAttribute('fill', q.color); }
-    if (hubLabel) hubLabel.textContent = lockMode === 'CAP' ? 'CAP CIBLE' : lockMode === 'TWA' ? 'TWA CIBLE' : 'VMG AUTO';
-  };
-
-  // Écrit l'état courant quand currentHdg/twd/sail change (mise à jour au tick WS).
+  // Sync SVG when hdg/twd changes from server
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const boatCurrent = svg.querySelector<SVGGElement>('#boatCurrent');
-    const twaArc = svg.querySelector<SVGPathElement>('#twaArc');
-    const windIndicator = svg.querySelector<SVGGElement>('#windIndicator');
-    const sailStb = svg.querySelector<SVGPathElement>('#sailStb');
-    const sailPort = svg.querySelector<SVGPathElement>('#sailPort');
-    const vmgUp = svg.querySelector<SVGPathElement>('#vmgUp');
-    const vmgDown = svg.querySelector<SVGPathElement>('#vmgDown');
+    const boat = svg.querySelector<SVGGElement>('#boat');
+    const ghost = svg.querySelector<SVGGElement>('#ghost');
+    const wind = svg.querySelector<SVGGElement>('#windArrow');
+    const hubText = svg.querySelector<SVGTextElement>('#hubText');
 
-    if (boatCurrent) boatCurrent.setAttribute('transform', `rotate(${currentHdg} ${CX} ${CY})`);
-    if (twaArc) {
-      const q = qualityColor(currentHdg, twd);
-      twaArc.setAttribute('d', shortSector(R_TWA, twd, currentHdg));
-      twaArc.setAttribute('fill', q.color);
+    if (boat && targetHdgRef.current === null) {
+      boat.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
     }
-    if (windIndicator) windIndicator.setAttribute('transform', `rotate(${twd} ${CX} ${CY})`);
-    if (vmgUp) vmgUp.setAttribute('d', sector(R_VMG, (twd - 48 + 360) % 360, (twd + 48) % 360));
-    if (vmgDown) {
-      const downCenter = (twd + 180) % 360;
-      vmgDown.setAttribute('d', sector(R_VMG, (downCenter - 32 + 360) % 360, (downCenter + 32) % 360));
+    if (ghost) {
+      ghost.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
+      ghost.style.opacity = '0';
     }
-    const range = SAIL_RANGES[sail] ?? [0, 180];
-    const [mn, mx] = range;
-    if (sailStb) sailStb.setAttribute('d', sector(R_SAIL, (twd + mn) % 360, (twd + mx) % 360));
-    if (sailPort) sailPort.setAttribute('d', sector(R_SAIL, (twd - mx + 360) % 360, (twd - mn + 360) % 360));
+    if (wind) wind.setAttribute('transform', `rotate(${twd} ${CX} ${CY})`);
+    if (hubText && targetHdgRef.current === null) hubText.textContent = `${Math.round(hdg)}°`;
+  }, [hdg, twd]);
 
-    // si aucun drag en cours, synchroniser la cible avec le courant
-    if (targetHdgRef.current === null) writeSvg(currentHdg);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentHdg, twd, sail, lockMode]);
-
-  // TWA lock : si le TWD bouge, le cap cible et effectif suit.
+  // TWA lock: adjust heading when wind shifts
   useEffect(() => {
-    if (lockMode === 'TWA') {
+    if (twaLocked) {
       const newHdg = ((twd + lockedTwa) + 360) % 360;
       useGameStore.getState().setHud({ hdg: Math.round(newHdg) });
     }
-  }, [lockMode, lockedTwa, twd]);
+  }, [twaLocked, lockedTwa, twd]);
 
-  // --- Drag absolu ---
+  // ── Drag handling ──
   const getHdgFromEvent = (e: PointerEvent): number | null => {
     const svg = svgRef.current;
     if (!svg) return null;
@@ -155,7 +125,7 @@ export default function Compass(): React.ReactElement {
     const cy = rect.top + rect.height / 2;
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
-    if (dx * dx + dy * dy < 900) return null;
+    if (dx * dx + dy * dy < 400) return null; // too close to center
     let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
     if (angle < 0) angle += 360;
     return Math.round(angle) % 360;
@@ -166,27 +136,41 @@ export default function Compass(): React.ReactElement {
     if (!svg) return;
     let dragging = false;
 
-    const onDown = (e: PointerEvent): void => {
+    const onDown = (e: PointerEvent) => {
       dragging = true;
       svg.setPointerCapture(e.pointerId);
       const h = getHdgFromEvent(e);
-      if (h !== null) { targetHdgRef.current = h; writeSvg(h); setApplyActive(true); }
+      if (h !== null) {
+        targetHdgRef.current = h;
+        writeSvg(h);
+        checkSailChange(h);
+        setApplyActive(true);
+        useGameStore.getState().setEditMode(true);
+      }
     };
-    const onMove = (e: PointerEvent): void => {
+    const onMove = (e: PointerEvent) => {
       if (!dragging) return;
       const h = getHdgFromEvent(e);
-      if (h !== null) { targetHdgRef.current = h; writeSvg(h); }
+      if (h !== null) {
+        targetHdgRef.current = h;
+        writeSvg(h);
+        checkSailChange(h);
+      }
     };
-    const onUp = (e: PointerEvent): void => {
+    const onUp = (e: PointerEvent) => {
       dragging = false;
       svg.releasePointerCapture(e.pointerId);
     };
-    const onWheel = (e: WheelEvent): void => {
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY < 0 ? -1 : 1;
-      const base = targetHdgRef.current ?? currentHdg;
+      const base = targetHdgRef.current ?? hdg;
       const h = (base + delta + 360) % 360;
-      targetHdgRef.current = h; writeSvg(h); setApplyActive(h !== currentHdg);
+      targetHdgRef.current = h;
+      writeSvg(h);
+      checkSailChange(h);
+      setApplyActive(h !== hdg);
+      if (h !== hdg) useGameStore.getState().setEditMode(true);
     };
 
     svg.addEventListener('pointerdown', onDown);
@@ -199,170 +183,260 @@ export default function Compass(): React.ReactElement {
       window.removeEventListener('pointerup', onUp);
       svg.removeEventListener('wheel', onWheel);
     };
-  }, [currentHdg]);
+  }, [hdg, writeSvg, checkSailChange]);
 
-  const apply = (): void => {
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && applyActive) {
+        e.preventDefault();
+        setShowModal(true);
+      }
+      if (e.key === 'Enter' && applyActive) {
+        e.preventDefault();
+        apply();
+      }
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        toggleTwaLock();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  // ── Apply heading ──
+  const apply = () => {
     const target = targetHdgRef.current;
     if (target === null) return;
-    if (lockMode === 'TWA') {
-      let newTwa = ((target - twd + 540) % 360) - 180;
-      if (newTwa === -180) newTwa = 180;
+    if (twaLocked) {
+      const newTwa = ((target - twd + 540) % 360) - 180;
       setLockedTwa(newTwa);
-      // Envoi RPC au serveur — l'envelope sera enrichie (trustedTs, effectiveTs, connectionId).
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
     } else {
       sendOrder({ type: 'CAP', value: { heading: target } });
     }
-    // Maj optimiste locale pour retour UX immédiat (le broadcast serveur
-    // confirmera/écrasera dans les 30s max).
     useGameStore.getState().setHud({ hdg: target });
     targetHdgRef.current = null;
     setApplyActive(false);
-    setFlashing(true);
-    setTimeout(() => setFlashing(false), 500);
+    setPendingSailChange(null);
+    useGameStore.getState().setEditMode(false);
   };
 
-  const twaSigned = ((currentHdg - twd + 540) % 360) - 180;
+  // ── Cancel editing ──
+  const cancelEdit = () => {
+    targetHdgRef.current = null;
+    setApplyActive(false);
+    setPendingSailChange(null);
+    setShowModal(false);
+    useGameStore.getState().setEditMode(false);
+    // Reset SVG to current heading
+    writeSvg(hdg);
+    const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
+    if (ghost) ghost.style.opacity = '0';
+  };
+
+  // ── Toggle TWA lock ──
+  const toggleTwaLock = () => {
+    if (twaLocked) {
+      setTwaLocked(false);
+    } else {
+      setTwaLocked(true);
+      setLockedTwa(twa);
+    }
+  };
+
+  // ── Wind direction label (French cardinal) ──
+  const windCardinal = (deg: number): string => {
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return dirs[Math.round(deg / 45) % 8] ?? 'N';
+  };
+
+  // ── Tick marks generation ──
+  const ticks = [];
+  for (let i = 0; i < 36; i++) {
+    const deg = i * 10;
+    const isCardinal = deg % 90 === 0;
+    const isIntercardinal = deg % 45 === 0 && !isCardinal;
+    const len = isCardinal ? 12 : isIntercardinal ? 10 : 6;
+    const opacity = isCardinal ? 0.4 : isIntercardinal ? 0.25 : 0.15;
+    const width = isCardinal ? 1.2 : 0.5;
+    const p1 = pt(R_OUTER, deg);
+    const p2 = pt(R_OUTER - len, deg);
+    ticks.push(
+      <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
+        stroke={`rgba(245,240,232,${opacity})`} strokeWidth={width} />
+    );
+  }
+
+  // Cardinal labels
+  const cardinals = [
+    { label: 'N', deg: 0 }, { label: 'E', deg: 90 },
+    { label: 'S', deg: 180 }, { label: 'O', deg: 270 },
+  ];
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.header}>
-        <button
-          type="button"
-          className={`${styles.lockCell} ${lockMode === 'CAP' ? styles.lockActive : ''}`}
-          onClick={() => setLockMode('CAP')}
-        >
-          <span className={styles.lockLabel}>{lockMode === 'CAP' && '🔒'} CAP</span>
-          <span className={styles.lockValue}>{Math.round(currentHdg)}°</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.lockCell} ${lockMode === 'TWA' ? styles.lockActiveTwa : ''}`}
-          onClick={() => { setLockMode('TWA'); setLockedTwa(twaSigned); }}
-        >
-          <span className={styles.lockLabel}>{lockMode === 'TWA' && '🔒'} TWA</span>
-          <span className={styles.lockValue}>
-            {twaSigned >= 0 ? '+' : ''}{twaSigned.toFixed(0)}°
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.lockCell} ${lockMode === 'VMG' ? styles.lockActive : ''}`}
-          onClick={() => setLockMode('VMG')}
-        >
-          <span className={styles.lockLabel}>VMG</span>
-          <span className={styles.lockValue}>AUTO</span>
-        </button>
-      </div>
+    <>
+      <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`}>
+        {/* Readouts */}
+        <div className={styles.readouts}>
+          <div>
+            <p className={styles.readoutLabel}>Vit. bateau</p>
+            <p className={`${styles.readoutValue} ${styles.live}`}>
+              {bsp.toFixed(1)} <small>nds</small>
+            </p>
+          </div>
+          <div>
+            <p className={styles.readoutLabel}>Vent local</p>
+            <p className={styles.readoutValue}>
+              {tws.toFixed(1)} <small>nds</small>
+            </p>
+          </div>
+          <div>
+            <p className={styles.readoutLabel}>
+              Cap
+              {applyActive && <span className={styles.editTag}>▸ CIBLE</span>}
+              {twaLocked && !applyActive && <span className={styles.editTag}>🔒 AUTO</span>}
+            </p>
+            <p className={`${styles.readoutValue} ${styles.gold}`}>
+              {applyActive && targetHdg !== null ? `${Math.round(targetHdg)}°` : `${Math.round(hdg)}°`}
+            </p>
+          </div>
+          <div>
+            <p className={styles.readoutLabel}>
+              TWA
+              {applyActive && <span className={styles.editTag}>▸ ESTIMÉ</span>}
+              {twaLocked && !applyActive && <span className={styles.editTag}>🔒 VERROUILLÉ</span>}
+            </p>
+            <p className={`${styles.readoutValue} ${vmgGlow && !applyActive ? styles.live : ''}`}>
+              {applyActive && targetTwa !== null ? `${Math.round(targetTwa)}°` : `${Math.round(twa)}°`}
+            </p>
+          </div>
+        </div>
 
-      <div className={styles.root}>
-        <svg ref={svgRef} viewBox={`0 0 ${VB} ${VB}`} className={styles.svg}>
-          <defs>
-            <radialGradient id="bg-grad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#0b1d33" stopOpacity="1" />
-              <stop offset="60%" stopColor="#081525" stopOpacity="1" />
-              <stop offset="100%" stopColor="#060a0f" stopOpacity="1" />
-            </radialGradient>
-          </defs>
+        {/* Compass SVG */}
+        <div className={styles.stage}>
+          <svg ref={svgRef} viewBox={`0 0 ${VB} ${VB}`} className={styles.svg}>
+            {/* Circles */}
+            <circle cx={CX} cy={CY} r={R_OUTER} fill="none"
+              stroke="rgba(245,240,232,0.18)" strokeWidth="1" />
+            <circle cx={CX} cy={CY} r={R_INNER} fill="none"
+              stroke="rgba(245,240,232,0.08)" strokeWidth="0.5" />
 
-          {/* Fond + anneau extérieur */}
-          <circle cx={CX} cy={CY} r={R_OUTER} fill="url(#bg-grad)" stroke="rgba(0,212,255,0.18)" strokeWidth="1.5" />
-          <circle cx={CX} cy={CY} r={R_OUTER - 16} fill="none" stroke="rgba(0,212,255,0.08)" strokeWidth="1" />
+            {/* Tick marks */}
+            {ticks}
 
-          {/* Zones VMG */}
-          <path id="vmgUp" d="" fill="rgba(74,222,128,0.08)" />
-          <path id="vmgDown" d="" fill="rgba(74,222,128,0.06)" />
-
-          {/* Zone voile courante */}
-          <path id="sailStb" d="" fill="rgba(251,191,36,0.10)" />
-          <path id="sailPort" d="" fill="rgba(251,191,36,0.10)" />
-
-          {/* Arc TWA courant + cible */}
-          <path id="twaArc" d="" fill="#00d4ff" opacity="0.28" />
-          <path id="twaArcTarget" d="" fill="#fbbf24" opacity="0" strokeDasharray="4 3" />
-
-          {/* Graduations */}
-          <g>
-            {Array.from({ length: 72 }).map((_, i) => {
-              const deg = i * 5;
-              const major = deg % 30 === 0;
-              const p1 = pt(R_GRAD, deg);
-              const p2 = pt(R_GRAD - (major ? 10 : 4), deg);
+            {/* Cardinal labels (French: O for Ouest) */}
+            {cardinals.map(({ label, deg }) => {
+              const p = pt(R_OUTER - 20, deg);
               return (
-                <line
-                  key={i}
-                  x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                  stroke={major ? 'rgba(224,247,255,0.55)' : 'rgba(224,247,255,0.22)'}
-                  strokeWidth={major ? 1.2 : 0.6}
-                />
+                <text key={label} x={p.x} y={p.y}
+                  fontFamily="Bebas Neue,sans-serif" fontSize="15"
+                  fill="rgba(245,240,232,0.85)"
+                  textAnchor="middle" dominantBaseline="central">
+                  {label}
+                </text>
               );
             })}
-            {['N', 'E', 'S', 'W'].map((card, i) => {
-              const p = pt(R_GRAD - 22, i * 90);
-              return (
-                <text
-                  key={card} x={p.x} y={p.y}
-                  fill={card === 'N' ? '#00d4ff' : 'rgba(224,247,255,0.55)'}
-                  fontFamily="var(--font-display)"
-                  fontSize="14" textAnchor="middle" dominantBaseline="central"
-                  style={{ letterSpacing: '0.05em' }}
-                >{card}</text>
-              );
-            })}
-          </g>
 
-          {/* Indicateur TWD */}
-          <g id="windIndicator" transform={`rotate(${twd} ${CX} ${CY})`}>
-            <path d={`M${CX},${CY - R_OUTER + 6} L${CX - 6},${CY - R_OUTER + 18} L${CX + 6},${CY - R_OUTER + 18} Z`}
-                  fill="#00d4ff" />
-            <text x={CX} y={CY - R_OUTER + 32} fill="rgba(0,212,255,0.75)"
-                  fontFamily="var(--font-mono)" fontSize="9" textAnchor="middle"
-                  style={{ letterSpacing: '0.14em' }}>TWD</text>
-          </g>
+            {/* Wind arrow — OUTSIDE the circle */}
+            <g id="windArrow" transform={`rotate(${twd} ${CX} ${CY})`}>
+              <line x1={CX} y1={CY - R_OUTER - 10} x2={CX} y2={CY - R_OUTER - 2}
+                stroke="rgba(245,240,232,0.55)" strokeWidth="1.5" strokeLinecap="round" />
+              <path d={`M${CX},${CY - R_OUTER} L${CX - 4},${CY - R_OUTER - 8} L${CX},${CY - R_OUTER - 5} L${CX + 4},${CY - R_OUTER - 8} Z`}
+                fill="rgba(245,240,232,0.55)" />
+              <text x={CX} y={CY - R_OUTER - 14}
+                fontFamily="Space Mono,monospace" fontSize="7" fontWeight="700"
+                fill="rgba(245,240,232,0.45)" textAnchor="middle">
+                {windCardinal(twd)}
+              </text>
+            </g>
 
-          {/* Bateau cible (tirets) */}
-          <g id="boatTarget" style={{ opacity: 0 }}>
-            <path
-              d={`M${CX},${CY - 56} L${CX - 14},${CY + 24} L${CX},${CY + 14} L${CX + 14},${CY + 24} Z`}
-              fill="none" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="4 3"
-            />
-          </g>
+            {/* Ghost of previous heading (shown during edit) */}
+            <g id="ghost" transform={`rotate(${hdg} ${CX} ${CY})`} style={{ opacity: 0 }}>
+              <g transform={`translate(${CX},${CX})`}>
+                <path d="M 0,-20 C 5.5,-18 7.5,-11 7.5,-2 C 7.5,7 5.5,13 3.5,18 L 0,21 L -3.5,18 C -5.5,13 -7.5,7 -7.5,-2 C -7.5,-11 -5.5,-18 0,-20 Z"
+                  fill="none" stroke="#f5f0e8" strokeWidth="1" strokeDasharray="3 2" />
+              </g>
+            </g>
 
-          {/* Bateau courant */}
-          <g id="boatCurrent">
-            <path
-              d={`M${CX},${CY - 56} L${CX - 14},${CY + 24} L${CX},${CY + 14} L${CX + 14},${CY + 24} Z`}
-              fill="#00d4ff" opacity="0.92"
-            />
-            <circle cx={CX} cy={CY - 30} r="3" fill="#e0f7ff" />
-          </g>
+            {/* Boat silhouette — oriented by heading (or target during drag) */}
+            <g id="boat" transform={`rotate(${hdg} ${CX} ${CY})`}>
+              <g transform={`translate(${CX},${CX})`}>
+                <path d="M 0,-20 C 5.5,-18 7.5,-11 7.5,-2 C 7.5,7 5.5,13 3.5,18 L 0,21 L -3.5,18 C -5.5,13 -7.5,7 -7.5,-2 C -7.5,-11 -5.5,-18 0,-20 Z"
+                  fill="#c9a227" stroke="#1a2840" strokeWidth="0.8" />
+                <line x1="0" y1="-16" x2="0" y2="16" stroke="#1a2840" strokeWidth="0.6" opacity="0.5" />
+                <circle cx="0" cy="-5" r="1.5" fill="#1a2840" />
+              </g>
+            </g>
 
-          {/* Hub central */}
-          <circle cx={CX} cy={CY} r={R_HUB} fill="#060a0f" stroke="rgba(0,212,255,0.35)" strokeWidth="1" />
-          <text id="hubLabel" x={CX} y={CY - 12} fill="rgba(224,247,255,0.55)"
-                fontFamily="var(--font-mono)" fontSize="8" textAnchor="middle"
-                style={{ letterSpacing: '0.16em' }}>CAP</text>
-          <text id="hubValue" x={CX} y={CY + 6} fill="#e0f7ff"
-                fontFamily="var(--font-display)" fontSize="22" textAnchor="middle">
-            {Math.round(currentHdg)}°
-          </text>
-          <text id="hubSub" x={CX} y={CY + 22} fill="#00d4ff"
-                fontFamily="var(--font-mono)" fontSize="8" textAnchor="middle"
-                style={{ letterSpacing: '0.18em' }}>OPTIMAL</text>
+            {/* Center hub */}
+            <circle cx={CX} cy={CY} r={16} fill="rgba(12,20,36,0.85)"
+              stroke="rgba(245,240,232,0.20)" strokeWidth="0.8" />
+            <text id="hubText" x={CX} y={CX - 2}
+              fontFamily="Bebas Neue,sans-serif" fontSize="15"
+              fill="#c9a227" textAnchor="middle" dominantBaseline="central">
+              {Math.round(hdg)}°
+            </text>
+          </svg>
+        </div>
 
-          {/* Triangle pointeur fixe (haut) */}
-          <path d={`M${CX},${CY - R_OUTER - 4} L${CX - 7},${CY - R_OUTER - 18} L${CX + 7},${CY - R_OUTER - 18} Z`}
-                fill="#e0f7ff" opacity="0.55" />
-        </svg>
+        {/* Sail change notification */}
+        {pendingSailChange && (
+          <div className={styles.sailNotif}>
+            <span>⛵</span>
+            <span>
+              Changement de voile auto : <span className={styles.sailNotifStrong}>{pendingSailChange}</span>
+            </span>
+          </div>
+        )}
 
-        <button
-          type="button"
-          className={`${styles.apply} ${applyActive ? styles.applyActive : ''} ${flashing ? styles.flash : ''}`}
-          onClick={apply}
-        >
-          APPLIQUER
-        </button>
+        {/* Action buttons */}
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
+            onClick={toggleTwaLock}
+            title="Verrouiller TWA (T)"
+          >
+            🔒 TWA
+          </button>
+          <button
+            type="button"
+            className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
+            onClick={apply}
+            title="Appliquer le cap (Entrée)"
+          >
+            {applyActive && targetHdg !== null ? `✓ Appliquer ${Math.round(targetHdg)}°` : 'Appliquer'}
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Confirm modal */}
+      {showModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.modalTitle}>Cap non appliqué</p>
+            <p className={styles.modalText}>
+              Vous avez modifié le cap cible à{' '}
+              <strong style={{ color: '#c9a227' }}>
+                {targetHdg !== null ? `${Math.round(targetHdg)}°` : ''}
+              </strong>{' '}
+              sans l&apos;appliquer.
+            </p>
+            <div className={styles.modalActions}>
+              <button type="button" className={`${styles.modalBtn} ${styles.modalBtnDanger}`}
+                onClick={cancelEdit}>
+                Annuler
+              </button>
+              <button type="button" className={`${styles.modalBtn} ${styles.modalBtnPrimary}`}
+                onClick={() => setShowModal(false)}>
+                Continuer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
