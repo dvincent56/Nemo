@@ -9,6 +9,7 @@ import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
   type SessionContext,
 } from '@/lib/access';
+import { useHotkeys } from '@/lib/useHotkeys';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
 import CoordsDisplay from '@/components/play/CoordsDisplay';
@@ -74,6 +75,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const canInteract = access.kind === 'play';
 
   useTicker(race.id);
+  useHotkeys(canInteract);
 
   if (access.kind === 'blocked') {
     return (
