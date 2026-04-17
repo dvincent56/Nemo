@@ -1,0 +1,23 @@
+.coords {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(245, 240, 232, 0.72);
+  background: rgba(12, 20, 36, 0.78);
+  padding: 8px 12px;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.row + .row { margin-top: 2px; }
+
+.value {
+  color: #f5f0e8;
+  font-weight: 700;
+}
