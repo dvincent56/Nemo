@@ -106,8 +106,10 @@ function makeParticle(b: { west: number; east: number; south: number; north: num
 function resetParticle(p: Particle, b: { west: number; east: number; south: number; north: number }): void {
   const [lon, lat] = randomInBounds(b);
   p.lons[0] = lon; p.lats[0] = lat;
-  p.head = 0; p.len = 1; p.age = 0;
-  p.maxAge = 120 + Math.floor(Math.random() * 100);
+  p.head = 0; p.len = 1;
+  // Random age so particles don't all appear at once, skip fade-in delay
+  p.age = 20 + Math.floor(Math.random() * 80);
+  p.maxAge = p.age + 80 + Math.floor(Math.random() * 80);
 }
 
 // ─── Component ─────────────────────────────────────────
@@ -194,17 +196,6 @@ export default function WindOverlay(): React.ReactElement {
       // Group particles by color bucket for batched drawing
       const colorBuckets: Map<string, { r: number; g: number; b: number; verts: number[]; alpha: number }> = new Map();
 
-      // Each frame, randomly reset ~1% of particles to fill new bounds evenly
-      // This prevents clustering when zooming out
-      const resetCount = Math.ceil(particles.length * 0.01);
-      for (let r = 0; r < resetCount; r++) {
-        const idx = Math.floor(Math.random() * particles.length);
-        const rp = particles[idx]!;
-        if (rp.len > 5) { // only reset particles that have lived a bit
-          resetParticle(rp, vBounds);
-        }
-      }
-
       for (const p of particles) {
         const lon = p.lons[p.head]!;
         const lat = p.lats[p.head]!;
@@ -237,7 +228,7 @@ export default function WindOverlay(): React.ReactElement {
         if (p.len < 3) continue;
 
         // Fade
-        const fadeIn = Math.min(1, p.age / 15);
+        const fadeIn = Math.min(1, p.age / 5);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / 30);
         const speedAlpha = p.speed < 3 ? 0.18 : p.speed < 8 ? 0.30 : p.speed < 18 ? 0.42 : 0.60;
         const alpha = fadeIn * fadeOut * speedAlpha;
@@ -254,7 +245,7 @@ export default function WindOverlay(): React.ReactElement {
 
         // Build thick line segments as quads (2 triangles per segment)
         // lineWidth in clip space — ~1.5px
-        const lw = 1.5 / width * 2; // convert pixels to clip space
+        const lw = 1.2 / width * 2; // convert pixels to clip space
         const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
         for (let s = 0; s < p.len - 1; s++) {
           const i0 = (oldest + s) % TRAIL_LEN;
@@ -309,7 +300,18 @@ export default function WindOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
+    // Reset all particles on zoom/pan end
+    const map = mapInstance;
+    const onMoveEnd = () => {
+      if (!map) return;
+      const nb = map.getBounds();
+      const newBounds = { west: nb.getWest(), east: nb.getEast(), south: nb.getSouth(), north: nb.getNorth() };
+      for (const p of particles) resetParticle(p, newBounds);
+    };
+    map?.on('moveend', onMoveEnd);
+
     return () => {
+      map?.off('moveend', onMoveEnd);
       cancelAnimationFrame(animRef.current);
       window.removeEventListener('resize', onResize);
     };
