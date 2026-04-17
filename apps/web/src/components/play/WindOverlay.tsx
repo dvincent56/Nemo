@@ -131,18 +131,18 @@ export default function WindOverlay(): React.ReactElement {
 
       ctx.lineCap = 'round';
 
-      // Adapt particle count to zoom — more particles when zoomed in
-      const zoom = map.getZoom();
-      const activeCount = Math.min(MAX_PARTICLES, Math.floor(800 + zoom * 400));
-
-      // Adapt speed to zoom: at zoom 5 we see ~20° of longitude,
-      // at zoom 8 we see ~2.5°. The scale should produce ~3-5px movement per frame.
-      // pixelsPerDegree ≈ width / lonRange
+      // Constant pixel speed: all particles move at ~0.4 px/frame in the wind direction.
+      // The DIRECTION comes from wind data, but the SPEED is constant.
+      // Wind strength is encoded visually: thickness, opacity, trail length.
       const lonRange = bounds.east - bounds.west;
       const pixelsPerDeg = lonRange > 0 ? width / lonRange : 1;
-      // Target: ~0.5px movement per 10kt wind per frame (subtle drift)
-      // 10kt ≈ 5 m/s, so scale = 0.5px / (5 * pixelsPerDeg) = 0.1 / pixelsPerDeg
-      const moveScale = 0.1 / pixelsPerDeg;
+      // Fixed pixel velocity → convert to degrees
+      const PIXELS_PER_FRAME = 0.4;
+      const degPerFrame = PIXELS_PER_FRAME / pixelsPerDeg;
+
+      // Active count adapts to zoom
+      const zoom = map.getZoom();
+      const activeCount = Math.min(MAX_PARTICLES, Math.floor(800 + zoom * 400));
 
       for (let pi = 0; pi < activeCount && pi < particles.length; pi++) {
         const p = particles[pi]!;
@@ -152,9 +152,10 @@ export default function WindOverlay(): React.ReactElement {
         const wind = interpolateGfsWind(grid, lat, lon);
         p.speed = wind.tws;
 
-        // Advance — zoom-adaptive speed
-        const newLon = lon + wind.u * moveScale;
-        const newLat = lat + wind.v * moveScale;
+        // Move at constant pixel speed in wind direction
+        const dirRad = Math.atan2(wind.u, wind.v); // angle in radians
+        const newLon = lon + Math.sin(dirRad) * degPerFrame;
+        const newLat = lat + Math.cos(dirRad) * degPerFrame;
 
         const newHead = (p.head + 1) % TRAIL_LEN;
         p.lons[newHead] = newLon;
@@ -163,30 +164,35 @@ export default function WindOverlay(): React.ReactElement {
         p.len = Math.min(p.len + 1, TRAIL_LEN);
         p.age++;
 
-        // Reset if out of visible bounds or too old
-        if (p.age > p.maxAge ||
+        // Shorter life for weak wind (fewer trail segments visible)
+        const effectiveMaxAge = p.speed < 5 ? 30 : p.speed < 15 ? 50 : 80;
+
+        if (p.age > effectiveMaxAge ||
             newLon < bounds.west - 1 || newLon > bounds.east + 1 ||
             newLat < bounds.south - 1 || newLat > bounds.north + 1) {
           resetParticle(p, bounds);
           continue;
         }
 
-        // Fade in/out
-        const fadeIn = Math.min(1, p.age / 8);
-        const fadeOut = Math.min(1, (p.maxAge - p.age) / 15);
-        const alpha = fadeIn * fadeOut * 0.5;
+        // Opacity depends on wind speed: weak = faint, strong = solid
+        const fadeIn = Math.min(1, p.age / 6);
+        const fadeOut = Math.min(1, (effectiveMaxAge - p.age) / 10);
+        const speedAlpha = p.speed < 5 ? 0.15 : p.speed < 15 ? 0.3 : 0.5;
+        const alpha = fadeIn * fadeOut * speedAlpha;
         if (alpha < 0.02) continue;
 
-        // Draw trail as polyline — project each point via MapLibre
-        if (p.len < 2) continue;
+        // Draw trail — only show last N segments based on wind strength
+        const trailVisible = p.speed < 5 ? 3 : p.speed < 15 ? 5 : TRAIL_LEN;
+        const drawLen = Math.min(p.len, trailVisible);
+        if (drawLen < 2) continue;
 
         ctx.strokeStyle = `${windColor(p.speed)}${alpha.toFixed(2)})`;
-        ctx.lineWidth = p.speed > 25 ? 1.5 : p.speed > 15 ? 1.2 : 0.8;
+        ctx.lineWidth = 1;
         ctx.beginPath();
 
         let started = false;
-        const oldest = (p.head - p.len + 1 + TRAIL_LEN) % TRAIL_LEN;
-        for (let s = 0; s < p.len; s++) {
+        const oldest = (p.head - drawLen + 1 + TRAIL_LEN) % TRAIL_LEN;
+        for (let s = 0; s < drawLen; s++) {
           const idx = (oldest + s) % TRAIL_LEN;
           const pt = map.project([p.lons[idx]!, p.lats[idx]!]);
           if (!started) {
