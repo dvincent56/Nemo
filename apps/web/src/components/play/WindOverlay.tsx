@@ -128,12 +128,17 @@ export default function WindOverlay(): React.ReactElement {
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
-  // Load GFS data
+  // Load GFS data — store in ref for animation loop AND in zustand store for other components
   useEffect(() => {
     if (gridRef.current) return;
     fetch('/data/wind.json')
       .then((r) => r.json())
-      .then((j) => { gridRef.current = parseGfsWind(j); })
+      .then((j) => {
+        const grid = parseGfsWind(j);
+        gridRef.current = grid;
+        // Share with store so CursorTooltip and other components can access it
+        useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+      })
       .catch((e) => console.warn('Wind data load failed:', e));
   }, []);
 
