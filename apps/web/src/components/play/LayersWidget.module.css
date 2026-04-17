@@ -29,6 +29,7 @@
   justify-content: space-between;
   gap: 12px;
   cursor: pointer;
+  user-select: none;
 }
 
 .rowLabel {
@@ -57,6 +58,7 @@
   border-radius: 999px;
   transition: background 150ms;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .switchOn {

@@ -21,6 +21,7 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
+  user-select: none;
   transition: all 150ms;
 }
 

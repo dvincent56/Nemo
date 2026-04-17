@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sendOrder, useGameStore } from '@/lib/store';
 import styles from './Compass.module.css';
+import Tooltip from '@/components/ui/Tooltip';
 
 /* ── Constants ────────────────────────────────────── */
 const VB = 220; // viewBox size
@@ -430,22 +431,24 @@ export default function Compass(): React.ReactElement {
 
         {/* Action buttons */}
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
-            onClick={toggleTwaLock}
-            title="Verrouiller TWA (T)"
-          >
-            🔒 TWA
-          </button>
-          <button
-            type="button"
-            className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
-            onClick={apply}
-            title="Appliquer le cap (Entrée)"
-          >
-            {applyActive && targetHdg !== null ? `✓ Appliquer ${Math.round(targetHdg)}°` : 'Appliquer'}
-          </button>
+          <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="top">
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
+              onClick={toggleTwaLock}
+            >
+              🔒 TWA
+            </button>
+          </Tooltip>
+          <Tooltip text="Appliquer le cap modifié" shortcut="Entrée" position="top">
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
+              onClick={apply}
+            >
+              {applyActive && targetHdg !== null ? `✓ Appliquer ${Math.round(targetHdg)}°` : 'Appliquer'}
+            </button>
+          </Tooltip>
         </div>
       </div>
 

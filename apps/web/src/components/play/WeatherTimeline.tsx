@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/lib/store';
 import type { PlaybackSpeed } from '@/lib/store';
 import styles from './WeatherTimeline.module.css';
+import Tooltip from '@/components/ui/Tooltip';
 
 /** Stable placeholder for SSR — avoids hydration mismatch */
 const SSR_PLACEHOLDER = { day: '—', time: '—' };
@@ -110,30 +111,36 @@ export default function WeatherTimeline(): React.ReactElement {
 
       {/* Controls */}
       <div className={styles.controls}>
-        <button type="button" className={styles.btn} onClick={stepBack} title="Reculer 6h">◀</button>
-        <button type="button" className={styles.btn} onClick={stepForward} title="Avancer 6h">▶</button>
+        <Tooltip text="Reculer de 6h" position="top">
+          <button type="button" className={styles.btn} onClick={stepBack}>◀</button>
+        </Tooltip>
+        <Tooltip text="Avancer de 6h" position="top">
+          <button type="button" className={styles.btn} onClick={stepForward}>▶</button>
+        </Tooltip>
 
         {/* Speed buttons */}
         {speeds.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`${styles.speedBtn} ${playbackSpeed === s && !isLive ? styles.btnActive : ''}`}
-            onClick={() => useGameStore.getState().setPlaybackSpeed(s)}
-          >
-            {s}×
-          </button>
+          <Tooltip key={s} text={`Vitesse ×${s}`} position="top">
+            <button
+              type="button"
+              className={`${styles.speedBtn} ${playbackSpeed === s && !isLive ? styles.btnActive : ''}`}
+              onClick={() => useGameStore.getState().setPlaybackSpeed(s)}
+            >
+              {s}×
+            </button>
+          </Tooltip>
         ))}
 
         {/* Live button */}
-        <button
-          type="button"
-          className={`${styles.liveBtn} ${isLive ? styles.liveBtnActive : ''}`}
-          onClick={() => useGameStore.getState().goLive()}
-          title="Revenir en direct (L)"
-        >
-          Live
-        </button>
+        <Tooltip text="Revenir en direct" shortcut="L" position="top">
+          <button
+            type="button"
+            className={`${styles.liveBtn} ${isLive ? styles.liveBtnActive : ''}`}
+            onClick={() => useGameStore.getState().goLive()}
+          >
+            Live
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
