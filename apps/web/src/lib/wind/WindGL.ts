@@ -281,14 +281,14 @@ function bindFramebuffer(gl: WebGLRenderingContext, framebuffer: WebGLFramebuffe
 // ---------------------------------------------------------------------------
 
 const defaultRampColors: Record<number, string> = {
-  0.0: '#1a3a5c',  // very light — dark blue
-  0.1: '#3388bd',  // light — blue
-  0.2: '#50b5a0',  // moderate — teal
-  0.3: '#7ecba4',  // fresh — green
-  0.5: '#c8e87a',  // strong — yellow-green
-  0.7: '#f0c040',  // very strong — yellow
-  0.85: '#e07020', // gale — orange
-  1.0: '#c03030',  // storm — red
+  0.0: '#3c8cc8',  // calm — soft blue
+  0.15: '#50bea8', // light — teal
+  0.3: '#6cd28a',  // moderate — green
+  0.45: '#82d264', // fresh — yellow-green
+  0.6: '#dcc846',  // strong — yellow
+  0.75: '#dc9628', // very strong — orange
+  0.9: '#c06020',  // gale — dark orange
+  1.0: '#c83828',  // storm — red
 };
 
 function getColorRamp(colors: Record<number, string>): Uint8Array {
@@ -331,10 +331,10 @@ export interface WindData {
 export class WindGL {
   private gl: WebGLRenderingContext;
 
-  fadeOpacity = 0.996;
-  speedFactor = 0.25;
-  dropRate = 0.003;
-  dropRateBump = 0.01;
+  fadeOpacity = 0.980;   // faster fade = shorter trails (Canvas 2D style)
+  speedFactor = 0.10;    // slower particles (was 0.25)
+  dropRate = 0.005;      // slightly more respawn for density
+  dropRateBump = 0.005;  // less speed-dependent drop
 
   private drawProgram: ProgramInfo;
   private screenProgram: ProgramInfo;

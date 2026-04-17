@@ -29,7 +29,7 @@ export default function WindOverlay(): React.ReactElement {
     if (!gl) return;
 
     const wind = new WindGL(gl);
-    wind.numParticles = 65536;
+    wind.numParticles = 8192;
     windRef.current = wind;
 
     // Load wind data
@@ -82,7 +82,7 @@ export default function WindOverlay(): React.ReactElement {
         inset: 0,
         pointerEvents: 'none',
         zIndex: 2,
-        opacity: 0.6,
+        opacity: 0.45,
       }}
     />
   );
