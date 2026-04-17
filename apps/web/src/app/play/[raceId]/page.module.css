@@ -340,6 +340,59 @@
   }
 }
 
+/* ── Responsive: landscape on tablets/phones ─────────── */
+@media (max-height: 500px) {
+  .app {
+    --hud-h: 44px;
+    --timeline-h: 44px;
+  }
+
+  .rightStack {
+    bottom: 8px;
+    right: 8px;
+    gap: 4px;
+    max-height: calc(100% - 16px);
+    overflow-y: auto;
+  }
+
+  .actionButtons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .actionBtn {
+    width: 40px;
+    height: 40px;
+    gap: 0;
+  }
+  .actionBtn > span:not(.actionBtnIcon) { display: none; }
+
+  .zoomGroup { flex-direction: row; }
+  .zoomBtn + .zoomBtn {
+    border-top: none;
+    border-left: 1px solid rgba(245, 240, 232, 0.16);
+  }
+  .zoomBtn { width: 40px; height: 36px; }
+}
+
+/* Very small landscape (phone) — compass even smaller */
+@media (max-height: 420px) {
+  .rightStack {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 6px;
+    bottom: 6px;
+    right: 6px;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 /* ── Touch targets ───────────────────────────────────── */
 @media (pointer: coarse) {
   .actionBtn { min-height: 44px; min-width: 44px; }

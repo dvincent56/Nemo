@@ -1,5 +1,5 @@
 .wrapper {
-  width: 280px;
+  width: clamp(220px, 32vw, 280px);
   background: rgba(12, 20, 36, 0.92);
   border: 1px solid rgba(245, 240, 232, 0.16);
   border-radius: 4px;
@@ -214,4 +214,30 @@
 .modalBtnDanger {
   color: #9e2a2a;
   border-color: #9e2a2a;
+}
+
+@media (max-height: 500px) {
+  .wrapper {
+    width: clamp(180px, 28vw, 240px);
+    padding: 10px;
+    gap: 8px;
+  }
+  .readouts {
+    gap: 4px 10px;
+    padding-bottom: 8px;
+  }
+  .readoutLabel { font-size: 7px; }
+  .readoutValue { font-size: 12px; }
+  .actions { padding-top: 8px; gap: 4px; }
+  .actionBtn { min-height: 32px; font-size: 8px; padding: 6px 4px; }
+}
+
+@media (max-height: 420px) {
+  .wrapper {
+    width: clamp(160px, 24vw, 200px);
+    padding: 8px;
+    gap: 6px;
+  }
+  .readouts { display: none; }
+  .sailNotif { display: none; }
 }

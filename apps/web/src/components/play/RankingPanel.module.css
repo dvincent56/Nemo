@@ -41,6 +41,12 @@
   font-family: var(--font-body);
   font-size: 13px;
   appearance: none;
+  color-scheme: dark;
+}
+
+.filterSelect option {
+  background: #1a2840;
+  color: #f5f0e8;
 }
 
 .list {

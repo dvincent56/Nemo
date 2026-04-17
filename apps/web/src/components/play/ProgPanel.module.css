@@ -58,6 +58,12 @@
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 700;
+  color-scheme: dark;
+}
+
+.fieldInput option {
+  background: #1a2840;
+  color: #f5f0e8;
 }
 
 .fieldRow {
