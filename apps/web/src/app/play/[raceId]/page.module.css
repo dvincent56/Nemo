@@ -1,8 +1,148 @@
-.shell {
-  min-height: 100dvh;
+/* ── App shell : grille 3 rangées fixes ──────────────── */
+.app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: var(--hud-h, 56px) 1fr var(--timeline-h, 64px);
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--navy-deeper, #060b18);
+}
+.app > * { min-width: 0; }
+
+.hudRow { grid-row: 1; z-index: 30; }
+
+.mapArea {
+  grid-row: 2;
   position: relative;
   overflow: hidden;
-  background: var(--navy);
+}
+
+.timelineRow {
+  grid-row: 3;
+  z-index: 30;
+  background: var(--navy, #1a2840);
+  border-top: 1px solid rgba(245, 240, 232, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.timelinePlaceholder {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: rgba(245, 240, 232, 0.42);
+  text-transform: uppercase;
+}
+
+/* ── Floating elements in map area ───────────────────── */
+.rightStack {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.actionBtn {
+  width: 52px;
+  height: 52px;
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  color: #f5f0e8;
+  border-radius: 4px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  transition: background 150ms, border-color 150ms;
+}
+.actionBtn:hover {
+  background: #0c1424;
+  border-color: rgba(245, 240, 232, 0.28);
+}
+.actionBtnActive {
+  background: #c9a227;
+  color: #1a2840;
+  border-color: #c9a227;
+}
+.actionBtnIcon { font-size: 18px; line-height: 1; }
+
+.zoomGroup {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  background: rgba(12, 20, 36, 0.92);
+}
+.zoomBtn {
+  width: 52px;
+  height: 38px;
+  background: transparent;
+  border: none;
+  color: #f5f0e8;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.zoomBtn:hover { background: rgba(255, 255, 255, 0.06); }
+.zoomBtn + .zoomBtn { border-top: 1px solid rgba(245, 240, 232, 0.16); }
+
+/* ── Ranking tab (left edge) ─────────────────────────── */
+.rankingTab {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-left: none;
+  color: #f5f0e8;
+  padding: 16px 10px;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  z-index: 20;
+  transition: background 150ms;
+}
+.rankingTab:hover { background: #0c1424; }
+.rankingTabArrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: rgba(245, 240, 232, 0.72);
+}
+.rankingTabLabel {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.rankingTabRank {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: #c9a227;
 }
 
 /* ── Blocked : accès refusé (draft/archived/admin-only) ──────────── */
@@ -130,109 +270,4 @@
   letter-spacing: 0.22em;
   color: var(--t2);
   text-transform: uppercase;
-}
-
-.layout {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-panel);
-  pointer-events: none;
-  padding-top: calc(46px + env(safe-area-inset-top, 0px));
-}
-
-.layout > * { pointer-events: auto; }
-
-.left {
-  position: absolute;
-  left: clamp(12px, 2vw, 24px);
-  top: calc(46px + 20px + env(safe-area-inset-top, 0px));
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 240px;
-}
-
-.right {
-  position: absolute;
-  right: clamp(12px, 2vw, 24px);
-  top: calc(46px + 20px + env(safe-area-inset-top, 0px));
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.bottom {
-  position: absolute;
-  bottom: clamp(16px, 3vh, 32px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 70px;
-}
-
-.actionRail {
-  position: absolute;
-  left: clamp(12px, 2vw, 24px);
-  bottom: clamp(16px, 3vh, 32px);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.railBtn {
-  background: rgba(8, 21, 37, 0.88);
-  border: 1px solid var(--b2);
-  color: var(--t1);
-  backdrop-filter: blur(12px);
-  padding: 10px 16px;
-  border-radius: var(--r-xl);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 150ms;
-  white-space: nowrap;
-}
-
-.railBtn:hover {
-  background: var(--cyan-a);
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-
-.raceName {
-  font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  color: var(--t1);
-  margin: 0 0 2px;
-}
-
-.raceMeta {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--t2);
-  margin: 0;
-}
-
-.infoCard {
-  background: rgba(8, 21, 37, 0.88);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--b1);
-  border-radius: var(--r-lg);
-  padding: 12px 14px;
-}
-
-@media (max-width: 640px) {
-  .left { max-width: calc(100vw - 24px); }
-  .right { right: 12px; }
 }

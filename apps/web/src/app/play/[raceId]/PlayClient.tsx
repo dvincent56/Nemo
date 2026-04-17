@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
 import { connectRace, useGameStore } from '@/lib/store';
-import { ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner, type SessionContext } from '@/lib/access';
+import {
+  ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
+  type SessionContext,
+} from '@/lib/access';
 import HudBar from '@/components/play/HudBar';
-import SailPanel from '@/components/play/SailPanel';
 import Compass from '@/components/play/Compass';
 import styles from './page.module.css';
 
@@ -20,10 +22,6 @@ const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
   ),
 });
 
-/**
- * Simulateur local / WS live. Si `canInteract` est false (spectateur), on se
- * connecte quand même en lecture seule pour voir les broadcasts.
- */
 function useTicker(raceId: string): void {
   useEffect(() => {
     const live = process.env['NEXT_PUBLIC_WS_LIVE'] === '1';
@@ -36,37 +34,28 @@ function useTicker(raceId: string): void {
       const conn = connectRace(raceId, token);
       return () => conn.close();
     }
-    const setHud = useGameStore.getState().setHud;
-    setHud({
-      lat: 47.0, lon: -3.0, twd: 270, tws: 18, hdg: 90,
-      twa: -180, twaColor: 'optimal', bsp: 7.55, vmg: 7.55,
-      dtf: 2341.672, overlapFactor: 1.0, rank: 42,
+    const store = useGameStore.getState();
+    store.setHud({
+      lat: 47.0, lon: -3.0, twd: 270, tws: 18, hdg: 216,
+      twa: 128, twaColor: 'optimal', bsp: 11.4, vmg: 9.8,
+      dtf: 1642, overlapFactor: 0.94, rank: 12, totalParticipants: 428,
+      rankTrend: 2, wearGlobal: 82,
+      wearDetail: { hull: 88, rig: 79, sails: 75, electronics: 86 },
     });
-    useGameStore.getState().setSail({ currentSail: 'SPI' });
-    useGameStore.getState().setConnection('open');
-    const id = setInterval(() => {
-      const hud = useGameStore.getState().hud;
-      const twa = ((hud.hdg - hud.twd + 540) % 360) - 180;
-      const color: 'optimal' | 'overlap' | 'neutral' | 'deadzone' =
-        Math.abs(twa) < 28 ? 'deadzone' :
-        (Math.abs(twa) >= 38 && Math.abs(twa) <= 54) || (Math.abs(twa) >= 140 && Math.abs(twa) <= 162) ? 'optimal' :
-        Math.abs(twa) > 54 && Math.abs(twa) < 140 ? 'neutral' : 'overlap';
-      setHud({ twa, twaColor: color });
-    }, 1000);
-    return () => clearInterval(id);
+    store.setSail({ currentSail: 'GEN' });
+    store.setConnection('open');
+    return undefined;
   }, [raceId]);
 }
 
 export default function PlayClient({ race }: { race: RaceSummary }): React.ReactElement {
   const [session, setSession] = useState<SessionContext>(ANONYMOUS);
   const [isRegistered, setIsRegistered] = useState(false);
+  const activePanel = useGameStore((s) => s.panel.activePanel);
+  const rank = useGameStore((s) => s.hud.rank);
 
-  // Hydrate session et inscription côté client (le cookie n'est lisible qu'ici).
   useEffect(() => {
     setSession(readClientSession());
-    // Phase 3 stub : on considère tout joueur authentifié comme inscrit à la
-    // race démo pour que le flow soit testable. Phase 4 → appel API
-    // /api/v1/races/:id/registration.
     if (typeof document !== 'undefined' && document.cookie.includes('nemo_access_token=')) {
       setIsRegistered(true);
     }
@@ -97,45 +86,96 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     );
   }
 
+  const handlePanelToggle = (panel: 'ranking' | 'sails' | 'programming') => {
+    if (activePanel === panel) {
+      useGameStore.getState().closePanel();
+    } else {
+      useGameStore.getState().openPanel(panel);
+    }
+  };
+
   return (
-    <div className={styles.shell}>
-      <MapCanvas />
-      <HudBar />
+    <div className={styles.app}>
+      {/* Row 1 — HUD */}
+      <div className={styles.hudRow}>
+        {canInteract && <HudBar />}
+      </div>
 
-      {banner && access.kind === 'spectate' && (
-        <div className={styles.spectateBanner} role="status">
-          <span className={styles.spectateTag}>Spectateur</span>
-          <span className={styles.spectateText}>{banner}</span>
-          {access.reason === 'visitor' && (
-            <Link href="/login" className={styles.spectateCta}>Se connecter →</Link>
-          )}
-          {access.reason === 'not-registered' && (
-            <Link href="/races" className={styles.spectateCta}>S'inscrire →</Link>
-          )}
-        </div>
-      )}
+      {/* Row 2 — Map + floating elements */}
+      <div className={styles.mapArea}>
+        <MapCanvas />
 
-      <div className={styles.layout}>
-        <div className={styles.left}>
-          <div className={styles.infoCard}>
-            <h1 className={styles.raceName}>{race.name}</h1>
-            <p className={styles.raceMeta}>{race.boatClass} · {race.tierRequired}</p>
-          </div>
-          {canInteract && <SailPanel />}
-        </div>
-
-        {canInteract && (
-          <div className={styles.actionRail}>
-            <button className={styles.railBtn} type="button" aria-label="Ouvrir le routeur">⊕ Routeur</button>
-            <button className={styles.railBtn} type="button" aria-label="Ouvrir la file d'ordres">≡ Ordres</button>
+        {banner && access.kind === 'spectate' && (
+          <div className={styles.spectateBanner} role="status">
+            <span className={styles.spectateTag}>Spectateur</span>
+            <span className={styles.spectateText}>{banner}</span>
+            {access.reason === 'visitor' && (
+              <Link href="/login" className={styles.spectateCta}>Se connecter →</Link>
+            )}
+            {access.reason === 'not-registered' && (
+              <Link href="/races" className={styles.spectateCta}>S'inscrire →</Link>
+            )}
           </div>
         )}
 
+        {/* Ranking tab (left edge) */}
+        <button
+          className={styles.rankingTab}
+          onClick={() => handlePanelToggle('ranking')}
+          title="Classement (C)"
+          type="button"
+        >
+          <span className={styles.rankingTabArrow}>
+            {activePanel === 'ranking' ? '◀' : '▶'}
+          </span>
+          <span className={styles.rankingTabLabel}>CLASSEMENT</span>
+          <span className={styles.rankingTabRank}>{rank}</span>
+        </button>
+
+        {/* Right stack — action buttons + compass */}
         {canInteract && (
-          <div className={styles.bottom}>
+          <div className={styles.rightStack}>
+            <div className={styles.actionButtons}>
+              <button
+                className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
+                onClick={() => handlePanelToggle('sails')}
+                title="Voiles (V)"
+                type="button"
+              >
+                <span className={styles.actionBtnIcon}>⛵</span>
+                <span>Voiles</span>
+              </button>
+              <button
+                className={`${styles.actionBtn} ${activePanel === 'programming' ? styles.actionBtnActive : ''}`}
+                onClick={() => handlePanelToggle('programming')}
+                title="Programmation (P)"
+                type="button"
+              >
+                <span className={styles.actionBtnIcon}>≡</span>
+                <span>Prog.</span>
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => useGameStore.getState().setFollowBoat(true)}
+                title="Recentrer (Espace)"
+                type="button"
+              >
+                <span className={styles.actionBtnIcon}>⊕</span>
+                <span>Centrer</span>
+              </button>
+              <div className={styles.zoomGroup}>
+                <button className={styles.zoomBtn} title="Zoom +" type="button">+</button>
+                <button className={styles.zoomBtn} title="Zoom −" type="button">−</button>
+              </div>
+            </div>
             <Compass />
           </div>
         )}
+      </div>
+
+      {/* Row 3 — Timeline placeholder */}
+      <div className={styles.timelineRow}>
+        <span className={styles.timelinePlaceholder}>Timeline météo — à venir</span>
       </div>
     </div>
   );
