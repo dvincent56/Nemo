@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { useGameStore } from '@/lib/store';
+import Tooltip from '@/components/ui/Tooltip';
 import styles from './HudBar.module.css';
 
 function wearColor(value: number): string {
@@ -36,60 +37,76 @@ function HudBarInner(): React.ReactElement {
 
       {/* Stats */}
       <div className={styles.stats}>
-        <div className={styles.stat} title="Boat Speed — Vitesse du bateau sur l'eau">
-          <span className={styles.statLabel} title="Boat Speed — Vitesse du bateau">BSP</span>
-          <span className={`${styles.statValue} ${styles.live}`}>{hud.bsp.toFixed(1)} <small>nds</small></span>
-        </div>
-        <div className={styles.stat} title="True Wind Speed — Vitesse réelle du vent">
-          <span className={styles.statLabel} title="True Wind Speed — Vitesse réelle du vent">TWS</span>
-          <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
-        </div>
-        <div className={styles.stat} title="True Wind Angle — Angle du vent par rapport au bateau">
-          <span className={styles.statLabel} title="True Wind Angle — Angle du vent par rapport au bateau">TWA</span>
-          <span className={styles.statValue}>{Math.round(hud.twa)}°</span>
-        </div>
-        <div className={styles.stat} title="Heading — Cap du bateau">
-          <span className={styles.statLabel} title="Heading — Cap du bateau">HDG</span>
-          <span className={styles.statValue}>{Math.round(hud.hdg)}°</span>
-        </div>
-        <div className={styles.stat} title="Velocity Made Good — Vitesse d'avancée vers le waypoint">
-          <span className={styles.statLabel} title="Velocity Made Good — Vitesse d'avancée vers le waypoint">VMG</span>
-          <span className={`${styles.statValue} ${styles.gold}`}>{hud.vmg.toFixed(1)} <small>nds</small></span>
-        </div>
-        <div className={styles.stat} title="Distance To Finish — Distance restante">
-          <span className={styles.statLabel} title="Distance To Finish — Distance restante">DTF</span>
-          <span className={styles.statValue}>{Math.round(hud.dtf).toLocaleString('fr-FR')} <small>NM</small></span>
-        </div>
-        <div className={styles.stat} title="Overlap Factor — Facteur de performance voile">
-          <span className={styles.statLabel} title="Overlap Factor — Facteur de performance voile">Factor</span>
-          <span className={`${styles.statValue} ${hud.overlapFactor < 1 ? styles.warn : ''}`}>
-            {hud.overlapFactor.toFixed(2)}×
-          </span>
-        </div>
+        <Tooltip text="Vitesse du bateau sur l'eau" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>BSP</span>
+            <span className={`${styles.statValue} ${styles.live}`}>{hud.bsp.toFixed(1)} <small>nds</small></span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Vitesse réelle du vent" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>TWS</span>
+            <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Angle du vent / bateau" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>TWA</span>
+            <span className={styles.statValue}>{Math.round(hud.twa)}°</span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Cap du bateau" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>HDG</span>
+            <span className={styles.statValue}>{Math.round(hud.hdg)}°</span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Vitesse vers le waypoint" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>VMG</span>
+            <span className={`${styles.statValue} ${styles.gold}`}>{hud.vmg.toFixed(1)} <small>nds</small></span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Distance restante" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>DTF</span>
+            <span className={styles.statValue}>{Math.round(hud.dtf).toLocaleString('fr-FR')} <small>NM</small></span>
+          </div>
+        </Tooltip>
+        <Tooltip text="Facteur de performance" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>Factor</span>
+            <span className={`${styles.statValue} ${hud.overlapFactor < 1 ? styles.warn : ''}`}>
+              {hud.overlapFactor.toFixed(2)}×
+            </span>
+          </div>
+        </Tooltip>
 
         {/* Wear indicator with hover tooltip */}
-        <div className={styles.wearStat} tabIndex={0} aria-label="Usure du bateau">
-          <span className={styles.statLabel}>⚓ Usure</span>
-          <span className={`${styles.statValue}`} style={{ color: wearColor(hud.wearGlobal) }}>
-            {Math.round(hud.wearGlobal)}%
-          </span>
-          <div className={styles.wearTooltip}>
-            {(['hull', 'rig', 'sails', 'electronics'] as const).map((part) => (
-              <div key={part} className={styles.wearRow}>
-                <span>{part === 'hull' ? 'Coque' : part === 'rig' ? 'Gréement' : part === 'sails' ? 'Voiles' : 'Électronique'}</span>
-                <div className={styles.wearBarBg}>
-                  <div
-                    className={styles.wearBarFill}
-                    style={{
-                      width: `${hud.wearDetail[part]}%`,
-                      background: wearColor(hud.wearDetail[part]),
-                    }}
-                  />
+        <Tooltip text="État général du bateau" position="bottom">
+          <div className={styles.wearStat} tabIndex={0} aria-label="Usure du bateau">
+            <span className={styles.statLabel}>⚓ Usure</span>
+            <span className={`${styles.statValue}`} style={{ color: wearColor(hud.wearGlobal) }}>
+              {Math.round(hud.wearGlobal)}%
+            </span>
+            <div className={styles.wearTooltip}>
+              {(['hull', 'rig', 'sails', 'electronics'] as const).map((part) => (
+                <div key={part} className={styles.wearRow}>
+                  <span>{part === 'hull' ? 'Coque' : part === 'rig' ? 'Gréement' : part === 'sails' ? 'Voiles' : 'Électronique'}</span>
+                  <div className={styles.wearBarBg}>
+                    <div
+                      className={styles.wearBarFill}
+                      style={{
+                        width: `${hud.wearDetail[part]}%`,
+                        background: wearColor(hud.wearDetail[part]),
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        </Tooltip>
       </div>
 
       {/* Quit button */}

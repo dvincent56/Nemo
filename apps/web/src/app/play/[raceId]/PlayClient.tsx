@@ -10,6 +10,7 @@ import {
   type SessionContext,
 } from '@/lib/access';
 import { useHotkeys } from '@/lib/useHotkeys';
+import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
 import CoordsDisplay from '@/components/play/CoordsDisplay';
@@ -145,18 +146,19 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         <LayersWidget isSpectator={!canInteract} />
 
         {/* Ranking tab (left edge) */}
-        <button
-          className={styles.rankingTab}
-          onClick={() => handlePanelToggle('ranking')}
-          title="Classement (C)"
-          type="button"
-        >
-          <span className={styles.rankingTabArrow}>
-            {activePanel === 'ranking' ? '◀' : '▶'}
-          </span>
-          <span className={styles.rankingTabLabel}>CLASSEMENT</span>
-          <span className={styles.rankingTabRank}>{rank}</span>
-        </button>
+        <Tooltip text="Classement" shortcut="C" position="right">
+          <button
+            className={styles.rankingTab}
+            onClick={() => handlePanelToggle('ranking')}
+            type="button"
+          >
+            <span className={styles.rankingTabArrow}>
+              {activePanel === 'ranking' ? '◀' : '▶'}
+            </span>
+            <span className={styles.rankingTabLabel}>CLASSEMENT</span>
+            <span className={styles.rankingTabRank}>{rank}</span>
+          </button>
+        </Tooltip>
 
         {/* Slide-out panels */}
         <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()}>
@@ -178,33 +180,36 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && (
           <div className={styles.rightStack}>
             <div className={styles.actionButtons}>
-              <button
-                className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
-                onClick={() => handlePanelToggle('sails')}
-                title="Voiles (V)"
-                type="button"
-              >
-                <span className={styles.actionBtnIcon}>⛵</span>
-                <span>Voiles</span>
-              </button>
-              <button
-                className={`${styles.actionBtn} ${activePanel === 'programming' ? styles.actionBtnActive : ''}`}
-                onClick={() => handlePanelToggle('programming')}
-                title="Programmation (P)"
-                type="button"
-              >
-                <span className={styles.actionBtnIcon}>≡</span>
-                <span>Prog.</span>
-              </button>
-              <button
-                className={styles.actionBtn}
-                onClick={() => useGameStore.getState().setFollowBoat(true)}
-                title="Recentrer (Espace)"
-                type="button"
-              >
-                <span className={styles.actionBtnIcon}>⊕</span>
-                <span>Centrer</span>
-              </button>
+              <Tooltip text="Gérer les voiles" shortcut="V" position="left">
+                <button
+                  className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
+                  onClick={() => handlePanelToggle('sails')}
+                  type="button"
+                >
+                  <span className={styles.actionBtnIcon}>⛵</span>
+                  <span>Voiles</span>
+                </button>
+              </Tooltip>
+              <Tooltip text="Programmer les ordres" shortcut="P" position="left">
+                <button
+                  className={`${styles.actionBtn} ${activePanel === 'programming' ? styles.actionBtnActive : ''}`}
+                  onClick={() => handlePanelToggle('programming')}
+                  type="button"
+                >
+                  <span className={styles.actionBtnIcon}>≡</span>
+                  <span>Prog.</span>
+                </button>
+              </Tooltip>
+              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="left">
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => useGameStore.getState().setFollowBoat(true)}
+                  type="button"
+                >
+                  <span className={styles.actionBtnIcon}>⊕</span>
+                  <span>Centrer</span>
+                </button>
+              </Tooltip>
               <div className={styles.zoomGroup}>
                 <button className={styles.zoomBtn} title="Zoom +" type="button">+</button>
                 <button className={styles.zoomBtn} title="Zoom −" type="button">−</button>
