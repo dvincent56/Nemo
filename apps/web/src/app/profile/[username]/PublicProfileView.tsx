@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui';
+import { Button, Flag } from '@/components/ui';
 import type { PublicProfile, BoatClass } from '@/app/classement/data';
 import baseStyles from '../page.module.css';
 import styles from './page.module.css';
@@ -21,7 +21,13 @@ function formatRank(n: number): { main: string; suffix: string } {
 
 type FriendStatus = 'none' | 'pending' | 'friend';
 
-export default function PublicProfileView({ profile }: { profile: PublicProfile }): React.ReactElement {
+export default function PublicProfileView({
+  profile,
+  isVisitor,
+}: {
+  profile: PublicProfile;
+  isVisitor: boolean;
+}): React.ReactElement {
   const [friendStatus, setFriendStatus] = useState<FriendStatus>(
     profile.isFriend ? 'friend' : 'none',
   );
@@ -42,7 +48,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
           <p className={baseStyles.eyebrow}>Skipper · Saison 2026</p>
           <h1 className={baseStyles.pseudo}>{profile.username}</h1>
           <div className={baseStyles.origin}>
-            <span className={`${styles.flag} ${styles[profile.country]}`} aria-hidden />
+            <Flag code={profile.country} className={styles.flag} />
             {profile.countryLabel}
             <span className={baseStyles.originCity}>· {profile.city}</span>
           </div>
@@ -70,7 +76,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
             <span>Bateau favori <strong>{profile.favoriteBoatName}</strong></span>
           </div>
 
-          {!profile.isMe && (
+          {!isVisitor && !profile.isMe && (
             <div className={baseStyles.actions}>
               {friendStatus === 'none' && (
                 <Button variant="primary" icon onClick={handleAddFriend}>
@@ -92,7 +98,7 @@ export default function PublicProfileView({ profile }: { profile: PublicProfile 
               </Link>
             </div>
           )}
-          {profile.isMe && (
+          {!isVisitor && profile.isMe && (
             <div className={baseStyles.actions}>
               <Link href={'/profile' as Parameters<typeof Link>[0]['href']}>
                 <Button variant="primary" icon>Aller à mon profil</Button>

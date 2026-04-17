@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { RaceSummary } from '@/lib/api';
 import { Card, Chip } from '@/components/ui';
+import { courseLengthNM, formatDistance, type DistanceUnit } from '@/lib/geo';
 import styles from './page.module.css';
 
 const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', 'FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
@@ -16,23 +17,37 @@ const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
   ULTIM: 'Ultim',
 };
 
-const STATUSES: Array<RaceSummary['status'] | 'ALL'> = ['ALL', 'LIVE', 'PUBLISHED', 'BRIEFING', 'FINISHED'];
+const STATUSES: Array<RaceSummary['status'] | 'ALL'> = ['ALL', 'LIVE', 'PUBLISHED', 'FINISHED'];
 
 const STATUS_LABEL: Record<RaceSummary['status'], string> = {
   DRAFT: 'Brouillon',
-  PUBLISHED: 'Ouvert',
-  BRIEFING: 'Bientôt',
-  LIVE: 'En direct',
+  PUBLISHED: 'Ouverte',
+  BRIEFING: 'Ouverte',
+  LIVE: 'En cours',
   FINISHED: 'Terminée',
   ARCHIVED: 'Archivée',
 };
 
-type ChipStatus = 'live' | 'open' | 'soon' | 'past';
+type ChipStatus = 'live' | 'open' | 'gold';
 function statusVariant(s: RaceSummary['status']): ChipStatus {
   if (s === 'LIVE') return 'live';
-  if (s === 'PUBLISHED') return 'open';
-  if (s === 'BRIEFING') return 'soon';
-  return 'past';
+  if (s === 'PUBLISHED' || s === 'BRIEFING') return 'open';
+  return 'gold';
+}
+
+function formatStart(iso: string): string {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString('fr-FR', { day: '2-digit', timeZone: 'Europe/Paris' });
+  const month = d
+    .toLocaleDateString('fr-FR', { month: 'short', timeZone: 'Europe/Paris' })
+    .replace('.', '');
+  const time = d.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Europe/Paris',
+  });
+  return `${day} ${month} · ${time}`;
 }
 
 function minify(points: [number, number][]): string {
@@ -61,7 +76,13 @@ function readParam<T extends string>(value: string | null, allowed: readonly T[]
   return (allowed as readonly string[]).includes(up) ? (up as T) : 'ALL';
 }
 
-export default function RaceList({ races }: { races: RaceSummary[] }): React.ReactElement {
+export default function RaceList({
+  races,
+  distanceUnit = 'nm',
+}: {
+  races: RaceSummary[];
+  distanceUnit?: DistanceUnit;
+}): React.ReactElement {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -69,7 +90,9 @@ export default function RaceList({ races }: { races: RaceSummary[] }): React.Rea
   // Source de vérité : URL (?class=...&status=...). Permet les liens profonds
   // depuis /marina (« Voir les courses Ultim » → /races?class=ULTIM).
   const classFilter = readParam(searchParams.get('class'), CLASS_VALUES);
-  const statusFilter = readParam(searchParams.get('status'), STATUS_VALUES);
+  const rawStatus = readParam(searchParams.get('status'), STATUS_VALUES);
+  // BRIEFING et PUBLISHED sont affichés comme une seule catégorie "Ouverte".
+  const statusFilter = rawStatus === 'BRIEFING' ? 'PUBLISHED' : rawStatus;
 
   const setClassFilter = useCallback((next: string): void => {
     const sp = new URLSearchParams(searchParams.toString());
@@ -86,7 +109,11 @@ export default function RaceList({ races }: { races: RaceSummary[] }): React.Rea
   const visible = useMemo(() => {
     return races.filter((r) => {
       if (classFilter !== 'ALL' && r.boatClass !== classFilter) return false;
-      if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+      if (statusFilter === 'PUBLISHED') {
+        if (r.status !== 'PUBLISHED' && r.status !== 'BRIEFING') return false;
+      } else if (statusFilter !== 'ALL' && r.status !== statusFilter) {
+        return false;
+      }
       return true;
     });
   }, [races, classFilter, statusFilter]);
@@ -128,6 +155,7 @@ export default function RaceList({ races }: { races: RaceSummary[] }): React.Rea
         ) : visible.map((r) => {
           const pts: [number, number][] = [r.course.start, ...r.course.waypoints, r.course.finish];
           const path = minify(pts);
+          const distance = formatDistance(courseLengthNM(r.course), distanceUnit);
           return (
             <Card key={r.id} href={`/play/${r.id}`} accent className={styles.card}>
               <header className={styles.cardHead}>
@@ -136,9 +164,7 @@ export default function RaceList({ races }: { races: RaceSummary[] }): React.Rea
                   <p className={styles.cardMeta}>
                     <span>{CLASS_LABEL[r.boatClass]}</span>
                     <span className={styles.cardMetaSep} />
-                    <span className={r.tierRequired === 'CAREER' ? styles.tierCareer : styles.tierFree}>
-                      {r.tierRequired === 'CAREER' ? 'Carrière' : 'Libre'}
-                    </span>
+                    <span>{formatStart(r.startsAt)}</span>
                   </p>
                 </div>
                 <Chip variant={statusVariant(r.status)}>{STATUS_LABEL[r.status]}</Chip>
@@ -169,13 +195,13 @@ export default function RaceList({ races }: { races: RaceSummary[] }): React.Rea
                 <div>
                   <p className={styles.statLabel}>Inscrits</p>
                   <p className={styles.statValue}>
-                    {r.participants}<span className={styles.statValueSmall}> / {r.maxParticipants}</span>
+                    {r.participants.toLocaleString('fr-FR')}
                   </p>
                 </div>
                 <div>
-                  <p className={styles.statLabel}>Durée est.</p>
+                  <p className={styles.statLabel}>Distance</p>
                   <p className={styles.statValue}>
-                    {r.estimatedDurationHours}<span className={styles.statValueSmall}> h</span>
+                    {distance.value}<span className={styles.statValueSmall}> {distance.unit}</span>
                   </p>
                 </div>
                 <div>

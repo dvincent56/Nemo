@@ -1,4 +1,4 @@
-import { SiteShell } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
 import ProfileView from './ProfileView';
 
 export default function ProfilePage(): React.ReactElement {

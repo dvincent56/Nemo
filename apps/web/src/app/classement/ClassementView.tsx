@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Eyebrow, Pagination } from '@/components/ui';
-import { readClientSession } from '@/lib/access';
+import { Eyebrow, Flag, Pagination } from '@/components/ui';
+import { profileHref } from '@/lib/routes';
 import { ME_CONTEXT, getRanking, type BoatClass, type SkipperRanking } from './data';
 import styles from './page.module.css';
 
@@ -37,10 +37,6 @@ function formatRank(n: number): { main: string; suffix: string } {
   return { main, suffix };
 }
 
-function Flag({ code }: { code: SkipperRanking['country'] }): React.ReactElement {
-  return <span className={`${styles.flag} ${styles[code] ?? ''}`} aria-label={`Drapeau ${code.toUpperCase()}`} />;
-}
-
 function Trend({ trend }: { trend: SkipperRanking['trend'] }): React.ReactElement {
   if (trend.dir === 'up') return <span className={`${styles.trend} ${styles.trendUp}`}>▲ {trend.delta}</span>;
   if (trend.dir === 'down') return <span className={`${styles.trend} ${styles.trendDown}`}>▼ {trend.delta}</span>;
@@ -56,21 +52,23 @@ function displayUsername(r: SkipperRanking, meUsername: string | null): string {
 
 export interface ClassementViewProps {
   totalSkippers: number;
+  /** Non authentifié : cache "Ta position", filtre les scopes à GENERAL. */
+  isVisitor: boolean;
+  meUsername: string | null;
 }
 
 export default function ClassementView({
   totalSkippers,
+  isVisitor,
+  meUsername,
 }: ClassementViewProps): React.ReactElement {
   const [classFilter, setClassFilter] = useState<ClassFilter>('ALL');
   const [scope, setScope] = useState<ScopeFilter>('GENERAL');
 
-  // Hydrate le pseudo depuis le cookie côté client uniquement (évite le
-  // mismatch SSR/CSR : le cookie n'est pas déterministe sur le serveur).
-  const [meUsername, setMeUsername] = useState<string | null>(null);
-  useEffect(() => {
-    const s = readClientSession();
-    setMeUsername(s.username);
-  }, []);
+  const scopeOptions = useMemo(
+    () => (isVisitor ? SCOPE_OPTIONS.filter((s) => s.value === 'GENERAL') : SCOPE_OPTIONS),
+    [isVisitor],
+  );
 
   // Classement par classe (ou cumul ALL), dérivé du modèle joueurs +
   // résultats par classe. Chaque jeu de données est déjà rangé localement
@@ -102,7 +100,8 @@ export default function ClassementView({
   );
 
   // Podium et "ma position" se calculent sur le sous-classement courant.
-  const me = rows.find((r) => r.isMe);
+  // En mode visiteur (non authentifié), on ignore la ligne mockée `isMe`.
+  const me = isVisitor ? undefined : rows.find((r) => r.isMe);
   const [p1, p2, p3] = rows;
 
   return (
@@ -139,9 +138,9 @@ export default function ClassementView({
       {p1 && p2 && p3 && (
         <section className={styles.podiumWrap} aria-label="Podium saison">
           <div className={styles.podium}>
-            <PodiumCard skipper={p2} position={2} tone="p2" meUsername={meUsername} />
-            <PodiumCard skipper={p1} position={1} tone="p1" meUsername={meUsername} />
-            <PodiumCard skipper={p3} position={3} tone="p3" meUsername={meUsername} />
+            <PodiumCard skipper={p2} position={2} tone="p2" meUsername={meUsername} isVisitor={isVisitor} />
+            <PodiumCard skipper={p1} position={1} tone="p1" meUsername={meUsername} isVisitor={isVisitor} />
+            <PodiumCard skipper={p3} position={3} tone="p3" meUsername={meUsername} isVisitor={isVisitor} />
           </div>
         </section>
       )}
@@ -152,6 +151,10 @@ export default function ClassementView({
           href={'/classement/courses' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
         >Par course</Link>
+        <Link
+          href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
+          className={styles.viewBtn}
+        >Équipes</Link>
       </div>
 
       <div className={styles.filters}>
@@ -170,7 +173,7 @@ export default function ClassementView({
         </div>
         <div className={styles.filterGroup}>
           <p className={styles.filterLabel}>Périmètre</p>
-          {SCOPE_OPTIONS.map((s) => (
+          {scopeOptions.map((s) => (
             <button
               key={s.value}
               type="button"
@@ -196,25 +199,26 @@ export default function ClassementView({
           </div>
           {visibleRows.map((r) => {
             const { main, suffix } = formatRank(r.rank);
+            const isMeRow = !isVisitor && r.isMe;
             const rowCls = [
               styles.row,
               r.rank <= 3 ? styles.rowPodium : '',
-              r.isMe ? styles.rowMe : '',
+              isMeRow ? styles.rowMe : '',
             ].filter(Boolean).join(' ');
             return (
               <div key={`${r.rank}-${r.username}`} className={rowCls}>
                 <span className={styles.pos}>{main}<sup>{suffix}</sup></span>
                 <div className={styles.skipper}>
-                  <Flag code={r.country} />
+                  <Flag code={r.country} className={styles.flag} />
                   <div>
                     <p className={styles.skName}>
                       <Link
-                        href={`/profile/${encodeURIComponent(r.username)}` as Parameters<typeof Link>[0]['href']}
+                        href={profileHref(r.username, isMeRow) as Parameters<typeof Link>[0]['href']}
                         className={styles.skLink}
                       >
                         {displayUsername(r, meUsername)}
                       </Link>
-                      {r.isMe && <span className={styles.meBadge}>Vous</span>}
+                      {isMeRow && <span className={styles.meBadge}>Moi</span>}
                     </p>
                     <p className={styles.skCity}>{r.city} · {r.country.toUpperCase()}</p>
                   </div>
@@ -247,27 +251,29 @@ export default function ClassementView({
 }
 
 function PodiumCard({
-  skipper, position, tone, meUsername,
+  skipper, position, tone, meUsername, isVisitor,
 }: {
   skipper: SkipperRanking;
   position: 1 | 2 | 3;
   tone: 'p1' | 'p2' | 'p3';
   meUsername: string | null;
+  isVisitor: boolean;
 }): React.ReactElement {
   const { main, suffix } = formatRank(position);
+  const isMeRow = !isVisitor && skipper.isMe;
   return (
     <article className={`${styles.podiumCard} ${styles[tone]}`}>
       <span className={styles.podiumBadge}>{main}<sup>{suffix}</sup></span>
       <h3 className={styles.podiumName}>
         <Link
-          href={`/profile/${encodeURIComponent(skipper.username)}` as Parameters<typeof Link>[0]['href']}
+          href={profileHref(skipper.username, isMeRow) as Parameters<typeof Link>[0]['href']}
           className={styles.skLink}
         >
           {displayUsername(skipper, meUsername)}
         </Link>
       </h3>
       <div className={styles.podiumLoc}>
-        <Flag code={skipper.country} />
+        <Flag code={skipper.country} className={styles.flag} />
         {skipper.city}
       </div>
       <p className={styles.podiumPoints}>

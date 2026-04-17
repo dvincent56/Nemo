@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Eyebrow, Pagination } from '@/components/ui';
+import { readClientSession } from '@/lib/access';
+import { profileHref } from '@/lib/routes';
 import type { BoatClass } from '@/app/classement/data';
 import type { TeamMember, TeamProfile } from '../data';
 import styles from './page.module.css';
@@ -29,6 +31,12 @@ const ROLE_LABEL: Record<TeamMember['role'], string> = {
 
 export default function TeamView({ team }: { team: TeamProfile }): React.ReactElement {
   const [page, setPage] = useState(1);
+  const [meUsername, setMeUsername] = useState<string | null>(null);
+  useEffect(() => {
+    const s = readClientSession();
+    setMeUsername(s.username);
+  }, []);
+
   const totalPages = Math.max(1, Math.ceil(team.members.length / MEMBER_PAGE_SIZE));
   const visibleMembers = useMemo(
     () => team.members.slice((page - 1) * MEMBER_PAGE_SIZE, page * MEMBER_PAGE_SIZE),
@@ -99,15 +107,17 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
             </h2>
           </div>
           <Link
-            href={'/classement?scope=TEAM' as Parameters<typeof Link>[0]['href']}
+            href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
             className={styles.sectionLink}
           >
-            Classement de l'équipe →
+            Classement des équipes →
           </Link>
         </header>
 
         <div className={styles.memberGrid}>
-          {visibleMembers.map((m) => <MemberCard key={m.username} member={m} />)}
+          {visibleMembers.map((m) => (
+            <MemberCard key={m.username} member={m} meUsername={meUsername} />
+          ))}
         </div>
 
         {totalPages > 1 && (
@@ -125,16 +135,25 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
   );
 }
 
-function MemberCard({ member }: { member: TeamMember }): React.ReactElement {
+function MemberCard({
+  member, meUsername,
+}: { member: TeamMember; meUsername: string | null }): React.ReactElement {
   const rank = member.seasonRank ? formatRank(member.seasonRank) : null;
+  const isMe = meUsername !== null && member.username === meUsername;
+  // Mockup-seed : le marqueur mock `'vous'` sert aussi d'identifiant "moi"
+  // tant que la session est absente. À retirer quand getTeamProfile lira
+  // le username depuis la session côté serveur.
+  const isMeMock = member.username === 'vous';
+  const ownRow = isMe || isMeMock;
+  const displayName = ownRow && meUsername ? meUsername : member.username;
   return (
     <Link
-      href={`/profile/${encodeURIComponent(member.username)}` as Parameters<typeof Link>[0]['href']}
+      href={profileHref(member.username, ownRow) as Parameters<typeof Link>[0]['href']}
       className={styles.memberCard}
     >
       <div className={styles.memberHead}>
         <p className={styles.memberName}>
-          {member.username}
+          {displayName}
           {member.role !== 'MEMBER' && (
             <span className={`${styles.memberRole} ${member.role === 'CAPTAIN' ? styles.roleCaptain : ''}`}>
               {ROLE_LABEL[member.role]}

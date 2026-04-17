@@ -170,9 +170,6 @@
   background: var(--t3);
 }
 
-.tierCareer { color: var(--gold-dark); }
-.tierFree { color: var(--t2); }
-
 .mini {
   aspect-ratio: 16 / 8;
   background: var(--ivory-2);

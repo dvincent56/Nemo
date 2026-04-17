@@ -1,61 +1,94 @@
+/* Refonte — footer enrichi 3 colonnes (Produit / Légal / Contact).
+   Canonique : mockups/home-v1.html. Apparaît sur toutes les pages via SiteShell. */
+
 .foot {
+  background: var(--navy);
+  color: rgba(245, 240, 232, 0.75);
+  margin-top: auto;
+}
+
+.inner {
   max-width: 1400px;
-  width: 100%;
   margin: 0 auto;
-  padding: 28px clamp(20px, 4vw, 64px) 40px;
-  border-top: 1px solid var(--navy-line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  padding: 72px clamp(20px, 4vw, 64px) 32px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 48px;
+}
+
+.col h5 {
   font-family: var(--font-mono);
-  font-weight: 700;
   font-size: 10px;
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--t3);
+  color: var(--gold);
+  margin: 0 0 20px;
 }
 
-.seal {
+.col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.seal::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--gold);
-  transform: rotate(45deg);
+  flex-direction: column;
+  gap: 12px;
 }
 
-.links {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.links a {
-  color: var(--t3);
+.col a {
+  color: rgba(245, 240, 232, 0.75);
+  font-size: 13px;
+  text-decoration: none;
   transition: color 150ms;
 }
-.links a:hover { color: var(--navy); }
+.col a:hover { color: #f5f0e8; }
 
-.tag {
-  font-family: var(--font-body);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  color: var(--t3);
+.bottom {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px clamp(20px, 4vw, 64px);
+  border-top: 1px solid rgba(245, 240, 232, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-@media (max-width: 600px) {
-  .foot {
+.brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  color: #f5f0e8;
+  text-decoration: none;
+}
+.brand span { color: var(--gold); }
+
+.copy {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(245, 240, 232, 0.5);
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .inner {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+  }
+}
+
+@media (max-width: 680px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 56px 20px 24px;
+  }
+  .bottom {
+    padding: 20px;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-    font-size: 9px;
-    padding: 24px 20px 32px;
   }
-  .links { gap: 14px; }
 }

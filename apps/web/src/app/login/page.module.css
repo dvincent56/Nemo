@@ -202,6 +202,35 @@
 .form { display: grid; gap: 18px; }
 .form > :global(.btn) { margin-top: 4px; }
 
+.labelAction {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  text-decoration: none;
+  transition: color 150ms;
+}
+.labelAction:hover { color: var(--gold); }
+
+.signup {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--t2);
+  text-align: center;
+}
+.signupLink {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--gold);
+  transition: text-decoration-color 150ms, color 150ms;
+}
+.signupLink:hover { color: var(--gold-dark); text-decoration-color: var(--gold-dark); }
+
 .divider {
   display: flex;
   align-items: center;

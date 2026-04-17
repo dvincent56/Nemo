@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Button, Pagination } from '@/components/ui';
+import { Button, Flag, Pagination } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
+import {
+  acceptInvitation, addFriend, cancelInvitation, refuseInvitation, searchPlayers,
+  type SkipperSearchResult,
+} from './api';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 12;
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MIN_LENGTH = 2;
 
-type CountryCode = 'fr' | 'nl' | 'it' | 'uk' | 'no' | 'es' | 'ie' | 'pt';
+type CountryCode = 'fr' | 'nl' | 'it' | 'uk' | 'no' | 'es' | 'ie' | 'pt' | 'cl';
 
 interface Person {
   pseudo: string;
@@ -88,7 +94,7 @@ function PersonCard({ p, meUsername }: { p: Person; meUsername: string | null })
   const display = p.isMe && meUsername ? meUsername : p.pseudo;
   const body = (
     <>
-      <span className={`${styles.flag} ${styles[p.country]}`} aria-hidden />
+      <Flag code={p.country} className={styles.flag} />
       <div className={styles.personInfo}>
         <p className={styles.personName}>
           {display}
@@ -129,7 +135,7 @@ function InvitationCard({
 }): React.ReactElement {
   return (
     <article className={`${styles.invitation} ${inv.pending ? styles.invitationPending : ''}`}>
-      <span className={`${styles.flag} ${styles[inv.country]}`} aria-hidden />
+      <Flag code={inv.country} className={styles.flag} />
       <div className={styles.personInfo}>
         <p className={styles.personName}>
           <Link
@@ -163,7 +169,6 @@ function paginate<T>(items: T[], page: number, pageSize: number): T[] {
 
 export default function SocialView(): React.ReactElement {
   const [meUsername, setMeUsername] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
   const [invTab, setInvTab] = useState<'received' | 'sent'>('received');
   const [friendsPage, setFriendsPage] = useState(1);
   const [teamPage, setTeamPage] = useState(1);
@@ -174,19 +179,73 @@ export default function SocialView(): React.ReactElement {
   const [removedSent, setRemovedSent] = useState<Set<string>>(new Set());
   const [acceptedFriends, setAcceptedFriends] = useState<string[]>([]);
 
+  // ── Recherche BDD (stub /api/v1/players/search) ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SkipperSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pendingAdd, setPendingAdd] = useState<string | null>(null);
+  const [requestedFriends, setRequestedFriends] = useState<Set<string>>(new Set());
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const s = readClientSession();
     setMeUsername(s.username);
   }, []);
 
-  function handleAccept(inv: Invitation): void {
+  // Debounce 300ms puis appel async. Annule si la query change entretemps.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < SEARCH_MIN_LENGTH) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const results = await searchPlayers(q, meUsername);
+        if (!cancelled) setSearchResults(results);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [searchQuery, meUsername]);
+
+  // Ferme le dropdown au clic extérieur
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onMouseDown = (e: MouseEvent): void => {
+      if (!searchBoxRef.current) return;
+      if (!searchBoxRef.current.contains(e.target as Node)) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [searchOpen]);
+
+  async function handleAddFriend(username: string): Promise<void> {
+    setPendingAdd(username);
+    try {
+      await addFriend(username);
+      setRequestedFriends((prev) => new Set(prev).add(username));
+    } finally {
+      setPendingAdd(null);
+    }
+  }
+
+  async function handleAccept(inv: Invitation): Promise<void> {
+    await acceptInvitation(inv.pseudo);
     setRemovedReceived((prev) => new Set(prev).add(inv.pseudo));
     setAcceptedFriends((prev) => [...prev, inv.pseudo]);
   }
-  function handleRefuse(inv: Invitation): void {
+  async function handleRefuse(inv: Invitation): Promise<void> {
+    await refuseInvitation(inv.pseudo);
     setRemovedReceived((prev) => new Set(prev).add(inv.pseudo));
   }
-  function handleCancel(inv: Invitation): void {
+  async function handleCancel(inv: Invitation): Promise<void> {
+    await cancelInvitation(inv.pseudo);
     setRemovedSent((prev) => new Set(prev).add(inv.pseudo));
   }
 
@@ -201,19 +260,8 @@ export default function SocialView(): React.ReactElement {
     return [...FRIENDS, ...accepted];
   }, [acceptedFriends]);
 
-  const filteredFriends = useMemo(() => {
-    if (!search.trim()) return allFriends;
-    const q = search.toLowerCase().trim();
-    return allFriends.filter((f) =>
-      f.pseudo.toLowerCase().includes(q) || f.city.toLowerCase().includes(q),
-    );
-  }, [search, allFriends]);
-
-  // Reset à la page 1 si la recherche change le périmètre
-  useEffect(() => { setFriendsPage(1); }, [search]);
-
-  const friendsPages = Math.max(1, Math.ceil(filteredFriends.length / PAGE_SIZE));
-  const visibleFriends = paginate(filteredFriends, friendsPage, PAGE_SIZE);
+  const friendsPages = Math.max(1, Math.ceil(allFriends.length / PAGE_SIZE));
+  const visibleFriends = paginate(allFriends, friendsPage, PAGE_SIZE);
 
   const teamPages = Math.max(1, Math.ceil(TEAM_MEMBERS.length / PAGE_SIZE));
   const visibleTeam = paginate(TEAM_MEMBERS, teamPage, PAGE_SIZE);
@@ -233,16 +281,55 @@ export default function SocialView(): React.ReactElement {
             Suis d'autres skippers, rejoins une équipe, gère tes invitations.
           </p>
         </div>
-        <div className={styles.search}>
+        <div className={styles.search} ref={searchBoxRef}>
           <span className={styles.searchIcon} aria-hidden>⌕</span>
           <input
             type="search"
             className={styles.searchInput}
             placeholder="Rechercher un skipper…"
             aria-label="Rechercher un skipper"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+            onFocus={() => setSearchOpen(true)}
           />
+          {searchOpen && searchQuery.trim().length >= SEARCH_MIN_LENGTH && (
+            <div className={styles.searchDropdown} role="listbox">
+              {searchLoading && (
+                <p className={styles.searchStatus}>Recherche…</p>
+              )}
+              {!searchLoading && searchResults.length === 0 && (
+                <p className={styles.searchStatus}>Aucun skipper trouvé</p>
+              )}
+              {!searchLoading && searchResults.map((r) => {
+                const requested = requestedFriends.has(r.username);
+                const disabled = r.isFriend || requested || pendingAdd === r.username;
+                return (
+                  <div key={r.username} className={styles.searchResult}>
+                    <Flag code={r.country} className={styles.flag} />
+                    <div className={styles.searchResultInfo}>
+                      <p className={styles.searchResultName}>
+                        <Link
+                          href={`/profile/${encodeURIComponent(r.username)}` as Parameters<typeof Link>[0]['href']}
+                          onClick={() => setSearchOpen(false)}
+                        >{r.username}</Link>
+                      </p>
+                      <p className={styles.searchResultCity}>
+                        {r.city} · {r.country.toUpperCase()}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.searchResultAction}
+                      disabled={disabled}
+                      onClick={() => handleAddFriend(r.username)}
+                    >
+                      {r.isFriend ? 'Déjà ami' : requested ? 'Envoyée' : pendingAdd === r.username ? '…' : 'Ajouter'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </header>
 
@@ -252,10 +339,9 @@ export default function SocialView(): React.ReactElement {
           <div>
             <p className={styles.sectionEyebrow}>Skippers que tu suis</p>
             <h2 className={styles.sectionTitle}>
-              Amis <span className={styles.count}>{String(filteredFriends.length).padStart(2, '0')}</span>
+              Amis <span className={styles.count}>{String(allFriends.length).padStart(2, '0')}</span>
             </h2>
           </div>
-          <a href="#" className={styles.sectionLink}>Suggestions →</a>
         </header>
         <div className={styles.peopleGrid}>
           {visibleFriends.map((p) => (
@@ -265,7 +351,7 @@ export default function SocialView(): React.ReactElement {
         <Pagination
           page={friendsPage}
           totalPages={friendsPages}
-          totalItems={filteredFriends.length}
+          totalItems={allFriends.length}
           pageSize={PAGE_SIZE}
           onChange={setFriendsPage}
           label="Pagination amis"

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { Button, Flag, BoatSvg } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import { PROFILE_SEED, type FleetBoat, type PalmaresEntry, type ActivityEntry } from './data';
 import styles from './page.module.css';
@@ -27,7 +28,7 @@ function FleetTile({ boat }: { boat: FleetBoat }): React.ReactElement {
           : boat.class.charAt(0) + boat.class.slice(1).toLowerCase()}
       </span>
       <h3 className={styles.fleetName}>{boat.name}</h3>
-      <BoatMiniSvg hullColor={boat.hullColor} />
+      <BoatSvg className={styles.fleetSvg} hullColor={boat.hullColor} />
       <div className={styles.fleetMini}>
         <span>{String(boat.races).padStart(2, '0')} courses</span>
         {boat.bestRank ? (
@@ -37,19 +38,6 @@ function FleetTile({ boat }: { boat: FleetBoat }): React.ReactElement {
         ) : <span>—</span>}
       </div>
     </Link>
-  );
-}
-
-function BoatMiniSvg({ hullColor }: { hullColor: string }): React.ReactElement {
-  return (
-    <svg className={styles.fleetSvg} viewBox="0 0 320 160" preserveAspectRatio="xMidYMid meet" aria-hidden>
-      <line x1="10" y1="128" x2="310" y2="128"
-            stroke="#1a2840" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="2 4" />
-      <path d="M 50,128 L 268,128 L 244,144 L 76,144 Z" fill={hullColor} />
-      <line x1="158" y1="128" x2="158" y2="14" stroke="#1a2840" strokeWidth="2.5" />
-      <path d="M 160,14 L 238,80 L 160,70 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" />
-      <path d="M 156,14 L 156,70 L 100,108 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" opacity="0.92" />
-    </svg>
   );
 }
 
@@ -96,12 +84,23 @@ function ActivityRow({ entry }: { entry: ActivityEntry }): React.ReactElement {
   );
 }
 
-export default function ProfileView(): React.ReactElement {
-  const [username, setUsername] = useState<string>('Skipper');
+export default function ProfileView(): React.ReactElement | null {
+  const router = useRouter();
+  const [username, setUsername] = useState<string | null>(null);
+
   useEffect(() => {
     const s = readClientSession();
-    if (s.username) setUsername(s.username);
-  }, []);
+    if (s.username) {
+      setUsername(s.username);
+    } else {
+      router.replace('/login');
+    }
+  }, [router]);
+
+  // Pas de session lue côté client → skeleton muet en attendant l'hydratation
+  // (ou la redirection /login). Pas de fallback texte : jamais afficher
+  // "Skipper" ou "vous" à la place du vrai pseudo.
+  if (!username) return null;
 
   const s = PROFILE_SEED.stats;
 
@@ -109,10 +108,10 @@ export default function ProfileView(): React.ReactElement {
     <>
       <section className={styles.hero}>
         <div className={styles.heroMain}>
-          <p className={styles.eyebrow}>Skipper · Saison 2026</p>
+          <p className={styles.eyebrow}>Saison 2026 · Ta page</p>
           <h1 className={styles.pseudo}>{username}</h1>
           <div className={styles.origin}>
-            <span className={`${styles.flag} ${styles[PROFILE_SEED.country]}`} aria-hidden />
+            <Flag code={PROFILE_SEED.country} className={styles.flag} />
             {PROFILE_SEED.countryLabel}
             <span className={styles.originCity}>· {PROFILE_SEED.city}</span>
           </div>

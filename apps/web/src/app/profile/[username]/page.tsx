@@ -1,5 +1,7 @@
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { SiteShell } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
+import { parseDevToken } from '@/lib/access';
 import { getPublicProfile } from '@/app/classement/data';
 import PublicProfileView from './PublicProfileView';
 
@@ -13,9 +15,12 @@ export default async function PublicProfilePage({
   const { username } = await params;
   const profile = getPublicProfile(decodeURIComponent(username));
   if (!profile) notFound();
+  const cookieStore = await cookies();
+  const token = cookieStore.get('nemo_access_token')?.value ?? null;
+  const isVisitor = parseDevToken(token).role === 'VISITOR';
   return (
     <SiteShell>
-      <PublicProfileView profile={profile} />
+      <PublicProfileView profile={profile} isVisitor={isVisitor} />
     </SiteShell>
   );
 }

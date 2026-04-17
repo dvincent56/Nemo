@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button, Eyebrow, Field } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import styles from './page.module.css';
@@ -15,7 +16,8 @@ const LANGS = [
 
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export default function LoginPage(): React.ReactElement {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username: username.trim() || 'dev' }),
+        body: JSON.stringify({ username: email.trim() || 'dev', password }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       router.push('/races');
@@ -42,7 +44,9 @@ export default function LoginPage(): React.ReactElement {
   return (
     <>
       <header className={styles.topbar}>
-        <span className={styles.brand}>NE<span>M</span>O</span>
+        <Link href="/" className={styles.brand} aria-label="Nemo — Accueil">
+          NE<span>M</span>O
+        </Link>
         <nav className={styles.lang} aria-label="Langue">
           {LANGS.map((l) => (
             <a
@@ -64,9 +68,8 @@ export default function LoginPage(): React.ReactElement {
               Bienvenue<br />à <em>bord</em>.
             </h1>
             <p className={styles.lede}>
-              <strong>Nemo</strong> est un circuit de course offshore en ligne.
-              Polaires certifiées par les constructeurs, météo NOAA vérifiable,
-              et une règle que personne ne franchira jamais&nbsp;: zéro pay-to-win.
+              <strong>Nemo</strong>{' '}est un circuit de course offshore en ligne.
+              Polaires réelles, météo réelle, et un bateau qui te suit de course en course, façonné par tes victoires.
             </p>
           </div>
 
@@ -74,7 +77,8 @@ export default function LoginPage(): React.ReactElement {
             {[
               { n: '01', t: 'Polaires réelles', d: 'Les mêmes fichiers pour tous les joueurs, du Figaro III à l\'Ultim.' },
               { n: '02', t: 'Météo NOAA GFS', d: 'Mise à jour toutes les 6 h, identique côté moteur et routeur.' },
-              { n: '03', t: 'Jamais pay-to-win', d: 'Les crédits ne s\'achètent pas. Les upgrades s\'obtiennent en courant.' },
+              { n: '03', t: 'Ton bateau, ta carrière', d: 'Tu gardes ton bateau d\'une course à l\'autre. Chaque podium rapporte des crédits qui financent tes upgrades\u00a0: voiles, foils, électronique.' },
+              { n: '04', t: 'Prépare ta course', d: 'Avant chaque départ, tu arbitres\u00a0: jeu de voiles, configuration de foils, ravitaillement. Tes choix décident du résultat.' },
             ].map((m) => (
               <div key={m.n} className={styles.manifestoItem}>
                 <span className={styles.manifestoNum}>{m.n}</span>
@@ -86,7 +90,7 @@ export default function LoginPage(): React.ReactElement {
             ))}
           </div>
 
-          <p className={styles.colophon}>Un skipper libre vaut mieux qu'un abonné résigné</p>
+          <p className={styles.colophon}>Une carrière de skipper, mille à mille.</p>
 
           <div className={styles.compassBg} aria-hidden>
             <svg viewBox="0 0 340 340">
@@ -110,7 +114,7 @@ export default function LoginPage(): React.ReactElement {
             <div className={styles.formHead}>
               <h2 className={styles.formTitle}>Connexion</h2>
               <p className={styles.formSub}>
-                Accédez au circuit avec votre email ou un provider OAuth.
+                Connectez-vous avec votre email et votre mot de passe.
               </p>
             </div>
 
@@ -118,17 +122,37 @@ export default function LoginPage(): React.ReactElement {
 
             <form onSubmit={submit} noValidate className={styles.form}>
               <Field
-                label="Nom de skipper"
-                hint="dev mode"
-                placeholder="DarkRiguidel"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="off"
+                label="Email"
+                type="email"
+                autoComplete="email"
+                placeholder="skipper@nemo.sail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Field
+                label="Mot de passe"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                action={
+                  <Link href="/reset-password" className={styles.labelAction}>
+                    Mot de passe oublié&nbsp;?
+                  </Link>
+                }
               />
               <Button type="submit" variant="primary" icon fullWidth disabled={loading}>
                 {loading ? 'Connexion' : 'Larguer les amarres'}
               </Button>
             </form>
+
+            <p className={styles.signup}>
+              Pas encore de compte&nbsp;?{' '}
+              <Link href="/register" className={styles.signupLink}>Créer un compte</Link>
+            </p>
 
             <div className={styles.divider}>
               <span className={styles.dividerLabel}>ou · OAuth Phase 4</span>
@@ -150,7 +174,7 @@ export default function LoginPage(): React.ReactElement {
             <p className={styles.legal}>
               En continuant, vous acceptez nos <a href="#">Conditions d'utilisation</a>{' '}
               et notre <a href="#">Politique de confidentialité</a>. Les données
-              de compte sont hébergées en Europe (AWS Cognito · eu-west-3).
+              de compte sont hébergées en Europe.
             </p>
           </div>
         </section>

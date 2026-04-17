@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Eyebrow, Pagination } from '@/components/ui';
-import { readClientSession } from '@/lib/access';
+import { Eyebrow, Flag, Pagination } from '@/components/ui';
+import { profileHref } from '@/lib/routes';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 10;
@@ -80,24 +80,29 @@ function display(r: RaceRow, meUsername: string | null): string {
   return r.isMe && meUsername ? meUsername : r.username;
 }
 
-function Flag({ code }: { code: Country }): React.ReactElement {
-  return <span className={`${styles.flag} ${styles[code]}`} aria-label={`Drapeau ${code.toUpperCase()}`} />;
-}
-
 function TrendCell({ trend }: { trend: Trend }): React.ReactElement {
   if (trend.dir === 'up')   return <span className={`${styles.trend} ${styles.trendUp}`}>▲ {trend.delta}</span>;
   if (trend.dir === 'down') return <span className={`${styles.trend} ${styles.trendDown}`}>▼ {trend.delta}</span>;
   return <span className={styles.trend}>—</span>;
 }
 
-export default function ClassementRaceView({ raceId: _raceId }: { raceId: string }): React.ReactElement {
-  const [scope, setScope] = useState<Scope>('GENERAL');
-  const [meUsername, setMeUsername] = useState<string | null>(null);
+export interface ClassementRaceViewProps {
+  raceId: string;
+  isVisitor: boolean;
+  meUsername: string | null;
+}
 
-  useEffect(() => {
-    const s = readClientSession();
-    setMeUsername(s.username);
-  }, []);
+export default function ClassementRaceView({
+  raceId: _raceId,
+  isVisitor,
+  meUsername,
+}: ClassementRaceViewProps): React.ReactElement {
+  const [scope, setScope] = useState<Scope>('GENERAL');
+
+  const scopeOptions = useMemo(
+    () => (isVisitor ? SCOPE_OPTIONS.filter((s) => s.value === 'GENERAL') : SCOPE_OPTIONS),
+    [isVisitor],
+  );
 
   const allRows = RACE_SEED.rows;
 
@@ -123,7 +128,8 @@ export default function ClassementRaceView({ raceId: _raceId }: { raceId: string
   }, [allRows, scope]);
 
   // Podium et "ma position" reflètent le sous-classement courant.
-  const me = rows.find((r) => r.isMe);
+  // En mode visiteur, on masque le bloc perso — pas d'identité.
+  const me = isVisitor ? undefined : rows.find((r) => r.isMe);
   const [p1, p2, p3] = rows;
 
   const [page, setPage] = useState(1);
@@ -203,19 +209,20 @@ export default function ClassementRaceView({ raceId: _raceId }: { raceId: string
               { p: p3, position: 3 as const, tone: 'p3' as const },
             ].map(({ p, position, tone }) => {
               const { main, suffix } = formatRank(position);
+              const isMeRow = !isVisitor && p.isMe;
               return (
                 <article key={p.username} className={`${styles.podiumCard} ${styles[tone]}`}>
                   <span className={styles.podiumBadge}>{main}<sup>{suffix}</sup></span>
                   <h3 className={styles.podiumName}>
                     <Link
-                      href={`/profile/${encodeURIComponent(p.username)}` as Parameters<typeof Link>[0]['href']}
+                      href={profileHref(p.username, isMeRow) as Parameters<typeof Link>[0]['href']}
                       className={styles.skLink}
                     >
                       {display(p, meUsername)}
                     </Link>
                   </h3>
                   <div className={styles.podiumLoc}>
-                    <Flag code={p.country} />
+                    <Flag code={p.country} className={styles.flag} />
                     {p.city}
                   </div>
                   <p className={styles.podiumDtf}>
@@ -231,7 +238,7 @@ export default function ClassementRaceView({ raceId: _raceId }: { raceId: string
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
           <p className={styles.filterLabel}>Périmètre</p>
-          {SCOPE_OPTIONS.map((s) => (
+          {scopeOptions.map((s) => (
             <button
               key={s.value}
               type="button"
@@ -255,25 +262,26 @@ export default function ClassementRaceView({ raceId: _raceId }: { raceId: string
           </div>
           {visibleRows.map((r) => {
             const { main, suffix } = formatRank(r.rank);
+            const isMeRow = !isVisitor && r.isMe;
             const cls = [
               styles.row,
               r.rank <= 3 ? styles.rowPodium : '',
-              r.isMe ? styles.rowMe : '',
+              isMeRow ? styles.rowMe : '',
             ].filter(Boolean).join(' ');
             return (
               <div key={`${r.rank}-${r.username}`} className={cls}>
                 <span className={styles.pos}>{main}<sup>{suffix}</sup></span>
                 <div className={styles.skipper}>
-                  <Flag code={r.country} />
+                  <Flag code={r.country} className={styles.flag} />
                   <div>
                     <p className={styles.skName}>
                       <Link
-                        href={`/profile/${encodeURIComponent(r.username)}` as Parameters<typeof Link>[0]['href']}
+                        href={profileHref(r.username, isMeRow) as Parameters<typeof Link>[0]['href']}
                         className={styles.skLink}
                       >
                         {display(r, meUsername)}
                       </Link>
-                      {r.isMe && <span className={styles.meBadge}>Vous</span>}
+                      {isMeRow && <span className={styles.meBadge}>Moi</span>}
                     </p>
                     <p className={styles.skCity}>{r.city} · {r.country.toUpperCase()}</p>
                   </div>

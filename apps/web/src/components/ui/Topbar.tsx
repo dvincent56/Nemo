@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './Topbar.module.css';
+import { Button } from './Button';
 import { Drawer, type DrawerLink } from './Drawer';
 
 export interface TopbarLink {
@@ -15,13 +16,20 @@ export interface TopbarProps {
   links?: TopbarLink[];
   /** Affiche le language switcher (défaut true). */
   showLang?: boolean;
+  /** Visiteur non authentifié : masque Marina/Profil, affiche "Se connecter". */
+  isVisitor?: boolean;
 }
 
-const DEFAULT_LINKS: TopbarLink[] = [
+const PLAYER_LINKS: TopbarLink[] = [
   { href: '/races', label: 'Courses' },
   { href: '/marina', label: 'Marina' },
   { href: '/classement', label: 'Classement' },
   { href: '/profile', label: 'Profil' },
+];
+
+const VISITOR_LINKS: TopbarLink[] = [
+  { href: '/races', label: 'Courses' },
+  { href: '/classement', label: 'Classement' },
 ];
 
 const LANGS = [
@@ -31,16 +39,27 @@ const LANGS = [
   { code: 'de', label: 'DE' },
 ];
 
-export function Topbar({ links = DEFAULT_LINKS, showLang = true }: TopbarProps): React.ReactElement {
+export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProps): React.ReactElement {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const drawerLinks: DrawerLink[] = links.map((l, i) => ({
+  const navLinks = links ?? (isVisitor ? VISITOR_LINKS : PLAYER_LINKS);
+
+  const drawerLinks: DrawerLink[] = navLinks.map((l, i) => ({
     href: l.href,
     label: l.label,
     num: String(i + 1).padStart(2, '0'),
     active: pathname === l.href || pathname?.startsWith(`${l.href}/`),
   }));
+  if (isVisitor) {
+    drawerLinks.push({
+      href: '/login',
+      label: 'Se connecter',
+      num: String(drawerLinks.length + 1).padStart(2, '0'),
+      active: pathname === '/login',
+    });
+  }
 
   return (
     <>
@@ -50,7 +69,7 @@ export function Topbar({ links = DEFAULT_LINKS, showLang = true }: TopbarProps):
         </Link>
 
         <nav className={styles.nav} aria-label="Principal">
-          {links.map((l) => (
+          {navLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href as Parameters<typeof Link>[0]['href']}
@@ -59,6 +78,15 @@ export function Topbar({ links = DEFAULT_LINKS, showLang = true }: TopbarProps):
               {l.label}
             </Link>
           ))}
+          {isVisitor && (
+            <Button
+              variant="primary"
+              className={styles.loginCta}
+              onClick={() => router.push('/login')}
+            >
+              Se connecter
+            </Button>
+          )}
         </nav>
 
         {showLang && (

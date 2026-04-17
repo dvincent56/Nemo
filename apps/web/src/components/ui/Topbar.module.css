@@ -42,6 +42,15 @@
 .nav a:hover { color: var(--navy); border-bottom-color: var(--gold); }
 .nav a.active { color: var(--navy); border-bottom-color: var(--navy); }
 
+/* Surcharge fine sur le Button primary : hauteur ajustée pour s'aligner
+   avec la nav inline, léger retrait pour séparer du dernier lien. */
+.loginCta {
+  margin-left: 8px;
+  min-height: 36px;
+  padding: 8px 18px;
+  font-size: 11px;
+}
+
 .lang {
   display: flex;
   gap: 2px;

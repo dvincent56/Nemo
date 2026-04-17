@@ -62,11 +62,11 @@
 }
 .previewStage {
   position: relative;
-  background: var(--paper);
+  background: linear-gradient(180deg, var(--ivory-2) 0%, var(--ivory-3) 100%);
   border: 1px solid var(--navy-line);
   border-radius: var(--r-md);
   padding: 36px 32px 32px;
-  aspect-ratio: 5/4;
+  aspect-ratio: 3/4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,7 +74,7 @@
 .previewStage::after {
   content: '';
   position: absolute;
-  left: 32px; right: 32px; bottom: 22%;
+  left: 32px; right: 32px; bottom: 18%;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--navy-line), transparent);
 }
@@ -226,6 +226,7 @@
   gap: 6px;
 }
 .field + .field { margin-top: 12px; }
+.fieldRow > .field { margin-top: 0; }
 .fieldLabel {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -239,12 +240,13 @@
   background: transparent;
   border: 1px solid var(--navy-line);
   color: var(--navy);
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--r-md);
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
-  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
   width: 100%;
 }
 .fieldInput:focus,
@@ -270,7 +272,7 @@
 /* Mode tabs */
 .modeTabs {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
   padding: 4px;
   background: var(--ivory-2);
@@ -302,7 +304,7 @@
 }
 .pickerSwatches {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 6px;
   margin-top: 8px;
 }
@@ -313,10 +315,11 @@
 }
 .pickerHexChip {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-sm);
   border: 1px solid rgba(26, 40, 64, 0.20);
+  background-clip: padding-box;
   flex-shrink: 0;
   cursor: pointer;
   overflow: hidden;
@@ -327,6 +330,7 @@
   opacity: 0;
   cursor: pointer;
   border: 0;
+  outline: none;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -343,7 +347,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  min-height: 36px;
+  min-height: 40px;
 }
 .pickerHexInput:focus {
   outline: 2px solid var(--gold);
@@ -361,12 +365,9 @@
   transition: transform 120ms;
 }
 .swatch:hover { transform: scale(1.08); }
-.swatchActive::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--gold);
-  border-radius: var(--r-md);
+.swatchActive {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
 /* Gradient */
@@ -431,56 +432,64 @@
   text-align: right;
 }
 
-/* Upload */
-.upload {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 28px 16px;
-  background: var(--ivory-2);
-  border: 1px dashed var(--navy-rule);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  text-align: center;
-  transition: border-color 150ms, background 150ms;
+/* Pattern picker */
+.patternSection {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--navy-line);
 }
-.upload:hover { border-color: var(--gold); background: var(--gold-soft); }
-.uploadIcon {
-  font-family: var(--font-display);
-  font-size: 32px;
-  color: var(--navy);
-  line-height: 1;
-}
-.uploadText {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--navy);
-  margin: 0;
-}
-.uploadHint {
+.patternTitle {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--t3);
+  letter-spacing: 0.18em;
+  color: var(--gold-dark);
   text-transform: uppercase;
-  margin: 0;
+  margin: 0 0 10px;
 }
-.uploadRemove {
-  margin-top: 10px;
+.patternGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.patternOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  background: var(--ivory-2);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.patternOption:hover { border-color: var(--gold); }
+.patternOptionActive {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+.patternThumb {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.patternLabel {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--t3);
   text-transform: uppercase;
-  color: var(--danger);
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  white-space: nowrap;
 }
-.uploadRemove:hover { text-decoration: underline; }
+.patternColorRow {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 /* Markings */
 .markingBlock + .markingBlock {
@@ -522,7 +531,7 @@
 
 @media (max-width: 720px) {
   .studio { padding: 16px 20px 96px; }
-  .previewStage { padding: 22px; aspect-ratio: 4/3; }
+  .previewStage { padding: 22px; aspect-ratio: 2/3; }
   .previewName { font-size: clamp(40px, 11vw, 64px); }
   .pickerSwatches { grid-template-columns: repeat(6, 1fr); }
   .fieldRow { grid-template-columns: 1fr; }

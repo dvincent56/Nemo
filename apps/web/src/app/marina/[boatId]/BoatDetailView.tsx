@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Pagination } from '@/components/ui';
+import { Pagination, BoatSvg } from '@/components/ui';
 import {
   CLASS_LABEL,
   type BoatDetail,
@@ -20,26 +20,16 @@ function formatRank(n: number): { main: string; suffix: string } {
 }
 
 function HeroRender({ boat }: { boat: BoatDetail }): React.ReactElement {
-  // SVG top-view reprise de /marina page.tsx, légèrement agrandie.
   return (
     <div className={styles.heroRender}>
-      <svg className={styles.heroRenderSvg} viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" aria-hidden>
-        <line x1="20" y1="160" x2="300" y2="160"
-              stroke="#1a2840" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="2 4" />
-        <path d="M 38,160 L 280,160 L 252,178 L 70,178 Z" fill={boat.hullColor} />
-        <path d="M 38,160 L 280,160 L 276,154 L 42,154 Z" fill={boat.deckColor} />
-        <text x="160" y="174" fontFamily="Bebas Neue" fontSize="14"
-              fill="#f5f0e8" textAnchor="middle" letterSpacing="0.12em">{boat.name.toUpperCase()}</text>
-        <text x="64" y="170" fontFamily="Bebas Neue" fontSize="9"
-              fill="#c9a227" letterSpacing="0.1em">{boat.hullNumber}</text>
-        <line x1="158" y1="160" x2="158" y2="22" stroke="#1a2840" strokeWidth="3" />
-        <line x1="158" y1="92" x2="248" y2="100" stroke="#1a2840" strokeWidth="1.5" />
-        <path d="M 160,22 L 246,100 L 160,88 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" />
-        <text x="200" y="72" fontFamily="Bebas Neue" fontSize="20"
-              fill={boat.hullColor} textAnchor="middle">{boat.hullNumber}</text>
-        <path d="M 156,22 L 156,88 L 88,138 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" opacity="0.92" />
-        <path d="M 150,178 L 168,178 L 158,196 Z" fill="#1a2840" opacity="0.6" />
-      </svg>
+      <BoatSvg
+        className={styles.heroRenderSvg}
+        hullColor={boat.hullColor}
+        deckColor={boat.deckColor}
+        hullNumber={boat.hullNumber}
+        name={boat.name}
+        showText
+      />
     </div>
   );
 }

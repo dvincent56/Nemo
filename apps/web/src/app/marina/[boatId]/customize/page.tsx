@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { SiteShell } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
 import { getBoatDetail } from '../../data';
 import CustomizeView from './CustomizeView';
 

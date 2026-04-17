@@ -43,6 +43,50 @@ export const TEAMS: Record<string, TeamSeed> = {
     captainUsername: 'laperouse',
     moderatorUsernames: [],
   },
+  'north-sea-offshore': {
+    slug: 'north-sea-offshore',
+    name: 'North Sea Offshore',
+    baseCity: 'Amsterdam',
+    country: 'nl',
+    foundedYear: 2022,
+    description:
+      'Collectif néerlando-britannique spécialisé dans les traversées de la mer du Nord et les classiques britanniques. Deux skippers de haut de classement, entraînés aux vents forts et aux marées.',
+    captainUsername: 'northwind',
+    moderatorUsernames: [],
+  },
+  'mediterraneo': {
+    slug: 'mediterraneo',
+    name: 'Mediterraneo',
+    baseCity: 'Trieste',
+    country: 'it',
+    foundedYear: 2021,
+    description:
+      "Écurie pan-méditerranéenne rassemblant skippers italiens, français et espagnols autour d'un circuit dédié aux régates de golfe et de bassin fermé. Spécialistes du près serré et des brises thermiques.",
+    captainUsername: 'bora_c',
+    moderatorUsernames: ['mistral'],
+  },
+  'atlantic-drift': {
+    slug: 'atlantic-drift',
+    name: 'Atlantic Drift',
+    baseCity: 'Galway',
+    country: 'ie',
+    foundedYear: 2024,
+    description:
+      "Trio irlando-portugais qui mutualise routage et météo pour les grandes traversées de la façade atlantique. Philosophie : prudence sur la préparation, audace sur le départ.",
+    captainUsername: 'galway_bay',
+    moderatorUsernames: [],
+  },
+  'cape-horners': {
+    slug: 'cape-horners',
+    name: 'Cape Horners',
+    baseCity: 'Punta Arenas',
+    country: 'cl',
+    foundedYear: 2020,
+    description:
+      "Collectif de grands navigateurs du sud et des hautes latitudes. Réunit des skippers passés par le cap Horn, Tromsø et les Hébrides — formés aux quarantièmes rugissants et aux tempêtes sub-arctiques.",
+    captainUsername: 'cap_horn',
+    moderatorUsernames: ['hebrides'],
+  },
 };
 
 export function getTeamSlugForName(name: string): string {
@@ -154,7 +198,101 @@ export function getTeamProfile(slug: string): TeamProfile | null {
     totalRacesFinished,
     totalPodiums,
     bestMemberRank,
-    teamRank: 1, // Seed unique pour l'instant
+    teamRank: getTeamRankBySlug(seed.slug),
     activeClasses,
   };
+}
+
+/* =========================================================================
+   CLASSEMENT DES ÉQUIPES
+   -------------------------------------------------------------------------
+   DTO projeté pour `/api/v1/rankings/teams`. Agrège les rankingScore des
+   membres de chaque équipe (somme). Le rang est local au tri global.
+   ========================================================================= */
+
+export interface TeamRankingEntry {
+  rank: number;
+  slug: string;
+  name: string;
+  baseCity: string;
+  country: CountryCode;
+  countryLabel: string;
+  captainUsername: string;
+  totalMembers: number;
+  totalRankingScore: number;
+  totalRacesFinished: number;
+  totalPodiums: number;
+  bestMemberRank: number | null;
+  /** Tendance agrégée — approximée en comptant les "up"/"down" des membres
+   *  pour l'instant. À remplacer par un vrai diff semaine sur serveur. */
+  trend: { dir: 'up' | 'down' | 'flat'; delta: number };
+  /** Vrai si le joueur courant fait partie de cette équipe. */
+  isMyTeam?: boolean;
+}
+
+/** Agrège puis trie les équipes par rankingScore cumulé descendant. */
+export function getTeamsRanking(meUsername: string | null): TeamRankingEntry[] {
+  const allPlayersRanking = getRanking('ALL');
+  const scoreByUsername = new Map(
+    allPlayersRanking.map((r) => [r.username, r] as const),
+  );
+
+  const myTeam = meUsername
+    ? PLAYERS.find((p) => p.username === meUsername)?.team
+    : undefined;
+
+  const rows = Object.values(TEAMS).map((seed): Omit<TeamRankingEntry, 'rank'> => {
+    const members = PLAYERS.filter((p) => p.team === seed.name);
+    let totalRankingScore = 0;
+    let totalRacesFinished = 0;
+    let totalPodiums = 0;
+    let bestMemberRank: number | null = null;
+    let up = 0, down = 0;
+
+    for (const m of members) {
+      const r = scoreByUsername.get(m.username);
+      if (r) {
+        totalRankingScore += r.rankingScore;
+        totalRacesFinished += r.racesFinished;
+        totalPodiums += r.podiums;
+        bestMemberRank = bestMemberRank === null
+          ? r.rank
+          : Math.min(bestMemberRank, r.rank);
+        if (r.trend.dir === 'up') up += r.trend.delta;
+        if (r.trend.dir === 'down') down += r.trend.delta;
+      }
+    }
+
+    const trend: TeamRankingEntry['trend'] =
+      up > down ? { dir: 'up', delta: up - down }
+      : down > up ? { dir: 'down', delta: down - up }
+      : { dir: 'flat', delta: 0 };
+
+    return {
+      slug: seed.slug,
+      name: seed.name,
+      baseCity: seed.baseCity,
+      country: seed.country,
+      countryLabel: COUNTRY_LABEL[seed.country],
+      captainUsername: seed.captainUsername,
+      totalMembers: members.length,
+      totalRankingScore,
+      totalRacesFinished,
+      totalPodiums,
+      bestMemberRank,
+      trend,
+      ...(myTeam === seed.name ? { isMyTeam: true } : {}),
+    };
+  });
+
+  return rows
+    .sort((a, b) => b.totalRankingScore - a.totalRankingScore)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+/** Cherche le rang d'une équipe dans le classement agrégé. Null si inconnu. */
+function getTeamRankBySlug(slug: string): number | null {
+  const ranking = getTeamsRanking(null);
+  const entry = ranking.find((r) => r.slug === slug);
+  return entry?.rank ?? null;
 }

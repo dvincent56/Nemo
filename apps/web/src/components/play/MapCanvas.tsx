@@ -6,35 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
 import styles from './MapCanvas.module.css';
 
-const STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  name: 'Nemo Dark Ocean',
-  sources: {
-    'osm-tiles': {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-    },
-  },
-  layers: [
-    {
-      id: 'ocean-background',
-      type: 'background',
-      paint: { 'background-color': '#060b18' },
-    },
-    {
-      id: 'osm-layer',
-      type: 'raster',
-      source: 'osm-tiles',
-      paint: {
-        'raster-opacity': 0.25,
-        'raster-saturation': -0.8,
-        'raster-brightness-max': 0.3,
-      },
-    },
-  ],
-};
+const STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 const BOAT_COLOR = '#c9a227';
 const trailCoords: [number, number][] = [];

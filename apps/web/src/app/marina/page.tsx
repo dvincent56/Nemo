@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Eyebrow, SiteShell } from '@/components/ui';
+import { Eyebrow, BoatSvg } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
 import {
   CLASS_LABEL,
   MARINA_SEED,
@@ -11,55 +12,6 @@ import styles from './page.module.css';
 
 function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };
-}
-
-function BoatRender({ boat }: { boat: UnlockedBoat }): React.ReactElement {
-  // Rendu SVG top-view simplifié : coque + mât + grand-voile + foc + numéro.
-  // Pas de distinction monocoque/multicoque en Phase 3 — on gardera ça pour
-  // Phase 4 quand la customisation arrivera avec ses presets de coque.
-  const deck = boat.deckColor ?? '#f5f0e8';
-  return (
-    <div className={styles.render}>
-      <svg className={styles.renderSvg} viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet" aria-hidden>
-        <line x1="10" y1="148" x2="310" y2="148"
-              stroke="#1a2840" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="2 4" />
-        <path d="M 50,148 L 268,148 L 244,164 L 76,164 Z" fill={boat.hullColor} />
-        <path d="M 50,148 L 268,148 L 264,142 L 54,142 Z" fill={deck} />
-        <text x="160" y="160" fontFamily="Bebas Neue" fontSize="12"
-              fill="#f5f0e8" textAnchor="middle" letterSpacing="0.1em">{boat.hullNumber}</text>
-        <line x1="158" y1="148" x2="158" y2="22" stroke="#1a2840" strokeWidth="2.5" />
-        <line x1="158" y1="86" x2="240" y2="92" stroke="#1a2840" strokeWidth="1.5" />
-        <path d="M 160,22 L 238,92 L 160,82 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" />
-        <text x="195" y="68" fontFamily="Bebas Neue" fontSize="16"
-              fill={boat.hullColor} textAnchor="middle">{boat.hullNumber}</text>
-        <path d="M 156,22 L 156,82 L 100,124 Z" fill="#f5f0e8" stroke="#1a2840" strokeWidth="0.6" opacity="0.92" />
-        <path d="M 150,164 L 166,164 L 158,180 Z" fill="#1a2840" opacity="0.6" />
-      </svg>
-    </div>
-  );
-}
-
-function LockedBoatRender({ klass }: { klass: BoatClass }): React.ReactElement {
-  // SVG silhouette grisée pour les slots verrouillés.
-  const isMulti = klass === 'OCEAN_FIFTY' || klass === 'ULTIM';
-  return (
-    <div className={styles.render}>
-      <svg className={styles.renderSvg} viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet" aria-hidden>
-        <line x1="10" y1="148" x2="310" y2="148"
-              stroke="#1a2840" strokeOpacity="0.18" strokeWidth="1" strokeDasharray="2 4" />
-        <path d={isMulti
-          ? 'M 30,148 L 290,148 L 260,168 L 60,168 Z'
-          : 'M 50,148 L 268,148 L 244,164 L 76,164 Z'}
-          fill="#1a2840" opacity="0.4" />
-        <line x1="160" y1="148" x2="160" y2={klass === 'ULTIM' ? 2 : 8}
-              stroke="#1a2840" strokeWidth={klass === 'ULTIM' ? 3.5 : 3} opacity="0.45" />
-        <path d={`M 162,${klass === 'ULTIM' ? 2 : 8} L 260,84 L 162,72 Z`}
-              fill="#1a2840" opacity="0.25" />
-        <path d={`M 158,${klass === 'ULTIM' ? 2 : 8} L 158,72 L 80,124 Z`}
-              fill="#1a2840" opacity="0.25" />
-      </svg>
-    </div>
-  );
 }
 
 function UnlockedCard({ boat }: { boat: UnlockedBoat }): React.ReactElement {
@@ -80,7 +32,9 @@ function UnlockedCard({ boat }: { boat: UnlockedBoat }): React.ReactElement {
       </header>
       <h2 className={styles.name}>{boat.name}</h2>
 
-      <BoatRender boat={boat} />
+      <div className={styles.render}>
+        <BoatSvg className={styles.renderSvg} hullColor={boat.hullColor} deckColor={boat.deckColor} />
+      </div>
 
       <div className={styles.stats}>
         <div>
@@ -118,7 +72,9 @@ function LockedCard({ klass }: { klass: BoatClass }): React.ReactElement {
         <span className={`${styles.state} ${styles.stateLocked}`}>Verrouillé</span>
       </header>
       <h2 className={styles.name}>À débloquer</h2>
-      <LockedBoatRender klass={klass} />
+      <div className={styles.render}>
+        <BoatSvg className={styles.renderSvg} hullColor="#1a2840" locked />
+      </div>
 
       <div className={styles.lockedMsg}>
         <span className={styles.lockedIcon} aria-hidden>⚿</span>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Eyebrow, SiteShell } from '@/components/ui';
+import { Eyebrow } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
 import { fetchRaces, type RaceSummary } from '@/lib/api';
 import styles from './page.module.css';
 
@@ -33,6 +34,10 @@ export default async function ClassementCoursesPage(): Promise<React.ReactElemen
           className={styles.viewBtn}
         >Saison</Link>
         <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Par course</button>
+        <Link
+          href={'/classement/equipes' as Parameters<typeof Link>[0]['href']}
+          className={styles.viewBtn}
+        >Équipes</Link>
       </div>
 
       {live.length > 0 && (

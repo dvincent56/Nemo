@@ -80,20 +80,20 @@ export interface SkipperRanking {
    ========================================================================= */
 export const PLAYERS: Player[] = [
   { username: 'laperouse',  city: 'La Trinité',   dpt: '56', region: 'Bretagne',                       country: 'fr', isFriend: true, team: 'La Rochelle Racing' },
-  { username: 'northwind',  city: 'Amsterdam',    dpt: '—',  region: 'Hollande-Septentrionale',        country: 'nl' },
-  { username: 'bora_c',     city: 'Trieste',      dpt: '—',  region: 'Frioul-Vénétie julienne',        country: 'it', isFriend: true },
+  { username: 'northwind',  city: 'Amsterdam',    dpt: '—',  region: 'Hollande-Septentrionale',        country: 'nl', team: 'North Sea Offshore' },
+  { username: 'bora_c',     city: 'Trieste',      dpt: '—',  region: 'Frioul-Vénétie julienne',        country: 'it', isFriend: true, team: 'Mediterraneo' },
   { username: 'finistère',  city: 'Brest',        dpt: '29', region: 'Bretagne',                       country: 'fr', team: 'La Rochelle Racing' },
-  { username: 'tradewind',  city: 'Cowes',        dpt: '—',  region: 'Île de Wight',                   country: 'uk', isFriend: true },
-  { username: 'mistral',    city: 'Marseille',    dpt: '13', region: "Provence-Alpes-Côte d'Azur",     country: 'fr' },
-  { username: 'cap_horn',   city: 'Punta Arenas', dpt: '—',  region: 'Magallanes',                     country: 'cl' },
-  { username: 'hebrides',   city: 'Stornoway',    dpt: '—',  region: 'Hébrides extérieures',           country: 'uk' },
-  { username: 'galway_bay', city: 'Galway',       dpt: '—',  region: 'Connacht',                       country: 'ie' },
-  { username: 'portofino',  city: 'Portofino',    dpt: '—',  region: 'Ligurie',                        country: 'it' },
-  { username: 'cascais',    city: 'Cascais',      dpt: '—',  region: 'Lisbonne',                       country: 'pt' },
+  { username: 'tradewind',  city: 'Cowes',        dpt: '—',  region: 'Île de Wight',                   country: 'uk', isFriend: true, team: 'North Sea Offshore' },
+  { username: 'mistral',    city: 'Marseille',    dpt: '13', region: "Provence-Alpes-Côte d'Azur",     country: 'fr', team: 'Mediterraneo' },
+  { username: 'cap_horn',   city: 'Punta Arenas', dpt: '—',  region: 'Magallanes',                     country: 'cl', team: 'Cape Horners' },
+  { username: 'hebrides',   city: 'Stornoway',    dpt: '—',  region: 'Hébrides extérieures',           country: 'uk', team: 'Cape Horners' },
+  { username: 'galway_bay', city: 'Galway',       dpt: '—',  region: 'Connacht',                       country: 'ie', team: 'Atlantic Drift' },
+  { username: 'portofino',  city: 'Portofino',    dpt: '—',  region: 'Ligurie',                        country: 'it', team: 'Mediterraneo' },
+  { username: 'cascais',    city: 'Cascais',      dpt: '—',  region: 'Lisbonne',                       country: 'pt', team: 'Atlantic Drift' },
   { username: 'vous',       city: 'La Rochelle',  dpt: '17', region: 'Nouvelle-Aquitaine',             country: 'fr', isMe: true, team: 'La Rochelle Racing' },
-  { username: 'narvik',     city: 'Narvik',       dpt: '—',  region: 'Nordland',                       country: 'no' },
-  { username: 'balearic',   city: 'Palma',        dpt: '—',  region: 'Îles Baléares',                  country: 'es' },
-  { username: 'donegal',    city: 'Letterkenny',  dpt: '—',  region: 'Ulster',                         country: 'ie' },
+  { username: 'narvik',     city: 'Narvik',       dpt: '—',  region: 'Nordland',                       country: 'no', team: 'Cape Horners' },
+  { username: 'balearic',   city: 'Palma',        dpt: '—',  region: 'Îles Baléares',                  country: 'es', team: 'Mediterraneo' },
+  { username: 'donegal',    city: 'Letterkenny',  dpt: '—',  region: 'Ulster',                         country: 'ie', team: 'Atlantic Drift' },
 ];
 
 /* =========================================================================

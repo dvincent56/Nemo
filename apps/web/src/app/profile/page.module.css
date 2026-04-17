@@ -35,12 +35,18 @@
 
 .pseudo {
   font-family: var(--font-display);
-  font-size: clamp(72px, 12vw, 168px);
+  font-size: clamp(48px, 9vw, 140px);
   line-height: 0.88;
   letter-spacing: 0.01em;
   color: var(--navy);
   margin: 0 0 14px;
   font-weight: 400;
+  /* Long pseudos sans espace (emails, handles) : force la coupure plutôt
+     que déborder sur la colonne droite du hero. Bebas n'a pas de glyphe
+     de césure, on laisse le navigateur casser entre caractères. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: none;
 }
 
 .origin {
@@ -378,7 +384,7 @@
     gap: 28px;
     align-items: start;
   }
-  .pseudo { font-size: clamp(56px, 15vw, 96px); }
+  .pseudo { font-size: clamp(40px, 12vw, 88px); }
   .statsBand { padding: 0 20px 32px; }
   .statsGrid { grid-template-columns: 1fr; }
   .statCell { border-right: none; border-bottom: 1px solid var(--navy-line); }

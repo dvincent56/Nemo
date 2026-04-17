@@ -1,0 +1,67 @@
+/* =========================================================================
+   /news — Journal de bord (index). Aligné sur le pattern de /races et
+   /classement : max-width 1400px + padding clamp, title 148px max, grille
+   dans le même wrapper.
+   ========================================================================= */
+
+.hero {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 72px clamp(20px, 4vw, 64px) 48px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+.heroMain { min-width: 0; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 11vw, 148px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+
+.heroLede {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--t2);
+  max-width: 36ch;
+  margin: 0 0 8px;
+}
+
+.list {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px) 96px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.empty {
+  padding: 64px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--t3);
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 56px;
+    padding-bottom: 32px;
+  }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 680px) {
+  .grid { grid-template-columns: 1fr; }
+}

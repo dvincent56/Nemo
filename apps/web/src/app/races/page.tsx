@@ -1,5 +1,6 @@
 import { fetchRaces } from '@/lib/api';
-import { Eyebrow, SiteShell } from '@/components/ui';
+import { Eyebrow } from '@/components/ui';
+import { SiteShell } from '@/components/ui/SiteShell';
 import RaceList from './RaceList';
 import styles from './page.module.css';
 
@@ -8,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export default async function RacesPage(): Promise<React.ReactElement> {
   const races = await fetchRaces().catch(() => []);
   const liveCount = races.filter((r) => r.status === 'LIVE').length;
-  const openCount = races.filter((r) => r.status === 'PUBLISHED').length;
-  const soonCount = races.filter((r) => r.status === 'BRIEFING').length;
+  const openCount = races.filter((r) => r.status === 'PUBLISHED' || r.status === 'BRIEFING').length;
+  const finishedCount = races.filter((r) => r.status === 'FINISHED').length;
 
   return (
     <SiteShell>
@@ -19,9 +20,9 @@ export default async function RacesPage(): Promise<React.ReactElement> {
           <h1 className={styles.title}>Courses</h1>
         </div>
         <aside className={styles.counters}>
-          <Counter label="En direct" value={String(liveCount).padStart(2, '0')} tone="live" />
+          <Counter label="En cours" value={String(liveCount).padStart(2, '0')} tone="live" />
           <Counter label="Ouvertes" value={String(openCount).padStart(2, '0')} />
-          <Counter label="Bientôt" value={String(soonCount).padStart(2, '0')} tone="gold" />
+          <Counter label="Terminées" value={String(finishedCount).padStart(2, '0')} tone="gold" />
         </aside>
       </header>
       <RaceList races={races} />
