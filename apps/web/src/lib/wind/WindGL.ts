@@ -159,21 +159,16 @@ void main() {
     // drop rate is a chance a particle will restart at random position
     float drop_rate = u_drop_rate + speed_t * u_drop_rate_bump;
 
-    // Force-drop particles on land (speed ≈ 0) — prevents static clusters
+    // Drop particles on land (speed ≈ 0) faster to avoid static clusters
     float on_land = 1.0 - smoothstep(0.0, 0.02, speed_t);
-    drop_rate = mix(drop_rate, 0.3, on_land);
-
-    // Force-drop particles outside visible bounds (recycle them into view)
-    float outside = step(u_view_bounds.z, pos.x) + step(pos.x, u_view_bounds.x)
-                   + step(u_view_bounds.w, pos.y) + step(pos.y, u_view_bounds.y);
-    drop_rate = mix(drop_rate, 1.0, clamp(outside, 0.0, 1.0));
+    drop_rate = mix(drop_rate, 0.15, on_land);
 
     float drop = step(1.0 - drop_rate, rand(seed));
 
-    // Respawn within visible bounds (not the whole globe)
+    // Respawn anywhere on the globe (full precision, no banding)
     vec2 random_pos = vec2(
-        mix(u_view_bounds.x, u_view_bounds.z, rand(seed + 1.3)),
-        mix(u_view_bounds.y, u_view_bounds.w, rand(seed + 2.1)));
+        rand(seed + 1.3),
+        rand(seed + 2.1));
     pos = mix(pos, random_pos, drop);
 
     // encode the new particle position back into RGBA

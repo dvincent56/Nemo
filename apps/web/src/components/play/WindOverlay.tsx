@@ -29,7 +29,7 @@ export default function WindOverlay(): React.ReactElement {
     if (!gl) return;
 
     const wind = new WindGL(gl);
-    wind.numParticles = 32768;
+    wind.numParticles = 262144; // 512x512 — enough density at any zoom level
     windRef.current = wind;
 
     // Load wind data
