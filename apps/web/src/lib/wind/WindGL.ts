@@ -20,6 +20,7 @@ attribute float a_index;
 
 uniform sampler2D u_particles;
 uniform float u_particles_res;
+uniform mat4 u_matrix;
 
 varying vec2 v_particle_pos;
 
@@ -28,13 +29,20 @@ void main() {
         fract(a_index / u_particles_res),
         floor(a_index / u_particles_res) / u_particles_res));
 
-    // decode current particle position from the pixel's RGBA value
     v_particle_pos = vec2(
         color.r / 255.0 + color.b,
         color.g / 255.0 + color.a);
 
+    // x is linear in longitude (same in equirectangular and Mercator)
+    float merc_x = v_particle_pos.x;
+
+    // Convert equirectangular y to Mercator y
+    float lat_deg = 90.0 - v_particle_pos.y * 180.0;
+    float lat_rad = radians(clamp(lat_deg, -85.0, 85.0));
+    float merc_y = (1.0 - log(tan(lat_rad) + 1.0 / cos(lat_rad)) / 3.14159265) / 2.0;
+
     gl_PointSize = 1.0;
-    gl_Position = vec4(2.0 * v_particle_pos.x - 1.0, 1.0 - 2.0 * v_particle_pos.y, 0, 1);
+    gl_Position = u_matrix * vec4(merc_x, merc_y, 0.0, 1.0);
 }
 `;
 
@@ -398,7 +406,7 @@ export class WindGL {
     this.windTexture = createTexture(this.gl, this.gl.LINEAR, windData.image);
   }
 
-  draw(): void {
+  draw(matrix?: Float32Array | Float64Array | number[]): void {
     const gl = this.gl;
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.STENCIL_TEST);
@@ -406,18 +414,18 @@ export class WindGL {
     bindTexture(gl, this.windTexture, 0);
     bindTexture(gl, this.particleStateTexture0, 1);
 
-    this.drawScreen();
+    this.drawScreen(matrix);
     this.updateParticles();
   }
 
-  private drawScreen(): void {
+  private drawScreen(matrix?: Float32Array | Float64Array | number[]): void {
     const gl = this.gl;
     // draw the screen into a temporary framebuffer to retain it as the background on the next frame
     bindFramebuffer(gl, this.framebuffer, this.screenTexture);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     this.drawTexture(this.backgroundTexture, this.fadeOpacity);
-    this.drawParticles();
+    this.drawParticles(matrix);
 
     bindFramebuffer(gl, null);
     // enable blending to support drawing on top of an existing background (e.g. a map)
@@ -445,7 +453,7 @@ export class WindGL {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  private drawParticles(): void {
+  private drawParticles(matrix?: Float32Array | Float64Array | number[]): void {
     const gl = this.gl;
     const program = this.drawProgram;
     gl.useProgram(program.program as WebGLProgram);
@@ -460,6 +468,10 @@ export class WindGL {
     gl.uniform1f(program.u_particles_res as WebGLUniformLocation, this.particleStateResolution);
     gl.uniform2f(program.u_wind_min as WebGLUniformLocation, this.windData!.uMin, this.windData!.vMin);
     gl.uniform2f(program.u_wind_max as WebGLUniformLocation, this.windData!.uMax, this.windData!.vMax);
+
+    if (matrix) {
+      gl.uniformMatrix4fv(program.u_matrix as WebGLUniformLocation, false, new Float32Array(matrix));
+    }
 
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }
