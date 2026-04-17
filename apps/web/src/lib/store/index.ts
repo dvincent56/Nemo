@@ -18,6 +18,7 @@ export type { GameStore, HudState, SailSliceState, MapState, SelectionState } fr
 export type { TimelineState, LayersState, PanelState, WeatherState } from './types';
 export type { ConnectionState, ProgState, OrderEntry, BoatLive } from './types';
 export type { ConnState, PanelName, LayerName, PlaybackSpeed, TwaColor } from './types';
+export type { GfsStatus } from './types';
 
 const SAIL_CODES = ['LW', 'JIB', 'GEN', 'C0', 'HG', 'SPI'] as const;
 
@@ -73,7 +74,15 @@ export const useGameStore = create<GameStore>((set) => ({
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             twaColor: twaColorFromCode(twaColorCode),
           };
-          nextSail = { ...s.sail, currentSail };
+          const transitionSec = Number(m['transitionSec'] ?? 0);
+          const sailAutoServer = m['sailAuto'] === true;
+          nextSail = {
+            ...s.sail,
+            currentSail,
+            sailPending: null,
+            transitionRemainingSec: transitionSec,
+            sailAuto: sailAutoServer,
+          };
         }
       }
 

@@ -1,6 +1,7 @@
 'use client';
 
-import type { SailId, OrderTrigger } from '@nemo/shared-types';
+import type { SailId, OrderTrigger, BoatClass } from '@nemo/shared-types';
+import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
 
@@ -12,6 +13,7 @@ export interface WearDetail {
 }
 
 export interface HudState {
+  boatClass: BoatClass;
   tws: number; twd: number; twa: number; hdg: number;
   bsp: number; vmg: number; dtf: number; overlapFactor: number;
   twaColor: TwaColor;
@@ -81,14 +83,25 @@ export interface WeatherGridPoint {
 export interface WeatherGrid {
   points: WeatherGridPoint[];
   resolution: number;
+  cols: number;
+  rows: number;
   bounds: { north: number; south: number; east: number; west: number };
   timestamps: number[];
+}
+
+export interface GfsStatus {
+  run: number;
+  next: number;
+  status: 0 | 1 | 2;
+  alpha: number;
 }
 
 export interface WeatherState {
   gridData: WeatherGrid | null;
   gridExpiresAt: Date | null;
   isLoading: boolean;
+  decodedGrid: DecodedWeatherGrid | null;
+  gfsStatus: GfsStatus | null;
 }
 
 export type ConnState = 'idle' | 'connecting' | 'open' | 'closed' | 'error';
@@ -149,6 +162,8 @@ export interface GameStore {
   closePanel: () => void;
   setWeatherGrid: (grid: WeatherGrid, expiresAt: Date) => void;
   setWeatherLoading: (loading: boolean) => void;
+  setDecodedWeatherGrid: (grid: DecodedWeatherGrid) => void;
+  setGfsStatus: (status: GfsStatus) => void;
   setConnection: (s: ConnState) => void;
   addOrder: (order: OrderEntry) => void;
   removeOrder: (id: string) => void;
