@@ -21,9 +21,9 @@ import RankingPanel from '@/components/play/RankingPanel';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import LayersWidget from '@/components/play/LayersWidget';
+import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
-import { generateMockWeatherGrid } from '@/lib/weather/mockGrid';
 import styles from './page.module.css';
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
@@ -39,10 +39,8 @@ function useTicker(raceId: string): void {
   useEffect(() => {
     const store = useGameStore.getState();
 
-    // Always initialize timeline + mock weather (regardless of WS mode)
+    // Initialize timeline (weather grid is loaded by WindOverlay from GFS data)
     store.goLive();
-    const grid = generateMockWeatherGrid();
-    store.setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
 
     const live = process.env['NEXT_PUBLIC_WS_LIVE'] === '1';
     if (live) {
@@ -129,6 +127,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}
+        <CursorTooltip />
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
