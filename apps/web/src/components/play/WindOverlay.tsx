@@ -199,9 +199,11 @@ export default function WindOverlay(): React.ReactElement {
       const mercN = mercY(vBounds.north);
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
-      // Fixed speed in degrees/frame — same on all devices and zoom levels
-      // ~0.002°/frame ≈ ~200m/frame at equator at 60fps
-      const degPerFrame = 0.002;
+      // Same visual pixel speed on ALL screens: 0.05% of viewport width per frame
+      // This means the same fraction of screen traversed regardless of resolution
+      const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
+      const PIXELS_PER_FRAME = width * 0.0005;
+      const degPerFrame = PIXELS_PER_FRAME / pxPerLon;
 
       // Detect zoom out: lonRange increased → redistribute ALL particles
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
