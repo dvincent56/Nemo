@@ -144,7 +144,7 @@ Le catalogue (items, prix, effets, restrictions, unlock criteria) reste **dans `
 
   "slotsByClass": {
     "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
-                     "FOILS": "absent",   "KEEL": "monotype",
+                     "FOILS": "monotype", "KEEL": "monotype",
                      "ELECTRONICS": "open", "REINFORCEMENT": "open" },
     "CLASS40":     { "HULL": "open", "MAST": "open", "SAILS": "open",
                      "FOILS": "open", "KEEL": "open",
@@ -483,14 +483,14 @@ Toutes les actions de modif renvoient **`409 Conflict`** avec body explicite si 
 | ELECTRONICS | `electronics-pack-base` (Série, *standard*) · `electronics-pack-race` (Bronze 2 200, *cibles polaires*) · `electronics-pack-offshore` (Silver 4 800, *routage embarqué*) |
 | REINFORCEMENT | `reinforcement-none` (Série, *aucun*) · `reinforcement-heavy-weather` (Bronze 1 800, *tenue gros temps*) · `reinforcement-pro` (Silver 4 500, *blindage compétition*) |
 
-### Figaro III (monotype HULL/MAST/KEEL, FOILS absent, 8 items)
+### Figaro III (monotype HULL/MAST/KEEL/FOILS, 9 items)
 
 | Slot | Items |
 |---|---|
 | HULL | `hull-figaro-monotype` (Série, *réglementaire*) |
 | MAST | `mast-figaro-monotype` (Série, *réglementaire*) |
 | SAILS | `sails-figaro-monotype` (Série, *certifié classe*) · `sails-figaro-north-certified` (Bronze 2 800, *rendement classe*) |
-| FOILS | *(slot absent)* |
+| FOILS | `foils-figaro-monotype` (Série, *foils intégrés*) |
 | KEEL | `keel-figaro-monotype` (Série, *réglementaire*) |
 | ELECTRONICS | partagé : `electronics-pack-base` · `electronics-pack-race` · `electronics-pack-offshore` |
 | REINFORCEMENT | partagé : `reinforcement-none` · `reinforcement-heavy-weather` |
