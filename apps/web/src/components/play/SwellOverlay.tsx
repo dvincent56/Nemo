@@ -14,19 +14,20 @@ import type { WeatherGrid } from '@/lib/store/types';
  * animating slowly forward. Color encodes significant wave height (SWH).
  */
 
-const GRID_SPACING = 60;  // pixels between bars
-const BAR_LEN = 14;       // bar length in pixels
-const BAR_WIDTH = 2.5;    // bar thickness in pixels
-const ANIM_SPEED = 0.3;   // pixels per frame
+const GRID_SPACING = 28;  // pixels between bars — dense like Windy
+const BAR_LEN = 10;       // bar length in pixels
+const BAR_WIDTH = 1.8;    // bar thickness in pixels
+const ANIM_SPEED = 0.08;  // pixels per frame — very slow drift
 
-// SWH color ramp: height (m) → [r, g, b]
+// SWH color ramp — visible even at low heights
 const SWH_STOPS: [number, number, number, number][] = [
-  [0,   0.16, 0.35, 0.62],   // 0m — dark blue
-  [1,   0.24, 0.55, 0.78],   // 1m — blue
-  [2,   0.30, 0.72, 0.82],   // 2m — cyan
-  [3,   0.70, 0.75, 0.30],   // 3m — yellow-green
-  [4,   0.85, 0.60, 0.18],   // 4m — orange
-  [6,   0.75, 0.20, 0.15],   // 6m+ — red
+  [0,    0.35, 0.45, 0.65],   // 0m — muted slate blue
+  [0.3,  0.40, 0.55, 0.75],   // 0.3m — light blue
+  [0.8,  0.45, 0.65, 0.82],   // 0.8m — sky blue
+  [1.5,  0.50, 0.78, 0.85],   // 1.5m — cyan
+  [2.5,  0.65, 0.80, 0.45],   // 2.5m — yellow-green
+  [4,    0.85, 0.60, 0.18],   // 4m — orange
+  [6,    0.75, 0.20, 0.15],   // 6m+ — red
 ];
 
 function swellColor(swh: number): [number, number, number] {
@@ -192,8 +193,8 @@ export default function SwellOverlay(): React.ReactElement {
           const swh = nearest.swellHeight;
           const swellDirDeg = nearest.swellDir;
 
-          // Skip very low swell
-          if (swh < 0.3) continue;
+          // Skip only negligible swell (land / very sheltered)
+          if (swh < 0.05) continue;
 
           // Swell direction: where waves come FROM → direction they travel TO
           const dirRad = (swellDirDeg + 180) * toRad;
@@ -228,8 +229,8 @@ export default function SwellOverlay(): React.ReactElement {
 
           // Color from SWH
           const [r, g, bv] = swellColor(swh);
-          // Alpha: fade based on height (more visible for bigger swell)
-          const alpha = Math.min(0.7, 0.2 + swh * 0.12);
+          // Alpha: always visible, gently scales with height
+          const alpha = Math.min(0.85, 0.35 + swh * 0.10);
 
           // 2 triangles = 6 vertices
           verts.push(
