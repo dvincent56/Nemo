@@ -111,6 +111,7 @@ export default function SailPanel(): React.ReactElement {
     if (id === currentSail || isTransitioning) return;
     setWasAuto(sailAuto);
     setCandidateSail(id);
+    useGameStore.getState().setPreview({ sail: id });
   };
 
   const confirmSail = () => {
@@ -131,10 +132,12 @@ export default function SailPanel(): React.ReactElement {
     });
     setNow(startMs);
     setCandidateSail(null);
+    useGameStore.getState().setPreview({ sail: null });
   };
 
   const cancelSail = () => {
     setCandidateSail(null);
+    useGameStore.getState().setPreview({ sail: null });
   };
 
   const toggleAuto = () => {

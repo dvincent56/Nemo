@@ -147,6 +147,7 @@ export interface GameStore {
   weather: WeatherState;
   connection: ConnectionState;
   prog: ProgState;
+  preview: import('./previewSlice').PreviewState;
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
 
@@ -175,4 +176,6 @@ export interface GameStore {
   reorderQueue: (from: number, to: number) => void;
   commitQueue: () => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
+  setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
+  resetPreview: () => void;
 }

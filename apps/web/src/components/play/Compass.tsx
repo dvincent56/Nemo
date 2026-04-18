@@ -220,6 +220,7 @@ export default function Compass(): React.ReactElement {
         writeSvg(h);
         checkSailChange(h);
         useGameStore.getState().setEditMode(true);
+        useGameStore.getState().setPreview({ hdg: h });
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -229,6 +230,7 @@ export default function Compass(): React.ReactElement {
         setTargetHdg(h);
         writeSvg(h);
         checkSailChange(h);
+        useGameStore.getState().setPreview({ hdg: h });
       }
     };
     const onUp = (e: PointerEvent) => {
@@ -244,6 +246,7 @@ export default function Compass(): React.ReactElement {
         writeSvg(h);
         checkSailChange(h);
         if (h !== hdg) useGameStore.getState().setEditMode(true);
+        useGameStore.getState().setPreview({ hdg: h });
         return h;
       });
     };
@@ -287,8 +290,10 @@ export default function Compass(): React.ReactElement {
       const newTwa = ((targetHdg - twd + 540) % 360) - 180;
       setLockedTwa(newTwa);
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
+      useGameStore.getState().setPreview({ hdg: null, twaLocked: true, lockedTwa: newTwa });
     } else {
       sendOrder({ type: 'CAP', value: { heading: targetHdg } });
+      useGameStore.getState().setPreview({ hdg: null });
     }
     useGameStore.getState().setHud({ hdg: targetHdg });
     setTargetHdg(null);
@@ -302,6 +307,7 @@ export default function Compass(): React.ReactElement {
     setPendingSailChange(null);
     setShowModal(false);
     useGameStore.getState().setEditMode(false);
+    useGameStore.getState().setPreview({ hdg: null });
     writeSvg(hdg);
     const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
     if (ghost) ghost.style.opacity = '0';
@@ -311,9 +317,11 @@ export default function Compass(): React.ReactElement {
   const toggleTwaLock = () => {
     if (twaLocked) {
       setTwaLocked(false);
+      useGameStore.getState().setPreview({ twaLocked: false });
     } else {
       setTwaLocked(true);
       setLockedTwa(twa);
+      useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: twa });
     }
   };
 

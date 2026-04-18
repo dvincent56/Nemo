@@ -177,7 +177,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     const doCompute = () => {
       const state = useGameStore.getState();
-      const { hud, sail, weather, prog } = state;
+      const { hud, sail, weather, prog, preview } = state;
       const grid = weather.gridData;
       if (!grid) {
         console.log('[Projection] skip: no weather grid');
@@ -191,19 +191,31 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         console.log('[Projection] skip: polar not loaded yet');
         return;
       }
-      console.log('[Projection] computing...', { lat: hud.lat, lon: hud.lon, hdg: hud.hdg, grid_points: grid.points.length });
+
+      // Preview overrides actual state (compass drag, sail hover, TWA lock)
+      const effectiveHdg = preview.hdg ?? hud.hdg;
+      const effectiveSail = preview.sail ?? sail.currentSail;
+      const effectiveTwaLock = preview.twaLocked ? preview.lockedTwa : null;
+
+      const nowMs = Date.now();
+      console.log('[Projection] computing...', {
+        lat: hud.lat, lon: hud.lon, hdg: effectiveHdg,
+        twaLock: effectiveTwaLock,
+        sail: effectiveSail,
+        grid_timestamps: grid.timestamps.length,
+      });
 
       const windData = packWindData(grid);
 
       const input: ProjectionInput = {
         lat: hud.lat,
         lon: hud.lon,
-        hdg: hud.hdg,
-        nowMs: Date.now(),
+        hdg: effectiveHdg,
+        nowMs,
         boatClass: hud.boatClass,
-        activeSail: sail.currentSail,
+        activeSail: effectiveSail,
         sailAuto: sail.sailAuto,
-        twaLock: null,
+        twaLock: effectiveTwaLock,
         segments: orderQueueToSegments(prog.orderQueue),
         polar: polarRef.current!,
         effects: {
@@ -259,6 +271,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevQueue = useGameStore.getState().prog.orderQueue;
     let prevTick = useGameStore.getState().lastTickUnix;
     let prevGrid = useGameStore.getState().weather.gridData;
+    let prevPreviewHdg = useGameStore.getState().preview.hdg;
+    let prevPreviewSail = useGameStore.getState().preview.sail;
+    let prevPreviewTwaLocked = useGameStore.getState().preview.twaLocked;
+    let prevPreviewLockedTwa = useGameStore.getState().preview.lockedTwa;
 
     const unsub = useGameStore.subscribe((s) => {
       const hdgChanged = s.hud.hdg !== prevHdg;
@@ -267,6 +283,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const queueChanged = s.prog.orderQueue !== prevQueue;
       const tickChanged = s.lastTickUnix !== prevTick;
       const gridChanged = s.weather.gridData !== prevGrid;
+      const previewHdgChanged = s.preview.hdg !== prevPreviewHdg;
+      const previewSailChanged = s.preview.sail !== prevPreviewSail;
+      const previewTwaLockedChanged = s.preview.twaLocked !== prevPreviewTwaLocked;
+      const previewLockedTwaChanged = s.preview.lockedTwa !== prevPreviewLockedTwa;
 
       prevHdg = s.hud.hdg;
       prevSail = s.sail.currentSail;
@@ -274,11 +294,19 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevQueue = s.prog.orderQueue;
       prevTick = s.lastTickUnix;
       prevGrid = s.weather.gridData;
+      prevPreviewHdg = s.preview.hdg;
+      prevPreviewSail = s.preview.sail;
+      prevPreviewTwaLocked = s.preview.twaLocked;
+      prevPreviewLockedTwa = s.preview.lockedTwa;
 
-      if (hdgChanged) {
-        requestCompute(false); // debounced
-      } else if (sailChanged || autoChanged || queueChanged || tickChanged || gridChanged) {
-        requestCompute(true); // immediate
+      // Compass drag → debounced. Everything else → immediate.
+      if (previewHdgChanged || hdgChanged) {
+        requestCompute(false);
+      } else if (
+        sailChanged || autoChanged || queueChanged || tickChanged || gridChanged ||
+        previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged
+      ) {
+        requestCompute(true);
       }
     });
 
