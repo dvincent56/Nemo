@@ -111,41 +111,31 @@ def parse_wave_from_atmos(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarra
     mwd_names = ("mwd", "dirpw", "swdir", "mdww", "mwsdir", "wvdir")
     mwp_names = ("mwp", "mpww", "perpw", "mpts")
 
-    swh_data = None
-    mwd_data = None
-    mwp_data = None
+    def find_best(names: tuple[str, ...]) -> tuple[np.ndarray, str] | None:
+        """Search by name priority first, then dataset order."""
+        for name in names:
+            for ds in datasets:
+                if name in ds:
+                    data = ds[name].values
+                    while data.ndim > 2:
+                        data = data[0]
+                    lats = ds["latitude"].values
+                    if lats[0] > lats[-1]:
+                        data = data[::-1, :]
+                    return np.nan_to_num(data, nan=0.0).astype(np.float32), name
+        return None
 
-    for ds in datasets:
-        for name in swh_names:
-            if name in ds and swh_data is None:
-                data = ds[name].values
-                while data.ndim > 2:
-                    data = data[0]
-                lats = ds["latitude"].values
-                if lats[0] > lats[-1]:
-                    data = data[::-1, :]
-                swh_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
-                LOG.info("wave swh from atmos: %s shape=%s", name, swh_data.shape)
-        for name in mwd_names:
-            if name in ds and mwd_data is None:
-                data = ds[name].values
-                while data.ndim > 2:
-                    data = data[0]
-                lats = ds["latitude"].values
-                if lats[0] > lats[-1]:
-                    data = data[::-1, :]
-                mwd_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
-                LOG.info("wave mwd from atmos: %s shape=%s", name, mwd_data.shape)
-        for name in mwp_names:
-            if name in ds and mwp_data is None:
-                data = ds[name].values
-                while data.ndim > 2:
-                    data = data[0]
-                lats = ds["latitude"].values
-                if lats[0] > lats[-1]:
-                    data = data[::-1, :]
-                mwp_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
-                LOG.info("wave mwp from atmos: %s shape=%s", name, mwp_data.shape)
+    swh_result = find_best(swh_names)
+    mwd_result = find_best(mwd_names)
+    mwp_result = find_best(mwp_names)
+
+    swh_data = swh_result[0] if swh_result else None
+    mwd_data = mwd_result[0] if mwd_result else None
+    mwp_data = mwp_result[0] if mwp_result else None
+
+    if swh_result: LOG.info("wave swh: %s shape=%s", swh_result[1], swh_result[0].shape)
+    if mwd_result: LOG.info("wave mwd: %s shape=%s", mwd_result[1], mwd_result[0].shape)
+    if mwp_result: LOG.info("wave mwp: %s shape=%s", mwp_result[1], mwp_result[0].shape)
 
     for ds in datasets:
         ds.close()
