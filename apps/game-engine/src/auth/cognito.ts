@@ -89,3 +89,31 @@ export function authPreHandler(publicPaths: ReadonlySet<string>) {
     }
   };
 }
+
+// ---------------------------------------------------------------------------
+// Fastify type augmentation — makes req.auth available with full type safety
+// ---------------------------------------------------------------------------
+declare module 'fastify' {
+  interface FastifyRequest {
+    auth?: AuthContext;
+  }
+}
+
+/**
+ * Fastify preHandler hook — extracts and validates auth token.
+ * Use as `{ preHandler: [enforceAuth] }` on protected routes.
+ */
+export async function enforceAuth(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const header = req.headers.authorization;
+  const cookieToken = req.cookies?.['nemo_access_token'];
+  const token = header?.startsWith('Bearer ') ? header.slice(7) : cookieToken;
+  if (!token) {
+    reply.code(401).send({ error: 'unauthenticated' });
+    return;
+  }
+  try {
+    req.auth = await verifyAccessToken(token);
+  } catch {
+    reply.code(401).send({ error: 'invalid token' });
+  }
+}
