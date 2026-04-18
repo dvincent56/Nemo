@@ -21,7 +21,7 @@ export type { ConnectionState, ProgState, OrderEntry, BoatLive } from './types';
 export type { ConnState, PanelName, LayerName, PlaybackSpeed, TwaColor } from './types';
 export type { GfsStatus } from './types';
 
-const SAIL_CODES = ['LW', 'JIB', 'GEN', 'C0', 'HG', 'SPI'] as const;
+const SAIL_CODES = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as const;
 
 function twaColorFromCode(code: number): 'optimal' | 'overlap' | 'neutral' | 'deadzone' {
   return code === 0 ? 'deadzone' : code === 2 ? 'optimal' : code === 3 ? 'overlap' : 'neutral';
