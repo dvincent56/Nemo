@@ -14,11 +14,11 @@ import type { WeatherGrid } from '@/lib/store/types';
  * animating slowly forward. Color encodes significant wave height (SWH).
  */
 
-const CELL_SIZE = 16;      // pixels between grid cells — very dense
-const BAR_LEN = 5;         // bar length in pixels — short crests
-const BAR_WIDTH = 1.0;     // bar thickness — thin lines
-const BARS_PER_CELL = 3;   // parallel wave crests per cell
-const ANIM_SPEED = 0.04;   // pixels per frame — very slow drift
+const CELL_SIZE = 24;      // pixels between grid cells
+const BAR_LEN = 7;         // bar length in pixels
+const BAR_WIDTH = 1.2;     // bar thickness
+const BARS_PER_CELL = 4;   // parallel wave crests per cell
+const ANIM_SPEED = 0.02;   // pixels per frame — extremely slow
 
 // SWH color ramp — same as before (validated)
 const SWH_STOPS: [number, number, number, number][] = [
@@ -219,9 +219,11 @@ export default function SwellOverlay(): React.ReactElement {
             const crestOffset = ci * crestSpacing;
             const phase = (phaseRef.current + crestOffset) % CELL_SIZE;
 
-            // Fade: smooth sine-based envelope — no brutal appear/disappear
+            // Fade: smooth trapezoid — quick fade in, long plateau, quick fade out
             const t = phase / CELL_SIZE; // 0→1 through the cycle
-            const fade = Math.sin(t * Math.PI); // 0 at edges, 1 at center
+            const fadeIn = Math.min(1, t * 5);       // 0→1 in first 20%
+            const fadeOut = Math.min(1, (1 - t) * 5); // 1→0 in last 20%
+            const fade = fadeIn * fadeOut;             // plateau at 1.0 for 60% of cycle
 
             const alpha = baseAlpha * fade;
             if (alpha < 0.02) continue;
