@@ -112,7 +112,10 @@ def parse_wave_grib(
         avail = list(ds.data_vars)
         ds.close()
         raise KeyError(f"missing wave variables, available: {avail}")
-    LOG.info("wave variables: swh=%s, mwd=%s, mwp=%s", swh_key, mwd_key, mwp_key)
+    LOG.info("wave variables: swh=%s, mwd=%s, mwp=%s  lats=[%.1f..%.1f] lons=[%.1f..%.1f]",
+             swh_key, mwd_key, mwp_key,
+             float(wave_lats[0]), float(wave_lats[-1]),
+             float(wave_lons[0]), float(wave_lons[-1]))
     swh = reinterpolate_wave(ds[swh_key].values, wave_lats, wave_lons, target_lats, target_lons)
     mwd = reinterpolate_wave(ds[mwd_key].values, wave_lats, wave_lons, target_lats, target_lons)
     mwp = reinterpolate_wave(ds[mwp_key].values, wave_lats, wave_lons, target_lats, target_lons)
