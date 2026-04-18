@@ -3,32 +3,33 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
 import { mapInstance } from '@/components/play/MapCanvas';
-import { interpolateGfsWind } from '@/lib/weather/gfsParser';
 import type { WeatherGrid } from '@/lib/store/types';
 
 /**
- * Swell overlay — animated bars moving in the wave direction (Windy-style).
- * WebGL TRIANGLES rendering, CPU simulation.
+ * Swell overlay — particle-based animated bars (Windy-style).
  *
- * Each bar is a short thick line oriented perpendicular to the swell direction,
- * animating slowly forward. Color encodes significant wave height (SWH).
+ * Each particle is a short bar oriented perpendicular to swell direction.
+ * Particles spawn at random positions, drift slowly in the wave direction,
+ * fade in → stay visible → fade out over their lifetime, then respawn.
  */
 
-const CELL_SIZE = 24;      // pixels between grid cells
-const BAR_LEN = 7;         // bar length in pixels
-const BAR_WIDTH = 1.2;     // bar thickness
-const BARS_PER_CELL = 4;   // parallel wave crests per cell
-const ANIM_SPEED = 0.15;   // pixels per frame — visible drift
+const MAX_PARTICLES = 6000;
+const BAR_LEN = 7;
+const BAR_WIDTH = 1.2;
+const DRIFT_SPEED = 0.12; // degrees per frame — slow visible drift
+const MIN_LIFE = 120;     // frames
+const MAX_LIFE = 220;     // frames
+const FADE_FRAMES = 25;   // frames for fade in/out
 
-// SWH color ramp — same as before (validated)
+// SWH color ramp
 const SWH_STOPS: [number, number, number, number][] = [
-  [0,    0.35, 0.45, 0.65],   // 0m — muted slate blue
-  [0.3,  0.40, 0.55, 0.75],   // 0.3m — light blue
-  [0.8,  0.45, 0.65, 0.82],   // 0.8m — sky blue
-  [1.5,  0.50, 0.78, 0.85],   // 1.5m — cyan
-  [2.5,  0.65, 0.80, 0.45],   // 2.5m — yellow-green
-  [4,    0.85, 0.60, 0.18],   // 4m — orange
-  [6,    0.75, 0.20, 0.15],   // 6m+ — red
+  [0,    0.35, 0.45, 0.65],
+  [0.3,  0.40, 0.55, 0.75],
+  [0.8,  0.45, 0.65, 0.82],
+  [1.5,  0.50, 0.78, 0.85],
+  [2.5,  0.65, 0.80, 0.45],
+  [4,    0.85, 0.60, 0.18],
+  [6,    0.75, 0.20, 0.15],
 ];
 
 function swellColor(swh: number): [number, number, number] {
@@ -88,12 +89,41 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram {
   return p;
 }
 
+// ─── Particle state ────────────────────────────────────
+
+interface SwellParticle {
+  lon: number;
+  lat: number;
+  age: number;
+  maxAge: number;
+}
+
+function lookupSwell(grid: WeatherGrid, lat: number, lon: number): { swh: number; dir: number } {
+  let normLon = lon;
+  if (normLon < grid.bounds.west) normLon += 360;
+  if (normLon > grid.bounds.east + grid.resolution) normLon -= 360;
+  const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lat - grid.bounds.south) / grid.resolution)));
+  const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((normLon - grid.bounds.west) / grid.resolution)));
+  const pt = grid.points[gy * grid.cols + gx];
+  if (!pt) return { swh: 0, dir: 0 };
+  return { swh: pt.swellHeight, dir: pt.swellDir };
+}
+
+function spawnParticle(bounds: { west: number; east: number; south: number; north: number }): SwellParticle {
+  return {
+    lon: bounds.west + Math.random() * (bounds.east - bounds.west),
+    lat: bounds.south + Math.random() * (bounds.north - bounds.south),
+    age: Math.floor(Math.random() * MAX_LIFE), // stagger initial ages
+    maxAge: MIN_LIFE + Math.floor(Math.random() * (MAX_LIFE - MIN_LIFE)),
+  };
+}
+
 // ─── Component ─────────────────────────────────────────
 
 export default function SwellOverlay(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const phaseRef = useRef(0);
+  const particlesRef = useRef<SwellParticle[]>([]);
 
   const swellVisible = useGameStore((s) => s.layers.swell);
 
@@ -127,6 +157,19 @@ export default function SwellOverlay(): React.ReactElement {
     const toRad = Math.PI / 180;
     const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
 
+    // Scale particle count to screen
+    const screenArea = canvas.width * canvas.height;
+    const particleCount = Math.min(MAX_PARTICLES, Math.max(1500, Math.round(screenArea / 200)));
+
+    // Initialize particles
+    const mapBounds = useGameStore.getState().map.bounds;
+    if (particlesRef.current.length === 0) {
+      for (let i = 0; i < particleCount; i++) {
+        particlesRef.current.push(spawnParticle(mapBounds));
+      }
+    }
+    const particles = particlesRef.current;
+
     const animate = () => {
       const grid: WeatherGrid | null = useGameStore.getState().weather.gridData;
       const map = mapInstance;
@@ -139,22 +182,18 @@ export default function SwellOverlay(): React.ReactElement {
         gl.viewport(0, 0, canvas.width, canvas.height);
       }
 
-      // Map bounds
       const b = map.getBounds();
-      const west = b.getWest(), east = b.getEast();
-      const south = b.getSouth(), north = b.getNorth();
-      const lonRange = east - west;
-      const mercN = mercY(north);
-      const mercS = mercY(south);
+      const vBounds = { west: b.getWest(), east: b.getEast(), south: b.getSouth(), north: b.getNorth() };
+      const lonRange = vBounds.east - vBounds.west;
+      const mercN = mercY(vBounds.north);
+      const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
 
-      // Pixel → clip space conversion
-      const pxToClipX = (px: number) => (px / width) * 2 - 1;
-      const pxToClipY = (py: number) => 1 - (py / height) * 2;
-      const lonToPx = (lon: number) => ((lon - west) / lonRange) * width;
-      const latToPx = (lat: number) => ((mercN - mercY(lat)) / mercRange) * height;
+      // Degrees per frame for drift (scale to zoom)
+      const degPerFrame = DRIFT_SPEED * lonRange / 360;
 
-      phaseRef.current += ANIM_SPEED;
+      const lonToClip = (lon: number) => ((lon - vBounds.west) / lonRange) * 2 - 1;
+      const latToClip = (lat: number) => ((mercY(lat) - mercS) / mercRange) * 2 - 1;
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -163,100 +202,75 @@ export default function SwellOverlay(): React.ReactElement {
       const alphas: number[] = [];
       const colors: number[] = [];
 
-      // Generate dense grid of bars
-      const gridCols = Math.ceil(width / CELL_SIZE) + 2;
-      const gridRows = Math.ceil(height / CELL_SIZE) + 2;
+      // Pixel size in clip space (for bar dimensions)
+      const pxClipX = 2 / width;
+      const pxClipY = 2 / height;
+      const halfLen = BAR_LEN / 2;
+      const halfW = BAR_WIDTH / 2;
 
-      for (let row = -1; row < gridRows; row++) {
-        for (let col = -1; col < gridCols; col++) {
-          const basePx = col * CELL_SIZE;
-          const basePy = row * CELL_SIZE;
+      for (const p of particles) {
+        const { swh, dir } = lookupSwell(grid, p.lat, p.lon);
 
-          // Convert pixel to lat/lon for weather lookup
-          const lon = west + (basePx / width) * lonRange;
-          const latMerc = mercN - (basePy / height) * mercRange;
-          const lat = (2 * Math.atan(Math.exp(latMerc)) - Math.PI / 2) * (180 / Math.PI);
+        // Skip land / negligible swell
+        if (swh < 0.05) {
+          p.age = p.maxAge; // force respawn
+        }
 
-          // Get swell data at this position
-          const wind = interpolateGfsWind(grid, lat, lon);
-          const point = grid.points[0]; // just need swellHeight/swellDir existence
-          if (!point) continue;
+        p.age++;
+        if (p.age >= p.maxAge ||
+            p.lon < vBounds.west - 2 || p.lon > vBounds.east + 2 ||
+            p.lat < vBounds.south - 2 || p.lat > vBounds.north + 2) {
+          // Respawn
+          Object.assign(p, spawnParticle(vBounds));
+          p.age = 0;
+          continue;
+        }
 
-          // Find nearest grid point for swell data (normalize lon for 0-360 grids)
-          let normLon = lon;
-          if (normLon < grid.bounds.west) normLon += 360;
-          const gy = Math.floor((lat - grid.bounds.south) / grid.resolution);
-          const gx = Math.floor((normLon - grid.bounds.west) / grid.resolution);
-          const gi = Math.max(0, Math.min(grid.rows - 1, gy)) * grid.cols + Math.max(0, Math.min(grid.cols - 1, gx));
-          const nearest = grid.points[gi];
-          if (!nearest) continue;
+        // Drift in swell direction (FROM → TO = +180°)
+        const dirRad = (dir + 180) * toRad;
+        p.lon += Math.sin(dirRad) * degPerFrame;
+        p.lat += Math.cos(dirRad) * degPerFrame;
 
-          const swh = nearest.swellHeight;
-          const swellDirDeg = nearest.swellDir;
+        // Skip if not in view
+        if (p.lon < vBounds.west || p.lon > vBounds.east ||
+            p.lat < vBounds.south || p.lat > vBounds.north) continue;
 
-          // Skip only negligible swell (land / very sheltered)
-          if (swh < 0.05) continue;
+        // Fade envelope: quick fade in → plateau → quick fade out
+        const fadeIn = Math.min(1, p.age / FADE_FRAMES);
+        const fadeOut = Math.min(1, (p.maxAge - p.age) / FADE_FRAMES);
+        const baseAlpha = Math.min(0.7, 0.30 + swh * 0.08);
+        const alpha = baseAlpha * fadeIn * fadeOut;
+        if (alpha < 0.02) continue;
 
-          // Swell direction FROM (meteo convention) → direction waves travel TO
-          const dirRad = (swellDirDeg + 180) * toRad;
-          const dirSin = Math.sin(dirRad);
-          const dirCos = Math.cos(dirRad);
+        // Color
+        const [r, g, bv] = swellColor(swh);
 
-          // Perpendicular to wave direction (for bar orientation)
-          const perpX = dirCos;
-          const perpY = dirSin;
-          const halfLen = BAR_LEN / 2;
-          const halfW = BAR_WIDTH / 2;
+        // Bar position in clip space
+        const cx = lonToClip(p.lon);
+        const cy = latToClip(p.lat);
 
-          // Color from SWH
-          const [r, g, bv] = swellColor(swh);
-          const baseAlpha = Math.min(0.75, 0.30 + swh * 0.10);
+        // Bar perpendicular to swell direction
+        const perpX = Math.cos(dirRad);
+        const perpY = -Math.sin(dirRad); // flip Y for screen coords
 
-          // Draw multiple parallel crests per cell, evenly spaced
-          const crestSpacing = CELL_SIZE / BARS_PER_CELL;
-          for (let ci = 0; ci < BARS_PER_CELL; ci++) {
-            // Position: base + crest offset + animation drift
-            const crestOffset = ci * crestSpacing;
-            const phase = (phaseRef.current + crestOffset) % CELL_SIZE;
+        // Bar corners in clip space
+        const lx = perpX * halfLen * pxClipX;
+        const ly = perpY * halfLen * pxClipY;
+        const wx = Math.sin(dirRad) * halfW * pxClipX;
+        const wy = Math.cos(dirRad) * halfW * pxClipY;
 
-            // Fade: smooth trapezoid — quick fade in, long plateau, quick fade out
-            const t = phase / CELL_SIZE; // 0→1 through the cycle
-            const fadeIn = Math.min(1, t * 5);       // 0→1 in first 20%
-            const fadeOut = Math.min(1, (1 - t) * 5); // 1→0 in last 20%
-            const fade = fadeIn * fadeOut;             // plateau at 1.0 for 60% of cycle
+        const ax = cx - lx - wx, ay = cy - ly + wy;
+        const bx = cx + lx - wx, by = cy + ly + wy;
+        const ccx = cx + lx + wx, ccy = cy + ly - wy;
+        const dx = cx - lx + wx, dy = cy - ly - wy;
 
-            const alpha = baseAlpha * fade;
-            if (alpha < 0.02) continue;
-
-            const px = basePx + dirSin * phase;
-            const py = basePy - dirCos * phase;
-
-            // 4 corners of the bar quad (in pixels)
-            const ax = px - perpX * halfLen - dirSin * halfW;
-            const ay = py - perpY * halfLen + dirCos * halfW;
-            const bx = px + perpX * halfLen - dirSin * halfW;
-            const by = py + perpY * halfLen + dirCos * halfW;
-            const cx = px + perpX * halfLen + dirSin * halfW;
-            const cy = py + perpY * halfLen - dirCos * halfW;
-            const dx = px - perpX * halfLen + dirSin * halfW;
-            const dy = py - perpY * halfLen - dirCos * halfW;
-
-            // Convert to clip space
-            const cax = pxToClipX(ax), cay = pxToClipY(ay);
-            const cbx = pxToClipX(bx), cby = pxToClipY(by);
-            const ccx = pxToClipX(cx), ccy = pxToClipY(cy);
-            const cdx = pxToClipX(dx), cdy = pxToClipY(dy);
-
-            // 2 triangles = 6 vertices
-            verts.push(
-              cax, cay, cbx, cby, ccx, ccy,
-              cax, cay, ccx, ccy, cdx, cdy,
-            );
-            for (let j = 0; j < 6; j++) {
-              alphas.push(alpha);
-              colors.push(r, g, bv);
-            }
-          }
+        verts.push(
+          ax, ay, bx, by, ccx, ccy,
+          ax, ay, ccx, ccy, dx, dy,
+        );
+        for (let j = 0; j < 6; j++) {
+          alphas.push(alpha);
+          colors.push(r, g, bv);
         }
       }
 
@@ -296,6 +310,7 @@ export default function SwellOverlay(): React.ReactElement {
     return () => {
       cancelAnimationFrame(animRef.current);
       animRef.current = 0;
+      particlesRef.current = [];
       window.removeEventListener('resize', onResize);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
