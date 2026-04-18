@@ -1,105 +1,285 @@
-// apps/web/src/components/play/SwellOverlay.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
-import { getPointsAtTime } from '@/lib/weather/mockGrid';
-import { interpolateSwell } from '@/lib/weather/interpolate';
+import { mapInstance } from '@/components/play/MapCanvas';
+import { interpolateGfsWind } from '@/lib/weather/gfsParser';
+import type { WeatherGrid } from '@/lib/store/types';
 
-function swellColor(height: number): [number, number, number, number] {
-  // 0m = transparent, 1m = blue, 2m = cyan, 3m = yellow, 4m+ = red
-  if (height < 0.3) return [0, 0, 0, 0];
-  if (height < 1) return [40, 80, 160, 60];      // blue
-  if (height < 2) return [60, 160, 180, 80];      // cyan
-  if (height < 3) return [200, 180, 60, 80];      // yellow
-  if (height < 4) return [220, 140, 40, 90];      // orange
-  return [180, 50, 50, 100];                       // red
+/**
+ * Swell overlay — animated bars moving in the wave direction (Windy-style).
+ * WebGL TRIANGLES rendering, CPU simulation.
+ *
+ * Each bar is a short thick line oriented perpendicular to the swell direction,
+ * animating slowly forward. Color encodes significant wave height (SWH).
+ */
+
+const GRID_SPACING = 60;  // pixels between bars
+const BAR_LEN = 14;       // bar length in pixels
+const BAR_WIDTH = 2.5;    // bar thickness in pixels
+const ANIM_SPEED = 0.3;   // pixels per frame
+
+// SWH color ramp: height (m) → [r, g, b]
+const SWH_STOPS: [number, number, number, number][] = [
+  [0,   0.16, 0.35, 0.62],   // 0m — dark blue
+  [1,   0.24, 0.55, 0.78],   // 1m — blue
+  [2,   0.30, 0.72, 0.82],   // 2m — cyan
+  [3,   0.70, 0.75, 0.30],   // 3m — yellow-green
+  [4,   0.85, 0.60, 0.18],   // 4m — orange
+  [6,   0.75, 0.20, 0.15],   // 6m+ — red
+];
+
+function swellColor(swh: number): [number, number, number] {
+  if (swh <= SWH_STOPS[0]![0]) return [SWH_STOPS[0]![1], SWH_STOPS[0]![2], SWH_STOPS[0]![3]];
+  for (let i = 1; i < SWH_STOPS.length; i++) {
+    const prev = SWH_STOPS[i - 1]!;
+    const curr = SWH_STOPS[i]!;
+    if (swh <= curr[0]) {
+      const t = (swh - prev[0]) / (curr[0] - prev[0]);
+      return [
+        prev[1] + (curr[1] - prev[1]) * t,
+        prev[2] + (curr[2] - prev[2]) * t,
+        prev[3] + (curr[3] - prev[3]) * t,
+      ];
+    }
+  }
+  const last = SWH_STOPS[SWH_STOPS.length - 1]!;
+  return [last[1], last[2], last[3]];
 }
+
+// ─── Shaders ───────────────────────────────────────────
+
+const VERT = `
+attribute vec2 a_position;
+attribute float a_alpha;
+attribute vec3 a_color;
+varying float v_alpha;
+varying vec3 v_color;
+void main() {
+  v_alpha = a_alpha;
+  v_color = a_color;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}
+`;
+
+const FRAG = `
+precision mediump float;
+varying float v_alpha;
+varying vec3 v_color;
+void main() {
+  gl_FragColor = vec4(v_color, v_alpha);
+}
+`;
+
+function createShader(gl: WebGLRenderingContext, type: number, src: string): WebGLShader {
+  const s = gl.createShader(type)!;
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  return s;
+}
+
+function createProgram(gl: WebGLRenderingContext): WebGLProgram {
+  const p = gl.createProgram()!;
+  gl.attachShader(p, createShader(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(p, createShader(gl, gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(p);
+  return p;
+}
+
+// ─── Component ─────────────────────────────────────────
 
 export default function SwellOverlay(): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+  const phaseRef = useRef(0);
+
   const swellVisible = useGameStore((s) => s.layers.swell);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !swellVisible) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!canvas || !swellVisible) {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      return;
+    }
 
     const parent = canvas.parentElement;
     if (!parent) return;
     canvas.width = parent.clientWidth;
     canvas.height = parent.clientHeight;
 
-    const render = () => {
-      const store = useGameStore.getState();
-      const grid = store.weather.gridData;
-      if (!grid) return;
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: true });
+    if (!gl) return;
 
-      const time = store.timeline.currentTime.getTime();
-      const points = getPointsAtTime(grid, time);
+    const prog = createProgram(gl);
+    const aPos = gl.getAttribLocation(prog, 'a_position');
+    const aAlpha = gl.getAttribLocation(prog, 'a_alpha');
+    const aColor = gl.getAttribLocation(prog, 'a_color');
+    const posBuf = gl.createBuffer()!;
+    const alphaBuf = gl.createBuffer()!;
+    const colorBuf = gl.createBuffer()!;
+
+    gl.useProgram(prog);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const toRad = Math.PI / 180;
+    const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
+
+    const animate = () => {
+      const grid: WeatherGrid | null = useGameStore.getState().weather.gridData;
+      const map = mapInstance;
+      if (!grid || !map) { animRef.current = requestAnimationFrame(animate); return; }
+
       const { width, height } = canvas;
+      if (width !== parent.clientWidth || height !== parent.clientHeight) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
 
-      const mapState = store.map;
-      const [cLon, cLat] = mapState.center;
-      const span = 180 / Math.pow(2, mapState.zoom);
-      const lonMin = cLon - span;
-      const lonMax = cLon + span;
-      const latMin = cLat - span * 0.6;
-      const latMax = cLat + span * 0.6;
+      // Map bounds
+      const b = map.getBounds();
+      const west = b.getWest(), east = b.getEast();
+      const south = b.getSouth(), north = b.getNorth();
+      const lonRange = east - west;
+      const mercN = mercY(north);
+      const mercS = mercY(south);
+      const mercRange = mercN - mercS;
 
-      const imageData = ctx.createImageData(width, height);
-      const data = imageData.data;
-      const step = 4; // sample every 4 pixels for performance
+      // Pixel → clip space conversion
+      const pxToClipX = (px: number) => (px / width) * 2 - 1;
+      const pxToClipY = (py: number) => 1 - (py / height) * 2;
+      const lonToPx = (lon: number) => ((lon - west) / lonRange) * width;
+      const latToPx = (lat: number) => ((mercN - mercY(lat)) / mercRange) * height;
 
-      for (let py = 0; py < height; py += step) {
-        for (let px = 0; px < width; px += step) {
-          const lon = lonMin + (px / width) * (lonMax - lonMin);
-          const lat = latMax - (py / height) * (latMax - latMin);
-          const swell = interpolateSwell(points, lat, lon);
-          const [r, g, b, a] = swellColor(swell.height);
+      phaseRef.current += ANIM_SPEED;
 
-          // Fill step x step block
-          for (let dy = 0; dy < step && py + dy < height; dy++) {
-            for (let dx = 0; dx < step && px + dx < width; dx++) {
-              const idx = ((py + dy) * width + (px + dx)) * 4;
-              data[idx] = r;
-              data[idx + 1] = g;
-              data[idx + 2] = b;
-              data[idx + 3] = a;
-            }
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      const verts: number[] = [];
+      const alphas: number[] = [];
+      const colors: number[] = [];
+
+      // Generate grid of bars at regular pixel intervals
+      const cols = Math.ceil(width / GRID_SPACING) + 2;
+      const rows = Math.ceil(height / GRID_SPACING) + 2;
+
+      for (let row = -1; row < rows; row++) {
+        for (let col = -1; col < cols; col++) {
+          const basePx = col * GRID_SPACING;
+          const basePy = row * GRID_SPACING;
+
+          // Convert pixel to lat/lon for weather lookup
+          const lon = west + (basePx / width) * lonRange;
+          const latMerc = mercN - (basePy / height) * mercRange;
+          const lat = (2 * Math.atan(Math.exp(latMerc)) - Math.PI / 2) * (180 / Math.PI);
+
+          // Get swell data at this position
+          const wind = interpolateGfsWind(grid, lat, lon);
+          const point = grid.points[0]; // just need swellHeight/swellDir existence
+          if (!point) continue;
+
+          // Find nearest grid point for swell data
+          const gy = Math.floor((lat - grid.bounds.south) / grid.resolution);
+          const gx = Math.floor((lon - grid.bounds.west) / grid.resolution);
+          const gi = Math.max(0, Math.min(grid.rows - 1, gy)) * grid.cols + Math.max(0, Math.min(grid.cols - 1, gx));
+          const nearest = grid.points[gi];
+          if (!nearest) continue;
+
+          const swh = nearest.swellHeight;
+          const swellDirDeg = nearest.swellDir;
+
+          // Skip very low swell
+          if (swh < 0.3) continue;
+
+          // Swell direction: where waves come FROM → direction they travel TO
+          const dirRad = (swellDirDeg + 180) * toRad;
+
+          // Animate: offset along wave direction based on phase
+          const cycleLen = GRID_SPACING; // repeat every GRID_SPACING pixels
+          const offset = (phaseRef.current % cycleLen);
+          const px = basePx + Math.sin(dirRad) * offset;
+          const py = basePy - Math.cos(dirRad) * offset;
+
+          // Bar perpendicular to wave direction
+          const perpX = Math.cos(dirRad);
+          const perpY = Math.sin(dirRad);
+          const halfLen = BAR_LEN / 2;
+          const halfW = BAR_WIDTH / 2;
+
+          // 4 corners of the bar quad (in pixels)
+          const ax = px - perpX * halfLen - Math.sin(dirRad) * halfW;
+          const ay = py - perpY * halfLen + Math.cos(dirRad) * halfW;
+          const bx = px + perpX * halfLen - Math.sin(dirRad) * halfW;
+          const by = py + perpY * halfLen + Math.cos(dirRad) * halfW;
+          const cx = px + perpX * halfLen + Math.sin(dirRad) * halfW;
+          const cy = py + perpY * halfLen - Math.cos(dirRad) * halfW;
+          const dx = px - perpX * halfLen + Math.sin(dirRad) * halfW;
+          const dy = py - perpY * halfLen - Math.cos(dirRad) * halfW;
+
+          // Convert to clip space
+          const cax = pxToClipX(ax), cay = pxToClipY(ay);
+          const cbx = pxToClipX(bx), cby = pxToClipY(by);
+          const ccx = pxToClipX(cx), ccy = pxToClipY(cy);
+          const cdx = pxToClipX(dx), cdy = pxToClipY(dy);
+
+          // Color from SWH
+          const [r, g, bv] = swellColor(swh);
+          // Alpha: fade based on height (more visible for bigger swell)
+          const alpha = Math.min(0.7, 0.2 + swh * 0.12);
+
+          // 2 triangles = 6 vertices
+          verts.push(
+            cax, cay, cbx, cby, ccx, ccy,
+            cax, cay, ccx, ccy, cdx, cdy,
+          );
+          for (let i = 0; i < 6; i++) {
+            alphas.push(alpha);
+            colors.push(r, g, bv);
           }
         }
       }
 
-      ctx.putImageData(imageData, 0, 0);
+      if (verts.length > 0) {
+        gl.enableVertexAttribArray(aPos);
+        gl.enableVertexAttribArray(aAlpha);
+        gl.enableVertexAttribArray(aColor);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(alphas), gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.DYNAMIC_DRAW);
+        gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, verts.length / 2);
+      }
+
+      animRef.current = requestAnimationFrame(animate);
     };
 
-    render();
-
-    // Re-render when timeline or map changes
-    const unsub = useGameStore.subscribe((s, prev) => {
-      if (
-        s.timeline.currentTime !== prev.timeline.currentTime ||
-        s.map.center !== prev.map.center ||
-        s.map.zoom !== prev.map.zoom
-      ) {
-        render();
-      }
-    });
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    animRef.current = requestAnimationFrame(animate);
 
     const onResize = () => {
-      if (!parent) return;
       canvas.width = parent.clientWidth;
       canvas.height = parent.clientHeight;
-      render();
+      gl.viewport(0, 0, canvas.width, canvas.height);
     };
     window.addEventListener('resize', onResize);
 
     return () => {
-      unsub();
+      cancelAnimationFrame(animRef.current);
+      animRef.current = 0;
       window.removeEventListener('resize', onResize);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
     };
   }, [swellVisible]);
 
@@ -113,7 +293,6 @@ export default function SwellOverlay(): React.ReactElement {
         inset: 0,
         pointerEvents: 'none',
         zIndex: 2,
-        opacity: 0.6,
       }}
     />
   );
