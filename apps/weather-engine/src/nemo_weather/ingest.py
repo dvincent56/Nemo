@@ -113,6 +113,21 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
             push_hour_to_redis(run_ts, fh, u, v, swh, mwd_sin, mwd_cos, mwp, redis_client)
             ingested_hours.append(fh)
 
+            # Update meta after each hour so game-engine can start using data immediately
+            rows = target_lats.shape[0]
+            cols = target_lons.shape[0]
+            lat_min = min(float(target_lats[0]), float(target_lats[-1]))
+            lat_max = max(float(target_lats[0]), float(target_lats[-1]))
+            push_meta_to_redis(
+                run_ts=run_ts,
+                forecast_hours=list(ingested_hours),
+                bbox={"latMin": lat_min, "latMax": lat_max,
+                      "lonMin": float(target_lons[0]), "lonMax": float(target_lons[-1])},
+                resolution=0.25,
+                shape={"rows": rows, "cols": cols},
+                redis_client=redis_client,
+            )
+
             atmos_path.unlink(missing_ok=True)
             wave_path.unlink(missing_ok=True)
 
@@ -126,26 +141,7 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
         LOG.error("no forecast hours ingested for run %s, aborting", run.isoformat())
         return
 
-    rows = target_lats.shape[0] if target_lats is not None else 721
-    cols = target_lons.shape[0] if target_lons is not None else 1440
-    # GFS lats run north-to-south (90 → -90), ensure latMin < latMax
-    raw_lat_min = float(target_lats[0]) if target_lats is not None else -90.0
-    raw_lat_max = float(target_lats[-1]) if target_lats is not None else 90.0
-    lat_min = min(raw_lat_min, raw_lat_max)
-    lat_max = max(raw_lat_min, raw_lat_max)
-    lon_min = float(target_lons[0]) if target_lons is not None else 0.0
-    lon_max = float(target_lons[-1]) if target_lons is not None else 359.75
-
-    # Push metadata + notify game-engine via pub/sub
-    push_meta_to_redis(
-        run_ts=run_ts,
-        forecast_hours=ingested_hours,
-        bbox={"latMin": lat_min, "latMax": lat_max, "lonMin": lon_min, "lonMax": lon_max},
-        resolution=0.25,
-        shape={"rows": rows, "cols": cols},
-        redis_client=redis_client,
-    )
-
+    # Meta already pushed incrementally after each hour
     LOG.info("run %s complete: %d/%d forecast hours", run.isoformat(), len(ingested_hours), len(FORECAST_HOURS))
 
 
