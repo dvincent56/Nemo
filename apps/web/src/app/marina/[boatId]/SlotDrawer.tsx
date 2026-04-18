@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
-  fetchMyUpgrades, fetchCatalog, installUpgrade, uninstallUpgrade, buyAndInstall,
+  fetchMyUpgrades, fetchCatalog, installUpgrade, uninstallUpgrade, buyAndInstall, purchaseUpgrade,
   type CatalogItem, type InventoryItem, type UpgradeSlot, type BoatClass,
 } from '@/lib/marina-api';
 import { SLOT_LABEL, TIER_LABEL } from '../data';
@@ -13,7 +13,7 @@ interface SlotDrawerProps {
   slot: UpgradeSlot;
   boatId: string;
   boatClass: string;
-  /** Catalog id currently installed in this slot on this boat (used to hide it from the Buy tab). */
+  /** Catalog id currently installed in this slot on this boat (to show badge + Retirer action). */
   installedCatalogId?: string | undefined;
   onClose: () => void;
   onChanged: () => void;
@@ -21,6 +21,7 @@ interface SlotDrawerProps {
 
 export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
   const [tab, setTab] = useState<'install' | 'buy'>('install');
+  // All inventory items for this slot+class (compatible), including the one installed on this boat
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,25 +32,31 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     setLoading(true);
     Promise.all([fetchMyUpgrades(), fetchCatalog()])
       .then(([inv, cat]) => {
-        // Lookup table: catalogId -> compat[] (so we can filter inventory items
-        // by class compat, which isn't stored on the inventory row itself)
         const compatByCatalogId = new Map(cat.items.map((i) => [i.id, i.compat]));
         setInventory(inv.inventory.filter((i) => {
           if (i.slot !== slot) return false;
-          if (i.installedOn) return false;
           const compat = compatByCatalogId.get(i.upgradeCatalogId);
           return compat?.includes(boatClass as BoatClass) ?? false;
         }));
         setCatalog(cat.items.filter((i) =>
           i.slot === slot
           && i.compat.includes(boatClass as BoatClass)
-          && i.tier !== 'SERIE'
-          && i.id !== installedCatalogId,
+          && i.tier !== 'SERIE',
         ));
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [open, slot, boatId, boatClass, installedCatalogId]);
+  }, [open, slot, boatId, boatClass]);
+
+  // How many copies of each catalog id the player owns that are NOT installed
+  const availableByCatalogId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const i of inventory) {
+      if (i.installedOn) continue;
+      counts.set(i.upgradeCatalogId, (counts.get(i.upgradeCatalogId) ?? 0) + 1);
+    }
+    return counts;
+  }, [inventory]);
 
   if (!open) return null;
 
@@ -61,6 +68,18 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
       onClose();
     } catch (err) {
       console.error('install failed', err);
+      setBusy(null);
+    }
+  };
+
+  const handleUninstall = async () => {
+    setBusy('uninstall');
+    try {
+      await uninstallUpgrade(boatId, slot);
+      onChanged();
+      onClose();
+    } catch (err) {
+      console.error('uninstall failed', err);
       setBusy(null);
     }
   };
@@ -77,14 +96,16 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     }
   };
 
-  const handleRevertToSerie = async () => {
-    setBusy('serie');
+  const handlePurchaseOnly = async (itemId: string) => {
+    setBusy(itemId);
     try {
-      await uninstallUpgrade(boatId, slot);
+      await purchaseUpgrade(itemId);
       onChanged();
-      onClose();
+      // Keep drawer open, switch to install tab so the user sees the new inventory item
+      setTab('install');
+      setBusy(null);
     } catch (err) {
-      console.error('uninstall failed', err);
+      console.error('purchase failed', err);
       setBusy(null);
     }
   };
@@ -122,22 +143,48 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
               {inventory.length === 0 ? (
                 <p className={styles.empty}>Aucun item compatible en inventaire.</p>
               ) : (
-                inventory.map((item) => (
-                  <div key={item.id} className={styles.item}>
-                    <div className={styles.itemInfo}>
-                      <p className={styles.itemName}>{item.name}</p>
-                      <span className={styles.itemTier}>{TIER_LABEL[item.tier ?? 'SERIE']}</span>
+                inventory.map((item) => {
+                  const isInstalledHere =
+                    item.installedOn?.boatId === boatId && item.installedOn.slot === slot;
+                  const isInstalledElsewhere = !isInstalledHere && !!item.installedOn;
+                  return (
+                    <div key={item.id} className={styles.item}>
+                      <div className={styles.itemInfo}>
+                        <p className={styles.itemName}>{item.name}</p>
+                        <span className={styles.itemTier}>{TIER_LABEL[item.tier ?? 'SERIE']}</span>
+                        {isInstalledHere && (
+                          <span className={styles.badgeInstalled}>Installé sur ce bateau</span>
+                        )}
+                        {isInstalledElsewhere && (
+                          <span className={styles.badgeElsewhere}>Installé sur un autre bateau</span>
+                        )}
+                      </div>
+                      {isInstalledHere ? (
+                        <button
+                          type="button"
+                          className={styles.itemBtn}
+                          onClick={handleUninstall}
+                          disabled={busy !== null}
+                        >
+                          Retirer
+                        </button>
+                      ) : isInstalledElsewhere ? (
+                        <button type="button" className={styles.itemBtn} disabled>
+                          Indisponible
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.itemBtn}
+                          onClick={() => handleInstall(item.id)}
+                          disabled={busy !== null}
+                        >
+                          Installer
+                        </button>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      className={styles.itemBtn}
-                      onClick={() => handleInstall(item.id)}
-                      disabled={busy !== null}
-                    >
-                      Installer
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </>
           ) : (
@@ -145,45 +192,71 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
               {catalog.length === 0 ? (
                 <p className={styles.empty}>Aucun item disponible à l'achat.</p>
               ) : (
-                catalog.map((item) => (
-                  <div key={item.id} className={styles.item}>
-                    <div className={styles.itemInfo}>
-                      <p className={styles.itemName}>{item.name}</p>
-                      <p className={styles.itemDesc}>{item.profile}</p>
-                      <span className={styles.itemTier}>{TIER_LABEL[item.tier]}</span>
+                catalog.map((item) => {
+                  const isInstalledOnThisBoat = item.id === installedCatalogId;
+                  const copiesAvailable = availableByCatalogId.get(item.id) ?? 0;
+                  return (
+                    <div key={item.id} className={styles.item}>
+                      <div className={styles.itemInfo}>
+                        <p className={styles.itemName}>{item.name}</p>
+                        <p className={styles.itemDesc}>{item.profile}</p>
+                        <span className={styles.itemTier}>{TIER_LABEL[item.tier]}</span>
+                        {isInstalledOnThisBoat && (
+                          <span className={styles.badgeInstalled}>Installé sur ce bateau</span>
+                        )}
+                        {!isInstalledOnThisBoat && copiesAvailable > 0 && (
+                          <span className={styles.badgeOwned}>
+                            {copiesAvailable === 1 ? '1 en inventaire' : `${copiesAvailable} en inventaire`}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.itemAction}>
+                        <span className={styles.itemCost}>
+                          {item.cost !== null ? `${item.cost.toLocaleString('fr-FR')} cr.` : 'Verrouillé'}
+                        </span>
+                        {item.cost !== null && (
+                          isInstalledOnThisBoat || copiesAvailable > 0 ? (
+                            <button
+                              type="button"
+                              className={styles.itemBtnGhost}
+                              onClick={() => handlePurchaseOnly(item.id)}
+                              disabled={busy !== null}
+                              title="Ajouter une copie à ton inventaire"
+                            >
+                              Acheter (stock)
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={styles.itemBtn}
+                              onClick={() => handleBuyAndInstall(item.id)}
+                              disabled={busy !== null}
+                            >
+                              Acheter et installer
+                            </button>
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className={styles.itemAction}>
-                      <span className={styles.itemCost}>
-                        {item.cost !== null ? `${item.cost.toLocaleString('fr-FR')} cr.` : 'Verrouillé'}
-                      </span>
-                      {item.cost !== null && (
-                        <button
-                          type="button"
-                          className={styles.itemBtn}
-                          onClick={() => handleBuyAndInstall(item.id)}
-                          disabled={busy !== null}
-                        >
-                          Acheter et installer
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </>
           )}
         </div>
 
-        <footer className={styles.footer}>
-          <button
-            type="button"
-            className={styles.revertBtn}
-            onClick={handleRevertToSerie}
-            disabled={busy !== null}
-          >
-            Revenir au stock (Série)
-          </button>
-        </footer>
+        {installedCatalogId && (
+          <footer className={styles.footer}>
+            <button
+              type="button"
+              className={styles.revertBtn}
+              onClick={handleUninstall}
+              disabled={busy !== null}
+            >
+              Revenir au stock (Série)
+            </button>
+          </footer>
+        )}
       </aside>
     </div>
   );

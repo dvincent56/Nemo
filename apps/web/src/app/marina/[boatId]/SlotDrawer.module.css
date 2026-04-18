@@ -106,6 +106,19 @@
   text-transform: uppercase;
   color: var(--t3);
 }
+.badgeInstalled, .badgeOwned, .badgeElsewhere {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: var(--r-sm);
+}
+.badgeInstalled { background: var(--gold-soft); color: var(--gold-dark); }
+.badgeOwned { background: var(--navy-soft); color: var(--navy); }
+.badgeElsewhere { background: rgba(158, 42, 42, 0.1); color: var(--danger); }
 .itemAction {
   display: flex;
   flex-direction: column;
@@ -135,6 +148,22 @@
   color: var(--paper);
 }
 .itemBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.itemBtnGhost {
+  padding: 0.375rem 0.75rem;
+  border: 1px dashed var(--navy-line);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--t2);
+  transition: border-color 150ms, color 150ms;
+}
+.itemBtnGhost:hover:not(:disabled) { border-color: var(--navy); color: var(--navy); }
+.itemBtnGhost:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .footer {
   padding: 1rem 1.5rem;
