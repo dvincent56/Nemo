@@ -124,12 +124,23 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
 
           {/* Action bar */}
           <div className={styles.heroActions}>
-            <Link
-              href={`/marina/${boat.id}/customize` as Parameters<typeof Link>[0]['href']}
-              className={`${styles.btn} ${styles.btnPrimary}`}
-            >
-              Personnaliser →
-            </Link>
+            {inRace ? (
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                disabled
+                title="Impossible pendant la course"
+              >
+                Personnaliser →
+              </button>
+            ) : (
+              <Link
+                href={`/marina/${boat.id}/customize` as Parameters<typeof Link>[0]['href']}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+              >
+                Personnaliser →
+              </Link>
+            )}
             <button
               type="button"
               className={`${styles.btn} ${styles.btnSecondary}`}
