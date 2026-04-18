@@ -1,7 +1,5 @@
-import { notFound } from 'next/navigation';
 import { SiteShell } from '@/components/ui/SiteShell';
-import { getBoatDetail } from '../../data';
-import CustomizeView from './CustomizeView';
+import CustomizeLoader from './CustomizeLoader';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,11 +9,9 @@ export default async function MarinaBoatCustomizePage({
   params: Promise<{ boatId: string }>;
 }): Promise<React.ReactElement> {
   const { boatId } = await params;
-  const boat = getBoatDetail(boatId);
-  if (!boat) notFound();
   return (
     <SiteShell>
-      <CustomizeView boat={boat} />
+      <CustomizeLoader boatId={boatId} />
     </SiteShell>
   );
 }
