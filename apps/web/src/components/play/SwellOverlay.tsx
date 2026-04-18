@@ -196,8 +196,8 @@ export default function SwellOverlay(): React.ReactElement {
           // Skip only negligible swell (land / very sheltered)
           if (swh < 0.05) continue;
 
-          // Swell direction: where waves come FROM → direction they travel TO
-          const dirRad = (swellDirDeg + 180) * toRad;
+          // Swell direction: GFS wvdir is already the direction waves travel TO
+          const dirRad = swellDirDeg * toRad;
 
           // Animate: offset along wave direction based on phase
           const cycleLen = GRID_SPACING; // repeat every GRID_SPACING pixels
