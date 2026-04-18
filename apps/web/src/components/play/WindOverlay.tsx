@@ -275,7 +275,7 @@ export default function WindOverlay(): React.ReactElement {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     const screenArea = canvas.width * canvas.height;
-    const particleCount = Math.min(MAX_PARTICLES, Math.max(800, Math.round(screenArea / 260)));
+    const particleCount = Math.min(MAX_PARTICLES, Math.max(2000, Math.round(screenArea / 180)));
     const bounds = useGameStore.getState().map.bounds;
     const pa = createParticles(particleCount, bounds);
 
@@ -324,8 +324,11 @@ export default function WindOverlay(): React.ReactElement {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      const maxWidthX = 1.5 / width * 2;
-      const maxWidthY = 1.5 / height * 2;
+      // Scale line width by devicePixelRatio so particles are visible on high-DPI mobile
+      const dpr = window.devicePixelRatio || 1;
+      const lineWidth = 1.5 * dpr;
+      const maxWidthX = lineWidth / width * 2;
+      const maxWidthY = lineWidth / height * 2;
 
       let vi = 0; // vert index
       let ai = 0; // alpha index
