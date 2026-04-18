@@ -108,7 +108,7 @@ def parse_wave_from_atmos(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarra
         return None
 
     swh_names = ("swh", "shww", "htsgw")
-    mwd_names = ("mwd", "mdww", "mwsdir")
+    mwd_names = ("mwd", "dirpw", "swdir", "mdww", "mwsdir", "wvdir")
     mwp_names = ("mwp", "mpww", "perpw", "mpts")
 
     swh_data = None
