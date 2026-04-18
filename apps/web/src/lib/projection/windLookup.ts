@@ -90,9 +90,20 @@ export function createWindLookup(
    */
   return function getWeatherAt(lat: number, lon: number, timeMs: number): WeatherAtPoint | null {
     if (timestamps.length === 0) return null;
-    if (timeMs >= timestamps[timestamps.length - 1]!) return null;
 
-    // Find bracketing timestamps
+    // Single snapshot: use it for the whole projection horizon.
+    if (timestamps.length === 1) {
+      return sampleLayer(0, lat, lon);
+    }
+
+    // Beyond the last timestamp: extrapolate with the last layer (keeps
+    // projection alive past GRIB coverage, at the cost of accuracy).
+    const lastTs = timestamps[timestamps.length - 1]!;
+    if (timeMs >= lastTs) {
+      return sampleLayer(timestamps.length - 1, lat, lon);
+    }
+
+    // Before the first timestamp: use the first layer.
     if (timeMs <= timestamps[0]!) {
       return sampleLayer(0, lat, lon);
     }
