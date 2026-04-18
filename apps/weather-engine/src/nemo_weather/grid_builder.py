@@ -101,23 +101,41 @@ def parse_atmos_grib(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray, np
 def parse_wave_grib(
     path: Path, target_lats: np.ndarray, target_lons: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    ds = xr.open_dataset(path, engine="cfgrib")
-    wave_lats = ds["latitude"].values
-    wave_lons = ds["longitude"].values
-    # GFS Wave GRIB2 variable names vary — try common aliases
-    swh_key = next((k for k in ("swh", "shts", "htsgw") if k in ds), None)
-    mwd_key = next((k for k in ("mwd", "swdir", "dirpw", "wvdir") if k in ds), None)
-    mwp_key = next((k for k in ("perpw", "mpts", "mpww") if k in ds), None)
-    if not all((swh_key, mwd_key, mwp_key)):
-        avail = list(ds.data_vars)
+    # GFS Wave GRIB2 contains multiple "datasets" (different grid extents per variable).
+    # cfgrib splits them — we need to search across all datasets for our variables.
+    import cfgrib
+    datasets = cfgrib.open_datasets(str(path))
+
+    swh_names = ("swh", "shts", "htsgw")
+    mwd_names = ("mwd", "swdir", "dirpw", "wvdir")
+    mwp_names = ("perpw", "mpts", "mpww")
+
+    def find_var(ds_list: list, names: tuple[str, ...]) -> tuple[xr.Dataset, str]:
+        for ds in ds_list:
+            for name in names:
+                if name in ds:
+                    return ds, name
+        avail = []
+        for ds in ds_list:
+            avail.extend(list(ds.data_vars))
+        raise KeyError(f"none of {names} found, available: {avail}")
+
+    ds_swh, swh_key = find_var(datasets, swh_names)
+    ds_mwd, mwd_key = find_var(datasets, mwd_names)
+    ds_mwp, mwp_key = find_var(datasets, mwp_names)
+
+    def extract(ds: xr.Dataset, key: str) -> np.ndarray:
+        wave_lats = ds["latitude"].values
+        wave_lons = ds["longitude"].values
+        LOG.info("wave var %s: lats=[%.1f..%.1f] lons=[%.1f..%.1f] shape=%s",
+                 key, float(wave_lats[0]), float(wave_lats[-1]),
+                 float(wave_lons[0]), float(wave_lons[-1]), ds[key].shape)
+        return reinterpolate_wave(ds[key].values, wave_lats, wave_lons, target_lats, target_lons)
+
+    swh = extract(ds_swh, swh_key)
+    mwd = extract(ds_mwd, mwd_key)
+    mwp = extract(ds_mwp, mwp_key)
+
+    for ds in datasets:
         ds.close()
-        raise KeyError(f"missing wave variables, available: {avail}")
-    LOG.info("wave variables: swh=%s, mwd=%s, mwp=%s  lats=[%.1f..%.1f] lons=[%.1f..%.1f]",
-             swh_key, mwd_key, mwp_key,
-             float(wave_lats[0]), float(wave_lats[-1]),
-             float(wave_lons[0]), float(wave_lons[-1]))
-    swh = reinterpolate_wave(ds[swh_key].values, wave_lats, wave_lons, target_lats, target_lons)
-    mwd = reinterpolate_wave(ds[mwd_key].values, wave_lats, wave_lons, target_lats, target_lons)
-    mwp = reinterpolate_wave(ds[mwp_key].values, wave_lats, wave_lons, target_lats, target_lons)
-    ds.close()
     return swh, mwd, mwp
