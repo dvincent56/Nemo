@@ -5,23 +5,24 @@ import type { LayerName } from '@/lib/store';
 import { useGfsStatus } from '@/hooks/useGfsStatus';
 import styles from './LayersWidget.module.css';
 
-function fmtRunTime(ts: number): string {
+/** Format run timestamp into GFS run label: "Run 06z · 18/04" */
+function fmtRunLabel(ts: number): string {
   const d = new Date(ts * 1000);
   const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `Run ${hh}z · ${dd}/${mm}`;
 }
 
-function fmtAgo(ts: number): string {
-  const diffH = Math.round((Date.now() / 1000 - ts) / 3600);
-  if (diffH < 1) return 'il y a < 1h';
-  return `il y a ${diffH}h`;
-}
-
-function fmtIn(ts: number): string {
-  const diffH = Math.round((ts - Date.now() / 1000) / 3600);
-  if (diffH <= 0) return 'imminent';
-  return `dans ~${diffH}h`;
+/** Format countdown: "dans ~2h15" or "dans ~45min" */
+function fmtCountdown(targetTs: number): string {
+  const diffSec = targetTs - Math.floor(Date.now() / 1000);
+  if (diffSec <= 0) return 'imminent';
+  const h = Math.floor(diffSec / 3600);
+  const m = Math.floor((diffSec % 3600) / 60);
+  if (h === 0) return `~${m}min`;
+  if (m === 0) return `~${h}h`;
+  return `~${h}h${String(m).padStart(2, '0')}`;
 }
 
 const LAYERS: { id: LayerName; icon: string; label: string }[] = [
@@ -46,21 +47,23 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
 
   return (
     <div className={styles.widget}>
-      {gfs && (
+      {gfs && gfs.next > 0 && (
         <div className={styles.gfsStatus}>
+          <span className={styles.gfsLine}>
+            GFS : {fmtRunLabel(gfs.run)}
+          </span>
           {gfs.status === 1 ? (
-            <span className={styles.gfsLine}>Météo GFS : mise à jour en cours...</span>
+            <span className={`${styles.gfsLine} ${styles.gfsUpdating}`}>
+              Mise à jour en cours…
+            </span>
+          ) : gfs.status === 2 ? (
+            <span className={styles.gfsLine}>
+              Prochaine maj : en attente NOAA
+            </span>
           ) : (
-            <>
-              <span className={styles.gfsLine}>
-                Météo GFS : maj {fmtRunTime(gfs.run)} ({fmtAgo(gfs.run)})
-              </span>
-              <span className={styles.gfsLine}>
-                {gfs.status === 2
-                  ? 'Prochaine mise à jour en attente'
-                  : `Prochaine mise à jour ${fmtIn(gfs.next)}`}
-              </span>
-            </>
+            <span className={styles.gfsLine}>
+              Prochaine maj : {fmtCountdown(gfs.next)}
+            </span>
           )}
         </div>
       )}
