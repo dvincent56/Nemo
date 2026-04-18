@@ -44,8 +44,17 @@ importers:
       '@turf/boolean-point-in-polygon':
         specifier: ^7.1.0
         version: 7.3.4
+      '@turf/distance':
+        specifier: ^7.3.4
+        version: 7.3.4
       '@turf/helpers':
         specifier: ^7.1.0
+        version: 7.3.4
+      '@turf/line-intersect':
+        specifier: ^7.3.4
+        version: 7.3.4
+      '@turf/nearest-point-on-line':
+        specifier: ^7.3.4
         version: 7.3.4
       drizzle-orm:
         specifier: ^0.36.4
@@ -99,6 +108,9 @@ importers:
       country-state-city:
         specifier: ^3.2.1
         version: 3.2.1
+      lucide-react:
+        specifier: ^1.8.0
+        version: 1.8.0(react@19.2.4)
       maplibre-gl:
         specifier: ^5.0.0
         version: 5.18.0
@@ -920,14 +932,23 @@ packages:
   '@turf/boolean-point-in-polygon@7.3.4':
     resolution: {integrity: sha512-v/4hfyY90Vz9cDgs2GwjQf+Lft8o7mNCLJOTz/iv8SHAIgMMX0czEoIaNVOJr7tBqPqwin1CGwsncrkf5C9n8Q==}
 
+  '@turf/distance@7.3.4':
+    resolution: {integrity: sha512-9drWgd46uHPPyzgrcRQLgSvdS/SjVlQ6ZIBoRQagS5P2kSjUbcOXHIMeOSPwfxwlKhEtobLyr+IiR2ns1TfF8w==}
+
   '@turf/helpers@7.3.4':
     resolution: {integrity: sha512-U/S5qyqgx3WTvg4twaH0WxF3EixoTCfDsmk98g1E3/5e2YKp7JKYZdz0vivsS5/UZLJeZDEElOSFH4pUgp+l7g==}
 
   '@turf/invariant@7.3.4':
     resolution: {integrity: sha512-88Eo4va4rce9sNZs6XiMJowWkikM3cS2TBhaCKlU+GFHdNf8PFEpiU42VDU8q5tOF6/fu21Rvlke5odgOGW4AQ==}
 
+  '@turf/line-intersect@7.3.4':
+    resolution: {integrity: sha512-XygbTvHa6A+v6l2ZKYtS8AAWxwmrPxKxfBbdH75uED1JvdytSLWYTKGlcU3soxd9sYb4x/g9sDvRIVyU6Lucrg==}
+
   '@turf/meta@7.3.4':
     resolution: {integrity: sha512-tlmw9/Hs1p2n0uoHVm1w3ugw1I6L8jv9YZrcdQa4SH5FX5UY0ATrKeIvfA55FlL//PGuYppJp+eyg/0eb4goqw==}
+
+  '@turf/nearest-point-on-line@7.3.4':
+    resolution: {integrity: sha512-DQrP3lRju83rIXFN68tUEpc7ki/eRwdwBkK2CTT4RAcyCxbcH2NGJPQv8dYiww/Ar77u1WLVn+aINXZH904dWw==}
 
   '@types/geojson@7946.0.16':
     resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
@@ -1219,6 +1240,11 @@ packages:
   lodash.isarguments@3.1.0:
     resolution: {integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==}
 
+  lucide-react@1.8.0:
+    resolution: {integrity: sha512-WuvlsjngSk7TnTBJ1hsCy3ql9V9VOdcPkd3PKcSmM34vJD8KG6molxz7m7zbYFgICwsanQWmJ13JlYs4Zp7Arw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   maplibre-gl@5.18.0:
     resolution: {integrity: sha512-UtWxPBpHuFvEkM+5FVfcFG9ZKEWZQI6+PZkvLErr8Zs5ux+O7/KQ3JjSUvAfOlMeMgd/77qlHpOw0yHL7JU5cw==}
     engines: {node: '>=16.14.0', npm: '>=8.1.0'}
@@ -1425,8 +1451,14 @@ packages:
   supercluster@8.0.1:
     resolution: {integrity: sha512-IiOea5kJ9iqzD2t7QJq/cREyLHTtSmUT6gQsweojg9WH2sYJqZK9SswTu6jrscO6D1G5v5vYZ9ru/eq85lXeZQ==}
 
+  sweepline-intersections@1.5.0:
+    resolution: {integrity: sha512-AoVmx72QHpKtItPu72TzFL+kcYjd67BPLDoR0LarIk+xyaRg+pDTMFXndIEvZf9xEKnJv6JdhgRMnocoG0D3AQ==}
+
   thread-stream@3.1.0:
     resolution: {integrity: sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A==}
+
+  tinyqueue@2.0.3:
+    resolution: {integrity: sha512-ppJZNDuKGgxzkHihX8v9v9G5f+18gzaTfrukGrq6ueg0lmH4nqVnA2IPG0AEH3jKEk2GRJCUhDoqpoiw3PHLBA==}
 
   tinyqueue@3.0.0:
     resolution: {integrity: sha512-gRa9gwYU3ECmQYv3lslts5hxuIa90veaEcxDYuu3QGOIAEM2mOZkVHp48ANJuu1CURtRdHKUBY5Lm1tHV+sD4g==}
@@ -1989,6 +2021,13 @@ snapshots:
       point-in-polygon-hao: 1.2.4
       tslib: 2.8.1
 
+  '@turf/distance@7.3.4':
+    dependencies:
+      '@turf/helpers': 7.3.4
+      '@turf/invariant': 7.3.4
+      '@types/geojson': 7946.0.16
+      tslib: 2.8.1
+
   '@turf/helpers@7.3.4':
     dependencies:
       '@types/geojson': 7946.0.16
@@ -2000,9 +2039,25 @@ snapshots:
       '@types/geojson': 7946.0.16
       tslib: 2.8.1
 
+  '@turf/line-intersect@7.3.4':
+    dependencies:
+      '@turf/helpers': 7.3.4
+      '@types/geojson': 7946.0.16
+      sweepline-intersections: 1.5.0
+      tslib: 2.8.1
+
   '@turf/meta@7.3.4':
     dependencies:
       '@turf/helpers': 7.3.4
+      '@types/geojson': 7946.0.16
+      tslib: 2.8.1
+
+  '@turf/nearest-point-on-line@7.3.4':
+    dependencies:
+      '@turf/distance': 7.3.4
+      '@turf/helpers': 7.3.4
+      '@turf/invariant': 7.3.4
+      '@turf/meta': 7.3.4
       '@types/geojson': 7946.0.16
       tslib: 2.8.1
 
@@ -2283,6 +2338,10 @@ snapshots:
 
   lodash.isarguments@3.1.0: {}
 
+  lucide-react@1.8.0(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+
   maplibre-gl@5.18.0:
     dependencies:
       '@mapbox/geojson-rewind': 0.5.2
@@ -2504,9 +2563,15 @@ snapshots:
     dependencies:
       kdbush: 4.0.2
 
+  sweepline-intersections@1.5.0:
+    dependencies:
+      tinyqueue: 2.0.3
+
   thread-stream@3.1.0:
     dependencies:
       real-require: 0.2.0
+
+  tinyqueue@2.0.3: {}
 
   tinyqueue@3.0.0: {}
 

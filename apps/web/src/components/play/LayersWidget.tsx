@@ -28,6 +28,7 @@ function fmtCountdown(targetTs: number): string {
 const LAYERS: { id: LayerName; icon: string; label: string }[] = [
   { id: 'wind', icon: '≋', label: 'Vent' },
   { id: 'swell', icon: '∿', label: 'Houle' },
+  { id: 'coastline', icon: '⌇', label: 'Trait de côte' },
   { id: 'opponents', icon: '⛵', label: 'Adversaires' },
   { id: 'zones', icon: '⊘', label: 'Zones' },
 ];

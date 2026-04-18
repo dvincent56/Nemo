@@ -18,6 +18,7 @@ import { applyZones, getZonesAtPosition, type IndexedZone } from './zones.js';
 import type { WeatherProvider } from '../weather/provider.js';
 import { aggregateEffects, type BoatLoadout } from './loadout.js';
 import { bandFor } from './bands.js';
+import { segmentCrossesCoast, coastRiskLevel, isCoastlineLoaded } from './coastline.js';
 
 export interface BoatRuntime {
   boat: Boat;
@@ -41,6 +42,8 @@ export interface TickOutcome {
   overlapFactor: number;
   zoneAlerts: { zoneId: string; type: string; reason: string }[];
   zoneCleared: string[];
+  coastRisk: 0 | 1 | 2 | 3;
+  grounded: boolean;
 }
 
 export interface TickDeps {
@@ -80,14 +83,15 @@ export function runTick(
   const aggEffects = aggregateEffects(runtime.loadout.items, { tws: weather.tws });
 
   // --- État voiles : intégrer les ordres SAIL/MODE du tick AVANT advance ---
+  // Include "late" orders (effectiveTs < tickStartMs) — they arrived between ticks
   const twaAtStart = computeTWA(runtime.segmentState.heading, weather.twd);
   let sailState = runtime.sailState;
   for (const env of runtime.orderHistory) {
-    if (env.effectiveTs < tickStartMs || env.effectiveTs >= tickEndMs) continue;
+    if (env.effectiveTs >= tickEndMs) continue;
     if (env.order.type === 'SAIL') {
       const target = env.order.value['sail'];
       if (typeof target === 'string' && target !== sailState.active && !sailState.pending) {
-        sailState = requestManualSailChange(sailState, target as SailId, aggEffects);
+        sailState = requestManualSailChange(sailState, target as SailId, env.effectiveTs, aggEffects);
       }
     } else if (env.order.type === 'MODE') {
       const auto = env.order.value['auto'];
@@ -100,17 +104,18 @@ export function runTick(
     twaAtStart,
     weather.tws,
     tickDurationSec,
+    tickEndMs,
     aggEffects,
   );
-  const transitionFactor = transitionSpeedFactor(sailState, aggEffects);
+  const transitionFactor = transitionSpeedFactor(sailState, tickStartMs, aggEffects);
 
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
   if (runtime.prevTwa !== null) {
-    const detected = detectManeuver(runtime.prevTwa, twaAtStart, boat.boatClass, tickStartUnix, aggEffects);
+    const detected = detectManeuver(runtime.prevTwa, twaAtStart, boat.boatClass, tickStartMs, aggEffects);
     if (detected) maneuver = detected;
   }
-  const manEval = maneuverSpeedFactor(maneuver, tickStartUnix);
+  const manEval = maneuverSpeedFactor(maneuver, tickStartMs);
   if (manEval.expired) maneuver = null;
 
   const overlapFactor = computeOverlapFactor(
@@ -183,6 +188,25 @@ export function runTick(
     if (!zoneHitsAcrossTick.has(prev)) clearedAlerts.push(prev);
   }
 
+  // --- Coastline grounding detection ---
+  let grounded = false;
+  let groundedPosition: Position | null = null;
+  if (isCoastlineLoaded()) {
+    const intermediatePoints = GameBalance.grounding.detectionIntermediatePoints;
+    for (const seg of segments) {
+      if (segmentCrossesCoast(seg.startPosition, seg.endPosition, intermediatePoints)) {
+        grounded = true;
+        groundedPosition = seg.startPosition; // boat stops at pre-crossing position
+        break;
+      }
+    }
+  }
+
+  // If grounded, override final position: boat stays at last safe position
+  if (grounded && groundedPosition) {
+    finalState.position = groundedPosition;
+  }
+
   // --- Position finale : dernier segment ---
   const endPosition: Position = finalState.position;
   const endHeading = finalState.heading;
@@ -195,14 +219,37 @@ export function runTick(
     tickDurationSec,
     aggEffects,
   );
-  const newCondition = applyWear(runtime.condition, wearDelta);
+  let newCondition = applyWear(runtime.condition, wearDelta);
+
+  // Grounding condition damage (scaled by groundingLossMul from loadout)
+  if (grounded) {
+    const gc = GameBalance.grounding;
+    const baseLoss = gc.conditionLossMin +
+      Math.random() * (gc.conditionLossMax - gc.conditionLossMin);
+    const lossMul = aggEffects.groundingLossMul;
+    const loss = baseLoss * lossMul;
+    newCondition = {
+      hull: Math.max(0, newCondition.hull - loss * 2),
+      rig: Math.max(0, newCondition.rig - loss),
+      sails: Math.max(0, newCondition.sails - loss * 0.5),
+      electronics: newCondition.electronics,
+    };
+  }
 
   const lastSeg = segments[segments.length - 1];
-  const displayBsp = lastSeg?.bsp ?? 0;
+  const displayBsp = grounded ? 0 : (lastSeg?.bsp ?? 0);
   const displayTwa = lastSeg?.twa ?? twaAtStart;
+  const risk = isCoastlineLoaded() ? coastRiskLevel(endPosition.lat, endPosition.lon) : 0 as const;
+
+  // Purge orders that fell within this tick's window (already processed).
+  // Orders with effectiveTs before tickStartMs are "late" — process them once
+  // at the START of the next tick, then purge. So only purge orders strictly
+  // within [tickStartMs, tickEndMs).
+  const remainingOrders = runtime.orderHistory.filter((o) => o.effectiveTs >= tickEndMs);
 
   const updatedRuntime: BoatRuntime = {
     ...runtime,
+    orderHistory: remainingOrders,
     boat: {
       ...boat,
       position: endPosition,
@@ -238,5 +285,7 @@ export function runTick(
     overlapFactor,
     zoneAlerts: newAlerts,
     zoneCleared: clearedAlerts,
+    coastRisk: risk,
+    grounded,
   };
 }

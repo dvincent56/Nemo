@@ -1,7 +1,7 @@
 'use client';
 import type { LayersState, LayerName, GameStore } from './types';
 
-export const INITIAL_LAYERS: LayersState = { wind: true, swell: false, opponents: true, zones: true };
+export const INITIAL_LAYERS: LayersState = { wind: true, swell: false, opponents: true, zones: true, coastline: false };
 
 export function createLayersSlice(set: (fn: (s: GameStore) => Partial<GameStore>) => void) {
   return {

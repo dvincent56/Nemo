@@ -63,13 +63,14 @@ export interface TimelineState {
   playbackSpeed: PlaybackSpeed;
 }
 
-export type LayerName = 'wind' | 'swell' | 'opponents' | 'zones';
+export type LayerName = 'wind' | 'swell' | 'opponents' | 'zones' | 'coastline';
 
 export interface LayersState {
   wind: boolean;
   swell: boolean;
   opponents: boolean;
   zones: boolean;
+  coastline: boolean;
 }
 
 export type PanelName = 'ranking' | 'sails' | 'programming';

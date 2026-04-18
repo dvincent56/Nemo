@@ -1,4 +1,5 @@
 import { parentPort, workerData } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
 import pino from 'pino';
 import type { OrderEnvelope, Polar } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
@@ -6,6 +7,7 @@ import { loadPolar } from '@nemo/polar-lib';
 import { runTick, type BoatRuntime, type TickOutcome } from './tick.js';
 import { buildZoneIndex, type IndexedZone } from './zones.js';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider } from '../weather/provider.js';
+import { loadCoastline } from './coastline.js';
 
 interface WorkerInit {
   runtimes: BoatRuntime[];
@@ -49,6 +51,16 @@ async function main() {
   const polar: Polar = await loadPolar('IMOCA60');
   const weather: WeatherProvider = await createWeather();
   const zones: IndexedZone[] = buildZoneIndex([]);
+
+  // Load coastline for grounding detection (same file as frontend)
+  const coastlinePath = process.env.NEMO_COASTLINE_PATH
+    ?? fileURLToPath(new URL('../../../../apps/web/public/data/coastline.geojson', import.meta.url));
+  try {
+    loadCoastline(coastlinePath);
+    log.info('coastline loaded for grounding detection');
+  } catch (err) {
+    log.warn({ err }, 'coastline not loaded — grounding detection disabled');
+  }
 
   let runtimes: BoatRuntime[] = init.runtimes ?? [];
   let seq = 0;

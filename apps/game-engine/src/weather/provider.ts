@@ -143,6 +143,7 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
       return Math.min(1, Math.max(0, (Date.now() - state.blendStartMs) / BLEND_DURATION_MS));
     },
     get blendStatus(): WeatherStatus {
+      maybePromote();
       if (state.nextRun) return 'blending';
       // Check if next run is overdue (6h cycle + 5h threshold)
       const expectedNext = state.currentRun.runTs * 1000 + 6 * 3_600_000;

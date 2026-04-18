@@ -13,24 +13,23 @@ import type { WeatherGrid } from '@/lib/store/types';
  * fade in → stay visible → fade out over their lifetime, then respawn.
  */
 
-const MAX_PARTICLES = 6000;
-const BAR_LEN = 7;
-const BAR_WIDTH = 2;
-const DRIFT_SPEED = 0.01; // degrees per frame — very gentle drift
+const MAX_PARTICLES = 8000;
+const BAR_LEN = 8;
+const BAR_WIDTH = 1.5;
+const DRIFT_SPEED = 0.005; // degrees per frame — very gentle drift
 const MIN_LIFE = 120;     // frames
 const MAX_LIFE = 220;     // frames
 const FADE_FRAMES = 25;   // frames for fade in/out
 
-// SWH color ramp
-// Cyan → magenta ramp (high contrast between low and high swell)
+// SWH color ramp — warm tones that contrast with the dark navy map
 const SWH_STOPS: [number, number, number, number][] = [
-  [0,    0.30, 0.75, 0.82],   // 0m — teal
-  [0.5,  0.25, 0.82, 0.90],   // 0.5m — cyan
-  [1.0,  0.35, 0.70, 0.92],   // 1m — sky blue
-  [2.0,  0.55, 0.45, 0.88],   // 2m — blue-violet
-  [3.0,  0.72, 0.30, 0.78],   // 3m — violet
-  [4.5,  0.85, 0.22, 0.60],   // 4.5m — magenta
-  [6,    0.92, 0.18, 0.40],   // 6m+ — hot pink
+  [0,    0.70, 0.80, 0.85],   // 0m — pale ice
+  [0.5,  0.55, 0.85, 0.80],   // 0.5m — light cyan
+  [1.0,  0.40, 0.85, 0.70],   // 1m — seafoam
+  [2.0,  0.65, 0.55, 0.80],   // 2m — lavender
+  [3.0,  0.80, 0.40, 0.70],   // 3m — orchid
+  [4.5,  0.90, 0.28, 0.55],   // 4.5m — magenta
+  [6,    0.95, 0.22, 0.35],   // 6m+ — hot pink
 ];
 
 function swellColor(swh: number): [number, number, number] {
@@ -160,7 +159,7 @@ export default function SwellOverlay(): React.ReactElement {
 
     // Scale particle count to screen
     const screenArea = canvas.width * canvas.height;
-    const particleCount = Math.min(MAX_PARTICLES, Math.max(1500, Math.round(screenArea / 200)));
+    const particleCount = Math.min(MAX_PARTICLES, Math.max(3000, Math.round(screenArea / 120)));
 
     // Initialize particles
     const mapBounds = useGameStore.getState().map.bounds;
@@ -245,7 +244,7 @@ export default function SwellOverlay(): React.ReactElement {
         // Fade envelope: quick fade in → plateau → quick fade out
         const fadeIn = Math.min(1, p.age / FADE_FRAMES);
         const fadeOut = Math.min(1, (p.maxAge - p.age) / FADE_FRAMES);
-        const baseAlpha = Math.min(0.7, 0.30 + swh * 0.08);
+        const baseAlpha = Math.min(0.90, 0.45 + swh * 0.10);
         const alpha = baseAlpha * fadeIn * fadeOut;
         if (alpha < 0.02) continue;
 
@@ -260,6 +259,10 @@ export default function SwellOverlay(): React.ReactElement {
         const perpX = Math.cos(dirRad);
         const perpY = -Math.sin(dirRad); // flip Y for screen coords
 
+        // Length scales with swell height: 1m→1x, 5m→1.8x
+        const swhScale = 1 + Math.min(1, swh / 5) * 0.8;
+        const scaledHalfLen = halfLen * swhScale;
+
         // Width varies with period: short period (≤6s) = 3px, long period (≥14s) = 1px
         const periodWidth = period > 0
           ? BAR_WIDTH * (1 + Math.max(0, (10 - period) / 4))  // 6s→2x, 10s→1x, 14s→0.5x
@@ -267,8 +270,8 @@ export default function SwellOverlay(): React.ReactElement {
         const halfW = Math.max(0.5, periodWidth) / 2;
 
         // Bar corners in clip space
-        const lx = perpX * halfLen * pxClipX;
-        const ly = perpY * halfLen * pxClipY;
+        const lx = perpX * scaledHalfLen * pxClipX;
+        const ly = perpY * scaledHalfLen * pxClipY;
         const wx = Math.sin(dirRad) * halfW * pxClipX;
         const wy = Math.cos(dirRad) * halfW * pxClipY;
 

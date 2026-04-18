@@ -38,6 +38,12 @@ export interface MyBoatFullUpdate extends FullUpdate {
   twaColor: 0 | 1 | 2 | 3;
   driveMode: 0 | 1 | 2;
   coastRisk: 0 | 1 | 2 | 3;
+  transitionStartMs: number;   // timestamp when sail change started (0 = none)
+  transitionEndMs: number;     // timestamp when sail change ends (0 = none)
+  sailAuto: boolean;           // auto mode active
+  maneuverKind: 0 | 1 | 2;    // 0 = none, 1 = tack, 2 = gybe
+  maneuverStartMs: number;     // timestamp when tack/gybe started (0 = none)
+  maneuverEndMs: number;       // timestamp when tack/gybe ends (0 = none)
 }
 
 export type BroadcastMsg = FullUpdate | DeltaUpdate | GoneUpdate | MyBoatFullUpdate;
@@ -86,11 +92,18 @@ export function buildFullUpdate(
   const driveMode: MyBoatFullUpdate['driveMode'] =
     runtime.boat.driveMode === 'CONSERVATIVE' ? 0 :
     runtime.boat.driveMode === 'NORMAL' ? 1 : 2;
+  const sailState = runtime.sailState;
   return {
     ...base,
     overlapFactor: outcome.overlapFactor,
     twaColor,
     driveMode,
-    coastRisk: 0,
+    coastRisk: outcome.coastRisk,
+    transitionStartMs: sailState.transitionStartMs,
+    transitionEndMs: sailState.transitionEndMs,
+    sailAuto: sailState.autoMode,
+    maneuverKind: runtime.maneuver ? (runtime.maneuver.kind === 'TACK' ? 1 : 2) : 0,
+    maneuverStartMs: runtime.maneuver?.startMs ?? 0,
+    maneuverEndMs: runtime.maneuver?.endMs ?? 0,
   };
 }
