@@ -141,7 +141,7 @@ export function buildSegments(input: BuildSegmentsInput): {
 
     // TWA courant du segment depuis heading et TWD météo.
     const twa = computeTWA(state.heading, weather.twd);
-    const baseBsp = getPolarSpeed(polar, twa, weather.tws);
+    const baseBsp = getPolarSpeed(polar, state.sail, twa, weather.tws);
     const perSegmentFactor = perSegmentBspModulator ? perSegmentBspModulator(state.position) : 1.0;
     const bsp = baseBsp * bspMultiplier * perSegmentFactor;
 
