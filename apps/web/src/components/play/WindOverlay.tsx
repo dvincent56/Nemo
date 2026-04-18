@@ -15,11 +15,11 @@ import type { WeatherGrid } from '@/lib/store/types';
  */
 
 const MAX_PARTICLES = 8000;
-const COMET_LEN_PX = 28;   // comet length in CSS pixels
-const COMET_HEAD_PX = 2.0;  // head width in CSS pixels
-const COMET_TAIL_PX = 0.3;  // tail width in CSS pixels
-const COMET_SEGMENTS = 4;   // segments per comet
-const SPEED_PX_PER_FRAME = 0.4; // particle drift in CSS pixels per frame (constant)
+const COMET_LEN_PX = 40;   // comet length in CSS pixels
+const COMET_HEAD_PX = 2.2;  // head width in CSS pixels
+const COMET_TAIL_PX = 0.2;  // tail width in CSS pixels
+const COMET_SEGMENTS = 5;   // segments per comet
+const SPEED_PX_PER_FRAME = 0.12; // particle drift in CSS pixels per frame (slow base)
 
 // ─── Wind interpolation cache ─────────────────────────
 
@@ -319,7 +319,7 @@ export default function WindOverlay(): React.ReactElement {
         pa.dirRad[i] = dir;
 
         // Advance particle position
-        const speedBoost = wind.tws < 5 ? 0.8 : wind.tws < 15 ? 1.2 : 1.8;
+        const speedBoost = wind.tws < 5 ? 0.5 : wind.tws < 15 ? 1.0 : 2.0;
         pa.lon[i] = lon + Math.sin(dir) * degPerFrame * speedBoost;
         pa.lat[i] = lat + Math.cos(dir) * degPerFrame * speedBoost;
         pa.age[i]!++;
