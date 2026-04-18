@@ -48,10 +48,14 @@ function pickForecastSlots(grid: WeatherGridUVMeta, timeUnix: number): {
  * Samples U/V components and converts back to TWS/TWD at read time.
  */
 export function getForecastAt(grid: WeatherGridUV, lat: number, lon: number, timeUnix: number): WeatherPoint {
-  const { latMin } = grid.bbox;
+  const { latMin, lonMin } = grid.bbox;
   const res = grid.resolution;
   const rowF = (lat - latMin) / res;
-  const colF = ((lon + 180) % 360) / res;
+  // Normalize lon to grid range (handles both -180..180 and 0..360 grids)
+  let normLon = lon;
+  if (normLon < lonMin) normLon += 360;
+  if (normLon > lonMin + grid.shape.cols * res) normLon -= 360;
+  const colF = (normLon - lonMin) / res;
 
   const row0 = Math.max(0, Math.min(grid.shape.rows - 1, Math.floor(rowF)));
   const row1 = Math.max(0, Math.min(grid.shape.rows - 1, row0 + 1));

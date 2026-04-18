@@ -114,10 +114,13 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
 
     rows = target_lats.shape[0] if target_lats is not None else 721
     cols = target_lons.shape[0] if target_lons is not None else 1440
-    lat_min = float(target_lats[0]) if target_lats is not None else -90.0
-    lat_max = float(target_lats[-1]) if target_lats is not None else 90.0
-    lon_min = float(target_lons[0]) if target_lons is not None else -180.0
-    lon_max = float(target_lons[-1]) if target_lons is not None else 180.0
+    # GFS lats run north-to-south (90 → -90), ensure latMin < latMax
+    raw_lat_min = float(target_lats[0]) if target_lats is not None else -90.0
+    raw_lat_max = float(target_lats[-1]) if target_lats is not None else 90.0
+    lat_min = min(raw_lat_min, raw_lat_max)
+    lat_max = max(raw_lat_min, raw_lat_max)
+    lon_min = float(target_lons[0]) if target_lons is not None else 0.0
+    lon_max = float(target_lons[-1]) if target_lons is not None else 359.75
 
     # Push metadata + notify game-engine via pub/sub
     push_meta_to_redis(

@@ -90,6 +90,11 @@ def parse_atmos_grib(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray, np
     lats = ds["latitude"].values
     lons = ds["longitude"].values
     ds.close()
+    # GFS stores north-to-south; flip to south-to-north for game-engine
+    if lats[0] > lats[-1]:
+        lats = lats[::-1]
+        u10 = u10[::-1, :]
+        v10 = v10[::-1, :]
     return u10, v10, lats, lons
 
 
