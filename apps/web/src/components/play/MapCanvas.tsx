@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
@@ -88,7 +88,8 @@ let _syncingFromMap = false;
 export default function MapCanvas(): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  useProjectionLine(mapRef.current);
+  const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
+  useProjectionLine(readyMap);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -282,6 +283,9 @@ export default function MapCanvas(): React.ReactElement {
         </svg>`
       ], { type: 'image/svg+xml' });
       boatImg.src = URL.createObjectURL(svgBlob);
+
+      // Signal that map + all sources/layers are ready — triggers useProjectionLine
+      setReadyMap(map);
     });
 
     map.on('dragstart', () => {

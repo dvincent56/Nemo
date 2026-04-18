@@ -136,7 +136,15 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
       if (e.data.type === 'result') {
+        console.log('[Projection] result:', {
+          points: e.data.result.points.length,
+          timeMarkers: e.data.result.timeMarkers.length,
+          maneuverMarkers: e.data.result.maneuverMarkers.length,
+          bspMax: e.data.result.bspMax,
+        });
         updateMapSources(e.data.result);
+      } else if (e.data.type === 'error') {
+        console.error('[Projection] worker error:', e.data.message);
       }
     };
 
@@ -156,8 +164,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     fetch(`/data/polars/${file}`)
       .then((r) => r.json())
-      .then((polar) => { polarRef.current = polar; })
-      .catch(() => {});
+      .then((polar) => {
+        polarRef.current = polar;
+        console.log('[Projection] polar loaded:', boatClass);
+      })
+      .catch((err) => console.error('[Projection] polar fetch failed:', err));
   }, []);
 
   // Trigger recalculation
@@ -168,8 +179,19 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const state = useGameStore.getState();
       const { hud, sail, weather, prog } = state;
       const grid = weather.gridData;
-      if (!grid || (!hud.lat && !hud.lon)) return;
-      if (!polarRef.current) return;
+      if (!grid) {
+        console.log('[Projection] skip: no weather grid');
+        return;
+      }
+      if (!hud.lat && !hud.lon) {
+        console.log('[Projection] skip: no boat position');
+        return;
+      }
+      if (!polarRef.current) {
+        console.log('[Projection] skip: polar not loaded yet');
+        return;
+      }
+      console.log('[Projection] computing...', { lat: hud.lat, lon: hud.lon, hdg: hud.hdg, grid_points: grid.points.length });
 
       const windData = packWindData(grid);
 
