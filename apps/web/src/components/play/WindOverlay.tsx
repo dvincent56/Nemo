@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
 import { mapInstance } from '@/components/play/MapCanvas';
 import { parseGfsWind, interpolateGfsWind } from '@/lib/weather/gfsParser';
+import { decodeWeatherGrid } from '@/lib/weather/binaryDecoder';
+import { decodedGridToWeatherGrid } from '@/lib/weather/gridFromBinary';
 import type { WeatherGrid } from '@/lib/store/types';
 
 /**
@@ -128,18 +130,33 @@ export default function WindOverlay(): React.ReactElement {
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
-  // Load GFS data — store in ref for animation loop AND in zustand store for other components
+  // Load GFS data — try live REST endpoint first, fallback to static wind.json
   useEffect(() => {
     if (gridRef.current) return;
-    fetch('/data/wind.json')
-      .then((r) => r.json())
-      .then((j) => {
-        const grid = parseGfsWind(j);
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3001';
+
+    fetch(`${apiBase}/api/v1/weather/grid?hours=0`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        return r.arrayBuffer();
+      })
+      .then((buf) => {
+        const decoded = decodeWeatherGrid(buf);
+        const grid = decodedGridToWeatherGrid(decoded);
         gridRef.current = grid;
-        // Share with store so CursorTooltip and other components can access it
         useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
       })
-      .catch((e) => console.warn('Wind data load failed:', e));
+      .catch(() => {
+        // Fallback to static wind.json (fixture mode)
+        fetch('/data/wind.json')
+          .then((r) => r.json())
+          .then((j) => {
+            const grid = parseGfsWind(j);
+            gridRef.current = grid;
+            useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+          })
+          .catch((e) => console.warn('Wind data load failed:', e));
+      });
   }, []);
 
   useEffect(() => {
