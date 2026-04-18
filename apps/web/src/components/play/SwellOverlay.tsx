@@ -15,7 +15,7 @@ import type { WeatherGrid } from '@/lib/store/types';
 
 const MAX_PARTICLES = 6000;
 const BAR_LEN = 7;
-const BAR_WIDTH = 1.2;
+const BAR_WIDTH = 1.5;
 const DRIFT_SPEED = 0.02; // degrees per frame — very gentle drift
 const MIN_LIFE = 120;     // frames
 const MAX_LIFE = 220;     // frames
