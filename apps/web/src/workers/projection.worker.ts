@@ -100,6 +100,13 @@ function simulate(input: ProjectionInput): ProjectionResult {
     return { points: [], timeMarkers: [], maneuverMarkers: [], bspMax };
   }
   const initTwa = twaLock ?? computeTWA(hdg, initWeather.twd);
+  console.log('[Worker] init', {
+    lat, lon, hdg, twaLock,
+    initTwd: initWeather.twd,
+    initTws: initWeather.tws,
+    initTwa,
+    initBsp: computeBsp(polar, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
+  });
   points.push({
     lat, lon,
     timestamp: currentMs,
@@ -281,9 +288,18 @@ function simulate(input: ProjectionInput): ProjectionResult {
       nextTimeMarkerIdx < TIME_MARKER_HOURS.length &&
       elapsedHours >= TIME_MARKER_HOURS[nextTimeMarkerIdx]!
     ) {
+      const h = TIME_MARKER_HOURS[nextTimeMarkerIdx]!;
+      console.log(`[Worker] ${h}h marker`, {
+        lat: lat.toFixed(3),
+        lon: lon.toFixed(3),
+        hdg: Math.round(hdg),
+        bsp: bspAtNew.toFixed(2),
+        tws: weatherAtNew.tws.toFixed(1),
+        twd: Math.round(weatherAtNew.twd),
+      });
       timeMarkers.push({
         index: points.length - 1,
-        label: `${TIME_MARKER_HOURS[nextTimeMarkerIdx]!}h`,
+        label: `${h}h`,
       });
       nextTimeMarkerIdx++;
     }

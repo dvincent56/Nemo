@@ -195,11 +195,20 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       // Preview overrides actual state (compass drag, sail hover, TWA lock)
       const effectiveHdg = preview.hdg ?? hud.hdg;
       const effectiveSail = preview.sail ?? sail.currentSail;
-      const effectiveTwaLock = preview.twaLocked ? preview.lockedTwa : null;
+      let effectiveTwaLock = preview.twaLocked ? preview.lockedTwa : null;
+
+      // Dragging compass while TWA locked: interpret the new heading as
+      // a new locked TWA (relative to current wind direction).
+      if (preview.twaLocked && preview.hdg !== null) {
+        effectiveTwaLock = ((preview.hdg - hud.twd + 540) % 360) - 180;
+        if (effectiveTwaLock === -180) effectiveTwaLock = 180;
+      }
 
       const nowMs = Date.now();
       console.log('[Projection] computing...', {
-        lat: hud.lat, lon: hud.lon, hdg: effectiveHdg,
+        lat: hud.lat, lon: hud.lon,
+        hdg: effectiveHdg,
+        twd: hud.twd,
         twaLock: effectiveTwaLock,
         sail: effectiveSail,
         grid_timestamps: grid.timestamps.length,
