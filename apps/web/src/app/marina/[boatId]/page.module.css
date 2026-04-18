@@ -679,3 +679,35 @@
 @media (pointer: coarse) {
   .btn, .variantCta, .cat { min-height: 44px; }
 }
+
+/* ── Btn secondary ─────────────────────────────────────────── */
+.btnSecondary {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--navy-rule);
+}
+.btnSecondary:hover { background: var(--navy-soft); border-color: var(--navy); }
+.btnSecondary:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.btnDanger:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* --- Slot grid (replaces old .cats + .variants) --- */
+.slotsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  padding: 0 var(--page-px, 1.5rem);
+}
+
+.loading {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--t3);
+  text-align: center;
+  padding: 4rem 0;
+}

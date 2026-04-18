@@ -1,21 +1,16 @@
-import { notFound } from 'next/navigation';
 import { SiteShell } from '@/components/ui/SiteShell';
-import { getBoatDetail } from '../data';
 import BoatDetailView from './BoatDetailView';
 
-export const dynamic = 'force-dynamic';
-
-export default async function MarinaBoatPage({
+export default async function BoatDetailPage({
   params,
 }: {
   params: Promise<{ boatId: string }>;
 }): Promise<React.ReactElement> {
   const { boatId } = await params;
-  const boat = getBoatDetail(boatId);
-  if (!boat) notFound();
+
   return (
     <SiteShell>
-      <BoatDetailView boat={boat} />
+      <BoatDetailView boatId={boatId} />
     </SiteShell>
   );
 }
