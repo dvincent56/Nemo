@@ -106,8 +106,8 @@ def parse_wave_grib(
     wave_lons = ds["longitude"].values
     # GFS Wave GRIB2 variable names vary — try common aliases
     swh_key = next((k for k in ("swh", "shts", "htsgw") if k in ds), None)
-    mwd_key = next((k for k in ("mwd", "wvdir", "dirpw") if k in ds), None)
-    mwp_key = next((k for k in ("perpw", "mpww", "mpts") if k in ds), None)
+    mwd_key = next((k for k in ("mwd", "swdir", "dirpw", "wvdir") if k in ds), None)
+    mwp_key = next((k for k in ("perpw", "mpts", "mpww") if k in ds), None)
     if not all((swh_key, mwd_key, mwp_key)):
         avail = list(ds.data_vars)
         ds.close()
