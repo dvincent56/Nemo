@@ -46,9 +46,6 @@ services:
       dockerfile: Dockerfile
     environment:
       - REDIS_URL=redis://redis:6379
-      - WEATHER_FALLBACK_DIR=/data/weather-fallback
-    volumes:
-      - weather-fallback:/data/weather-fallback
     tmpfs:
       - /tmp/nemo-weather:size=2G
     depends_on:
@@ -59,4 +56,3 @@ services:
 volumes:
   pgdata:
   redisdata:
-  weather-fallback:
