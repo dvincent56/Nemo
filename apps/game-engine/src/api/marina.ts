@@ -141,6 +141,63 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
   });
 
   // =========================================================================
+  // GET /api/v1/players/me/boats — AUTHENTICATED
+  // =========================================================================
+
+  app.get('/api/v1/players/me/boats', { preHandler: [enforceAuth] }, async (req, reply) => {
+    const auth = req.auth!;
+    const db = getDb();
+    if (!db) { reply.code(503); return { error: 'database unavailable' }; }
+
+    const player = await findPlayerBySub(db, auth.sub);
+    if (!player) { reply.code(404); return { error: 'player not found' }; }
+
+    const playerBoats = await db.select().from(boats)
+      .where(and(eq(boats.ownerId, player.id), eq(boats.status, 'ACTIVE')));
+
+    return { boats: playerBoats, credits: player.credits };
+  });
+
+  // =========================================================================
+  // GET /api/v1/boats/:id — AUTHENTICATED
+  // =========================================================================
+
+  app.get<{ Params: { id: string } }>(
+    '/api/v1/boats/:id',
+    { preHandler: [enforceAuth] },
+    async (req, reply) => {
+      const auth = req.auth!;
+      const db = getDb();
+      if (!db) { reply.code(503); return { error: 'database unavailable' }; }
+
+      const boatId = req.params.id;
+      if (!isValidUuid(boatId)) { reply.code(400); return { error: 'invalid boat id' }; }
+
+      const player = await findPlayerBySub(db, auth.sub);
+      if (!player) { reply.code(404); return { error: 'player not found' }; }
+
+      const boat = await findOwnedBoat(db, boatId, player.id);
+      if (!boat) { reply.code(404); return { error: 'boat not found' }; }
+
+      const installedUpgrades = await loadInstalledWithCatalog(db, boatId);
+
+      return {
+        boat,
+        installedUpgrades: installedUpgrades.map((u) => ({
+          slot: u.slot,
+          playerUpgradeId: u.playerUpgradeId,
+          catalogId: u.catalogId,
+          name: u.catalogItem?.name ?? u.catalogId,
+          tier: u.catalogItem?.tier ?? 'SERIE',
+          profile: u.catalogItem?.profile ?? '',
+          effects: u.catalogItem?.effects ?? null,
+        })),
+        credits: player.credits,
+      };
+    },
+  );
+
+  // =========================================================================
   // POST /api/v1/boats — create a new hull (free, cap 5 per class)
   // =========================================================================
 
