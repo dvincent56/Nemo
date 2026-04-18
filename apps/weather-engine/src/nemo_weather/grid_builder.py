@@ -98,48 +98,60 @@ def parse_atmos_grib(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray, np
     return u10, v10, lats, lons
 
 
-def parse_wave_grib(
-    path: Path, target_lats: np.ndarray, target_lons: np.ndarray
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # GFS Wave GRIB2 contains multiple "datasets" (different grid extents per variable).
-    # cfgrib splits them — we need to search across all datasets for our variables.
+def parse_wave_from_atmos(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """Try to extract wave variables from the atmospheric GRIB (0.25° global).
+    GFS pgrb2.0p25 files include wave data at the surface level."""
     import cfgrib
-    datasets = cfgrib.open_datasets(str(path))
+    try:
+        datasets = cfgrib.open_datasets(str(path))
+    except Exception:
+        return None
 
-    swh_names = ("swh", "shts", "htsgw")
-    mwd_names = ("mwd", "swdir", "dirpw", "wvdir")
-    mwp_names = ("perpw", "mpts", "mpww")
+    swh_names = ("swh", "shww", "htsgw")
+    mwd_names = ("mwd", "mdww", "mwsdir")
+    mwp_names = ("mwp", "mpww", "perpw", "mpts")
 
-    def find_var(ds_list: list, names: tuple[str, ...]) -> tuple[xr.Dataset, str]:
-        for ds in ds_list:
-            for name in names:
-                if name in ds:
-                    return ds, name
-        avail = []
-        for ds in ds_list:
-            avail.extend(list(ds.data_vars))
-        raise KeyError(f"none of {names} found, available: {avail}")
+    swh_data = None
+    mwd_data = None
+    mwp_data = None
 
-    ds_swh, swh_key = find_var(datasets, swh_names)
-    ds_mwd, mwd_key = find_var(datasets, mwd_names)
-    ds_mwp, mwp_key = find_var(datasets, mwp_names)
-
-    def extract(ds: xr.Dataset, key: str) -> np.ndarray:
-        wave_lats = ds["latitude"].values
-        wave_lons = ds["longitude"].values
-        data = ds[key].values
-        # Squeeze extra dimensions (time, step) — we want 2D (lat, lon)
-        while data.ndim > 2:
-            data = data[0]
-        LOG.info("wave var %s: lats=[%.1f..%.1f] lons=[%.1f..%.1f] shape=%s",
-                 key, float(wave_lats[0]), float(wave_lats[-1]),
-                 float(wave_lons[0]), float(wave_lons[-1]), data.shape)
-        return reinterpolate_wave(data, wave_lats, wave_lons, target_lats, target_lons)
-
-    swh = extract(ds_swh, swh_key)
-    mwd = extract(ds_mwd, mwd_key)
-    mwp = extract(ds_mwp, mwp_key)
+    for ds in datasets:
+        for name in swh_names:
+            if name in ds and swh_data is None:
+                data = ds[name].values
+                while data.ndim > 2:
+                    data = data[0]
+                lats = ds["latitude"].values
+                if lats[0] > lats[-1]:
+                    data = data[::-1, :]
+                swh_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
+                LOG.info("wave swh from atmos: %s shape=%s", name, swh_data.shape)
+        for name in mwd_names:
+            if name in ds and mwd_data is None:
+                data = ds[name].values
+                while data.ndim > 2:
+                    data = data[0]
+                lats = ds["latitude"].values
+                if lats[0] > lats[-1]:
+                    data = data[::-1, :]
+                mwd_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
+                LOG.info("wave mwd from atmos: %s shape=%s", name, mwd_data.shape)
+        for name in mwp_names:
+            if name in ds and mwp_data is None:
+                data = ds[name].values
+                while data.ndim > 2:
+                    data = data[0]
+                lats = ds["latitude"].values
+                if lats[0] > lats[-1]:
+                    data = data[::-1, :]
+                mwp_data = np.nan_to_num(data, nan=0.0).astype(np.float32)
+                LOG.info("wave mwp from atmos: %s shape=%s", name, mwp_data.shape)
 
     for ds in datasets:
         ds.close()
-    return swh, mwd, mwp
+
+    if swh_data is not None and mwd_data is not None and mwp_data is not None:
+        return swh_data, mwd_data, mwp_data
+    LOG.warning("wave variables not found in atmos GRIB (swh=%s, mwd=%s, mwp=%s)",
+                swh_data is not None, mwd_data is not None, mwp_data is not None)
+    return None

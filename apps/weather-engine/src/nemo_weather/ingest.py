@@ -18,7 +18,7 @@ import requests
 from .grid_builder import (
     decompose_mwd,
     parse_atmos_grib,
-    parse_wave_grib,
+    parse_wave_from_atmos,
     uv_to_components,
 )
 from .persistence import push_hour_to_redis, push_meta_to_redis
@@ -30,7 +30,7 @@ NOAA_ATMOS = (
     "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/atmos/gfs.t{hh}z.pgrb2.0p25.f{fff}"
 )
-NOAA_WAVE = (
+NOAA_WAVE = (  # Kept as fallback but unused — wave data extracted from atmos 0.25°
     "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/wave/gridded/gfswave.t{hh}z.global.0p16.f{fff}.grib2"
 )
@@ -89,18 +89,24 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
 
             u, v = uv_to_components(u10, v10)
 
-            wave_url = NOAA_WAVE.format(ymd=ymd, hh=hh, fff=fff)
-            wave_path = TMP_DIR / f"wave_{ymd}_{hh}_f{fff}.grib2"
-            fetch_grib(wave_url, wave_path)
-            swh, mwd_raw, mwp = parse_wave_grib(wave_path, target_lats, target_lons)
-            mwd_sin, mwd_cos = decompose_mwd(mwd_raw)
+            # Extract wave data from the same atmos GRIB (0.25° global coverage)
+            wave_result = parse_wave_from_atmos(atmos_path)
+            if wave_result is not None:
+                swh, mwd_raw, mwp = wave_result
+                mwd_sin, mwd_cos = decompose_mwd(mwd_raw)
+            else:
+                # No wave data in this forecast hour — fill with zeros
+                shape = u.shape
+                swh = np.zeros(shape, dtype=np.float32)
+                mwd_sin = np.zeros(shape, dtype=np.float32)
+                mwd_cos = np.ones(shape, dtype=np.float32)
+                mwp = np.zeros(shape, dtype=np.float32)
 
             # Push this hour to Redis immediately (~33 MB per key)
             push_hour_to_redis(run_ts, fh, u, v, swh, mwd_sin, mwd_cos, mwp, redis_client)
             ingested_hours.append(fh)
 
             atmos_path.unlink(missing_ok=True)
-            wave_path.unlink(missing_ok=True)
 
             LOG.info("ingested f%s (%d/%d)", fff, len(ingested_hours), len(FORECAST_HOURS))
 
