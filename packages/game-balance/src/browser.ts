@@ -6,18 +6,18 @@
 import {
   UpgradesBlockZ, CompletionBonusZ, type UpgradesBlock, type UpgradeItem,
   type UpgradeSlot, type UpgradeTier, type SlotAvailability,
-} from './upgrade-catalog.schema.js';
+} from './upgrade-catalog.schema';
 export type { UpgradesBlock, UpgradeItem, UpgradeSlot, UpgradeTier, SlotAvailability };
 export type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
   RewardsConfig, MaintenanceEntry, ManeuversConfig,
   GroundingConfig, EconomyConfig,
-} from './types.js';
+} from './types';
 
 import type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
   RewardsConfig, ManeuversConfig, GroundingConfig, EconomyConfig,
-} from './types.js';
+} from './types';
 
 class GameBalanceClass {
   private data: GameBalanceConfig | null = null;
