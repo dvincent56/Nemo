@@ -60,7 +60,9 @@ export const players = pgTable('players', {
   avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  check('credits_non_negative', sql`${t.credits} >= 0`),
+]);
 
 export const races = pgTable('races', {
   // Slug public (ex. "r-vendee-2026") — utilisé dans les URLs /play/:raceId.
