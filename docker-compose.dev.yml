@@ -29,7 +29,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "6gb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6379:6379"
     volumes:
@@ -49,6 +49,8 @@ services:
       - WEATHER_FALLBACK_DIR=/data/weather-fallback
     volumes:
       - weather-fallback:/data/weather-fallback
+    tmpfs:
+      - /tmp/nemo-weather:size=2G
     depends_on:
       redis:
         condition: service_healthy
