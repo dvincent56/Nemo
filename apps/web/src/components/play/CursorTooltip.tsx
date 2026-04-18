@@ -13,6 +13,8 @@ interface CursorData {
   lon: number;
   tws: number;
   twd: number;
+  swellHeight: number;
+  swellDir: number;
 }
 
 function formatDMS(decimal: number, isLat: boolean): string {
@@ -30,6 +32,8 @@ export default function CursorTooltip(): React.ReactElement | null {
   const [mapReady, setMapReady] = useState(!!mapInstance);
   const rafRef = useRef(0);
   const lastEvent = useRef<{ mapX: number; mapY: number; clientX: number; clientY: number } | null>(null);
+  const swellOn = useGameStore((s) => s.layers.swell);
+  const windOn = useGameStore((s) => s.layers.wind);
 
   // Wait for mapInstance to be available (dynamic import)
   useEffect(() => {
@@ -52,10 +56,20 @@ export default function CursorTooltip(): React.ReactElement | null {
 
     let tws = 0;
     let twd = 0;
+    let swellHeight = 0;
+    let swellDir = 0;
     if (grid) {
       const wind = interpolateGfsWind(grid, lngLat.lat, lngLat.lng);
       tws = wind.tws;
       twd = wind.twd;
+      // Find nearest grid point for swell
+      const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lngLat.lat - grid.bounds.south) / grid.resolution)));
+      const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((lngLat.lng - grid.bounds.west) / grid.resolution)));
+      const nearest = grid.points[gy * grid.cols + gx];
+      if (nearest) {
+        swellHeight = nearest.swellHeight;
+        swellDir = nearest.swellDir;
+      }
     }
 
     setData({
@@ -65,6 +79,8 @@ export default function CursorTooltip(): React.ReactElement | null {
       lon: lngLat.lng,
       tws,
       twd,
+      swellHeight,
+      swellDir,
     });
   }, []);
 
@@ -122,14 +138,35 @@ export default function CursorTooltip(): React.ReactElement | null {
           {formatDMS(data.lat, true)} {formatDMS(data.lon, false)}
         </span>
       </div>
-      <div className={styles.row}>
-        <span className={styles.label}>Dir</span>
-        <span className={styles.value}>{Math.round(data.twd)}°</span>
-      </div>
-      <div className={styles.row}>
-        <span className={styles.label}>TWS</span>
-        <span className={styles.value}>{data.tws.toFixed(1)} kn</span>
-      </div>
+      {swellOn && !windOn ? (
+        <>
+          <div className={styles.row}>
+            <span className={styles.label}>Dir</span>
+            <span className={styles.value}>{Math.round(data.swellDir)}°</span>
+          </div>
+          <div className={styles.row}>
+            <span className={styles.label}>SWH</span>
+            <span className={styles.value}>{data.swellHeight.toFixed(1)} m</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={styles.row}>
+            <span className={styles.label}>Dir</span>
+            <span className={styles.value}>{Math.round(data.twd)}°</span>
+          </div>
+          <div className={styles.row}>
+            <span className={styles.label}>TWS</span>
+            <span className={styles.value}>{data.tws.toFixed(1)} kn</span>
+          </div>
+          {swellOn && (
+            <div className={styles.row}>
+              <span className={styles.label}>SWH</span>
+              <span className={styles.value}>{data.swellHeight.toFixed(1)} m</span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
