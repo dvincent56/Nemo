@@ -52,32 +52,18 @@
   "sails": {
     "transitionPenalty": 0.7,
     "transitionTimes": {
-      "GEN_SPI": 300,
-      "SPI_GEN": 300,
-      "C0_HG": 240,
-      "HG_C0": 240,
-      "JIB_GEN": 120,
-      "GEN_JIB": 120,
-      "C0_SPI": 360,
-      "SPI_C0": 360,
-      "LW_JIB": 180,
-      "JIB_LW": 180
-    },
-    "overlapDegrees": {
-      "LW": 8,
-      "JIB": 8,
-      "GEN": 10,
-      "C0": 10,
-      "HG": 8,
-      "SPI": 8
-    },
-    "definitions": {
-      "LW": { "twaMin": 0, "twaMax": 60 },
-      "JIB": { "twaMin": 30, "twaMax": 100 },
-      "GEN": { "twaMin": 50, "twaMax": 140 },
-      "C0": { "twaMin": 60, "twaMax": 150 },
-      "HG": { "twaMin": 100, "twaMax": 170 },
-      "SPI": { "twaMin": 120, "twaMax": 180 }
+      "JIB_LJ": 120, "LJ_JIB": 120,
+      "JIB_SS": 150, "SS_JIB": 150,
+      "JIB_C0": 180, "C0_JIB": 180,
+      "C0_SPI": 300, "SPI_C0": 300,
+      "C0_HG": 240, "HG_C0": 240,
+      "SPI_HG": 240, "HG_SPI": 240,
+      "SPI_LG": 180, "LG_SPI": 180,
+      "HG_LG": 180, "LG_HG": 180,
+      "SS_C0": 180, "C0_SS": 180,
+      "LJ_SS": 150, "SS_LJ": 150,
+      "JIB_SPI": 360, "SPI_JIB": 360,
+      "LJ_C0": 240, "C0_LJ": 240
     }
   },
   "rewards": {
