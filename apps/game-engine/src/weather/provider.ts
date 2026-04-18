@@ -150,7 +150,8 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
       return 'stable';
     },
     get nextRunExpectedUtc() {
-      return state.currentRun.runTs + 6 * 3600;
+      // Next run = current + 6h cycle + ~4.5h publication delay
+      return state.currentRun.runTs + 6 * 3600 + 4.5 * 3600;
     },
     getForecastAt(lat, lon, t) {
       maybePromote();

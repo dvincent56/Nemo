@@ -22,7 +22,7 @@ export function decodedGridToWeatherGrid(decoded: DecodedWeatherGrid): WeatherGr
       const base = (latIdx * numLon + lonIdx) * 6;
       const u = data[base]!;
       const v = data[base + 1]!;
-      const swh = data[base + 2]!;
+      const rawSwh = data[base + 2]!;
       const mwdSin = data[base + 3]!;
       const mwdCos = data[base + 4]!;
 
@@ -30,8 +30,11 @@ export function decodedGridToWeatherGrid(decoded: DecodedWeatherGrid): WeatherGr
       const tws = Math.sqrt(u * u + v * v) * MS_TO_KTS;
       const twd = ((Math.atan2(-u, -v) * 180) / Math.PI + 360) % 360;
 
-      // MWD from sin/cos components
-      const swellDir = ((Math.atan2(mwdSin, mwdCos) * 180) / Math.PI + 360) % 360;
+      // Wave data: NaN on land (GFS has no wave data over land)
+      const swh = Number.isFinite(rawSwh) ? rawSwh : 0;
+      const swellDir = Number.isFinite(mwdSin) && Number.isFinite(mwdCos)
+        ? ((Math.atan2(mwdSin, mwdCos) * 180) / Math.PI + 360) % 360
+        : 0;
 
       const lat = latMin + latIdx * gridStepLat;
       const lon = lonMin + lonIdx * header.gridStepLon;
