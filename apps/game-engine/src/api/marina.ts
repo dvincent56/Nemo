@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { GameBalance, type UpgradeItem, type UpgradeSlot, type UpgradeTier } from '@nemo/game-balance';
 import type { BoatClass } from '@nemo/shared-types';
 import { enforceAuth } from '../auth/cognito.js';
@@ -105,12 +105,16 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
     const owned = await db.select().from(playerUpgrades)
       .where(eq(playerUpgrades.playerId, player.id));
 
-    // All currently installed (to mark which are "in use")
-    const installed = await db.select({
-      playerUpgradeId: boatInstalledUpgrades.playerUpgradeId,
-      boatId: boatInstalledUpgrades.boatId,
-      slot: boatInstalledUpgrades.slot,
-    }).from(boatInstalledUpgrades);
+    // Which of the player's upgrades are currently installed?
+    const ownedIds = owned.map((pu) => pu.id);
+    const installed = ownedIds.length > 0
+      ? await db.select({
+          playerUpgradeId: boatInstalledUpgrades.playerUpgradeId,
+          boatId: boatInstalledUpgrades.boatId,
+          slot: boatInstalledUpgrades.slot,
+        }).from(boatInstalledUpgrades)
+          .where(inArray(boatInstalledUpgrades.playerUpgradeId, ownedIds))
+      : [];
 
     const installedSet = new Map(
       installed.map((i) => [i.playerUpgradeId, { boatId: i.boatId, slot: i.slot }]),
