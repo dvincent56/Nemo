@@ -22,15 +22,15 @@ const MAX_LIFE = 220;     // frames
 const FADE_FRAMES = 25;   // frames for fade in/out
 
 // SWH color ramp
-// Blue → violet ramp (distinct from wind's green/orange palette)
+// White → cyan ramp (bright on dark map, distinct from wind)
 const SWH_STOPS: [number, number, number, number][] = [
-  [0,    0.30, 0.42, 0.70],   // 0m — steel blue
-  [0.3,  0.32, 0.48, 0.78],   // 0.3m — blue
-  [0.8,  0.35, 0.50, 0.85],   // 0.8m — bright blue
-  [1.5,  0.45, 0.42, 0.85],   // 1.5m — blue-violet
-  [2.5,  0.55, 0.35, 0.82],   // 2.5m — violet
-  [4,    0.70, 0.28, 0.75],   // 4m — magenta
-  [6,    0.80, 0.20, 0.55],   // 6m+ — deep magenta
+  [0,    0.75, 0.80, 0.85],   // 0m — off-white
+  [0.3,  0.80, 0.88, 0.92],   // 0.3m — pale white-blue
+  [0.8,  0.78, 0.92, 0.96],   // 0.8m — ice white
+  [1.5,  0.60, 0.90, 0.95],   // 1.5m — light cyan
+  [2.5,  0.35, 0.82, 0.92],   // 2.5m — cyan
+  [4,    0.20, 0.70, 0.88],   // 4m — deep cyan
+  [6,    0.15, 0.55, 0.80],   // 6m+ — ocean blue
 ];
 
 function swellColor(swh: number): [number, number, number] {
