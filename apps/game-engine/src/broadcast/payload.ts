@@ -47,8 +47,8 @@ export interface MyBoatFullUpdate extends FullUpdate {
 
 export type BroadcastMsg = FullUpdate | DeltaUpdate | GoneUpdate | MyBoatFullUpdate;
 
-const SAIL_IDS = ['LW', 'JIB', 'GEN', 'C0', 'HG', 'SPI'] as const;
-export type SailCode = 0 | 1 | 2 | 3 | 4 | 5;
+const SAIL_IDS = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as const;
+export type SailCode = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export function sailIdToCode(sail: typeof SAIL_IDS[number]): SailCode {
   return SAIL_IDS.indexOf(sail) as SailCode;
