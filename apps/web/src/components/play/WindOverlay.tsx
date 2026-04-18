@@ -130,33 +130,48 @@ export default function WindOverlay(): React.ReactElement {
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
-  // Load GFS data — try live REST endpoint first, fallback to static wind.json
+  // Load GFS data — check status endpoint first, use REST if real NOAA data, else wind.json
   useEffect(() => {
     if (gridRef.current) return;
     const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3001';
 
-    fetch(`${apiBase}/api/v1/weather/grid?hours=0`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`status ${r.status}`);
-        return r.arrayBuffer();
+    function loadFromWindJson() {
+      fetch('/data/wind.json')
+        .then((r) => r.json())
+        .then((j) => {
+          const grid = parseGfsWind(j);
+          gridRef.current = grid;
+          useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+        })
+        .catch((e) => console.warn('Wind data load failed:', e));
+    }
+
+    function loadFromApi() {
+      fetch(`${apiBase}/api/v1/weather/grid?hours=0`)
+        .then((r) => {
+          if (!r.ok) throw new Error(`status ${r.status}`);
+          return r.arrayBuffer();
+        })
+        .then((buf) => {
+          const decoded = decodeWeatherGrid(buf);
+          const grid = decodedGridToWeatherGrid(decoded);
+          gridRef.current = grid;
+          useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+        })
+        .catch(() => loadFromWindJson());
+    }
+
+    // Check if game-engine has real NOAA data (next > 0 means real data, 0 = fixture)
+    fetch(`${apiBase}/api/v1/weather/status`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((status) => {
+        if (status && status.next > 0) {
+          loadFromApi();
+        } else {
+          loadFromWindJson();
+        }
       })
-      .then((buf) => {
-        const decoded = decodeWeatherGrid(buf);
-        const grid = decodedGridToWeatherGrid(decoded);
-        gridRef.current = grid;
-        useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
-      })
-      .catch(() => {
-        // Fallback to static wind.json (fixture mode)
-        fetch('/data/wind.json')
-          .then((r) => r.json())
-          .then((j) => {
-            const grid = parseGfsWind(j);
-            gridRef.current = grid;
-            useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
-          })
-          .catch((e) => console.warn('Wind data load failed:', e));
-      });
+      .catch(() => loadFromWindJson());
   }, []);
 
   useEffect(() => {
