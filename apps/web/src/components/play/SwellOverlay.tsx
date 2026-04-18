@@ -14,12 +14,13 @@ import type { WeatherGrid } from '@/lib/store/types';
  * animating slowly forward. Color encodes significant wave height (SWH).
  */
 
-const GRID_SPACING = 28;  // pixels between bars — dense like Windy
-const BAR_LEN = 10;       // bar length in pixels
-const BAR_WIDTH = 1.8;    // bar thickness in pixels
-const ANIM_SPEED = 0.08;  // pixels per frame — very slow drift
+const CELL_SIZE = 16;      // pixels between grid cells — very dense
+const BAR_LEN = 5;         // bar length in pixels — short crests
+const BAR_WIDTH = 1.0;     // bar thickness — thin lines
+const BARS_PER_CELL = 3;   // parallel wave crests per cell
+const ANIM_SPEED = 0.04;   // pixels per frame — very slow drift
 
-// SWH color ramp — visible even at low heights
+// SWH color ramp — same as before (validated)
 const SWH_STOPS: [number, number, number, number][] = [
   [0,    0.35, 0.45, 0.65],   // 0m — muted slate blue
   [0.3,  0.40, 0.55, 0.75],   // 0.3m — light blue
@@ -162,14 +163,14 @@ export default function SwellOverlay(): React.ReactElement {
       const alphas: number[] = [];
       const colors: number[] = [];
 
-      // Generate grid of bars at regular pixel intervals
-      const cols = Math.ceil(width / GRID_SPACING) + 2;
-      const rows = Math.ceil(height / GRID_SPACING) + 2;
+      // Generate dense grid of bars
+      const gridCols = Math.ceil(width / CELL_SIZE) + 2;
+      const gridRows = Math.ceil(height / CELL_SIZE) + 2;
 
-      for (let row = -1; row < rows; row++) {
-        for (let col = -1; col < cols; col++) {
-          const basePx = col * GRID_SPACING;
-          const basePy = row * GRID_SPACING;
+      for (let row = -1; row < gridRows; row++) {
+        for (let col = -1; col < gridCols; col++) {
+          const basePx = col * CELL_SIZE;
+          const basePy = row * CELL_SIZE;
 
           // Convert pixel to lat/lon for weather lookup
           const lon = west + (basePx / width) * lonRange;
@@ -198,48 +199,61 @@ export default function SwellOverlay(): React.ReactElement {
 
           // Swell direction FROM (meteo convention) → direction waves travel TO
           const dirRad = (swellDirDeg + 180) * toRad;
+          const dirSin = Math.sin(dirRad);
+          const dirCos = Math.cos(dirRad);
 
-          // Animate: offset along wave direction based on phase
-          const cycleLen = GRID_SPACING; // repeat every GRID_SPACING pixels
-          const offset = (phaseRef.current % cycleLen);
-          const px = basePx + Math.sin(dirRad) * offset;
-          const py = basePy - Math.cos(dirRad) * offset;
-
-          // Bar perpendicular to wave direction
-          const perpX = Math.cos(dirRad);
-          const perpY = Math.sin(dirRad);
+          // Perpendicular to wave direction (for bar orientation)
+          const perpX = dirCos;
+          const perpY = dirSin;
           const halfLen = BAR_LEN / 2;
           const halfW = BAR_WIDTH / 2;
 
-          // 4 corners of the bar quad (in pixels)
-          const ax = px - perpX * halfLen - Math.sin(dirRad) * halfW;
-          const ay = py - perpY * halfLen + Math.cos(dirRad) * halfW;
-          const bx = px + perpX * halfLen - Math.sin(dirRad) * halfW;
-          const by = py + perpY * halfLen + Math.cos(dirRad) * halfW;
-          const cx = px + perpX * halfLen + Math.sin(dirRad) * halfW;
-          const cy = py + perpY * halfLen - Math.cos(dirRad) * halfW;
-          const dx = px - perpX * halfLen + Math.sin(dirRad) * halfW;
-          const dy = py - perpY * halfLen - Math.cos(dirRad) * halfW;
-
-          // Convert to clip space
-          const cax = pxToClipX(ax), cay = pxToClipY(ay);
-          const cbx = pxToClipX(bx), cby = pxToClipY(by);
-          const ccx = pxToClipX(cx), ccy = pxToClipY(cy);
-          const cdx = pxToClipX(dx), cdy = pxToClipY(dy);
-
           // Color from SWH
           const [r, g, bv] = swellColor(swh);
-          // Alpha: always visible, gently scales with height
-          const alpha = Math.min(0.85, 0.35 + swh * 0.10);
+          const baseAlpha = Math.min(0.75, 0.30 + swh * 0.10);
 
-          // 2 triangles = 6 vertices
-          verts.push(
-            cax, cay, cbx, cby, ccx, ccy,
-            cax, cay, ccx, ccy, cdx, cdy,
-          );
-          for (let i = 0; i < 6; i++) {
-            alphas.push(alpha);
-            colors.push(r, g, bv);
+          // Draw multiple parallel crests per cell, evenly spaced
+          const crestSpacing = CELL_SIZE / BARS_PER_CELL;
+          for (let ci = 0; ci < BARS_PER_CELL; ci++) {
+            // Position: base + crest offset + animation drift
+            const crestOffset = ci * crestSpacing;
+            const phase = (phaseRef.current + crestOffset) % CELL_SIZE;
+
+            // Fade: smooth sine-based envelope — no brutal appear/disappear
+            const t = phase / CELL_SIZE; // 0→1 through the cycle
+            const fade = Math.sin(t * Math.PI); // 0 at edges, 1 at center
+
+            const alpha = baseAlpha * fade;
+            if (alpha < 0.02) continue;
+
+            const px = basePx + dirSin * phase;
+            const py = basePy - dirCos * phase;
+
+            // 4 corners of the bar quad (in pixels)
+            const ax = px - perpX * halfLen - dirSin * halfW;
+            const ay = py - perpY * halfLen + dirCos * halfW;
+            const bx = px + perpX * halfLen - dirSin * halfW;
+            const by = py + perpY * halfLen + dirCos * halfW;
+            const cx = px + perpX * halfLen + dirSin * halfW;
+            const cy = py + perpY * halfLen - dirCos * halfW;
+            const dx = px - perpX * halfLen + dirSin * halfW;
+            const dy = py - perpY * halfLen - dirCos * halfW;
+
+            // Convert to clip space
+            const cax = pxToClipX(ax), cay = pxToClipY(ay);
+            const cbx = pxToClipX(bx), cby = pxToClipY(by);
+            const ccx = pxToClipX(cx), ccy = pxToClipY(cy);
+            const cdx = pxToClipX(dx), cdy = pxToClipY(dy);
+
+            // 2 triangles = 6 vertices
+            verts.push(
+              cax, cay, cbx, cby, ccx, ccy,
+              cax, cay, ccx, ccy, cdx, cdy,
+            );
+            for (let j = 0; j < 6; j++) {
+              alphas.push(alpha);
+              colors.push(r, g, bv);
+            }
           }
         }
       }
