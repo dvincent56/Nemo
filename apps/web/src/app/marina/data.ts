@@ -35,6 +35,37 @@ export const TIER_LABEL: Record<UpgradeTier, string> = {
 export const ALL_CLASSES: BoatClass[] = ['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
 export const MAX_BOATS_PER_CLASS = 5;
 
+// ---------------------------------------------------------------------------
+// Compat types for /customize (uses a subset of BoatRecord fields)
+// ---------------------------------------------------------------------------
+
+export interface BoatDetail {
+  id: string;
+  boatClass: string;
+  name: string;
+  hullNumber: string;
+  hullColor: string;
+  deckColor: string;
+}
+
+/** Mock lookup for /customize page — uses MOCK_BOATS as source. */
+export function getBoatDetail(boatId: string): BoatDetail | null {
+  const b = MOCK_BOATS.find((m) => m.id === boatId);
+  if (!b) return null;
+  return {
+    id: b.id,
+    boatClass: b.boatClass,
+    name: b.name,
+    hullNumber: '001',
+    hullColor: b.hullColor ?? '#1a2840',
+    deckColor: b.deckColor ?? '#e4ddd0',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Race history
+// ---------------------------------------------------------------------------
+
 export interface BoatRaceHistoryEntry {
   raceId: string;
   raceName: string;
