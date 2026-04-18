@@ -27,9 +27,13 @@ export type SailAvailability = 'active' | 'available' | 'disabled';
 export interface SailSliceState {
   currentSail: SailId;
   sailPending: SailId | null;
-  transitionRemainingSec: number;
+  transitionStartMs: number;
+  transitionEndMs: number;
   sailAuto: boolean;
   sailAvailability: Record<SailId, SailAvailability>;
+  maneuverKind: 0 | 1 | 2;    // 0 = none, 1 = tack, 2 = gybe
+  maneuverStartMs: number;
+  maneuverEndMs: number;
 }
 
 export interface MapBounds {
@@ -77,7 +81,7 @@ export interface PanelState {
 export interface WeatherGridPoint {
   lat: number; lon: number;
   tws: number; twd: number;
-  swellHeight: number; swellDir: number;
+  swellHeight: number; swellDir: number; swellPeriod: number;
 }
 
 export interface WeatherGrid {

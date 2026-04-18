@@ -36,47 +36,44 @@ export function parseGfsWind(json: GfsRecord[]): WeatherGrid {
   const vRecord = json[1]!;
   const h = uRecord.header;
 
-  const points: WeatherGridPoint[] = [];
   const toRad = Math.PI / 180;
+  const absDy = Math.abs(h.dy);
+  const absDx = Math.abs(h.dx);
+  const northToSouth = h.la1 > h.la2;
+  const dataRows = Math.round(uRecord.data.length / h.nx);
+  const north = Math.max(h.la1, h.la2);
+  const south = Math.min(h.la1, h.la2);
 
-  for (let j = 0; j < h.ny; j++) {
+  // Build points in south-to-north order (our interpolation convention)
+  const points: WeatherGridPoint[] = [];
+  for (let j = 0; j < dataRows; j++) {
     for (let i = 0; i < h.nx; i++) {
-      const idx = j * h.nx + i;
-      const u = uRecord.data[idx] ?? 0; // east-west component (m/s)
-      const v = vRecord.data[idx] ?? 0; // north-south component (m/s)
+      // If data is north-to-south, read rows in reverse so points[] is south-to-north
+      const srcRow = northToSouth ? (dataRows - 1 - j) : j;
+      const idx = srcRow * h.nx + i;
+      const u = uRecord.data[idx] ?? 0;
+      const v = vRecord.data[idx] ?? 0;
 
-      // lat goes from la1 to la2, lon from lo1 to lo2
-      const lat = h.la1 + j * h.dy; // dy is negative if la1 > la2 (south to north)
-      const lon = h.lo1 + i * h.dx;
+      const lat = south + j * absDy;
+      const lon = h.lo1 + i * absDx;
 
       const speedMs = Math.sqrt(u * u + v * v);
       const tws = msToKnots(speedMs);
-      // Meteorological convention: direction wind comes FROM
       const twd = ((Math.atan2(-u, -v) / toRad) + 360) % 360;
 
-      points.push({
-        lat,
-        lon,
-        tws,
-        twd,
-        swellHeight: 0, // no swell in this dataset
-        swellDir: 0,
-      });
+      points.push({ lat, lon, tws, twd, swellHeight: 0, swellDir: 0, swellPeriod: 0 });
     }
   }
 
-  const bounds = {
-    north: Math.max(h.la1, h.la2),
-    south: Math.min(h.la1, h.la2),
-    east: h.lo2,
-    west: h.lo1,
-  };
+  const bounds = { north, south, east: h.lo2, west: h.lo1 };
 
   return {
     points,
-    resolution: Math.abs(h.dx),
+    resolution: absDx,
+    cols: h.nx,
+    rows: dataRows,
     bounds,
-    timestamps: [Date.now()], // single snapshot for now
+    timestamps: [Date.now()],
   };
 }
 
@@ -89,9 +86,7 @@ export function interpolateGfsWind(
   lat: number,
   lon: number,
 ): { tws: number; twd: number; u: number; v: number } {
-  const { bounds, resolution } = grid;
-  const cols = Math.round((bounds.east - bounds.west) / resolution) + 1;
-  const rows = Math.round((bounds.north - bounds.south) / resolution) + 1;
+  const { bounds, resolution, cols, rows } = grid;
 
   // Normalize lon to grid range
   let normLon = lon;

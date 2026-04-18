@@ -25,6 +25,7 @@ export function decodedGridToWeatherGrid(decoded: DecodedWeatherGrid): WeatherGr
       const rawSwh = data[base + 2]!;
       const mwdSin = data[base + 3]!;
       const mwdCos = data[base + 4]!;
+      const rawMwp = data[base + 5]!;
 
       // U/V (m/s) → TWS (knots) + TWD (degrees compass)
       const tws = Math.sqrt(u * u + v * v) * MS_TO_KTS;
@@ -35,11 +36,12 @@ export function decodedGridToWeatherGrid(decoded: DecodedWeatherGrid): WeatherGr
       const swellDir = Number.isFinite(mwdSin) && Number.isFinite(mwdCos)
         ? ((Math.atan2(mwdSin, mwdCos) * 180) / Math.PI + 360) % 360
         : 0;
+      const swellPeriod = Number.isFinite(rawMwp) ? rawMwp : 0;
 
       const lat = latMin + latIdx * gridStepLat;
       const lon = lonMin + lonIdx * header.gridStepLon;
 
-      points.push({ lat, lon, tws, twd, swellHeight: swh, swellDir });
+      points.push({ lat, lon, tws, twd, swellHeight: swh, swellDir, swellPeriod });
     }
   }
 

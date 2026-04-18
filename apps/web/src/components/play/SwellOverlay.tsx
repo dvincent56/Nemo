@@ -22,15 +22,15 @@ const MAX_LIFE = 220;     // frames
 const FADE_FRAMES = 25;   // frames for fade in/out
 
 // SWH color ramp
-// White → cyan ramp (bright on dark map, distinct from wind)
+// Cyan → magenta ramp (high contrast between low and high swell)
 const SWH_STOPS: [number, number, number, number][] = [
-  [0,    0.75, 0.80, 0.85],   // 0m — off-white
-  [0.3,  0.80, 0.88, 0.92],   // 0.3m — pale white-blue
-  [0.8,  0.78, 0.92, 0.96],   // 0.8m — ice white
-  [1.5,  0.60, 0.90, 0.95],   // 1.5m — light cyan
-  [2.5,  0.35, 0.82, 0.92],   // 2.5m — cyan
-  [4,    0.20, 0.70, 0.88],   // 4m — deep cyan
-  [6,    0.15, 0.55, 0.80],   // 6m+ — ocean blue
+  [0,    0.30, 0.75, 0.82],   // 0m — teal
+  [0.5,  0.25, 0.82, 0.90],   // 0.5m — cyan
+  [1.0,  0.35, 0.70, 0.92],   // 1m — sky blue
+  [2.0,  0.55, 0.45, 0.88],   // 2m — blue-violet
+  [3.0,  0.72, 0.30, 0.78],   // 3m — violet
+  [4.5,  0.85, 0.22, 0.60],   // 4.5m — magenta
+  [6,    0.92, 0.18, 0.40],   // 6m+ — hot pink
 ];
 
 function swellColor(swh: number): [number, number, number] {
@@ -99,15 +99,15 @@ interface SwellParticle {
   maxAge: number;
 }
 
-function lookupSwell(grid: WeatherGrid, lat: number, lon: number): { swh: number; dir: number } {
+function lookupSwell(grid: WeatherGrid, lat: number, lon: number): { swh: number; dir: number; period: number } {
   let normLon = lon;
   if (normLon < grid.bounds.west) normLon += 360;
   if (normLon > grid.bounds.east + grid.resolution) normLon -= 360;
   const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lat - grid.bounds.south) / grid.resolution)));
   const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((normLon - grid.bounds.west) / grid.resolution)));
   const pt = grid.points[gy * grid.cols + gx];
-  if (!pt) return { swh: 0, dir: 0 };
-  return { swh: pt.swellHeight, dir: pt.swellDir };
+  if (!pt) return { swh: 0, dir: 0, period: 0 };
+  return { swh: pt.swellHeight, dir: pt.swellDir, period: (pt as any).swellPeriod ?? 0 };
 }
 
 function spawnParticle(bounds: { west: number; east: number; south: number; north: number }): SwellParticle {
@@ -207,7 +207,6 @@ export default function SwellOverlay(): React.ReactElement {
       const pxClipX = 2 / width;
       const pxClipY = 2 / height;
       const halfLen = BAR_LEN / 2;
-      const halfW = BAR_WIDTH / 2;
 
       for (const p of particles) {
         p.age++;
@@ -226,7 +225,7 @@ export default function SwellOverlay(): React.ReactElement {
           continue;
         }
 
-        const { swh, dir } = lookupSwell(grid, p.lat, p.lon);
+        const { swh, dir, period } = lookupSwell(grid, p.lat, p.lon);
 
         // Kill particles that drifted onto land
         if (swh < 0.05) {
@@ -260,6 +259,12 @@ export default function SwellOverlay(): React.ReactElement {
         // Bar perpendicular to swell direction
         const perpX = Math.cos(dirRad);
         const perpY = -Math.sin(dirRad); // flip Y for screen coords
+
+        // Width varies with period: short period (≤6s) = 3px, long period (≥14s) = 1px
+        const periodWidth = period > 0
+          ? BAR_WIDTH * (1 + Math.max(0, (10 - period) / 4))  // 6s→2x, 10s→1x, 14s→0.5x
+          : BAR_WIDTH;
+        const halfW = Math.max(0.5, periodWidth) / 2;
 
         // Bar corners in clip space
         const lx = perpX * halfLen * pxClipX;
