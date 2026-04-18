@@ -15,8 +15,8 @@ import type { WeatherGrid } from '@/lib/store/types';
 
 const MAX_PARTICLES = 6000;
 const BAR_LEN = 7;
-const BAR_WIDTH = 1.5;
-const DRIFT_SPEED = 0.02; // degrees per frame — very gentle drift
+const BAR_WIDTH = 2;
+const DRIFT_SPEED = 0.01; // degrees per frame — very gentle drift
 const MIN_LIFE = 120;     // frames
 const MAX_LIFE = 220;     // frames
 const FADE_FRAMES = 25;   // frames for fade in/out
@@ -209,20 +209,27 @@ export default function SwellOverlay(): React.ReactElement {
       const halfW = BAR_WIDTH / 2;
 
       for (const p of particles) {
-        const { swh, dir } = lookupSwell(grid, p.lat, p.lon);
+        p.age++;
+        const needsRespawn = p.age >= p.maxAge ||
+            p.lon < vBounds.west - 2 || p.lon > vBounds.east + 2 ||
+            p.lat < vBounds.south - 2 || p.lat > vBounds.north + 2;
 
-        // Skip land / negligible swell
-        if (swh < 0.05) {
-          p.age = p.maxAge; // force respawn
+        if (needsRespawn) {
+          // Respawn — retry up to 5 times to avoid landing on land
+          for (let attempt = 0; attempt < 5; attempt++) {
+            Object.assign(p, spawnParticle(vBounds));
+            p.age = 0;
+            const check = lookupSwell(grid, p.lat, p.lon);
+            if (check.swh >= 0.05) break;
+          }
+          continue;
         }
 
-        p.age++;
-        if (p.age >= p.maxAge ||
-            p.lon < vBounds.west - 2 || p.lon > vBounds.east + 2 ||
-            p.lat < vBounds.south - 2 || p.lat > vBounds.north + 2) {
-          // Respawn
-          Object.assign(p, spawnParticle(vBounds));
-          p.age = 0;
+        const { swh, dir } = lookupSwell(grid, p.lat, p.lon);
+
+        // Kill particles that drifted onto land
+        if (swh < 0.05) {
+          p.age = p.maxAge;
           continue;
         }
 
