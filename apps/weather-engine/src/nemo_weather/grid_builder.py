@@ -109,7 +109,7 @@ def parse_wave_from_atmos(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
     swh_names = ("swh", "shww", "htsgw")
     mwd_names = ("mwd", "dirpw", "swdir", "mdww", "mwsdir", "wvdir")
-    mwp_names = ("mwp", "mpww", "perpw", "mpts")
+    mwp_names = ("mwp", "perpw", "mpts", "mpww")
 
     def find_best(names: tuple[str, ...]) -> tuple[np.ndarray, str] | None:
         """Search by name priority first, then dataset order."""
