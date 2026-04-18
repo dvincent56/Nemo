@@ -74,3 +74,11 @@
   overflow-y: auto;
   padding: 18px 20px;
 }
+
+/* Phone — cap panel width to screen */
+@media (max-width: 600px) {
+  .panel { max-width: calc(100vw - 48px); }
+  .head { padding: 12px 14px 10px; }
+  .title { font-size: 18px; }
+  .body { padding: 12px 14px; }
+}

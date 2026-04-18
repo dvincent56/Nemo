@@ -9,8 +9,10 @@ function defaultAvailability(): Record<SailId, SailAvailability> {
 }
 
 export const INITIAL_SAIL: SailSliceState = {
-  currentSail: 'GEN', sailPending: null, transitionRemainingSec: 0,
+  currentSail: 'GEN', sailPending: null,
+  transitionStartMs: 0, transitionEndMs: 0,
   sailAuto: false, sailAvailability: defaultAvailability(),
+  maneuverKind: 0, maneuverStartMs: 0, maneuverEndMs: 0,
 };
 
 export function createSailSlice(set: (fn: (s: GameStore) => Partial<GameStore>) => void) {

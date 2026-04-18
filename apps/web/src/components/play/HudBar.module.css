@@ -221,3 +221,37 @@
   border-color: rgba(245, 240, 232, 0.28);
   background: rgba(255, 255, 255, 0.04);
 }
+
+/* ── Responsive ──────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 860px) {
+  .bar { gap: clamp(8px, 1.5vw, 16px); padding: 0 clamp(8px, 1.5vw, 16px); }
+  .raceName { font-size: 14px; }
+  .rankValue { font-size: 20px; }
+  .stat { padding: 4px clamp(6px, 1vw, 10px); min-width: 46px; }
+  .statValue { font-size: 12px; }
+  .statLabel { font-size: 7px; }
+}
+
+/* Phone */
+@media (max-width: 600px) {
+  .bar { gap: 8px; padding: 0 8px; }
+  .brand { font-size: 18px; }
+  .raceInfo { display: none; }
+  .rankHero { margin-left: 4px; padding: 3px 8px; gap: 4px; }
+  .rankLabel { font-size: 8px; }
+  .rankValue { font-size: 18px; }
+  .rankTotal { display: none; }
+  .rankTrend { font-size: 9px; }
+  .stats { border-left: none; }
+  .stat { padding: 2px 6px; min-width: 40px; }
+  .statValue { font-size: 11px; }
+  .statLabel { font-size: 7px; letter-spacing: 0.10em; }
+  .end { display: none; }
+}
+
+/* Very small phone */
+@media (max-width: 400px) {
+  .rankHero { display: none; }
+}

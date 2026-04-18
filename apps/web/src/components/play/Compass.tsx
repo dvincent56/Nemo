@@ -2,11 +2,23 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sendOrder, useGameStore } from '@/lib/store';
+import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
+import { Lock, LockOpen, Check } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
 
 /* ── Constants ────────────────────────────────────── */
 const VB = 220; // viewBox size
+
+/**
+ * IMOCA silhouette path — original viewBox 0 0 603 180, evenodd fill.
+ * Rendered via a <g> with transform to scale/rotate/center it.
+ * Boat points RIGHT in original coords → rotate(-90) to point UP.
+ */
+const IMOCA_VB = { w: 611, h: 188 };
+const IMOCA_PATH = 'M89.62 0.00 L84.78 0.93 L68.78 0.94 L32.11 3.00 L18.73 3.26 L0.00 80.71 L0.00 103.30 L2.80 111.69 L14.24 153.84 L17.40 166.90 L18.32 175.45 L25.85 176.86 L51.53 178.03 L60.95 178.02 L73.13 179.02 L97.07 179.19 L98.62 179.34 L99.65 180.00 L210.37 180.00 L215.52 179.04 L233.38 179.06 L243.05 178.12 L264.43 177.00 L271.73 177.04 L283.24 175.39 L299.16 174.28 L302.12 174.51 L336.55 171.65 L382.22 166.14 L417.19 160.27 L444.90 154.36 L472.32 147.28 L499.36 138.92 L525.97 129.17 L553.80 117.15 L588.07 99.45 L603.00 89.93 L603.00 92.93 L603.00 89.26 L600.20 87.99 L577.71 74.58 L549.21 60.42 L520.01 48.24 L494.37 39.23 L468.48 31.48 L442.36 24.91 L407.19 17.75 L371.69 12.20 L326.93 7.11 L272.77 3.02 L236.84 0.99 L223.36 0.89 L219.33 0.00 L89.62 0.00 Z';
+/** Scale factor to fit IMOCA (~50px tall) in compass */
+const IMOCA_SCALE = 50 / IMOCA_VB.w;
 const CX = VB / 2;
 const CY = VB / 2;
 const R_OUTER = 96;
@@ -41,38 +53,49 @@ function bestSailForTwa(absT: number): string | null {
   return null;
 }
 
-/** Animated wind waves — ondulating arrows hitting the compass */
+/** Animated wind indicators — wavy radial lines flowing toward compass center */
 function WindWaves({ twd, tws, cx, cy, r }: { twd: number; tws: number; cx: number; cy: number; r: number }): React.ReactElement {
   const count = tws < 10 ? 1 : tws <= 25 ? 2 : 3;
+  const spread = 8; // lateral spacing between parallel streams
   const waves = [];
   for (let i = 0; i < count; i++) {
-    const offset = r + 8 + i * 10; // stagger outward
+    // Lateral offset: center stream at 0, others at ±spread
+    const dx = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+    // Radial start/end (outside circle, flowing inward)
+    const yStart = cy - r - 22;
+    const yEnd = cy - r - 4;
+    const yMid = (yStart + yEnd) / 2;
+    const amp = 3; // wave amplitude
     waves.push(
       <g key={i} transform={`rotate(${twd} ${cx} ${cy})`}>
+        {/* Wavy line flowing radially toward center */}
         <path
-          d={`M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset}`}
+          d={`M${cx + dx},${yStart} Q${cx + dx + amp},${yMid - 4} ${cx + dx},${yMid} Q${cx + dx - amp},${yMid + 4} ${cx + dx},${yEnd}`}
           fill="none"
-          stroke="rgba(245,240,232,0.5)"
+          stroke="#f5f0e8"
           strokeWidth="1.5"
           strokeLinecap="round"
         >
           <animate
             attributeName="d"
-            values={`M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset};M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset + 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset - 3} ${cx + 8},${cy - offset};M${cx - 8},${cy - offset} Q${cx - 4},${cy - offset - 3} ${cx},${cy - offset} Q${cx + 4},${cy - offset + 3} ${cx + 8},${cy - offset}`}
-            dur={`${1.5 + i * 0.3}s`}
+            values={
+              `M${cx + dx},${yStart} Q${cx + dx + amp},${yMid - 4} ${cx + dx},${yMid} Q${cx + dx - amp},${yMid + 4} ${cx + dx},${yEnd};` +
+              `M${cx + dx},${yStart} Q${cx + dx - amp},${yMid - 4} ${cx + dx},${yMid} Q${cx + dx + amp},${yMid + 4} ${cx + dx},${yEnd};` +
+              `M${cx + dx},${yStart} Q${cx + dx + amp},${yMid - 4} ${cx + dx},${yMid} Q${cx + dx - amp},${yMid + 4} ${cx + dx},${yEnd}`
+            }
+            dur={`${1.4 + i * 0.2}s`}
             repeatCount="indefinite"
           />
         </path>
-        {/* Small arrowhead */}
+        {/* Arrowhead at the tip, pointing toward center */}
         <path
-          d={`M${cx + 6},${cy - offset} L${cx + 10},${cy - offset - 3} L${cx + 10},${cy - offset + 3} Z`}
-          fill="rgba(245,240,232,0.4)"
-          transform={`rotate(${twd} ${cx} ${cy})`}
+          d={`M${cx + dx},${yEnd + 5} L${cx + dx - 3},${yEnd - 1} L${cx + dx + 3},${yEnd - 1} Z`}
+          fill="#f5f0e8"
         >
           <animate
             attributeName="opacity"
-            values="0.4;0.7;0.4"
-            dur={`${1.5 + i * 0.3}s`}
+            values="0.8;1;0.8"
+            dur={`${1.4 + i * 0.2}s`}
             repeatCount="indefinite"
           />
         </path>
@@ -84,8 +107,7 @@ function WindWaves({ twd, tws, cx, cy, r }: { twd: number; tws: number; cx: numb
 
 export default function Compass(): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
-  const targetHdgRef = useRef<number | null>(null);
-  const [applyActive, setApplyActive] = useState(false);
+  const [targetHdg, setTargetHdg] = useState<number | null>(null);
   const [twaLocked, setTwaLocked] = useState(false);
   const [lockedTwa, setLockedTwa] = useState(0);
   const [showModal, setShowModal] = useState(false);
@@ -97,13 +119,30 @@ export default function Compass(): React.ReactElement {
   const tws = useGameStore((s) => s.hud.tws);
   const bsp = useGameStore((s) => s.hud.bsp);
   const twa = useGameStore((s) => s.hud.twa);
+  const boatClass = useGameStore((s) => s.hud.boatClass);
   const currentSail = useGameStore((s) => s.sail.currentSail);
   const sailAuto = useGameStore((s) => s.sail.sailAuto);
 
-  // Computed
-  const vmgGlow = isInVmgZone(twa);
-  const targetHdg = targetHdgRef.current;
-  const targetTwa = targetHdg !== null ? ((targetHdg - twd + 540) % 360) - 180 : null;
+  // Displayed values — live update during drag
+  const applyActive = targetHdg !== null && targetHdg !== hdg;
+  const displayHdg = targetHdg ?? hdg;
+  const displayTwa = ((displayHdg - twd + 540) % 360) - 180;
+  const vmgGlow = isInVmgZone(displayTwa);
+
+  // Estimated BSP from polars — only during heading edit
+  const polar = getCachedPolar(boatClass);
+  const displayBsp = applyActive && polar
+    ? getPolarSpeed(polar, displayTwa, tws)
+    : bsp;
+
+  // BSP efficiency color: compare to max polar speed at current TWS
+  const maxPolarBsp = polar
+    ? Math.max(...polar.twa.map((a) => getPolarSpeed(polar, a, tws)))
+    : 0;
+  const bspRatio = maxPolarBsp > 0 ? displayBsp / maxPolarBsp : 1;
+  const bspColor = bspRatio >= 0.85 ? styles.live     // vert — efficace
+    : bspRatio >= 0.6 ? styles.warn                    // orange — moyen
+    : styles.danger;                                   // rouge — inefficace
 
   // Check sail change implication when editing
   const checkSailChange = useCallback((newHdg: number) => {
@@ -123,11 +162,9 @@ export default function Compass(): React.ReactElement {
     if (!svg) return;
     const boat = svg.querySelector<SVGGElement>('#boat');
     const ghost = svg.querySelector<SVGGElement>('#ghost');
-    const hubText = svg.querySelector<SVGTextElement>('#hubText');
 
     if (boat) boat.setAttribute('transform', `rotate(${target} ${CX} ${CY})`);
     if (ghost) ghost.style.opacity = target === hdg ? '0' : '0.2';
-    if (hubText) hubText.textContent = `${Math.round(target)}°`;
   }, [hdg]);
 
   // Sync SVG when hdg/twd changes from server
@@ -136,16 +173,14 @@ export default function Compass(): React.ReactElement {
     if (!svg) return;
     const boat = svg.querySelector<SVGGElement>('#boat');
     const ghost = svg.querySelector<SVGGElement>('#ghost');
-    const hubText = svg.querySelector<SVGTextElement>('#hubText');
 
-    if (boat && targetHdgRef.current === null) {
+    if (boat && targetHdg === null) {
       boat.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
     }
     if (ghost) {
       ghost.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
       ghost.style.opacity = '0';
     }
-    if (hubText && targetHdgRef.current === null) hubText.textContent = `${Math.round(hdg)}°`;
   }, [hdg, twd]);
 
   // TWA lock: adjust heading when wind shifts
@@ -181,10 +216,9 @@ export default function Compass(): React.ReactElement {
       svg.setPointerCapture(e.pointerId);
       const h = getHdgFromEvent(e);
       if (h !== null) {
-        targetHdgRef.current = h;
+        setTargetHdg(h);
         writeSvg(h);
         checkSailChange(h);
-        setApplyActive(true);
         useGameStore.getState().setEditMode(true);
       }
     };
@@ -192,7 +226,7 @@ export default function Compass(): React.ReactElement {
       if (!dragging) return;
       const h = getHdgFromEvent(e);
       if (h !== null) {
-        targetHdgRef.current = h;
+        setTargetHdg(h);
         writeSvg(h);
         checkSailChange(h);
       }
@@ -204,13 +238,14 @@ export default function Compass(): React.ReactElement {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY < 0 ? -1 : 1;
-      const base = targetHdgRef.current ?? hdg;
-      const h = (base + delta + 360) % 360;
-      targetHdgRef.current = h;
-      writeSvg(h);
-      checkSailChange(h);
-      setApplyActive(h !== hdg);
-      if (h !== hdg) useGameStore.getState().setEditMode(true);
+      setTargetHdg((prev) => {
+        const base = prev ?? hdg;
+        const h = (base + delta + 360) % 360;
+        writeSvg(h);
+        checkSailChange(h);
+        if (h !== hdg) useGameStore.getState().setEditMode(true);
+        return h;
+      });
     };
 
     svg.addEventListener('pointerdown', onDown);
@@ -247,30 +282,26 @@ export default function Compass(): React.ReactElement {
 
   // ── Apply heading ──
   const apply = () => {
-    const target = targetHdgRef.current;
-    if (target === null) return;
+    if (targetHdg === null) return;
     if (twaLocked) {
-      const newTwa = ((target - twd + 540) % 360) - 180;
+      const newTwa = ((targetHdg - twd + 540) % 360) - 180;
       setLockedTwa(newTwa);
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
     } else {
-      sendOrder({ type: 'CAP', value: { heading: target } });
+      sendOrder({ type: 'CAP', value: { heading: targetHdg } });
     }
-    useGameStore.getState().setHud({ hdg: target });
-    targetHdgRef.current = null;
-    setApplyActive(false);
+    useGameStore.getState().setHud({ hdg: targetHdg });
+    setTargetHdg(null);
     setPendingSailChange(null);
     useGameStore.getState().setEditMode(false);
   };
 
   // ── Cancel editing ──
   const cancelEdit = () => {
-    targetHdgRef.current = null;
-    setApplyActive(false);
+    setTargetHdg(null);
     setPendingSailChange(null);
     setShowModal(false);
     useGameStore.getState().setEditMode(false);
-    // Reset SVG to current heading
     writeSvg(hdg);
     const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
     if (ghost) ghost.style.opacity = '0';
@@ -316,8 +347,8 @@ export default function Compass(): React.ReactElement {
         <div className={styles.readouts}>
           <div>
             <p className={styles.readoutLabel}>Vit. bateau</p>
-            <p className={`${styles.readoutValue} ${styles.live}`}>
-              {bsp.toFixed(1)} <small>nds</small>
+            <p className={`${styles.readoutValue} ${bspColor}`}>
+              {displayBsp.toFixed(1)} <small>nds</small>
             </p>
           </div>
           <div>
@@ -327,23 +358,15 @@ export default function Compass(): React.ReactElement {
             </p>
           </div>
           <div>
-            <p className={styles.readoutLabel}>
-              Cap
-              {applyActive && <span className={styles.editTag}>▸ CIBLE</span>}
-              {twaLocked && !applyActive && <span className={styles.editTag}>🔒 AUTO</span>}
-            </p>
+            <p className={styles.readoutLabel}>Cap</p>
             <p className={`${styles.readoutValue} ${styles.gold}`}>
-              {applyActive && targetHdg !== null ? `${Math.round(targetHdg)}°` : `${Math.round(hdg)}°`}
+              {Math.round(displayHdg)}°
             </p>
           </div>
           <div>
-            <p className={styles.readoutLabel}>
-              TWA
-              {applyActive && <span className={styles.editTag}>▸ ESTIMÉ</span>}
-              {twaLocked && !applyActive && <span className={styles.editTag}>🔒 VERROUILLÉ</span>}
-            </p>
-            <p className={`${styles.readoutValue} ${vmgGlow && !applyActive ? styles.live : ''}`}>
-              {applyActive && targetTwa !== null ? `${Math.round(targetTwa)}°` : `${Math.round(twa)}°`}
+            <p className={styles.readoutLabel}>TWA</p>
+            <p className={`${styles.readoutValue} ${vmgGlow ? styles.live : ''}`}>
+              {Math.round(displayTwa)}°
             </p>
           </div>
         </div>
@@ -391,31 +414,23 @@ export default function Compass(): React.ReactElement {
 
             {/* Ghost of previous heading (shown during edit) */}
             <g id="ghost" transform={`rotate(${hdg} ${CX} ${CY})`} style={{ opacity: 0 }}>
-              <g transform={`translate(${CX},${CX})`}>
-                <path d="M 0,-26 C 7,-24 10,-15 10,-3 C 10,9 7,17 5,23 L 0,27 L -5,23 C -7,17 -10,9 -10,-3 C -10,-15 -7,-24 0,-26 Z"
-                  fill="none" stroke="#f5f0e8" strokeWidth="1" strokeDasharray="3 2" />
+              <g transform={`translate(${CX},${CY}) rotate(-90) scale(${IMOCA_SCALE}) translate(${-IMOCA_VB.w / 2},${-IMOCA_VB.h / 2})`}>
+                <path d={IMOCA_PATH}
+                  fill="none" stroke="#f5f0e8" strokeWidth={8} strokeDasharray="12 8" />
               </g>
             </g>
 
-            {/* Boat silhouette — oriented by heading (or target during drag) */}
+            {/* Boat silhouette — IMOCA, oriented by heading */}
             <g id="boat" transform={`rotate(${hdg} ${CX} ${CY})`}>
-              <g transform={`translate(${CX},${CX})`}>
-                <line x1="0" y1="-26" x2="0" y2="-70" stroke="#f5f0e8" strokeWidth="1" opacity="0.5" strokeDasharray="4 3" />
-                <path d="M 0,-26 C 7,-24 10,-15 10,-3 C 10,9 7,17 5,23 L 0,27 L -5,23 C -7,17 -10,9 -10,-3 C -10,-15 -7,-24 0,-26 Z"
-                  fill="#c9a227" stroke="#1a2840" strokeWidth="0.8" />
-                <line x1="0" y1="-16" x2="0" y2="16" stroke="#1a2840" strokeWidth="0.6" opacity="0.5" />
-                <circle cx="0" cy="-5" r="1.5" fill="#1a2840" />
+              <line x1={CX} y1={CY - 26} x2={CX} y2={CY - 70}
+                stroke="#f5f0e8" strokeWidth="1" opacity="0.5" strokeDasharray="4 3" />
+              <g transform={`translate(${CX},${CY}) rotate(-90) scale(${IMOCA_SCALE}) translate(${-IMOCA_VB.w / 2},${-IMOCA_VB.h / 2})`}>
+                <path d={IMOCA_PATH} fill="#c9a227" />
               </g>
             </g>
 
-            {/* Center hub */}
-            <circle cx={CX} cy={CY} r={16} fill="rgba(12,20,36,0.85)"
-              stroke="rgba(245,240,232,0.20)" strokeWidth="0.8" />
-            <text id="hubText" x={CX} y={CX - 2}
-              fontFamily="Bebas Neue,sans-serif" fontSize="15"
-              fill="#c9a227" textAnchor="middle" dominantBaseline="central">
-              {Math.round(hdg)}°
-            </text>
+            {/* Center dot */}
+            <circle cx={CX} cy={CY} r={3} fill="rgba(245,240,232,0.25)" />
           </svg>
         </div>
 
@@ -437,7 +452,10 @@ export default function Compass(): React.ReactElement {
               className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
               onClick={toggleTwaLock}
             >
-              🔒 TWA
+              {twaLocked
+                ? <Lock size={14} strokeWidth={2.5} />
+                : <LockOpen size={14} strokeWidth={2.5} />}
+              <span>TWA</span>
             </button>
           </Tooltip>
           <Tooltip text="Appliquer le cap modifié" shortcut="Entrée" position="top">
@@ -446,7 +464,8 @@ export default function Compass(): React.ReactElement {
               className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
               onClick={apply}
             >
-              {applyActive && targetHdg !== null ? `✓ Appliquer ${Math.round(targetHdg)}°` : 'Appliquer'}
+              <Check size={14} strokeWidth={3} />
+              {applyActive && targetHdg !== null ? <span>{Math.round(targetHdg)}°</span> : null}
             </button>
           </Tooltip>
         </div>

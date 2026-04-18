@@ -53,6 +53,7 @@
 .gold { color: #c9a227; }
 .live { color: #6cd28a; }
 .warn { color: #f0b96b; }
+.danger { color: #e05252; }
 
 .editTag {
   color: #c9a227;
@@ -78,8 +79,8 @@
 
 /* Actions */
 .actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
   gap: 6px;
   padding-top: 12px;
   border-top: 1px solid rgba(245, 240, 232, 0.16);
@@ -90,7 +91,7 @@
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(245, 240, 232, 0.16);
   color: #f5f0e8;
-  padding: 8px 6px;
+  padding: 6px 4px;
   border-radius: 4px;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -100,13 +101,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   cursor: pointer;
   transition: background 150ms, color 150ms, border-color 150ms;
   min-height: 36px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .actionBtn:hover {
@@ -118,11 +116,17 @@
   color: #c9a227;
   border-color: #c9a227;
 }
+.locked:hover {
+  background: rgba(201, 162, 39, 0.28);
+}
 
 .applyActive {
   background: #c9a227;
   color: #1a2840;
   border-color: #c9a227;
+}
+.applyActive:hover {
+  background: #d4ad2e;
 }
 
 .applyInactive {
@@ -240,4 +244,25 @@
   }
   .readouts { display: none; }
   .sailNotif { display: none; }
+}
+
+/* Phone width */
+@media (max-width: 600px) {
+  .wrapper {
+    width: clamp(160px, 42vw, 200px);
+    padding: 8px;
+    gap: 6px;
+  }
+  .readouts { display: none; }
+  .sailNotif { display: none; }
+  .actions { gap: 4px; padding-top: 6px; }
+  .actionBtn { min-height: 30px; font-size: 8px; padding: 4px 3px; gap: 3px; }
+}
+
+/* Very small phone */
+@media (max-width: 400px) {
+  .wrapper {
+    width: clamp(140px, 38vw, 170px);
+    padding: 6px;
+  }
 }

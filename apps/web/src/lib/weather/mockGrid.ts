@@ -96,7 +96,9 @@ export function generateMockWeatherGrid(): WeatherGrid {
     }
   }
 
-  return { points, resolution: RESOLUTION, bounds: BOUNDS, timestamps };
+  const cols = Math.floor((BOUNDS.east - BOUNDS.west) / RESOLUTION) + 1;
+  const rows = Math.floor((BOUNDS.north - BOUNDS.south) / RESOLUTION) + 1;
+  return { points, resolution: RESOLUTION, cols, rows, bounds: BOUNDS, timestamps };
 }
 
 export function getPointsAtTime(grid: WeatherGrid, _time: number): WeatherGridPoint[] {

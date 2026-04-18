@@ -21,3 +21,23 @@
   color: #f5f0e8;
   font-weight: 700;
 }
+
+/* Phone portrait — shift down below ranking FAB */
+@media (max-width: 600px) {
+  .coords {
+    top: 44px;
+    left: 8px;
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}
+
+/* Landscape mobile — same shift below ranking FAB */
+@media (max-height: 500px) {
+  .coords {
+    top: 44px;
+    left: 8px;
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}

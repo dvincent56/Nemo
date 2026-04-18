@@ -13,7 +13,8 @@ import type { WeatherGrid } from '@/lib/store/types';
  * fade in → stay visible → fade out over their lifetime, then respawn.
  */
 
-const MAX_PARTICLES = 8000;
+const MAX_PARTICLES_DESKTOP = 6000;
+const MAX_PARTICLES_MOBILE = 2000;
 const BAR_LEN = 8;
 const BAR_WIDTH = 1.5;
 const DRIFT_SPEED = 0.005; // degrees per frame — very gentle drift
@@ -191,9 +192,12 @@ export default function SwellOverlay(): React.ReactElement {
     const toRad = Math.PI / 180;
     const mercY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * toRad) / 2));
 
-    // Scale particle count to screen
-    const screenArea = canvas.width * canvas.height;
-    const particleCount = Math.min(MAX_PARTICLES, Math.max(3000, Math.round(screenArea / 120)));
+    // Scale particle count to logical screen area (DPR-aware)
+    const dpr = window.devicePixelRatio || 1;
+    const isMobile = canvas.width / dpr < 768;
+    const maxParticles = isMobile ? MAX_PARTICLES_MOBILE : MAX_PARTICLES_DESKTOP;
+    const logicalArea = (canvas.width / dpr) * (canvas.height / dpr);
+    const particleCount = Math.min(maxParticles, Math.max(isMobile ? 800 : 2000, Math.round(logicalArea / 150)));
 
     // Initialize particles
     const mapBounds = useGameStore.getState().map.bounds;

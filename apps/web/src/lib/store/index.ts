@@ -74,14 +74,17 @@ export const useGameStore = create<GameStore>((set) => ({
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             twaColor: twaColorFromCode(twaColorCode),
           };
-          const transitionSec = Number(m['transitionSec'] ?? 0);
           const sailAutoServer = m['sailAuto'] === true;
           nextSail = {
             ...s.sail,
             currentSail,
             sailPending: null,
-            transitionRemainingSec: transitionSec,
+            transitionStartMs: Number(m['transitionStartMs'] ?? 0),
+            transitionEndMs: Number(m['transitionEndMs'] ?? 0),
             sailAuto: sailAutoServer,
+            maneuverKind: (Number(m['maneuverKind'] ?? 0)) as 0 | 1 | 2,
+            maneuverStartMs: Number(m['maneuverStartMs'] ?? 0),
+            maneuverEndMs: Number(m['maneuverEndMs'] ?? 0),
           };
         }
       }

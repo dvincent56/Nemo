@@ -64,6 +64,9 @@ function useBoatInit(raceId: string): void {
         sailAuto: boat.sailAuto,
         transitionStartMs: boat.transitionStartMs,
         transitionEndMs: boat.transitionEndMs,
+        maneuverKind: boat.maneuverKind,
+        maneuverStartMs: boat.maneuverStartMs,
+        maneuverEndMs: boat.maneuverEndMs,
       });
       store.setConnection('open');
 
@@ -158,7 +161,6 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       {/* Row 2 — Map + floating elements */}
       <div className={styles.mapArea}>
         <MapCanvas />
-        {/* Weather overlays — canvas on top of map, transparent background */}
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}

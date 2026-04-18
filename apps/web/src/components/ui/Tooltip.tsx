@@ -18,7 +18,7 @@ export default function Tooltip({
   shortcut,
   children,
   position = 'bottom',
-  delay = 400,
+  delay = 800,
   className,
 }: TooltipProps): React.ReactElement {
   const [visible, setVisible] = useState(false);
@@ -58,7 +58,14 @@ export default function Tooltip({
     setCoords({ top, left });
   }, [position]);
 
+  /** True when the primary pointer is coarse (touch) — tooltips are pointless */
+  const isTouch = useRef(false);
+  useEffect(() => {
+    isTouch.current = window.matchMedia('(pointer: coarse)').matches;
+  }, []);
+
   const show = useCallback(() => {
+    if (isTouch.current) return;
     timerRef.current = setTimeout(() => {
       computePosition();
       setVisible(true);
@@ -111,14 +118,18 @@ export default function Tooltip({
       className={`${styles.wrapper} ${className ?? ''}`}
       onMouseEnter={show}
       onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
+      onClick={hide}
     >
       {children}
       {visible &&
         coords &&
         createPortal(
-          <div ref={tipRef} className={styles.tip} style={tipStyle} role="tooltip">
+          <div
+            ref={tipRef}
+            className={styles.tip}
+            style={{ ...tipStyle, pointerEvents: 'none' }}
+            role="tooltip"
+          >
             <span className={styles.text}>{text}</span>
             {shortcut && <kbd className={styles.kbd}>{shortcut}</kbd>}
           </div>,

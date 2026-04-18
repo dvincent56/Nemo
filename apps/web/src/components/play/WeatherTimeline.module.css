@@ -144,3 +144,36 @@
   background: #6cd28a;
   border-color: #6cd28a;
 }
+
+/* ── Responsive ──────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 860px) {
+  .timeline { gap: 10px; padding: 0 10px; }
+  .now { min-width: 90px; font-size: 10px; gap: 4px; }
+  .nowDay { font-size: 11px; }
+  .controls { gap: 4px; }
+  .btn { width: 28px; height: 28px; font-size: 11px; }
+  .speedBtn { padding: 0 6px; font-size: 9px; }
+  .liveBtn { padding: 0 8px; font-size: 8px; }
+}
+
+/* Phone */
+@media (max-width: 600px) {
+  .timeline { gap: 6px; padding: 0 8px; }
+  .now { display: none; }
+  .controls { gap: 3px; }
+  .btn { width: 26px; height: 26px; font-size: 10px; }
+  .speedBtn { padding: 0 5px; font-size: 8px; height: 26px; }
+  .liveBtn { padding: 0 6px; font-size: 8px; height: 26px; }
+}
+
+/* Landscape short */
+@media (max-height: 500px) {
+  .timeline { gap: 8px; padding: 0 8px; }
+  .now { min-width: 80px; font-size: 9px; gap: 4px; }
+  .nowDay { font-size: 10px; }
+  .btn { width: 26px; height: 26px; font-size: 10px; }
+  .speedBtn { padding: 0 5px; font-size: 8px; height: 26px; }
+  .liveBtn { padding: 0 6px; font-size: 8px; height: 26px; }
+}

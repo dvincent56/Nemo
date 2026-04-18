@@ -32,6 +32,45 @@ export async function fetchRaces(filters: { class?: string; status?: string } = 
   return json.races;
 }
 
+// ---------------------------------------------------------------------------
+// Boat state — état initial du bateau au chargement de la page play
+// En prod : Fastify GET /api/v1/races/:id/my-boat
+// En dev  : Next route handler mock
+// ---------------------------------------------------------------------------
+
+export interface BoatState {
+  boatClass: 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+  lat: number;
+  lon: number;
+  hdg: number;
+  bsp: number;
+  twd: number;
+  tws: number;
+  twa: number;
+  vmg: number;
+  dtf: number;
+  overlapFactor: number;
+  rank: number;
+  totalParticipants: number;
+  rankTrend: number;
+  wearGlobal: number;
+  wearDetail: { hull: number; rig: number; sails: number; electronics: number };
+  currentSail: 'JIB' | 'GEN' | 'SPI' | 'C0' | 'HG' | 'LW';
+  sailAuto: boolean;
+  transitionStartMs: number;
+  transitionEndMs: number;
+  maneuverKind: 0 | 1 | 2;
+  maneuverStartMs: number;
+  maneuverEndMs: number;
+}
+
+export async function fetchMyBoat(raceId: string): Promise<BoatState | null> {
+  const res = await fetch(new URL(`/api/v1/races/${raceId}/my-boat`, WEB_BASE));
+  if (res.status === 404) return null;
+  if (!res.ok) return null;
+  return (await res.json()) as BoatState;
+}
+
 export async function fetchRace(id: string): Promise<RaceSummary | null> {
   const res = await fetch(new URL(`/api/v1/races/${id}`, API_BASE), { next: { revalidate: 30 } });
   if (res.status === 404) return null;
