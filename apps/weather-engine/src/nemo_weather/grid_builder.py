@@ -152,6 +152,9 @@ def parse_wave_from_atmos(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
     if swh_data is not None and mwd_data is not None and mwp_data is not None:
         return swh_data, mwd_data, mwp_data
-    LOG.warning("wave variables not found in atmos GRIB (swh=%s, mwd=%s, mwp=%s)",
-                swh_data is not None, mwd_data is not None, mwp_data is not None)
+    avail = []
+    for ds in datasets:
+        avail.extend(list(ds.data_vars))
+    LOG.warning("wave variables incomplete (swh=%s, mwd=%s, mwp=%s), available: %s",
+                swh_data is not None, mwd_data is not None, mwp_data is not None, avail)
     return None
