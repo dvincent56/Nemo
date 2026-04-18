@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
 import styles from './MapCanvas.module.css';
+import { useProjectionLine } from '@/hooks/useProjectionLine';
 
 /* ── Country labels (French) rendered as lightweight GeoJSON symbols ── */
 const COUNTRY_LABELS: GeoJSON.FeatureCollection = {
@@ -53,7 +54,7 @@ const STYLE: maplibregl.StyleSpecification = {
     },
   },
   layers: [
-    { id: 'background', type: 'background', paint: { 'background-color': '#0a1628' } },
+    { id: 'background', type: 'background', paint: { 'background-color': '#0a2035' } },
     { id: 'dark-tiles', type: 'raster', source: 'osm-tiles', paint: { 'raster-opacity': 0.6 } },
     {
       id: 'country-names',
@@ -74,40 +75,6 @@ const STYLE: maplibregl.StyleSpecification = {
   ],
 };
 
-/* ── DEBUG: Color presets for ocean & land ── */
-const LAND_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_land.geojson';
-
-type ColorPreset = { label: string; color: string };
-
-const OCEAN_PRESETS: ColorPreset[] = [
-  { label: 'Navy actuel',    color: '#0a1628' },
-  { label: 'Navy riche',     color: '#0d1f3c' },
-  { label: 'Encre bleue',    color: '#0f1b33' },
-  { label: 'Atlantique',     color: '#0a2035' },
-  { label: 'Pétrole',        color: '#081e2b' },
-  { label: 'Teal profond',   color: '#0a2a2a' },
-  { label: 'Émeraude nuit',  color: '#0a2818' },
-  { label: 'Violet abyssal', color: '#150a28' },
-  { label: 'Charbon bleu',   color: '#1a1a2e' },
-  { label: 'Noir encre',     color: '#0e0e14' },
-  { label: 'Gris ardoise',   color: '#1a2030' },
-  { label: 'Warm dark',      color: '#1a1410' },
-];
-
-const LAND_PRESETS: ColorPreset[] = [
-  { label: 'Charbon actuel', color: '#1c1c1c' },
-  { label: 'Terre sombre',   color: '#1a1812' },
-  { label: 'Gris chaud',     color: '#1e1c18' },
-  { label: 'Gris froid',     color: '#181c20' },
-  { label: 'Olive nuit',     color: '#181a10' },
-  { label: 'Brun profond',   color: '#1c1410' },
-  { label: 'Ardoise',        color: '#1a1e24' },
-  { label: 'Anthracite',     color: '#161616' },
-  { label: 'Sépia sombre',   color: '#201a14' },
-  { label: 'Forêt noire',    color: '#101810' },
-  { label: 'Graphite bleu',  color: '#141820' },
-  { label: 'Quasi-noir',     color: '#0e0e0e' },
-];
 
 const BOAT_COLOR = '#c9a227';
 const trailCoords: [number, number][] = [];
@@ -121,24 +88,7 @@ let _syncingFromMap = false;
 export default function MapCanvas(): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const [activeOcean, setActiveOcean] = useState(0);
-  const [activeLand, setActiveLand] = useState(0);
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const landLoadedRef = useRef(false);
-
-  const applyOceanColor = useCallback((index: number) => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    map.setPaintProperty('background', 'background-color', OCEAN_PRESETS[index]!.color);
-    setActiveOcean(index);
-  }, []);
-
-  const applyLandColor = useCallback((index: number) => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded() || !map.getLayer('land-fill')) return;
-    map.setPaintProperty('land-fill', 'fill-color', LAND_PRESETS[index]!.color);
-    setActiveLand(index);
-  }, []);
+  useProjectionLine(mapRef.current);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -156,24 +106,6 @@ export default function MapCanvas(): React.ReactElement {
     mapInstance = map;
 
     map.once('load', () => {
-      /* ── DEBUG: Load land polygons for separate land/ocean coloring ── */
-      if (!landLoadedRef.current) {
-        landLoadedRef.current = true;
-        fetch(LAND_URL)
-          .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
-          .then((geojson: GeoJSON.FeatureCollection) => {
-            if (map.getSource('land-polygons')) return;
-            map.addSource('land-polygons', { type: 'geojson', data: geojson });
-            map.addLayer({
-              id: 'land-fill',
-              type: 'fill',
-              source: 'land-polygons',
-              paint: { 'fill-color': LAND_PRESETS[0]!.color, 'fill-opacity': 1 },
-            }, 'dark-tiles'); // insert BEFORE dark-tiles so tiles render on top for texture
-          })
-          .catch(() => { landLoadedRef.current = false; });
-      }
-
       map.addSource('my-trail', {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
@@ -183,6 +115,124 @@ export default function MapCanvas(): React.ReactElement {
         type: 'line',
         source: 'my-trail',
         paint: { 'line-color': BOAT_COLOR, 'line-width': 2, 'line-opacity': 0.85 },
+      });
+
+      // ── Projection line ──
+      map.addSource('projection-line', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'projection-line-layer',
+        type: 'line',
+        source: 'projection-line',
+        paint: {
+          'line-color': [
+            'interpolate', ['linear'], ['get', 'bspRatio'],
+            0.0, '#c0392b',
+            0.2, '#c0392b',
+            0.35, '#e67e22',
+            0.5, '#f1c40f',
+            0.75, '#27ae60',
+            1.0, '#27ae60',
+          ],
+          'line-width': 2.5,
+          'line-opacity': 0.8,
+          'line-dasharray': [4, 3],
+        },
+      });
+
+      // ── Projection time markers ──
+      map.addSource('projection-markers-time', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'projection-markers-time-circle',
+        type: 'circle',
+        source: 'projection-markers-time',
+        paint: {
+          'circle-radius': 4,
+          'circle-color': '#f5f0e8',
+          'circle-stroke-color': '#1a2744',
+          'circle-stroke-width': 1.5,
+        },
+      });
+      map.addLayer({
+        id: 'projection-markers-time-label',
+        type: 'symbol',
+        source: 'projection-markers-time',
+        layout: {
+          'text-field': ['get', 'label'],
+          'text-size': 11,
+          'text-offset': [0, -1.2],
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': '#f5f0e8',
+          'text-halo-color': 'rgba(10, 22, 40, 0.8)',
+          'text-halo-width': 1,
+        },
+      });
+
+      // ── Projection maneuver markers ──
+      map.addSource('projection-markers-maneuver', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'projection-markers-maneuver-icon',
+        type: 'circle',
+        source: 'projection-markers-maneuver',
+        paint: {
+          'circle-radius': 5,
+          'circle-color': '#c9a84c',
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5,
+        },
+      });
+
+      // ── Maneuver marker tooltip ──
+      const maneuverPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: true,
+        offset: 10,
+        className: 'projection-maneuver-popup',
+      });
+
+      map.on('mouseenter', 'projection-markers-maneuver-icon', (e) => {
+        map.getCanvas().style.cursor = 'pointer';
+        const feature = e.features?.[0];
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const coords = feature.geometry.coordinates as [number, number];
+        const detail = feature.properties?.detail ?? '';
+        const type = feature.properties?.type ?? '';
+        maneuverPopup
+          .setLngLat(coords)
+          .setHTML(`<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${type.toUpperCase()}</strong><br/>${detail}</div>`)
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'projection-markers-maneuver-icon', () => {
+        map.getCanvas().style.cursor = '';
+        maneuverPopup.remove();
+      });
+
+      map.on('click', 'projection-markers-maneuver-icon', (e) => {
+        const feature = e.features?.[0];
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const coords = feature.geometry.coordinates as [number, number];
+        const detail = feature.properties?.detail ?? '';
+        const type = feature.properties?.type ?? '';
+
+        if (maneuverPopup.isOpen()) {
+          maneuverPopup.remove();
+        } else {
+          maneuverPopup
+            .setLngLat(coords)
+            .setHTML(`<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${type.toUpperCase()}</strong><br/>${detail}</div>`)
+            .addTo(map);
+        }
       });
 
       // Seed boat source with current store position immediately
@@ -353,61 +403,5 @@ export default function MapCanvas(): React.ReactElement {
       .catch(() => { coastFetchedRef.current = false; });
   }, [coastlineVisible]);
 
-  return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={containerRef} className={styles.container} />
-
-      {/* ── DEBUG: Color picker ── */}
-      <div className={styles.debugToggle} onClick={() => setShowDebugPanel((v) => !v)}>
-        <span className={styles.debugToggleSwatches}>
-          <span style={{ background: OCEAN_PRESETS[activeOcean]?.color }} className={styles.debugToggleDot} />
-          <span style={{ background: LAND_PRESETS[activeLand]?.color }} className={styles.debugToggleDot} />
-        </span>
-        Couleurs carte
-      </div>
-
-      {showDebugPanel && (
-        <div className={styles.debugPanel}>
-          <div className={styles.debugColumns}>
-            {/* ── Ocean column ── */}
-            <div className={styles.debugColumn}>
-              <div className={styles.debugTitle}>Océan</div>
-              {OCEAN_PRESETS.map((p, i) => (
-                <button
-                  key={p.color}
-                  className={`${styles.debugSwatch} ${i === activeOcean ? styles.debugSwatchActive : ''}`}
-                  onClick={() => applyOceanColor(i)}
-                >
-                  <span className={styles.debugColor} style={{ background: p.color }} />
-                  <span className={styles.debugLabel}>
-                    {p.label}
-                    <span className={styles.debugHex}>{p.color}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* ── Land column ── */}
-            <div className={styles.debugColumn}>
-              <div className={styles.debugTitle}>Terre</div>
-              {LAND_PRESETS.map((p, i) => (
-                <button
-                  key={p.color}
-                  className={`${styles.debugSwatch} ${i === activeLand ? styles.debugSwatchActive : ''}`}
-                  onClick={() => applyLandColor(i)}
-                >
-                  <span className={styles.debugColor} style={{ background: p.color }} />
-                  <span className={styles.debugLabel}>
-                    {p.label}
-                    <span className={styles.debugHex}>{p.color}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className={styles.debugHint}>Les tuiles CartoDB restent en overlay pour la texture</div>
-        </div>
-      )}
-    </div>
-  );
+  return <div ref={containerRef} className={styles.container} />;
 }
