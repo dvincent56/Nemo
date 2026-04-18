@@ -128,9 +128,6 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px clamp(20px, 4vw, 64px) 64px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
 }
 
 .card {
@@ -350,4 +347,80 @@
   .fleet { padding: 20px 20px 56px; gap: 16px; grid-template-columns: 1fr; }
   .card { padding: 22px 20px 20px; }
   .name { font-size: 32px; }
+}
+
+/* --- Class sections --- */
+.classSection {
+  padding: 0 var(--page-px, 1.5rem);
+  margin-bottom: 2.5rem;
+}
+.classHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--navy-line);
+}
+.className {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.classCount {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.classGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.classLocked {
+  padding: 2rem;
+  text-align: center;
+  border: 1px dashed var(--navy-line);
+  border-radius: var(--r-md);
+}
+.lockedCta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.lockedCta:hover { color: var(--gold); }
+
+/* --- New boat button --- */
+.cardNew {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 200px;
+  border: 2px dashed var(--navy-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  background: transparent;
+  transition: border-color 180ms;
+}
+.cardNew:hover { border-color: var(--gold); }
+.cardNew:disabled { opacity: 0.4; cursor: not-allowed; }
+.newIcon {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--navy);
+  line-height: 1;
+}
+.newLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--t2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
