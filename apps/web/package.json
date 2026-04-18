@@ -12,6 +12,7 @@
   "dependencies": {
     "@etalab/decoupage-administratif": "^6.0.0",
     "@msgpack/msgpack": "^3.0.0",
+    "@nemo/game-balance": "workspace:*",
     "@nemo/shared-types": "workspace:*",
     "babel-plugin-react-compiler": "^19.0.0-beta-27714ef-20250124",
     "country-flag-icons": "^1.6.16",

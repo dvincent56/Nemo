@@ -6,8 +6,14 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./browser": "./src/browser.ts",
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./browser": {
+      "types": "./src/browser.ts",
+      "default": "./src/browser.ts"
+    },
     "./config": "./game-balance.json"
   },
   "scripts": {

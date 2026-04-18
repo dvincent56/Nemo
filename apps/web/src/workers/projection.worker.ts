@@ -7,7 +7,6 @@ import type {
   ProjectionPoint,
   TimeMarker,
   ManeuverMarker,
-  ProjectionSegment,
   WorkerInMessage,
   WorkerOutMessage,
 } from '../lib/projection/types';
@@ -77,7 +76,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let hdg = input.hdg;
   let twaLock = input.twaLock;
   let activeSail = input.activeSail;
-  let sailAuto = input.sailAuto;
+  // sailAuto tracked for future auto-sail logic in projection
   let condition: ConditionState = { ...input.condition };
   let maneuver: ManeuverState | null = input.activeManeuver ? { ...input.activeManeuver } : null;
   let transition: { endMs: number; speedFactor: number } | null =
@@ -171,7 +170,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
           break;
         }
         case 'MODE':
-          sailAuto = seg.value as boolean;
+          // sailAuto state tracked for future auto-sail projection
           break;
       }
 

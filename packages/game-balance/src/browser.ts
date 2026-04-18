@@ -3,27 +3,21 @@
  * Same API as index.ts but without node:fs/node:path imports.
  * Use GameBalance.load(json) to initialize from fetched JSON.
  */
-import type { BoatClass, SailId } from '@nemo/shared-types';
 import {
   UpgradesBlockZ, CompletionBonusZ, type UpgradesBlock, type UpgradeItem,
   type UpgradeSlot, type UpgradeTier, type SlotAvailability,
 } from './upgrade-catalog.schema.js';
 export type { UpgradesBlock, UpgradeItem, UpgradeSlot, UpgradeTier, SlotAvailability };
-
-// Re-export all config interfaces from the main module
 export type {
-  GameBalanceConfig,
-  WearConfig,
-  SwellConfig,
-  SailsConfig,
-  RewardsConfig,
-  MaintenanceEntry,
-  ManeuversConfig,
-  GroundingConfig,
-  EconomyConfig,
-} from './index.js';
+  GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
+  RewardsConfig, MaintenanceEntry, ManeuversConfig,
+  GroundingConfig, EconomyConfig,
+} from './types.js';
 
-import type { GameBalanceConfig, WearConfig, SwellConfig, SailsConfig, RewardsConfig, ManeuversConfig, GroundingConfig, EconomyConfig } from './index.js';
+import type {
+  GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
+  RewardsConfig, ManeuversConfig, GroundingConfig, EconomyConfig,
+} from './types.js';
 
 class GameBalanceClass {
   private data: GameBalanceConfig | null = null;
