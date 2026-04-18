@@ -21,8 +21,7 @@ export default function LoginPage(): React.ReactElement {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  async function devLogin(username: string): Promise<void> {
     setLoading(true);
     setError(null);
     try {
@@ -30,15 +29,24 @@ export default function LoginPage(): React.ReactElement {
         method: 'POST',
         credentials: 'include',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username: email.trim() || 'dev', password }),
+        body: JSON.stringify({ username }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      router.push('/races');
+      router.push('/marina');
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function submit(e: React.FormEvent): Promise<void> {
+    e.preventDefault();
+    // The backend dev-login parses the token as "dev.<sub>.<username>",
+    // so any dot in the username (e.g. an email) breaks verification.
+    // Strip domain if the user typed an email.
+    const username = email.trim().split('@')[0] || 'dev';
+    await devLogin(username);
   }
 
   return (
@@ -153,6 +161,20 @@ export default function LoginPage(): React.ReactElement {
               Pas encore de compte&nbsp;?{' '}
               <Link href="/register" className={styles.signupLink}>Créer un compte</Link>
             </p>
+
+            <div className={styles.divider}>
+              <span className={styles.dividerLabel}>dev · accès local</span>
+            </div>
+
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              disabled={loading}
+              onClick={() => devLogin('dev')}
+            >
+              Connexion dev (joueur seed)
+            </Button>
 
             <div className={styles.divider}>
               <span className={styles.dividerLabel}>ou · OAuth Phase 4</span>
