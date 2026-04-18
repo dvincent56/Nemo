@@ -127,10 +127,14 @@ def parse_wave_grib(
     def extract(ds: xr.Dataset, key: str) -> np.ndarray:
         wave_lats = ds["latitude"].values
         wave_lons = ds["longitude"].values
+        data = ds[key].values
+        # Squeeze extra dimensions (time, step) — we want 2D (lat, lon)
+        while data.ndim > 2:
+            data = data[0]
         LOG.info("wave var %s: lats=[%.1f..%.1f] lons=[%.1f..%.1f] shape=%s",
                  key, float(wave_lats[0]), float(wave_lats[-1]),
-                 float(wave_lons[0]), float(wave_lons[-1]), ds[key].shape)
-        return reinterpolate_wave(ds[key].values, wave_lats, wave_lons, target_lats, target_lons)
+                 float(wave_lons[0]), float(wave_lons[-1]), data.shape)
+        return reinterpolate_wave(data, wave_lats, wave_lons, target_lats, target_lons)
 
     swh = extract(ds_swh, swh_key)
     mwd = extract(ds_mwd, mwd_key)
