@@ -1,0 +1,100 @@
+.dialog {
+  max-width: 480px;
+  width: 90vw;
+  border: none;
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  background: var(--paper);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+.dialog::backdrop {
+  background: rgba(26, 40, 64, 0.4);
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  color: var(--navy);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.warning {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--danger);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.section { margin-bottom: 1.25rem; }
+.sectionTitle {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+  margin-bottom: 0.5rem;
+}
+.palmaresGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--t1);
+}
+.price {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--t1);
+}
+.priceNote {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--t3);
+}
+
+.upgradeList {
+  list-style: none;
+  padding: 0;
+}
+.upgradeItem {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--t1);
+  padding: 0.125rem 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--navy-line);
+}
+.btnCancel {
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--t2);
+}
+.btnSell {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--danger);
+  color: var(--paper);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.btnSell:disabled { opacity: 0.4; cursor: not-allowed; }
+.btnSell:hover:not(:disabled) { filter: brightness(1.1); }

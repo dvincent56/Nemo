@@ -1,0 +1,76 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  transition: border-color 180ms;
+}
+.card:hover { border-color: var(--navy-rule); }
+.cardMonotype { opacity: 0.55; }
+.cardLocked .changeBtn { opacity: 0.35; cursor: not-allowed; }
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.slotName {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--t3);
+}
+
+.tier {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--r-sm);
+  background: var(--navy-soft);
+  color: var(--t2);
+}
+.tierBRONZE { background: #cd7f3220; color: #8b5e1a; }
+.tierSILVER { background: #c0c0c020; color: #6b6b6b; }
+.tierGOLD   { background: var(--gold-soft); color: var(--gold-dark); }
+.tierPROTO  { background: #4a154b20; color: #7b2d8b; }
+
+.itemName {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--t1);
+}
+.profile {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--t3);
+  font-style: italic;
+}
+.monotype {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--t3);
+  margin-top: 0.5rem;
+}
+
+.changeBtn {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  transition: color 180ms;
+}
+.changeBtn:hover:not(:disabled) { color: var(--gold); }
