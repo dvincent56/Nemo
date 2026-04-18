@@ -13,11 +13,13 @@ interface SlotDrawerProps {
   slot: UpgradeSlot;
   boatId: string;
   boatClass: string;
+  /** Catalog id currently installed in this slot on this boat (used to hide it from the Buy tab). */
+  installedCatalogId?: string | undefined;
   onClose: () => void;
   onChanged: () => void;
 }
 
-export function SlotDrawer({ open, slot, boatId, boatClass, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
+export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
   const [tab, setTab] = useState<'install' | 'buy'>('install');
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -39,12 +41,15 @@ export function SlotDrawer({ open, slot, boatId, boatClass, onClose, onChanged }
           return compat?.includes(boatClass as BoatClass) ?? false;
         }));
         setCatalog(cat.items.filter((i) =>
-          i.slot === slot && i.compat.includes(boatClass as BoatClass) && i.tier !== 'SERIE',
+          i.slot === slot
+          && i.compat.includes(boatClass as BoatClass)
+          && i.tier !== 'SERIE'
+          && i.id !== installedCatalogId,
         ));
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [open, slot, boatId, boatClass]);
+  }, [open, slot, boatId, boatClass, installedCatalogId]);
 
   if (!open) return null;
 
