@@ -9,7 +9,6 @@ import {
 } from '@/lib/marina-api';
 import {
   CLASS_LABEL,
-  MOCK_BOATS, MOCK_CREDITS, MOCK_INSTALLED, MOCK_HISTORY,
   type BoatRaceHistoryEntry,
 } from '../data';
 import { SlotCard } from './SlotCard';
@@ -35,6 +34,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
   const [credits, setCredits] = useState(0);
   const [slotsByClass, setSlotsByClass] = useState<Record<UpgradeSlot, SlotAvailability> | null>(null);
   const [history, setHistory] = useState<BoatRaceHistoryEntry[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // UI state
   const [drawerSlot, setDrawerSlot] = useState<UpgradeSlot | null>(null);
@@ -55,20 +55,25 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       if (catalog.slotsByClass[cls]) {
         setSlotsByClass(catalog.slotsByClass[cls] as Record<UpgradeSlot, SlotAvailability>);
       }
-      setHistory(MOCK_HISTORY[boatId] ?? []);
-    } catch {
-      // Fallback to mock
-      const mock = MOCK_BOATS.find((b) => b.id === boatId);
-      if (mock) {
-        setBoat(mock);
-        setInstalled(MOCK_INSTALLED[boatId] ?? []);
-        setCredits(MOCK_CREDITS);
-        setHistory(MOCK_HISTORY[boatId] ?? []);
-      }
+      // Race history will come from a dedicated endpoint later
+      setHistory([]);
+      setLoadError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setLoadError(msg);
     }
   }, [boatId]);
 
   useEffect(() => { load(); }, [load]);
+
+  if (loadError) {
+    return (
+      <div className={styles.loading}>
+        Impossible de charger ce bateau : {loadError}.<br />
+        Vérifie que tu es connecté (<a href="/login">/login</a>) et que le game-engine tourne.
+      </div>
+    );
+  }
 
   if (!boat) {
     return <p className={styles.loading}>Chargement…</p>;

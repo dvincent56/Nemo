@@ -10,6 +10,8 @@ import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { registerMarinaRoutes } from './api/marina.js';
+import { getDb } from './db/client.js';
+import { seedDevPlayer } from './db/seed-dev.js';
 import { connectRedis } from './infra/redis.js';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider, type RedisLike } from './weather/provider.js';
 import { registerWeatherRoutes } from './routes/weather.js';
@@ -90,6 +92,17 @@ async function main() {
   registerRaceRoutes(app);
   registerMarinaRoutes(app);
   await seedRacesIfEmpty();
+
+  // Dev-only: seed a local player with boats and starter inventory so the
+  // marina UI has real DB-backed data to work against without Cognito.
+  const db = getDb();
+  if (db && !process.env['COGNITO_REGION']) {
+    try {
+      await seedDevPlayer(db);
+    } catch (err) {
+      log.error({ err }, 'dev player seed failed — marina mutations will still work against real accounts');
+    }
+  }
 
   let weather: WeatherProvider;
   if (process.env['NEMO_WEATHER_MODE'] === 'noaa') {

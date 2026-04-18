@@ -10,7 +10,6 @@ import {
 } from '@/lib/marina-api';
 import {
   CLASS_LABEL, ALL_CLASSES, MAX_BOATS_PER_CLASS,
-  MOCK_BOATS, MOCK_CREDITS,
 } from './data';
 import styles from './page.module.css';
 
@@ -77,23 +76,28 @@ function NewBoatButton({ boatClass, onCreated }: {
   return (
     <button type="button" className={`${styles.card} ${styles.cardNew}`} onClick={handleCreate} disabled={busy}>
       <span className={styles.newIcon}>+</span>
-      <span className={styles.newLabel}>Nouvelle {label}</span>
+      <span className={styles.newLabel}>Nouveau {label}</span>
     </button>
   );
 }
 
 export default function MarinaClient(): React.ReactElement {
-  const [boats, setBoats] = useState<BoatRecord[]>(MOCK_BOATS);
-  const [credits, setCredits] = useState(MOCK_CREDITS);
+  const [boats, setBoats] = useState<BoatRecord[]>([]);
+  const [credits, setCredits] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const data = await fetchMyBoats();
       setBoats(data.boats);
       setCredits(data.credits);
-    } catch {
-      // API unavailable — keep mock data
+      setLoadError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      setLoadError(msg);
     }
+    setLoaded(true);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -133,6 +137,19 @@ export default function MarinaClient(): React.ReactElement {
           </div>
         </div>
       </section>
+
+      {loadError && (
+        <div className={styles.errorBanner}>
+          <strong>Impossible de charger ta flotte.</strong> {loadError}.
+          Vérifie que tu es connecté (page <a href="/login">/login</a>) et que le game-engine tourne.
+        </div>
+      )}
+
+      {loaded && !loadError && boats.length === 0 && (
+        <div className={styles.emptyBanner}>
+          Aucun bateau pour l'instant. Inscris-toi à une course pour recevoir ta première coque.
+        </div>
+      )}
 
       <main className={styles.fleet} aria-label="Flotte du skipper">
         {ALL_CLASSES.map((cls) => {
