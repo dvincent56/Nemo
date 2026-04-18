@@ -289,8 +289,7 @@ export default function WindOverlay(): React.ReactElement {
       const mercN = mercY(vBounds.north);
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
-      const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
-      const degPerFrame = 0.6 / (1920 / lonRange); // normalized to 1920px reference
+      const degPerFrame = 0.3 * lonRange / 1920; // normalized to 1920px reference
 
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
         for (let i = 0; i < pa.count; i++) respawn(pa, i, vBounds);
@@ -300,8 +299,7 @@ export default function WindOverlay(): React.ReactElement {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Clip-space units per CSS pixel
-      const dpr = window.devicePixelRatio || 1;
+      // Clip-space units per CSS pixel (canvas is CSS-pixel sized)
       const csPerPxX = 2 / width;
       const csPerPxY = 2 / height;
 
@@ -347,10 +345,10 @@ export default function WindOverlay(): React.ReactElement {
         const cx = ((pa.lon[i]! - vBounds.west) / lonRange) * 2 - 1;
         const cy = ((mercY(pa.lat[i]!) - mercS) / mercRange) * 2 - 1;
 
-        // Comet direction in screen space (wind direction = where wind goes TO)
-        // dir points where wind blows, comet tail trails behind
+        // Comet direction in clip space (Y up = lat up = north)
+        // dir = atan2(u,v) gives direction wind blows TO
         const dirScreenX = Math.sin(dir);
-        const dirScreenY = -Math.cos(dir); // flip Y for screen
+        const dirScreenY = Math.cos(dir); // clip space Y = up = north
 
         // Perpendicular for width
         const perpX = dirScreenY;
@@ -358,14 +356,14 @@ export default function WindOverlay(): React.ReactElement {
 
         // Draw comet as COMET_SEGMENTS tapered quads from tail to head
         // Comet extends backward from particle position (tail behind, head at particle)
-        const cometLen = COMET_LEN_PX * dpr;
+        const cometLen = COMET_LEN_PX;
         for (let s = 0; s < COMET_SEGMENTS; s++) {
           const t0 = s / COMET_SEGMENTS;       // 0 = tail
           const t1 = (s + 1) / COMET_SEGMENTS; // 1 = head
 
           // Width: tail thin, head thick
-          const w0 = (COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t0) * dpr;
-          const w1 = (COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t1) * dpr;
+          const w0 = COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t0;
+          const w1 = COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t1;
 
           // Alpha: tail faint, head opaque (quadratic for sharper head)
           const a0 = baseAlpha * (0.05 + 0.95 * t0 * t0);
