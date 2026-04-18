@@ -29,14 +29,13 @@ async function main(): Promise<void> {
     sail: 'SPI',
     sailState: 'STABLE',
     hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
-    driveMode: 'NORMAL',
   };
 
   let runtime: BoatRuntime = {
     boat,
     raceId: 'test-race',
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
-    sailState: { active: 'SPI', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
+    sailState: { active: 'SPI', pending: null, transitionStartMs: 0, transitionEndMs: 0, autoMode: false, timeOutOfRangeSec: 0 },
     segmentState: {
       position: { ...startPos },
       heading: 90,

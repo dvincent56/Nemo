@@ -41,7 +41,6 @@ async function main(): Promise<void> {
     id: 'p2-boat', ownerId: 'p2-owner', name: 'Argonaut', boatClass: 'CLASS40',
     position: { ...start }, heading: 90, bsp: 0, sail: 'SPI', sailState: 'STABLE',
     hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
-    driveMode: 'NORMAL',
   };
 
   const penaltyZone: ExclusionZone = {
@@ -65,7 +64,7 @@ async function main(): Promise<void> {
     boat,
     raceId: 'test-race',
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
-    sailState: { active: 'SPI', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
+    sailState: { active: 'SPI', pending: null, transitionStartMs: 0, transitionEndMs: 0, autoMode: false, timeOutOfRangeSec: 0 },
     segmentState: { position: { ...start }, heading: 90, twaLock: null, sail: 'SPI', sailAuto: false },
     orderHistory,
     zonesAlerted: new Set(),

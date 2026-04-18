@@ -116,10 +116,10 @@ export function buildSegments(input: BuildSegmentsInput): {
     state.heading = ((weather.twd + state.twaLock) + 360) % 360;
   }
 
-  // Ordres du tick (effectiveTs strictement dans la fenêtre).
-  const events = orders.filter(
-    (o) => o.effectiveTs >= tickStartMs && o.effectiveTs < tickEndMs,
-  );
+  // Late orders (effectiveTs < tickStartMs) → snap to tickStartMs
+  const events = orders
+    .filter((o) => o.effectiveTs < tickEndMs)
+    .map((o) => o.effectiveTs < tickStartMs ? { ...o, effectiveTs: tickStartMs } : o);
 
   // Boundaries dédupliqués (plusieurs ordres au même instant = un seul cut).
   const boundarySet = new Set<number>([tickStartMs, tickEndMs]);
@@ -133,13 +133,10 @@ export function buildSegments(input: BuildSegmentsInput): {
     const segEnd = boundaries[i + 1] as number;
     if (segEnd <= segStart) continue;
 
-    // Appliquer tous les ordres avec effectiveTs === segStart (sauf le tout
-    // premier boundary = tickStartMs lui-même : on n'applique rien à l'entrée,
-    // l'état initial est déjà celui de sortie du tick précédent).
-    if (segStart !== tickStartMs) {
-      for (const e of events) {
-        if (e.effectiveTs === segStart) state = applyOrder(state, e, weather.twd);
-      }
+    // Appliquer tous les ordres avec effectiveTs === segStart.
+    // Includes late orders snapped to tickStartMs.
+    for (const e of events) {
+      if (e.effectiveTs === segStart) state = applyOrder(state, e, weather.twd);
     }
 
     // TWA courant du segment depuis heading et TWD météo.
