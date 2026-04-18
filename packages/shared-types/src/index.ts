@@ -1,6 +1,6 @@
 export type BoatClass = 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
 
-export type SailId = 'LW' | 'JIB' | 'GEN' | 'C0' | 'HG' | 'SPI';
+export type SailId = 'JIB' | 'LJ' | 'SS' | 'C0' | 'SPI' | 'HG' | 'LG';
 
 export type SailState = 'STABLE' | 'TRANSITION';
 
@@ -21,7 +21,7 @@ export interface Polar {
   boatClass: BoatClass;
   tws: number[];
   twa: number[];
-  speeds: number[][];
+  speeds: Record<SailId, number[][]>;
 }
 
 export interface Boat {
