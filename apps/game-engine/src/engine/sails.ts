@@ -16,39 +16,26 @@ export interface SailRuntimeState {
   timeOutOfRangeSec: number;
 }
 
-const ALL_SAILS: SailId[] = ['LW', 'JIB', 'GEN', 'C0', 'HG', 'SPI'];
-
-export function isInRange(sail: SailId, twaAbs: number): boolean {
-  const def = GameBalance.sails.definitions[sail];
-  return twaAbs >= def.twaMin && twaAbs <= def.twaMax;
-}
-
-export function isInOverlapZone(sail: SailId, twaAbs: number): boolean {
-  const def = GameBalance.sails.definitions[sail];
-  const overlap = GameBalance.sails.overlapDegrees[sail];
-  const distToEdge = Math.min(Math.abs(twaAbs - def.twaMin), Math.abs(twaAbs - def.twaMax));
-  return distToEdge <= overlap;
-}
+const ALL_SAILS: SailId[] = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'];
 
 /**
- * Sélectionne la voile optimale (BSP max au TWA/TWS donnés parmi les voiles
- * dont la plage TWA couvre le point).
+ * Sélectionne la voile optimale (BSP max au TWA/TWS donnés).
+ * La polaire elle-même encode les plages valides (speed > 0 = en plage).
  */
 export function pickOptimalSail(polar: Polar, twa: number, tws: number): SailId {
   const twaAbs = Math.min(Math.abs(twa), 180);
-  let best: SailId = 'GEN';
+  let best: SailId = 'JIB';
   let bestBsp = -Infinity;
   for (const s of ALL_SAILS) {
-    if (!isInRange(s, twaAbs)) continue;
-    const bsp = getPolarSpeed(polar, twaAbs, tws);
+    const bsp = getPolarSpeed(polar, s, twaAbs, tws);
     if (bsp > bestBsp) { bestBsp = bsp; best = s; }
   }
   return best;
 }
 
 /**
- * Facteur de recouvrement : >= 1.0 signifie que le bateau bénéficie de la vitesse
- * de la voile optimale sans avoir déclenché la transition (mécanique compétitive).
+ * Facteur de recouvrement : compare la BSP de la voile active à la voile optimale.
+ * Si la voile active est sous-optimale, renvoie le ratio optimal/active.
  */
 export function computeOverlapFactor(
   activeSail: SailId,
@@ -57,13 +44,12 @@ export function computeOverlapFactor(
   polar: Polar,
 ): number {
   const twaAbs = Math.min(Math.abs(twa), 180);
-  if (!isInRange(activeSail, twaAbs)) return 1.0;
+  const activeBsp = getPolarSpeed(polar, activeSail, twaAbs, tws);
+  if (activeBsp <= 0) return 1.0;
   const optimal = pickOptimalSail(polar, twa, tws);
   if (activeSail === optimal) return 1.0;
-  if (!isInOverlapZone(activeSail, twaAbs)) return 1.0;
-  const optBsp = getPolarSpeed(polar, twaAbs, tws);
-  const activeBsp = getPolarSpeed(polar, twaAbs, tws);
-  return activeBsp === 0 ? 1.0 : optBsp / activeBsp;
+  const optBsp = getPolarSpeed(polar, optimal, twaAbs, tws);
+  return optBsp / activeBsp;
 }
 
 function transitionKey(from: SailId, to: SailId): string {
@@ -100,7 +86,8 @@ export function advanceSailState(
     next.transitionEndMs = 0;
   }
 
-  if (isInRange(next.active, twaAbs)) {
+  const activeBsp = getPolarSpeed(polar, next.active, twaAbs, tws);
+  if (activeBsp > 0) {
     next.timeOutOfRangeSec = 0;
   } else {
     next.timeOutOfRangeSec += _dtSec;
@@ -109,7 +96,7 @@ export function advanceSailState(
   const isManoeuvring = next.transitionEndMs > 0 && nowMs < next.transitionEndMs;
   if (next.autoMode && !isManoeuvring) {
     const optimal = pickOptimalSail(polar, twa, tws);
-    if (optimal !== next.active && !isInOverlapZone(next.active, twaAbs)) {
+    if (optimal !== next.active) {
       const dur = getTransitionDuration(next.active, optimal, loadoutEffects);
       next.active = optimal;
       next.pending = null;
