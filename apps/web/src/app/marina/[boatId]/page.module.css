@@ -152,7 +152,7 @@
   border-color: var(--gold);
 }
 .btnPrimary:hover:not(:disabled) { background: var(--gold-dark); border-color: var(--gold-dark); }
-.btnPrimary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btnPrimary:disabled { opacity: 0.45; pointer-events: none; }
 .btnDanger {
   background: transparent;
   color: var(--danger);
