@@ -10,18 +10,19 @@ import type { WeatherGrid } from '@/lib/store/types';
 
 /**
  * Wind particle overlay — WebGL TRIANGLES, CPU simulation.
- * Optimized: grid-cell wind cache, pre-allocated typed arrays, no per-frame allocs.
+ * Each particle is a comet of fixed pixel length, drawn as a tapered quad.
+ * No trail history — just position + direction → fixed-size comet shape.
  */
 
 const MAX_PARTICLES = 8000;
-const TRAIL_LEN = 25;
+const COMET_LEN_PX = 18;   // comet length in CSS pixels (fixed regardless of zoom)
+const COMET_HEAD_PX = 1.8;  // head width in CSS pixels
+const COMET_TAIL_PX = 0.3;  // tail width in CSS pixels
+const COMET_SEGMENTS = 4;   // segments per comet (more = smoother taper)
 
 // ─── Wind interpolation cache ─────────────────────────
-// Cache wind lookups by grid cell to avoid redundant bilinear interpolation.
-// At 0.25° resolution, particles in the same cell get the same wind.
 
 interface CachedWind { u: number; v: number; tws: number; }
-
 let windCache: Map<number, CachedWind> = new Map();
 let windCacheFrame = -1;
 
@@ -39,12 +40,11 @@ function getCachedWind(grid: WeatherGrid, lat: number, lon: number, frame: numbe
   const fx = (normLon - grid.bounds.west) / grid.resolution;
   const iy = Math.floor(fy);
   const ix = Math.floor(fx);
-  const key = iy * 100000 + ix; // unique cell key
+  const key = iy * 100000 + ix;
 
   let cached = windCache.get(key);
   if (cached) return cached;
 
-  // Bilinear interpolation (inlined for speed)
   const { cols, rows, points } = grid;
   const dx = fx - ix;
   const dy = fy - iy;
@@ -76,55 +76,44 @@ function getCachedWind(grid: WeatherGrid, lat: number, lon: number, frame: numbe
   return cached;
 }
 
-// ─── Particle state (SoA for cache-friendliness) ──────
+// ─── Particle state (flat arrays) ─────────────────────
 
-interface ParticleArrays {
-  lons: Float32Array; // [particle * TRAIL_LEN + trailIdx]
-  lats: Float32Array;
-  head: Int32Array;
-  len: Int32Array;
+interface Particles {
+  lon: Float32Array;
+  lat: Float32Array;
+  dirRad: Float32Array; // current wind direction at particle
   age: Int32Array;
   maxAge: Int32Array;
   speed: Float32Array;
   count: number;
 }
 
-function createParticles(n: number, bounds: { west: number; east: number; south: number; north: number }): ParticleArrays {
-  const pa: ParticleArrays = {
-    lons: new Float32Array(n * TRAIL_LEN),
-    lats: new Float32Array(n * TRAIL_LEN),
-    head: new Int32Array(n),
-    len: new Int32Array(n),
+function createParticles(n: number, bounds: { west: number; east: number; south: number; north: number }): Particles {
+  const p: Particles = {
+    lon: new Float32Array(n),
+    lat: new Float32Array(n),
+    dirRad: new Float32Array(n),
     age: new Int32Array(n),
     maxAge: new Int32Array(n),
     speed: new Float32Array(n),
     count: n,
   };
   for (let i = 0; i < n; i++) {
-    const lon = bounds.west + Math.random() * (bounds.east - bounds.west);
-    const lat = bounds.south + Math.random() * (bounds.north - bounds.south);
-    pa.lons[i * TRAIL_LEN] = lon;
-    pa.lats[i * TRAIL_LEN] = lat;
-    pa.head[i] = 0;
-    pa.len[i] = 1;
-    pa.age[i] = Math.floor(Math.random() * 150);
-    pa.maxAge[i] = 120 + Math.floor(Math.random() * 100);
+    p.lon[i] = bounds.west + Math.random() * (bounds.east - bounds.west);
+    p.lat[i] = bounds.south + Math.random() * (bounds.north - bounds.south);
+    p.age[i] = Math.floor(Math.random() * 150);
+    p.maxAge[i] = 100 + Math.floor(Math.random() * 120);
   }
-  return pa;
+  return p;
 }
 
-function resetParticle(pa: ParticleArrays, i: number, bounds: { west: number; east: number; south: number; north: number }): void {
-  const lon = bounds.west + Math.random() * (bounds.east - bounds.west);
-  const lat = bounds.south + Math.random() * (bounds.north - bounds.south);
-  const base = i * TRAIL_LEN;
-  for (let t = 0; t < TRAIL_LEN; t++) {
-    pa.lons[base + t] = lon;
-    pa.lats[base + t] = lat;
-  }
-  pa.head[i] = 0;
-  pa.len[i] = 1;
-  pa.age[i] = 20 + Math.floor(Math.random() * 80);
-  pa.maxAge[i] = pa.age[i]! + 80 + Math.floor(Math.random() * 80);
+function respawn(p: Particles, i: number, bounds: { west: number; east: number; south: number; north: number }): void {
+  p.lon[i] = bounds.west + Math.random() * (bounds.east - bounds.west);
+  p.lat[i] = bounds.south + Math.random() * (bounds.north - bounds.south);
+  p.age[i] = 0;
+  p.maxAge[i] = 100 + Math.floor(Math.random() * 120);
+  p.speed[i] = 0;
+  p.dirRad[i] = 0;
 }
 
 // ─── Shaders ──────────────────────────────────────────
@@ -158,7 +147,7 @@ function createShader(gl: WebGLRenderingContext, type: number, src: string): Web
   return s;
 }
 
-function createProgram(gl: WebGLRenderingContext): WebGLProgram {
+function createProg(gl: WebGLRenderingContext): WebGLProgram {
   const p = gl.createProgram()!;
   gl.attachShader(p, createShader(gl, gl.VERTEX_SHADER, VERT));
   gl.attachShader(p, createShader(gl, gl.FRAGMENT_SHADER, FRAG));
@@ -166,7 +155,7 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram {
   return p;
 }
 
-// Color ramp (same as before)
+// Color ramp
 const COLOR_STOPS: [number, number, number, number][] = [
   [0,  0.24, 0.55, 0.78],
   [8,  0.31, 0.74, 0.66],
@@ -183,11 +172,7 @@ function windColor(speed: number): [number, number, number] {
     const curr = COLOR_STOPS[i]!;
     if (speed <= curr[0]) {
       const t = (speed - prev[0]) / (curr[0] - prev[0]);
-      return [
-        prev[1] + (curr[1] - prev[1]) * t,
-        prev[2] + (curr[2] - prev[2]) * t,
-        prev[3] + (curr[3] - prev[3]) * t,
-      ];
+      return [prev[1] + (curr[1] - prev[1]) * t, prev[2] + (curr[2] - prev[2]) * t, prev[3] + (curr[3] - prev[3]) * t];
     }
   }
   const last = COLOR_STOPS[COLOR_STOPS.length - 1]!;
@@ -222,10 +207,7 @@ export default function WindOverlay(): React.ReactElement {
 
     function loadFromApi() {
       fetch(`${apiBase}/api/v1/weather/grid?hours=0`)
-        .then((r) => {
-          if (!r.ok) throw new Error(`status ${r.status}`);
-          return r.arrayBuffer();
-        })
+        .then((r) => { if (!r.ok) throw new Error(`status ${r.status}`); return r.arrayBuffer(); })
         .then((buf) => {
           const decoded = decodeWeatherGrid(buf);
           const grid = decodedGridToWeatherGrid(decoded);
@@ -237,13 +219,7 @@ export default function WindOverlay(): React.ReactElement {
 
     fetch(`${apiBase}/api/v1/weather/status`)
       .then((r) => r.ok ? r.json() : null)
-      .then((status) => {
-        if (status && status.next > 0) {
-          loadFromApi();
-        } else {
-          loadFromWindJson();
-        }
-      })
+      .then((status) => { if (status && status.next > 0) loadFromApi(); else loadFromWindJson(); })
       .catch(() => loadFromWindJson());
   }, []);
 
@@ -262,7 +238,7 @@ export default function WindOverlay(): React.ReactElement {
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: true });
     if (!gl) return;
 
-    const prog = createProgram(gl);
+    const prog = createProg(gl);
     const aPos = gl.getAttribLocation(prog, 'a_position');
     const aAlpha = gl.getAttribLocation(prog, 'a_alpha');
     const aColor = gl.getAttribLocation(prog, 'a_color');
@@ -284,13 +260,13 @@ export default function WindOverlay(): React.ReactElement {
 
     let lastLonRange = 0;
 
-    // Pre-allocate output arrays (worst case: each particle has TRAIL_LEN-1 segments × 6 verts × 2 coords)
-    const maxVerts = particleCount * (TRAIL_LEN - 1) * 6 * 2;
-    const maxAlphas = particleCount * (TRAIL_LEN - 1) * 6;
-    const maxColors = particleCount * (TRAIL_LEN - 1) * 6 * 3;
-    const vertArr = new Float32Array(maxVerts);
-    const alphaArr = new Float32Array(maxAlphas);
-    const colorArr = new Float32Array(maxColors);
+    // Pre-allocate: each particle = COMET_SEGMENTS quads × 6 verts
+    const vertsPerParticle = COMET_SEGMENTS * 6 * 2;
+    const alphasPerParticle = COMET_SEGMENTS * 6;
+    const colorsPerParticle = COMET_SEGMENTS * 6 * 3;
+    const vertArr = new Float32Array(particleCount * vertsPerParticle);
+    const alphaArr = new Float32Array(particleCount * alphasPerParticle);
+    const colorArr = new Float32Array(particleCount * colorsPerParticle);
 
     const animate = () => {
       const grid = gridRef.current;
@@ -313,60 +289,52 @@ export default function WindOverlay(): React.ReactElement {
       const mercN = mercY(vBounds.north);
       const mercS = mercY(vBounds.south);
       const mercRange = mercN - mercS;
-      const pxPerLon = lonRange !== 0 ? 1920 / lonRange : 1;
-      const degPerFrame = 0.6 / pxPerLon;
+      const pxPerLon = lonRange !== 0 ? width / lonRange : 1;
+      const degPerFrame = 0.6 / (1920 / lonRange); // normalized to 1920px reference
 
       if (lastLonRange > 0 && lonRange > lastLonRange * 1.02) {
-        for (let i = 0; i < pa.count; i++) resetParticle(pa, i, vBounds);
+        for (let i = 0; i < pa.count; i++) respawn(pa, i, vBounds);
       }
       lastLonRange = lonRange;
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Scale line width by devicePixelRatio so particles are visible on high-DPI mobile
+      // Clip-space units per CSS pixel
       const dpr = window.devicePixelRatio || 1;
-      const lineWidth = 1.5 * dpr;
-      const maxWidthX = lineWidth / width * 2;
-      const maxWidthY = lineWidth / height * 2;
+      const csPerPxX = 2 / width;
+      const csPerPxY = 2 / height;
 
-      let vi = 0; // vert index
-      let ai = 0; // alpha index
-      let ci = 0; // color index
+      let vi = 0, ai = 0, ci = 0;
 
       for (let i = 0; i < pa.count; i++) {
-        const base = i * TRAIL_LEN;
-        const h = pa.head[i]!;
-        const lon = pa.lons[base + h]!;
-        const lat = pa.lats[base + h]!;
+        const lon = pa.lon[i]!;
+        const lat = pa.lat[i]!;
 
         const wind = getCachedWind(grid, lat, lon, frame);
         pa.speed[i] = wind.tws;
 
-        const dirRad = Math.atan2(wind.u, wind.v);
-        const speedBoost = wind.tws < 5 ? 0.8 : wind.tws < 15 ? 1.2 : 1.8;
-        const step = degPerFrame * speedBoost;
-        const newLon = lon + Math.sin(dirRad) * step;
-        const newLat = lat + Math.cos(dirRad) * step;
+        const dir = Math.atan2(wind.u, wind.v);
+        pa.dirRad[i] = dir;
 
-        const newHead = (h + 1) % TRAIL_LEN;
-        pa.lons[base + newHead] = newLon;
-        pa.lats[base + newHead] = newLat;
-        pa.head[i] = newHead;
-        pa.len[i] = Math.min(pa.len[i]! + 1, TRAIL_LEN);
+        // Advance particle position
+        const speedBoost = wind.tws < 5 ? 0.8 : wind.tws < 15 ? 1.2 : 1.8;
+        pa.lon[i] = lon + Math.sin(dir) * degPerFrame * speedBoost;
+        pa.lat[i] = lat + Math.cos(dir) * degPerFrame * speedBoost;
         pa.age[i]!++;
 
         if (pa.age[i]! > pa.maxAge[i]! ||
-            newLon < vBounds.west - 2 || newLon > vBounds.east + 2 ||
-            newLat < vBounds.south - 2 || newLat > vBounds.north + 2) {
-          resetParticle(pa, i, vBounds);
+            pa.lon[i]! < vBounds.west - 2 || pa.lon[i]! > vBounds.east + 2 ||
+            pa.lat[i]! < vBounds.south - 2 || pa.lat[i]! > vBounds.north + 2) {
+          respawn(pa, i, vBounds);
           continue;
         }
 
-        const pLen = pa.len[i]!;
-        if (pLen < 3) continue;
+        // Skip particles not in view
+        if (pa.lon[i]! < vBounds.west || pa.lon[i]! > vBounds.east ||
+            pa.lat[i]! < vBounds.south || pa.lat[i]! > vBounds.north) continue;
 
-        const fadeIn = Math.min(1, pa.age[i]! / 5);
+        const fadeIn = Math.min(1, pa.age[i]! / 8);
         const fadeOut = Math.min(1, (pa.maxAge[i]! - pa.age[i]!) / 30);
         const spd = wind.tws;
         const speedAlpha = spd < 3 ? 0.20 : spd < 8 ? 0.35 : spd < 18 ? 0.50 : 0.70;
@@ -374,42 +342,57 @@ export default function WindOverlay(): React.ReactElement {
         if (baseAlpha < 0.02) continue;
 
         const [r, g, bv] = windColor(spd);
-        const oldest = (newHead - pLen + 1 + TRAIL_LEN) % TRAIL_LEN;
 
-        for (let s = 0; s < pLen - 1; s++) {
-          const i0 = (oldest + s) % TRAIL_LEN;
-          const i1 = (oldest + s + 1) % TRAIL_LEN;
-          const x0 = ((pa.lons[base + i0]! - vBounds.west) / lonRange) * 2 - 1;
-          const y0 = ((mercY(pa.lats[base + i0]!) - mercS) / mercRange) * 2 - 1;
-          const x1 = ((pa.lons[base + i1]! - vBounds.west) / lonRange) * 2 - 1;
-          const y1 = ((mercY(pa.lats[base + i1]!) - mercS) / mercRange) * 2 - 1;
+        // Comet center in clip space
+        const cx = ((pa.lon[i]! - vBounds.west) / lonRange) * 2 - 1;
+        const cy = ((mercY(pa.lat[i]!) - mercS) / mercRange) * 2 - 1;
 
-          const dx = x1 - x0;
-          const dy = y1 - y0;
-          const segLen = Math.sqrt(dx * dx + dy * dy);
-          if (segLen < 0.00001) continue;
+        // Comet direction in screen space (wind direction = where wind goes TO)
+        // dir points where wind blows, comet tail trails behind
+        const dirScreenX = Math.sin(dir);
+        const dirScreenY = -Math.cos(dir); // flip Y for screen
 
-          const t0 = s / (pLen - 1);
-          const t1 = (s + 1) / (pLen - 1);
-          const taper0 = 0.2 + 0.8 * t0;
-          const taper1 = 0.2 + 0.8 * t1;
-          const a0 = baseAlpha * (0.1 + 0.9 * t0 * t0);
-          const a1 = baseAlpha * (0.1 + 0.9 * t1 * t1);
+        // Perpendicular for width
+        const perpX = dirScreenY;
+        const perpY = -dirScreenX;
 
-          const nx = -dy / segLen;
-          const ny = dx / segLen;
-          const ox0 = nx * maxWidthX * taper0;
-          const oy0 = ny * maxWidthY * taper0;
-          const ox1 = nx * maxWidthX * taper1;
-          const oy1 = ny * maxWidthY * taper1;
+        // Draw comet as COMET_SEGMENTS tapered quads from tail to head
+        // Comet extends backward from particle position (tail behind, head at particle)
+        const cometLen = COMET_LEN_PX * dpr;
+        for (let s = 0; s < COMET_SEGMENTS; s++) {
+          const t0 = s / COMET_SEGMENTS;       // 0 = tail
+          const t1 = (s + 1) / COMET_SEGMENTS; // 1 = head
+
+          // Width: tail thin, head thick
+          const w0 = (COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t0) * dpr;
+          const w1 = (COMET_TAIL_PX + (COMET_HEAD_PX - COMET_TAIL_PX) * t1) * dpr;
+
+          // Alpha: tail faint, head opaque (quadratic for sharper head)
+          const a0 = baseAlpha * (0.05 + 0.95 * t0 * t0);
+          const a1 = baseAlpha * (0.05 + 0.95 * t1 * t1);
+
+          // Position along comet (backward from head)
+          const d0 = (1 - t0) * cometLen; // distance from head (tail = far)
+          const d1 = (1 - t1) * cometLen;
+
+          // Quad corners in clip space
+          const px0 = cx - dirScreenX * d0 * csPerPxX;
+          const py0 = cy - dirScreenY * d0 * csPerPxY;
+          const px1 = cx - dirScreenX * d1 * csPerPxX;
+          const py1 = cy - dirScreenY * d1 * csPerPxY;
+
+          const wx0 = perpX * w0 / 2 * csPerPxX;
+          const wy0 = perpY * w0 / 2 * csPerPxY;
+          const wx1 = perpX * w1 / 2 * csPerPxX;
+          const wy1 = perpY * w1 / 2 * csPerPxY;
 
           // 6 vertices = 2 triangles
-          vertArr[vi++] = x0 - ox0; vertArr[vi++] = y0 - oy0;
-          vertArr[vi++] = x0 + ox0; vertArr[vi++] = y0 + oy0;
-          vertArr[vi++] = x1 - ox1; vertArr[vi++] = y1 - oy1;
-          vertArr[vi++] = x1 - ox1; vertArr[vi++] = y1 - oy1;
-          vertArr[vi++] = x0 + ox0; vertArr[vi++] = y0 + oy0;
-          vertArr[vi++] = x1 + ox1; vertArr[vi++] = y1 + oy1;
+          vertArr[vi++] = px0 - wx0; vertArr[vi++] = py0 - wy0;
+          vertArr[vi++] = px0 + wx0; vertArr[vi++] = py0 + wy0;
+          vertArr[vi++] = px1 - wx1; vertArr[vi++] = py1 - wy1;
+          vertArr[vi++] = px1 - wx1; vertArr[vi++] = py1 - wy1;
+          vertArr[vi++] = px0 + wx0; vertArr[vi++] = py0 + wy0;
+          vertArr[vi++] = px1 + wx1; vertArr[vi++] = py1 + wy1;
 
           alphaArr[ai++] = a0; alphaArr[ai++] = a0; alphaArr[ai++] = a1;
           alphaArr[ai++] = a1; alphaArr[ai++] = a0; alphaArr[ai++] = a1;
@@ -424,8 +407,6 @@ export default function WindOverlay(): React.ReactElement {
       }
 
       if (vi > 0) {
-        const vertCount = vi / 2;
-
         gl.enableVertexAttribArray(aPos);
         gl.enableVertexAttribArray(aAlpha);
         gl.enableVertexAttribArray(aColor);
@@ -442,7 +423,7 @@ export default function WindOverlay(): React.ReactElement {
         gl.bufferData(gl.ARRAY_BUFFER, colorArr.subarray(0, ci), gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.TRIANGLES, 0, vertCount);
+        gl.drawArrays(gl.TRIANGLES, 0, vi / 2);
       }
 
       animRef.current = requestAnimationFrame(animate);
@@ -472,12 +453,7 @@ export default function WindOverlay(): React.ReactElement {
   return (
     <canvas
       ref={canvasRef}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        zIndex: 2,
-      }}
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}
     />
   );
 }
