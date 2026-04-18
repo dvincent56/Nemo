@@ -19,7 +19,7 @@ const COMET_LEN_PX = 40;   // comet length in CSS pixels
 const COMET_HEAD_PX = 2.2;  // head width in CSS pixels
 const COMET_TAIL_PX = 0.2;  // tail width in CSS pixels
 const COMET_SEGMENTS = 5;   // segments per comet
-const SPEED_PX_PER_FRAME = 0.12; // particle drift in CSS pixels per frame (slow base)
+const SPEED_PX_PER_FRAME = 0.05; // particle drift in CSS pixels per frame (slow base)
 
 // ─── Wind interpolation cache ─────────────────────────
 

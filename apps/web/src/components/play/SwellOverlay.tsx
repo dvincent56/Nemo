@@ -102,11 +102,45 @@ function lookupSwell(grid: WeatherGrid, lat: number, lon: number): { swh: number
   let normLon = lon;
   if (normLon < grid.bounds.west) normLon += 360;
   if (normLon > grid.bounds.east + grid.resolution) normLon -= 360;
-  const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lat - grid.bounds.south) / grid.resolution)));
-  const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((normLon - grid.bounds.west) / grid.resolution)));
-  const pt = grid.points[gy * grid.cols + gx];
-  if (!pt) return { swh: 0, dir: 0, period: 0 };
-  return { swh: pt.swellHeight, dir: pt.swellDir, period: (pt as any).swellPeriod ?? 0 };
+
+  const fy = (lat - grid.bounds.south) / grid.resolution;
+  const fx = (normLon - grid.bounds.west) / grid.resolution;
+  const y0 = Math.floor(fy);
+  const x0 = Math.floor(fx);
+
+  if (y0 < 0 || y0 >= grid.rows || x0 < 0 || x0 >= grid.cols) {
+    return { swh: 0, dir: 0, period: 0 };
+  }
+
+  // Bilinear interpolation between 4 neighbors
+  const y1 = Math.min(y0 + 1, grid.rows - 1);
+  const x1 = Math.min(x0 + 1, grid.cols - 1);
+  const dx = fx - x0;
+  const dy = fy - y0;
+
+  const p00 = grid.points[y0 * grid.cols + x0];
+  const p10 = grid.points[y0 * grid.cols + x1];
+  const p01 = grid.points[y1 * grid.cols + x0];
+  const p11 = grid.points[y1 * grid.cols + x1];
+  if (!p00 || !p10 || !p01 || !p11) return { swh: 0, dir: 0, period: 0 };
+
+  const lerp = (a: number, b: number, c: number, d: number) =>
+    a * (1 - dx) * (1 - dy) + b * dx * (1 - dy) + c * (1 - dx) * dy + d * dx * dy;
+
+  const swh = lerp(p00.swellHeight, p10.swellHeight, p01.swellHeight, p11.swellHeight);
+  const period = lerp(
+    (p00 as any).swellPeriod ?? 0, (p10 as any).swellPeriod ?? 0,
+    (p01 as any).swellPeriod ?? 0, (p11 as any).swellPeriod ?? 0,
+  );
+
+  // Direction: interpolate in sin/cos space to avoid wrap-around artifacts
+  const toRad = Math.PI / 180;
+  const dirs = [p00.swellDir, p10.swellDir, p01.swellDir, p11.swellDir];
+  const sinD = lerp(...dirs.map(d => Math.sin(d * toRad)) as [number, number, number, number]);
+  const cosD = lerp(...dirs.map(d => Math.cos(d * toRad)) as [number, number, number, number]);
+  const dir = ((Math.atan2(sinD, cosD) * 180 / Math.PI) + 360) % 360;
+
+  return { swh, dir, period };
 }
 
 function spawnParticle(bounds: { west: number; east: number; south: number; north: number }): SwellParticle {
@@ -219,15 +253,15 @@ export default function SwellOverlay(): React.ReactElement {
             Object.assign(p, spawnParticle(vBounds));
             p.age = 0;
             const check = lookupSwell(grid, p.lat, p.lon);
-            if (check.swh >= 0.05) break;
+            if (check.swh >= 0.3) break;
           }
           continue;
         }
 
         const { swh, dir, period } = lookupSwell(grid, p.lat, p.lon);
 
-        // Kill particles that drifted onto land
-        if (swh < 0.05) {
+        // Kill particles on land or in coastal transition zone
+        if (swh < 0.3) {
           p.age = p.maxAge;
           continue;
         }

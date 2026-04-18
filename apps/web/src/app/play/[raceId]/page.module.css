@@ -16,6 +16,7 @@
   grid-row: 2;
   position: relative;
   overflow: hidden;
+  background-color: #0a1628;
 }
 
 .timelineRow {
