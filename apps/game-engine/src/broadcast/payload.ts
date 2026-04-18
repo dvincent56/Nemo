@@ -36,7 +36,6 @@ export interface GoneUpdate {
 export interface MyBoatFullUpdate extends FullUpdate {
   overlapFactor: number;
   twaColor: 0 | 1 | 2 | 3;
-  driveMode: 0 | 1 | 2;
   coastRisk: 0 | 1 | 2 | 3;
   transitionStartMs: number;   // timestamp when sail change started (0 = none)
   transitionEndMs: number;     // timestamp when sail change ends (0 = none)
@@ -89,15 +88,11 @@ export function buildFullUpdate(
   const a = Math.abs(outcome.twa);
   const twaColor: MyBoatFullUpdate['twaColor'] =
     a < 28 ? 0 : (a > 54 && a < 140) ? 2 : a >= 38 && a <= 54 ? 3 : a >= 140 && a <= 162 ? 3 : 1;
-  const driveMode: MyBoatFullUpdate['driveMode'] =
-    runtime.boat.driveMode === 'CONSERVATIVE' ? 0 :
-    runtime.boat.driveMode === 'NORMAL' ? 1 : 2;
   const sailState = runtime.sailState;
   return {
     ...base,
     overlapFactor: outcome.overlapFactor,
     twaColor,
-    driveMode,
     coastRisk: outcome.coastRisk,
     transitionStartMs: sailState.transitionStartMs,
     transitionEndMs: sailState.transitionEndMs,

@@ -2,8 +2,6 @@ export type BoatClass = 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTI
 
 export type SailId = 'LW' | 'JIB' | 'GEN' | 'C0' | 'HG' | 'SPI';
 
-export type DriveMode = 'PERFORMANCE' | 'NORMAL' | 'CONSERVATIVE';
-
 export type SailState = 'STABLE' | 'TRANSITION';
 
 export interface Position {
@@ -40,7 +38,6 @@ export interface Boat {
   rigCondition: number;
   sailCondition: number;
   elecCondition: number;
-  driveMode: DriveMode;
 }
 
 export type OrderType = 'CAP' | 'TWA' | 'WPT' | 'SAIL' | 'MODE' | 'VMG';
@@ -143,7 +140,6 @@ export interface BoatHUDData {
   hullCondition: number;
   rigCondition: number;
   sailCondition: number;
-  driveMode: DriveMode;
   lat: number;
   lon: number;
   latDMS: string;

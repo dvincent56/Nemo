@@ -29,11 +29,6 @@
       "shortPeriodFactor": 1.2,
       "shortPeriodThreshold": 8
     },
-    "driveModeMultipliers": {
-      "PERFORMANCE": 2.0,
-      "NORMAL": 1.0,
-      "CONSERVATIVE": 0.4
-    },
     "upgradeMultipliers": {
       "foils_rig": 1.8,
       "foils_hull": 1.3,

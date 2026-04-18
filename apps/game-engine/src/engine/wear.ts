@@ -1,4 +1,4 @@
-import type { DriveMode, WeatherPoint } from '@nemo/shared-types';
+import type { WeatherPoint } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import type { AggregatedEffects } from './loadout.js';
 
@@ -36,7 +36,6 @@ function swellMultiplier(w: WeatherPoint, heading: number): number {
 export function computeWearDelta(
   weather: WeatherPoint,
   heading: number,
-  driveMode: DriveMode,
   dtSec: number,
   loadoutEffects: AggregatedEffects,
 ): ConditionState {
@@ -44,7 +43,6 @@ export function computeWearDelta(
   const hoursFraction = dtSec / 3600;
   const windMul = windMultiplier(weather.tws);
   const swellMul = swellMultiplier(weather, heading);
-  const driveMul = wear.driveModeMultipliers[driveMode];
 
   const hullMul  = windMul * swellMul * loadoutEffects.wearMul.hull;
   const rigMul   = windMul            * loadoutEffects.wearMul.rig;
@@ -52,10 +50,10 @@ export function computeWearDelta(
   const elecMul  = loadoutEffects.wearMul.elec; // no weather multiplier on electronics (by design)
 
   return {
-    hull: wear.baseRatesPerHour.hull * hoursFraction * hullMul * driveMul,
-    rig: wear.baseRatesPerHour.rig * hoursFraction * rigMul * driveMul,
-    sails: wear.baseRatesPerHour.sails * hoursFraction * sailsMul * driveMul,
-    electronics: wear.baseRatesPerHour.electronics * hoursFraction * elecMul * driveMul,
+    hull: wear.baseRatesPerHour.hull * hoursFraction * hullMul,
+    rig: wear.baseRatesPerHour.rig * hoursFraction * rigMul,
+    sails: wear.baseRatesPerHour.sails * hoursFraction * sailsMul,
+    electronics: wear.baseRatesPerHour.electronics * hoursFraction * elecMul,
   };
 }
 

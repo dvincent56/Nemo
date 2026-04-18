@@ -33,7 +33,6 @@ function createDemoRuntime(): BoatRuntime {
     sail: 'GEN',
     sailState: 'STABLE',
     hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
-    driveMode: 'NORMAL',
   };
   return {
     boat,

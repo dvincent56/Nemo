@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { BoatClass, DriveMode, SailId } from '@nemo/shared-types';
+import type { BoatClass, SailId } from '@nemo/shared-types';
 import {
   UpgradesBlockZ, CompletionBonusZ, type UpgradesBlock, type UpgradeItem,
   type UpgradeSlot, type UpgradeTier, type SlotAvailability,
@@ -41,7 +41,6 @@ export interface WearConfig {
     shortPeriodFactor: number;
     shortPeriodThreshold: number;
   };
-  driveModeMultipliers: Record<DriveMode, number>;
   upgradeMultipliers: Record<string, number>;
 }
 

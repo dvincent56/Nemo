@@ -215,7 +215,6 @@ export function runTick(
   const wearDelta = computeWearDelta(
     weather,
     endHeading,
-    boat.driveMode,
     tickDurationSec,
     aggEffects,
   );
