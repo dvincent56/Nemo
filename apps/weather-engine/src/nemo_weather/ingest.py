@@ -30,9 +30,9 @@ NOAA_ATMOS = (
     "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/atmos/gfs.t{hh}z.pgrb2.0p25.f{fff}"
 )
-NOAA_WAVE = (  # Kept as fallback but unused — wave data extracted from atmos 0.25°
+NOAA_WAVE = (
     "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
-    "gfs.{ymd}/{hh}/wave/gridded/gfswave.t{hh}z.global.0p16.f{fff}.grib2"
+    "gfs.{ymd}/{hh}/wave/gridded/gfswave.t{hh}z.global.0p25.f{fff}.grib2"
 )
 
 # f000–f072 every 3h, f078–f240 every 6h (53 forecast hours)
@@ -89,13 +89,20 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
 
             u, v = uv_to_components(u10, v10)
 
-            # Extract wave data from the same atmos GRIB (0.25° global coverage)
-            wave_result = parse_wave_from_atmos(atmos_path)
+            # Download wave GRIB 0.25° (same resolution as atmos, global coverage)
+            wave_url = NOAA_WAVE.format(ymd=ymd, hh=hh, fff=fff)
+            wave_path = TMP_DIR / f"wave_{ymd}_{hh}_f{fff}.grib2"
+            try:
+                fetch_grib(wave_url, wave_path)
+                wave_result = parse_wave_from_atmos(wave_path)
+            except Exception:
+                LOG.warning("wave download/parse failed for f%s, filling zeros", fff)
+                wave_result = None
+
             if wave_result is not None:
                 swh, mwd_raw, mwp = wave_result
                 mwd_sin, mwd_cos = decompose_mwd(mwd_raw)
             else:
-                # No wave data in this forecast hour — fill with zeros
                 shape = u.shape
                 swh = np.zeros(shape, dtype=np.float32)
                 mwd_sin = np.zeros(shape, dtype=np.float32)
@@ -107,6 +114,7 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
             ingested_hours.append(fh)
 
             atmos_path.unlink(missing_ok=True)
+            wave_path.unlink(missing_ok=True)
 
             LOG.info("ingested f%s (%d/%d)", fff, len(ingested_hours), len(FORECAST_HOURS))
 
