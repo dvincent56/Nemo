@@ -9,6 +9,7 @@ import type { BoatRuntime } from './engine/tick.js';
 import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
+import { registerMarinaRoutes } from './api/marina.js';
 import { connectRedis } from './infra/redis.js';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider, type RedisLike } from './weather/provider.js';
 import { registerWeatherRoutes } from './routes/weather.js';
@@ -88,6 +89,7 @@ async function main() {
   }));
   registerAuthRoutes(app);
   registerRaceRoutes(app);
+  registerMarinaRoutes(app);
   await seedRacesIfEmpty();
 
   let weather: WeatherProvider;
