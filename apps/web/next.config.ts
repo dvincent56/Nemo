@@ -4,7 +4,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   reactCompiler: true,
   compress: true,
-  transpilePackages: ['@nemo/shared-types'],
+  transpilePackages: ['@nemo/shared-types', '@nemo/game-balance'],
   typedRoutes: true,
   async headers() {
     return [

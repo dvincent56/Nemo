@@ -1,5 +1,5 @@
 // apps/web/src/lib/projection/simulate.ts
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 import type { ProjectionEffects } from './types';
 import type { WeatherAtPoint } from './windLookup';
 
