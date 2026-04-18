@@ -3,7 +3,7 @@
  * Loads polar JSON via fetch, caches in memory, bilinear interpolation.
  */
 
-import type { BoatClass, Polar } from '@nemo/shared-types';
+import type { BoatClass, Polar, SailId } from '@nemo/shared-types';
 
 const cache = new Map<BoatClass, Polar>();
 const pending = new Map<BoatClass, Promise<Polar>>();
@@ -65,13 +65,15 @@ function findBracket(arr: readonly number[], value: number): { i0: number; i1: n
  * Bilinear interpolation on the polar grid.
  * Returns estimated BSP in knots for the given TWA and TWS.
  */
-export function getPolarSpeed(polar: Polar, twa: number, tws: number): number {
+export function getPolarSpeed(polar: Polar, sail: SailId, twa: number, tws: number): number {
   const absTwa = Math.min(Math.abs(twa), 180);
+  const sailSpeeds = polar.speeds[sail];
+  if (!sailSpeeds) return 0;
   const a = findBracket(polar.twa, absTwa);
   const s = findBracket(polar.tws, tws);
 
-  const r0 = polar.speeds[a.i0];
-  const r1 = polar.speeds[a.i1];
+  const r0 = sailSpeeds[a.i0];
+  const r1 = sailSpeeds[a.i1];
   if (!r0 || !r1) return 0;
 
   const v00 = r0[s.i0] ?? 0;
