@@ -15,6 +15,7 @@ interface CursorData {
   twd: number;
   swellHeight: number;
   swellDir: number;
+  swellPeriod: number;
 }
 
 function formatDMS(decimal: number, isLat: boolean): string {
@@ -58,6 +59,7 @@ export default function CursorTooltip(): React.ReactElement | null {
     let twd = 0;
     let swellHeight = 0;
     let swellDir = 0;
+    let swellPeriod = 0;
     if (grid) {
       const wind = interpolateGfsWind(grid, lngLat.lat, lngLat.lng);
       tws = wind.tws;
@@ -71,6 +73,7 @@ export default function CursorTooltip(): React.ReactElement | null {
       if (nearest) {
         swellHeight = nearest.swellHeight;
         swellDir = nearest.swellDir;
+        swellPeriod = nearest.swellPeriod;
       }
     }
 
@@ -83,6 +86,7 @@ export default function CursorTooltip(): React.ReactElement | null {
       twd,
       swellHeight,
       swellDir,
+      swellPeriod,
     });
   }, []);
 
@@ -148,7 +152,7 @@ export default function CursorTooltip(): React.ReactElement | null {
           </div>
           <div className={styles.row}>
             <span className={styles.label}>SWH</span>
-            <span className={styles.value}>{data.swellHeight.toFixed(1)} m</span>
+            <span className={styles.value}>{data.swellHeight.toFixed(1)} m · {data.swellPeriod.toFixed(0)}s</span>
           </div>
         </>
       ) : (
@@ -164,7 +168,7 @@ export default function CursorTooltip(): React.ReactElement | null {
           {swellOn && (
             <div className={styles.row}>
               <span className={styles.label}>SWH</span>
-              <span className={styles.value}>{data.swellHeight.toFixed(1)} m</span>
+              <span className={styles.value}>{data.swellHeight.toFixed(1)} m · {data.swellPeriod.toFixed(0)}s</span>
             </div>
           )}
         </>
