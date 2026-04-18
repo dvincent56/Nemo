@@ -10,7 +10,7 @@ import { resolveBoatLoadout } from './engine/loadout.js';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { connectRedis } from './infra/redis.js';
-import { createFixtureProvider } from './weather/provider.js';
+import { createFixtureProvider, createNoaaProvider, type WeatherProvider, type RedisLike } from './weather/provider.js';
 import { registerWeatherRoutes } from './routes/weather.js';
 
 const log = pino({ name: 'game-engine' });
@@ -25,11 +25,11 @@ function createDemoRuntime(): BoatRuntime {
     id: 'demo-boat-1',
     ownerId: 'demo-owner',
     name: 'Nemo Démo',
-    boatClass: 'CLASS40',
+    boatClass: 'IMOCA60',
     position: { lat: 47.0, lon: -3.0 },
-    heading: 90,
+    heading: 216,
     bsp: 0,
-    sail: 'SPI',
+    sail: 'GEN',
     sailState: 'STABLE',
     hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
     driveMode: 'NORMAL',
@@ -38,11 +38,11 @@ function createDemoRuntime(): BoatRuntime {
     boat,
     raceId: 'r-vendee-2026',
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
-    sailState: { active: 'GEN', pending: null, transitionRemainingSec: 0, autoMode: false, timeOutOfRangeSec: 0 },
+    sailState: { active: 'GEN', pending: null, transitionStartMs: 0, transitionEndMs: 0, autoMode: false, timeOutOfRangeSec: 0 },
     segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 216, twaLock: null, sail: 'GEN', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'IMOCA60'),
     prevTwa: null,
     maneuver: null,
   };
@@ -90,7 +90,28 @@ async function main() {
   registerRaceRoutes(app);
   await seedRacesIfEmpty();
 
-  const weather = await createFixtureProvider();
+  let weather: WeatherProvider;
+  if (process.env['NEMO_WEATHER_MODE'] === 'noaa') {
+    try {
+      const { default: Redis } = await import('ioredis');
+      const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
+      const sub = new Redis(redisUrl);
+      const client = new Redis(redisUrl);
+      const redisLike: RedisLike = {
+        get: (k) => client.get(k),
+        keys: (p) => client.keys(p),
+        subscribe: (ch) => sub.subscribe(ch),
+        on: (ev, cb) => sub.on(ev as 'message', cb),
+      };
+      weather = await createNoaaProvider(redisLike);
+      log.info('weather provider: NOAA (live GFS)');
+    } catch (err) {
+      log.warn({ err }, 'NOAA provider failed in index, falling back to fixture');
+      weather = await createFixtureProvider();
+    }
+  } else {
+    weather = await createFixtureProvider();
+  }
   registerWeatherRoutes(app, () => weather);
 
   const port = Number(process.env['PORT'] ?? 3001);
