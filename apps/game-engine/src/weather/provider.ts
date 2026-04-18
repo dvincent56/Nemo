@@ -47,29 +47,61 @@ export async function createFixtureProvider(
   };
 }
 
-type RawGridJsonUV = WeatherGridUVMeta & {
-  variables: { u: string; v: string; swh: string; mwdSin: string; mwdCos: string; mwp: string };
-};
+interface HourData {
+  u: string; v: string; swh: string; mwdSin: string; mwdCos: string; mwp: string;
+}
 
 const DELAY_THRESHOLD_MS = 5 * 3_600_000; // 5 hours
 
 export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvider> {
+  /** Load a run from split keys: meta + per-hour data. */
   async function loadGrid(runTs: number): Promise<WeatherGridUV> {
-    const raw = await redis.get(`weather:grid:${runTs}`);
-    if (!raw) throw new Error(`grid weather:grid:${runTs} not found`);
-    const parsed = JSON.parse(raw) as RawGridJsonUV;
-    return decodeGridFromBase64(parsed, parsed.variables);
+    const metaRaw = await redis.get(`weather:grid:${runTs}`);
+    if (!metaRaw) throw new Error(`meta weather:grid:${runTs} not found`);
+    const meta = JSON.parse(metaRaw) as WeatherGridUVMeta;
+
+    const pointsPerHour = meta.shape.rows * meta.shape.cols;
+    const totalPoints = pointsPerHour * meta.forecastHours.length;
+
+    const u = new Float32Array(totalPoints);
+    const v = new Float32Array(totalPoints);
+    const swh = new Float32Array(totalPoints);
+    const mwdSin = new Float32Array(totalPoints);
+    const mwdCos = new Float32Array(totalPoints);
+    const mwp = new Float32Array(totalPoints);
+
+    const toArr = (b64: string): Float32Array => {
+      const buf = Buffer.from(b64, 'base64');
+      return new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
+    };
+
+    for (let i = 0; i < meta.forecastHours.length; i++) {
+      const fh = meta.forecastHours[i]!;
+      const hourKey = `weather:grid:${runTs}:f${String(fh).padStart(3, '0')}`;
+      const hourRaw = await redis.get(hourKey);
+      if (!hourRaw) continue; // skip missing hours
+      const hourData = JSON.parse(hourRaw) as HourData;
+      const offset = i * pointsPerHour;
+      u.set(toArr(hourData.u), offset);
+      v.set(toArr(hourData.v), offset);
+      swh.set(toArr(hourData.swh), offset);
+      mwdSin.set(toArr(hourData.mwdSin), offset);
+      mwdCos.set(toArr(hourData.mwdCos), offset);
+      mwp.set(toArr(hourData.mwp), offset);
+    }
+
+    return { ...meta, u, v, swh, mwdSin, mwdCos, mwp };
   }
 
   async function loadLatest(): Promise<WeatherGridUV> {
-    const keys = await redis.keys('weather:grid:*');
-    if (keys.length === 0) throw new Error('no weather grid in redis');
-    keys.sort();
-    const key = keys[keys.length - 1] as string;
-    const raw = await redis.get(key);
-    if (!raw) throw new Error(`grid ${key} vanished`);
-    const parsed = JSON.parse(raw) as RawGridJsonUV;
-    return decodeGridFromBase64(parsed, parsed.variables);
+    // Find meta keys (pattern: weather:grid:TIMESTAMP, no :f suffix)
+    const allKeys = await redis.keys('weather:grid:*');
+    const metaKeys = allKeys.filter(k => !k.includes(':f'));
+    if (metaKeys.length === 0) throw new Error('no weather grid in redis');
+    metaKeys.sort();
+    const latestKey = metaKeys[metaKeys.length - 1]!;
+    const runTs = Number(latestKey.split(':').pop());
+    return loadGrid(runTs);
   }
 
   const initialGrid = await loadLatest();

@@ -16,13 +16,12 @@ import redis as redis_lib
 import requests
 
 from .grid_builder import (
-    build_grid_payload,
     decompose_mwd,
     parse_atmos_grib,
     parse_wave_grib,
     uv_to_components,
 )
-from .persistence import load_from_disk, push_to_redis, save_to_disk
+from .persistence import push_hour_to_redis, push_meta_to_redis
 from .poller import check_run_available, pick_target_run, wait_for_run
 
 LOG = logging.getLogger("nemo.weather")
@@ -72,14 +71,7 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
     hh = f"{run.hour:02d}"
     run_ts = int(calendar.timegm(run.timetuple()))
 
-    u_planes: list[np.ndarray] = []
-    v_planes: list[np.ndarray] = []
-    swh_planes: list[np.ndarray] = []
-    mwd_sin_planes: list[np.ndarray] = []
-    mwd_cos_planes: list[np.ndarray] = []
-    mwp_planes: list[np.ndarray] = []
     ingested_hours: list[int] = []
-
     target_lats: np.ndarray | None = None
     target_lons: np.ndarray | None = None
 
@@ -103,12 +95,8 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
             swh, mwd_raw, mwp = parse_wave_grib(wave_path, target_lats, target_lons)
             mwd_sin, mwd_cos = decompose_mwd(mwd_raw)
 
-            u_planes.append(u)
-            v_planes.append(v)
-            swh_planes.append(swh)
-            mwd_sin_planes.append(mwd_sin)
-            mwd_cos_planes.append(mwd_cos)
-            mwp_planes.append(mwp)
+            # Push this hour to Redis immediately (~33 MB per key)
+            push_hour_to_redis(run_ts, fh, u, v, swh, mwd_sin, mwd_cos, mwp, redis_client)
             ingested_hours.append(fh)
 
             atmos_path.unlink(missing_ok=True)
@@ -131,22 +119,16 @@ def ingest_run(run: dt.datetime, redis_client: redis_lib.Redis) -> None:
     lon_min = float(target_lons[0]) if target_lons is not None else -180.0
     lon_max = float(target_lons[-1]) if target_lons is not None else 180.0
 
-    grid = build_grid_payload(
+    # Push metadata + notify game-engine via pub/sub
+    push_meta_to_redis(
         run_ts=run_ts,
         forecast_hours=ingested_hours,
-        u_planes=u_planes,
-        v_planes=v_planes,
-        swh_planes=swh_planes,
-        mwd_sin_planes=mwd_sin_planes,
-        mwd_cos_planes=mwd_cos_planes,
-        mwp_planes=mwp_planes,
         bbox={"latMin": lat_min, "latMax": lat_max, "lonMin": lon_min, "lonMax": lon_max},
         resolution=0.25,
         shape={"rows": rows, "cols": cols},
+        redis_client=redis_client,
     )
 
-    push_to_redis(grid, redis_client)
-    save_to_disk(grid, FALLBACK_DIR)
     LOG.info("run %s complete: %d/%d forecast hours", run.isoformat(), len(ingested_hours), len(FORECAST_HOURS))
 
 
