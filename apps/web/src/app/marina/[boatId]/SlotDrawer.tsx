@@ -27,11 +27,17 @@ export function SlotDrawer({ open, slot, boatId, boatClass, onClose, onChanged }
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    Promise.all([fetchMyUpgrades(), fetchCatalog(boatClass)])
+    Promise.all([fetchMyUpgrades(), fetchCatalog()])
       .then(([inv, cat]) => {
-        setInventory(inv.inventory.filter((i) =>
-          i.slot === slot && !i.installedOn,
-        ));
+        // Lookup table: catalogId -> compat[] (so we can filter inventory items
+        // by class compat, which isn't stored on the inventory row itself)
+        const compatByCatalogId = new Map(cat.items.map((i) => [i.id, i.compat]));
+        setInventory(inv.inventory.filter((i) => {
+          if (i.slot !== slot) return false;
+          if (i.installedOn) return false;
+          const compat = compatByCatalogId.get(i.upgradeCatalogId);
+          return compat?.includes(boatClass as BoatClass) ?? false;
+        }));
         setCatalog(cat.items.filter((i) =>
           i.slot === slot && i.compat.includes(boatClass as BoatClass) && i.tier !== 'SERIE',
         ));
