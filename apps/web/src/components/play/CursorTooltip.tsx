@@ -62,9 +62,11 @@ export default function CursorTooltip(): React.ReactElement | null {
       const wind = interpolateGfsWind(grid, lngLat.lat, lngLat.lng);
       tws = wind.tws;
       twd = wind.twd;
-      // Find nearest grid point for swell
+      // Find nearest grid point for swell (normalize lon for 0-360 grids)
+      let swellLon = lngLat.lng;
+      if (swellLon < grid.bounds.west) swellLon += 360;
       const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lngLat.lat - grid.bounds.south) / grid.resolution)));
-      const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((lngLat.lng - grid.bounds.west) / grid.resolution)));
+      const gx = Math.max(0, Math.min(grid.cols - 1, Math.floor((swellLon - grid.bounds.west) / grid.resolution)));
       const nearest = grid.points[gy * grid.cols + gx];
       if (nearest) {
         swellHeight = nearest.swellHeight;

@@ -180,9 +180,11 @@ export default function SwellOverlay(): React.ReactElement {
           const point = grid.points[0]; // just need swellHeight/swellDir existence
           if (!point) continue;
 
-          // Find nearest grid point for swell data
+          // Find nearest grid point for swell data (normalize lon for 0-360 grids)
+          let normLon = lon;
+          if (normLon < grid.bounds.west) normLon += 360;
           const gy = Math.floor((lat - grid.bounds.south) / grid.resolution);
-          const gx = Math.floor((lon - grid.bounds.west) / grid.resolution);
+          const gx = Math.floor((normLon - grid.bounds.west) / grid.resolution);
           const gi = Math.max(0, Math.min(grid.rows - 1, gy)) * grid.cols + Math.max(0, Math.min(grid.cols - 1, gx));
           const nearest = grid.points[gi];
           if (!nearest) continue;
