@@ -18,7 +18,7 @@ const CELL_SIZE = 24;      // pixels between grid cells
 const BAR_LEN = 7;         // bar length in pixels
 const BAR_WIDTH = 1.2;     // bar thickness
 const BARS_PER_CELL = 4;   // parallel wave crests per cell
-const ANIM_SPEED = 0.02;   // pixels per frame — extremely slow
+const ANIM_SPEED = 0.15;   // pixels per frame — visible drift
 
 // SWH color ramp — same as before (validated)
 const SWH_STOPS: [number, number, number, number][] = [
