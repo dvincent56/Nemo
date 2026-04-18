@@ -1,0 +1,1628 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nemo — Accueil · Direction éditoriale V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   NEMO — / (home) · Direction éditoriale "Nautical Luxury"
+   Référence : Rolex Yacht-Master / SailGP editorial / Yacht Magazine
+   Palette unique ivory/navy/gold — même grammaire que /races.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --ivory:        #f5f0e8;
+  --ivory-2:      #ede8e0;
+  --ivory-3:      #e4ddd0;
+  --paper:        #fbf7f0;
+  --paper-hover:  #ffffff;
+
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-3:       #3a4a6b;
+  --navy-soft:    rgba(26, 40, 64, 0.06);
+  --navy-line:    rgba(26, 40, 64, 0.12);
+  --navy-rule:    rgba(26, 40, 64, 0.20);
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-soft:    rgba(201, 162, 39, 0.12);
+
+  --live:         #2d8a4e;
+  --live-soft:    rgba(45, 138, 78, 0.10);
+  --open:         #1a4d7a;
+
+  --t1: #1a2840;
+  --t2: #4a5568;
+  --t3: #8a7f6d;
+  --t-ivory-1:    #f5f0e8;
+  --t-ivory-2:    rgba(245, 240, 232, 0.75);
+  --t-ivory-3:    rgba(245, 240, 232, 0.50);
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+
+  --r-sm: 2px;
+  --r-md: 4px;
+  --r-lg: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--ivory);
+  color: var(--t1);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+body * { max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(201, 162, 39, 0.04), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(26, 40, 64, 0.03), transparent 60%);
+  z-index: -1;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Topbar — mode visiteur (Courses / Classement / CTA login)
+   ───────────────────────────────────────────────────────────── */
+.topbar {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 1400px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px clamp(20px, 4vw, 64px);
+  gap: 16px;
+  z-index: 20;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--t-ivory-1);
+  flex-shrink: 0;
+}
+.brand span { color: var(--gold); }
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t-ivory-2);
+}
+.nav a {
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+  transition: color 150ms, border-bottom-color 150ms;
+}
+.nav a:hover {
+  color: var(--t-ivory-1);
+  border-bottom-color: var(--gold);
+}
+
+.login-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 18px;
+  background: var(--ivory);
+  color: var(--navy);
+  border: 1px solid var(--ivory);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-left: 8px;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.login-cta:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy);
+}
+
+.lang {
+  display: flex;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.lang a {
+  color: var(--t-ivory-3);
+  padding: 4px 8px;
+  border-radius: 2px;
+  transition: color 150ms, background 150ms;
+}
+.lang a.active {
+  color: var(--t-ivory-1);
+  background: rgba(245, 240, 232, 0.12);
+}
+.lang a:hover { color: var(--t-ivory-1); }
+
+/* ─────────────────────────────────────────────────────────────
+   Hero — photo bichromique + double CTA
+   ───────────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--navy);
+  color: var(--t-ivory-1);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.4) contrast(1.05) brightness(0.85);
+  /* Placeholder Unsplash — remplacer en prod par une photo sous licence */
+}
+.hero-bg::after {
+  /* voile navy pour lisibilité + bichromie + vignette */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(26, 40, 64, 0.55) 0%, rgba(26, 40, 64, 0.35) 40%, rgba(26, 40, 64, 0.85) 100%),
+    radial-gradient(ellipse at 30% 40%, rgba(26, 40, 64, 0.0) 0%, rgba(26, 40, 64, 0.7) 90%);
+  mix-blend-mode: multiply;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px) clamp(48px, 8vh, 96px);
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 64px;
+  align-items: end;
+}
+
+.hero-main { max-width: 720px; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 24px;
+}
+.eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 9vw, 128px);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  margin: 0 0 32px;
+  color: var(--t-ivory-1);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.25);
+}
+.hero-title em {
+  font-style: normal;
+  color: var(--gold);
+}
+
+.hero-lede {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--t-ivory-2);
+  max-width: 560px;
+  margin: 0 0 40px;
+  font-weight: 400;
+}
+.hero-lede strong { color: var(--t-ivory-1); font-weight: 600; }
+
+.hero-ctas {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 14px 28px;
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 180ms, color 180ms, border-color 180ms, transform 80ms;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+.btn .arrow { font-size: 18px; letter-spacing: 0; transition: transform 200ms; }
+.btn:hover .arrow { transform: translateX(4px); }
+
+.btn-primary {
+  background: var(--ivory);
+  color: var(--navy);
+  border-color: var(--ivory);
+}
+.btn-primary:hover { background: var(--gold); border-color: var(--gold); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--t-ivory-1);
+  border-color: rgba(245, 240, 232, 0.35);
+}
+.btn-secondary:hover {
+  background: rgba(245, 240, 232, 0.08);
+  border-color: var(--t-ivory-1);
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold);
+}
+.btn-gold:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+
+.hero-status {
+  display: flex;
+  gap: clamp(16px, 3vw, 48px);
+  flex-wrap: wrap;
+  padding-top: 28px;
+  border-top: 1px solid rgba(245, 240, 232, 0.20);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--t-ivory-2);
+}
+.hero-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-status strong {
+  color: var(--t-ivory-1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 3px rgba(45, 138, 78, 0.25);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* boussole filigrane à droite du hero */
+.hero-compass {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.85;
+  height: 340px;
+  margin-bottom: 40px;
+}
+.hero-compass svg {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  animation: slow-rotate 80s linear infinite;
+}
+@keyframes slow-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.hero-compass .needle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hero-compass .needle svg { animation: none; width: 100%; max-width: 380px; }
+
+/* ─────────────────────────────────────────────────────────────
+   Sections génériques
+   ───────────────────────────────────────────────────────────── */
+section.block {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(72px, 10vh, 128px) clamp(20px, 4vw, 64px);
+}
+section.block-wide {
+  width: 100%;
+  padding: clamp(72px, 10vh, 128px) 0;
+}
+section.block-wide > .inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 64px);
+}
+
+.section-head {
+  margin-bottom: clamp(32px, 5vh, 64px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.section-head h2 {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  color: var(--t1);
+  margin: 0;
+}
+.section-head p.lede {
+  max-width: 480px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--t2);
+}
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  border-bottom: 1px solid var(--navy-rule);
+  padding-bottom: 4px;
+  transition: color 150ms, border-bottom-color 150ms;
+}
+.section-link:hover { color: var(--gold-dark); border-bottom-color: var(--gold); }
+
+/* ─────────────────────────────────────────────────────────────
+   Section 2 — Voici Nemo (3 piliers)
+   ───────────────────────────────────────────────────────────── */
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.pillar {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transition: border-color 200ms, box-shadow 200ms, transform 200ms;
+}
+.pillar:hover {
+  border-color: var(--gold);
+  box-shadow: 0 18px 40px -30px rgba(26, 40, 64, 0.35);
+  transform: translateY(-2px);
+}
+.pillar-visual {
+  background: var(--ivory-2);
+  border-radius: var(--r-sm);
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.pillar-visual svg { width: 100%; height: 100%; }
+
+.pillar-num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+}
+.pillar h3 {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 0.01em;
+  margin: 0;
+  color: var(--t1);
+  line-height: 1;
+}
+.pillar p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--t2);
+}
+.pillar p strong { color: var(--navy); font-weight: 600; }
+
+/* ─────────────────────────────────────────────────────────────
+   Section 3 — En direct (3 courses)
+   ───────────────────────────────────────────────────────────── */
+.live-races {
+  background: var(--ivory-2);
+}
+.live-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.race-card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 200ms, box-shadow 200ms, transform 200ms;
+}
+.race-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 18px 40px -30px rgba(26, 40, 64, 0.35);
+  transform: translateY(-2px);
+}
+.race-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.race-card-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.02em;
+  color: var(--t1);
+  margin: 0 0 4px;
+  line-height: 1;
+}
+.race-card-meta {
+  font-size: 12px;
+  color: var(--t3);
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-pill, 999px);
+  flex-shrink: 0;
+}
+.chip-live {
+  color: var(--live);
+  background: var(--live-soft);
+  border: 1px solid rgba(45, 138, 78, 0.28);
+}
+.chip-live .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--live);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.race-card-map {
+  background: var(--ivory-3);
+  border-radius: var(--r-sm);
+  aspect-ratio: 2/1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.race-card-map svg { width: 100%; height: 100%; }
+
+.race-card-leader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--navy-line);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--t2);
+}
+.race-card-leader strong { color: var(--navy); font-weight: 700; }
+.race-card-leader .nb {
+  color: var(--t3);
+  font-size: 11px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Section 4 — Mode carrière (fond navy)
+   ───────────────────────────────────────────────────────────── */
+.career {
+  background: var(--navy);
+  color: var(--t-ivory-1);
+  position: relative;
+  overflow: hidden;
+}
+.career::before {
+  /* grain subtil */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(201, 162, 39, 0.08), transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(245, 240, 232, 0.03), transparent 45%);
+  pointer-events: none;
+}
+.career .inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+}
+.career-text h2 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 6vw, 88px);
+  line-height: 0.95;
+  margin: 0 0 24px;
+  color: var(--t-ivory-1);
+}
+.career-text h2 em { font-style: normal; color: var(--gold); }
+
+.career-text .eyebrow { color: var(--gold); }
+.career-text p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--t-ivory-2);
+  margin: 0 0 20px;
+  max-width: 500px;
+}
+.career-text p strong { color: var(--t-ivory-1); font-weight: 600; }
+.career-text .emphasis {
+  display: block;
+  padding: 18px 24px;
+  margin: 28px 0 32px;
+  border-left: 2px solid var(--gold);
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--t-ivory-1);
+}
+
+.career-visual {
+  position: relative;
+  padding: 40px;
+  background: rgba(245, 240, 232, 0.04);
+  border: 1px solid rgba(245, 240, 232, 0.10);
+  border-radius: var(--r-md);
+}
+.career-visual .visual-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.career-visual h4 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  margin: 0 0 24px;
+  color: var(--t-ivory-1);
+}
+.career-boats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.career-boat {
+  background: rgba(245, 240, 232, 0.03);
+  border: 1px solid rgba(245, 240, 232, 0.08);
+  border-radius: var(--r-sm);
+  padding: 16px 12px;
+  text-align: center;
+}
+.career-boat svg {
+  width: 100%;
+  height: 60px;
+  margin-bottom: 8px;
+}
+.career-boat .stage {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-ivory-3);
+}
+
+.career-timeline {
+  border-top: 1px solid rgba(245, 240, 232, 0.10);
+  padding-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.career-stat {
+  text-align: left;
+}
+.career-stat .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t-ivory-3);
+  margin: 0 0 4px;
+}
+.career-stat .value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--gold);
+  margin: 0;
+  line-height: 1;
+}
+.career-stat .value small {
+  font-size: 14px;
+  color: var(--t-ivory-2);
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Section 5 — Journal de bord (news)
+   ───────────────────────────────────────────────────────────── */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.news-card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 200ms, box-shadow 200ms, transform 200ms;
+}
+.news-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 18px 40px -30px rgba(26, 40, 64, 0.35);
+  transform: translateY(-2px);
+}
+.news-image {
+  aspect-ratio: 16/10;
+  background: var(--ivory-3);
+  position: relative;
+  overflow: hidden;
+}
+.news-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(0.35) contrast(1.05);
+  transition: transform 400ms;
+}
+.news-card:hover .news-image img { transform: scale(1.03); }
+
+.news-image-svg {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--navy-2), var(--navy));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.news-image-svg svg { width: 60%; height: auto; opacity: 0.9; }
+
+.news-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.news-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cat-chip {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: var(--gold-soft);
+  color: var(--gold-dark);
+  border: 1px solid rgba(201, 162, 39, 0.28);
+}
+.news-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+.news-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: var(--t1);
+  margin: 4px 0 0;
+}
+.news-excerpt {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--t2);
+  margin: 0;
+}
+.news-read {
+  margin-top: auto;
+  padding-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--navy);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.news-card:hover .news-read { color: var(--gold-dark); }
+
+/* ─────────────────────────────────────────────────────────────
+   Section 6 — Ils sont en tête (podium saison)
+   ───────────────────────────────────────────────────────────── */
+.podium-section { background: var(--ivory-2); }
+.podium-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: end;
+}
+.podium-card {
+  background: var(--paper);
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-md);
+  padding: 28px 24px;
+  text-align: center;
+  position: relative;
+}
+.podium-card.p1 {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, var(--paper) 0%, rgba(201, 162, 39, 0.05) 100%);
+  padding-top: 36px;
+  padding-bottom: 36px;
+}
+.podium-card.p2, .podium-card.p3 { padding-top: 24px; }
+
+.podium-pos {
+  font-family: var(--font-display);
+  font-size: 56px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.podium-pos sup { font-size: 22px; color: var(--gold-dark); }
+.podium-card.p2 .podium-pos, .podium-card.p3 .podium-pos { color: var(--navy); }
+.podium-card.p2 .podium-pos sup, .podium-card.p3 .podium-pos sup { color: var(--t3); }
+
+.podium-flag {
+  display: inline-block;
+  width: 20px;
+  height: 14px;
+  background: linear-gradient(to bottom, #0055a4 33%, #fff 33%, #fff 66%, #ef4135 66%);
+  border: 1px solid var(--navy-line);
+  border-radius: 1px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.podium-flag.it { background: linear-gradient(to right, #009246 33%, #fff 33%, #fff 66%, #ce2b37 66%); }
+.podium-flag.uk {
+  background:
+    linear-gradient(to bottom, transparent 40%, #cf142b 40%, #cf142b 60%, transparent 60%),
+    linear-gradient(to right, transparent 40%, #cf142b 40%, #cf142b 60%, transparent 60%),
+    #0057b7;
+}
+
+.podium-name {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  color: var(--t1);
+  margin: 8px 0 4px;
+  line-height: 1;
+}
+.podium-city {
+  font-size: 12px;
+  color: var(--t3);
+  letter-spacing: 0.04em;
+}
+.podium-points {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--navy-line);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  font-variant-numeric: tabular-nums;
+}
+.podium-points small {
+  font-size: 11px;
+  color: var(--t3);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Footer — enrichi
+   ───────────────────────────────────────────────────────────── */
+.site-footer {
+  background: var(--navy);
+  color: var(--t-ivory-2);
+  margin-top: 0;
+}
+.footer-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 72px clamp(20px, 4vw, 64px) 32px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 48px;
+}
+.footer-col h5 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 20px;
+}
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.footer-col a {
+  color: var(--t-ivory-2);
+  font-size: 13px;
+  transition: color 150ms;
+}
+.footer-col a:hover { color: var(--t-ivory-1); }
+
+.footer-bottom {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px clamp(20px, 4vw, 64px);
+  border-top: 1px solid rgba(245, 240, 232, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-bottom .brand {
+  color: var(--t-ivory-1);
+  font-size: 20px;
+}
+.footer-bottom .copy {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--t-ivory-3);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .hero-content { grid-template-columns: 1fr; gap: 32px; }
+  .hero-compass { display: none; }
+  .pillars, .live-grid { grid-template-columns: repeat(2, 1fr); }
+  .news-grid { grid-template-columns: repeat(2, 1fr); }
+  .career .inner { grid-template-columns: 1fr; gap: 48px; }
+  .footer-inner { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+}
+@media (max-width: 680px) {
+  .nav { display: none; }
+  .topbar { padding: 16px 20px; }
+  .hero-title { font-size: 56px; }
+  .hero-ctas { flex-direction: column; align-items: stretch; }
+  .pillars, .live-grid, .news-grid, .podium-grid { grid-template-columns: 1fr; }
+  .section-head { flex-direction: column; align-items: flex-start; }
+  .footer-inner { grid-template-columns: 1fr; gap: 32px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg">
+    <!-- Placeholder Unsplash : voilier offshore. Remplacer en prod. -->
+    <img
+      src="https://images.unsplash.com/photo-1500627964684-141351970a7f?auto=format&fit=crop&w=2400&q=80"
+      alt="Voilier offshore en pleine mer"
+      onerror="this.style.display='none'"
+    />
+  </div>
+
+  <header class="topbar">
+    <a href="#" class="brand">NE<span>M</span>O</a>
+    <nav class="nav" aria-label="Principal">
+      <a href="#">Courses</a>
+      <a href="#">Classement</a>
+    </nav>
+    <a href="#" class="login-cta">Se connecter</a>
+    <nav class="lang" aria-label="Langue">
+      <a href="#" class="active">FR</a>
+      <a href="#">EN</a>
+      <a href="#">ES</a>
+      <a href="#">DE</a>
+    </nav>
+  </header>
+
+  <div class="hero-content">
+    <div class="hero-main">
+      <p class="eyebrow">Saison 2026 · Circuit Nemo</p>
+      <h1 class="hero-title">
+        Un bateau.<br>
+        Ta <em>carrière</em>.<br>
+        Mille à mille.
+      </h1>
+      <p class="hero-lede">
+        <strong>Nemo</strong> est un circuit de course offshore en ligne.
+        Polaires réelles fournies par les constructeurs, météo <strong>GFS</strong>
+        mise à jour toutes les 6 h, et un bateau qui te suit de course en course,
+        façonné par tes victoires.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="#" class="btn btn-primary">
+          Créer un compte <span class="arrow">→</span>
+        </a>
+        <a href="#" class="btn btn-secondary">
+          Voir les courses en direct <span class="arrow">→</span>
+        </a>
+      </div>
+
+      <div class="hero-status">
+        <span><span class="live-dot"></span> <strong>3</strong>&nbsp;courses en direct</span>
+        <span><strong>428</strong>&nbsp;skippers en mer</span>
+        <span><strong>12&nbsp;874</strong>&nbsp;skippers inscrits</span>
+      </div>
+    </div>
+
+    <div class="hero-compass" aria-hidden="true">
+      <svg viewBox="0 0 340 340">
+        <g fill="none" stroke="rgba(245, 240, 232, 0.35)" stroke-width="1">
+          <circle cx="170" cy="170" r="160"/>
+          <circle cx="170" cy="170" r="130"/>
+          <circle cx="170" cy="170" r="90"/>
+          <circle cx="170" cy="170" r="30"/>
+          <line x1="170" y1="10" x2="170" y2="330"/>
+          <line x1="10" y1="170" x2="330" y2="170"/>
+          <line x1="56" y1="56" x2="284" y2="284"/>
+          <line x1="284" y1="56" x2="56" y2="284"/>
+        </g>
+        <g fill="rgba(245, 240, 232, 0.6)" font-family="Space Mono" font-size="10" text-anchor="middle">
+          <text x="170" y="25">N</text>
+          <text x="325" y="174">E</text>
+          <text x="170" y="327">S</text>
+          <text x="15" y="174">O</text>
+        </g>
+      </svg>
+      <div class="needle">
+        <svg viewBox="0 0 340 340">
+          <path d="M170,10 L180,160 L170,170 L160,160 Z" fill="#c9a227"/>
+          <path d="M170,170 L180,170 L170,330 L160,170 Z" fill="rgba(245, 240, 232, 0.4)"/>
+          <circle cx="170" cy="170" r="6" fill="#c9a227"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VOICI NEMO (3 piliers)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="block">
+  <header class="section-head">
+    <div>
+      <p class="eyebrow" style="color: var(--gold-dark)">02 · L'essentiel</p>
+      <h2>Voici Nemo.</h2>
+    </div>
+    <p class="lede">
+      Trois piliers qui font de Nemo un circuit de skipper : simulation fidèle,
+      données partagées par tous, progression qui se gagne course après course.
+    </p>
+  </header>
+
+  <div class="pillars">
+    <!-- Pilier 1 : Polaires certifiées -->
+    <article class="pillar">
+      <div class="pillar-visual">
+        <svg viewBox="0 0 200 150" aria-hidden="true">
+          <!-- diagramme polaire stylisé -->
+          <g fill="none" stroke="rgba(26, 40, 64, 0.2)" stroke-width="1">
+            <circle cx="100" cy="75" r="60"/>
+            <circle cx="100" cy="75" r="40"/>
+            <circle cx="100" cy="75" r="20"/>
+            <line x1="100" y1="15" x2="100" y2="135"/>
+            <line x1="40" y1="75" x2="160" y2="75"/>
+            <line x1="58" y1="33" x2="142" y2="117"/>
+            <line x1="142" y1="33" x2="58" y2="117"/>
+          </g>
+          <!-- courbe polaire -->
+          <path d="M100,30 Q140,35 155,75 Q150,115 125,125 Q100,130 100,120 Z" fill="#c9a22740" stroke="#c9a227" stroke-width="2"/>
+          <circle cx="100" cy="75" r="3" fill="#1a2840"/>
+          <!-- labels -->
+          <g font-family="Space Mono" font-size="7" fill="#4a5568" text-anchor="middle">
+            <text x="100" y="11">N</text>
+            <text x="168" y="77">E</text>
+          </g>
+          <g font-family="Space Mono" font-size="8" fill="#1a2840" font-weight="700">
+            <text x="152" y="48">10.8</text>
+            <text x="145" y="105">12.4</text>
+          </g>
+        </svg>
+      </div>
+      <p class="pillar-num">01 · Polaires</p>
+      <h3>Polaires réelles</h3>
+      <p>
+        Les <strong>mêmes fichiers</strong> pour tous les joueurs, du Figaro III
+        à l'Ultim. Fournis par les constructeurs, jamais modifiés. Ton bateau
+        se comporte exactement comme dans la vraie vie.
+      </p>
+    </article>
+
+    <!-- Pilier 2 : Météo NOAA -->
+    <article class="pillar">
+      <div class="pillar-visual">
+        <svg viewBox="0 0 200 150" aria-hidden="true">
+          <!-- carte avec isobares -->
+          <rect x="0" y="0" width="200" height="150" fill="#ede8e0"/>
+          <g stroke="#1a2840" fill="none" stroke-width="1">
+            <!-- isobares -->
+            <path d="M20,30 Q80,40 130,30 T195,35" opacity="0.25"/>
+            <path d="M15,55 Q70,70 130,60 T195,62" opacity="0.35"/>
+            <path d="M10,85 Q60,100 130,90 T195,95" opacity="0.45"/>
+            <path d="M10,115 Q60,130 140,120 T195,125" opacity="0.35"/>
+          </g>
+          <!-- flèches de vent -->
+          <g stroke="#c9a227" stroke-width="1.5" fill="none">
+            <line x1="30" y1="45" x2="45" y2="40"/>
+            <path d="M45,40 L40,38 M45,40 L42,43" stroke-linecap="round"/>
+            <line x1="80" y1="65" x2="95" y2="58"/>
+            <path d="M95,58 L90,57 M95,58 L91,61" stroke-linecap="round"/>
+            <line x1="60" y1="100" x2="78" y2="92"/>
+            <path d="M78,92 L73,91 M78,92 L74,95" stroke-linecap="round"/>
+            <line x1="130" y1="75" x2="148" y2="68"/>
+            <path d="M148,68 L143,66 M148,68 L144,71" stroke-linecap="round"/>
+          </g>
+          <!-- point L (basse pression) -->
+          <text x="108" y="65" font-family="Space Mono" font-size="14" font-weight="700" fill="#1a2840">L</text>
+          <text x="40" y="115" font-family="Space Mono" font-size="14" font-weight="700" fill="#1a2840">H</text>
+          <!-- timestamp -->
+          <text x="10" y="142" font-family="Space Mono" font-size="7" fill="#8a7f6d" letter-spacing="0.1em">GFS · 2026-04-16 · 12Z</text>
+        </svg>
+      </div>
+      <p class="pillar-num">02 · Météo</p>
+      <h3>Météo réelle</h3>
+      <p>
+        Les données <strong>GFS</strong> mises à jour toutes les 6 h,
+        identiques côté moteur de jeu et côté routeurs tiers. Tes décisions
+        tactiques se prennent sur les mêmes fichiers que ceux d'un skipper
+        en vraie course.
+      </p>
+    </article>
+
+    <!-- Pilier 3 : Ton bateau, ta carrière -->
+    <article class="pillar">
+      <div class="pillar-visual">
+        <svg viewBox="0 0 200 150" aria-hidden="true">
+          <!-- 3 stades de bateau -->
+          <g transform="translate(10, 50)">
+            <!-- stage 1 : vierge -->
+            <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#cbc4b5" opacity="0.6"/>
+            <line x1="25" y1="40" x2="25" y2="10" stroke="#8a7f6d" stroke-width="1.5"/>
+            <path d="M26,10 L45,38 L26,34 Z" fill="#cbc4b5" stroke="#8a7f6d" stroke-width="0.5" opacity="0.8"/>
+            <text x="25" y="68" font-family="Space Mono" font-size="7" fill="#8a7f6d" text-anchor="middle" letter-spacing="0.1em">VIERGE</text>
+          </g>
+          <g transform="translate(75, 50)">
+            <!-- stage 2 : customisé -->
+            <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#1a4d7a"/>
+            <line x1="25" y1="40" x2="25" y2="8" stroke="#1a2840" stroke-width="2"/>
+            <path d="M26,8 L47,38 L26,34 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.5"/>
+            <text x="35" y="27" font-family="Bebas Neue" font-size="10" fill="#1a4d7a">12</text>
+            <text x="25" y="68" font-family="Space Mono" font-size="7" fill="#1a2840" font-weight="700" text-anchor="middle" letter-spacing="0.1em">CUSTOMISÉ</text>
+          </g>
+          <g transform="translate(140, 50)">
+            <!-- stage 3 : trophée -->
+            <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#9e2a2a"/>
+            <line x1="25" y1="40" x2="25" y2="5" stroke="#1a2840" stroke-width="2.5"/>
+            <path d="M26,5 L49,38 L26,34 Z" fill="#f5f0e8" stroke="#1a2840" stroke-width="0.5"/>
+            <text x="36" y="27" font-family="Bebas Neue" font-size="10" fill="#9e2a2a">12</text>
+            <!-- trophée gold -->
+            <circle cx="40" cy="48" r="5" fill="#c9a227"/>
+            <text x="40" y="51" font-family="Bebas Neue" font-size="7" fill="#1a2840" text-anchor="middle">1</text>
+            <text x="25" y="68" font-family="Space Mono" font-size="7" fill="#c9a227" font-weight="700" text-anchor="middle" letter-spacing="0.1em">PALMARÈS</text>
+          </g>
+          <!-- flèches de progression -->
+          <path d="M62,72 L75,72" stroke="#1a2840" stroke-width="1" opacity="0.3"/>
+          <path d="M128,72 L141,72" stroke="#1a2840" stroke-width="1" opacity="0.3"/>
+        </svg>
+      </div>
+      <p class="pillar-num">03 · Carrière</p>
+      <h3>Ton bateau, ta carrière</h3>
+      <p>
+        Une <strong>seule coque</strong> qui te suit de course en course.
+        Tes podiums financent tes upgrades — voiles, foils, électronique.
+        Aucun raccourci par la caisse. Ta progression est la seule monnaie
+        qui compte.
+      </p>
+    </article>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     EN DIRECT (courses)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="block live-races">
+  <header class="section-head">
+    <div>
+      <p class="eyebrow" style="color: var(--gold-dark)">03 · En direct</p>
+      <h2>Ça se joue maintenant.</h2>
+    </div>
+    <a href="#" class="section-link">Voir toutes les courses <span>→</span></a>
+  </header>
+
+  <div class="live-grid">
+    <!-- Course 1 -->
+    <a href="#" class="race-card">
+      <header class="race-card-head">
+        <div>
+          <h3 class="race-card-name">Vendée Express</h3>
+          <p class="race-card-meta">IMOCA 60 · 1 850 NM</p>
+        </div>
+        <span class="chip chip-live"><span class="dot"></span> En direct</span>
+      </header>
+      <div class="race-card-map">
+        <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M20,120 Q80,80 140,100 Q200,115 260,70 L300,50" stroke="#1a2840" stroke-width="1.5" fill="none" opacity="0.65" stroke-linecap="round" stroke-dasharray="3 3"/>
+          <path d="M20,120 Q80,80 140,100 Q200,115 250,80" stroke="#c9a227" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="20" cy="120" r="4" fill="#2d8a4e"/>
+          <circle cx="140" cy="100" r="2.5" fill="#c9a227"/>
+          <circle cx="260" cy="70" r="2.5" fill="#c9a227"/>
+          <circle cx="300" cy="50" r="4" fill="#c9a227" stroke="#1a2840" stroke-width="1"/>
+          <circle cx="250" cy="80" r="3" fill="#1a2840"/>
+        </svg>
+      </div>
+      <div class="race-card-leader">
+        <span>1er · <strong>laperouse</strong></span>
+        <span class="nb">428 skippers</span>
+      </div>
+    </a>
+
+    <!-- Course 2 -->
+    <a href="#" class="race-card">
+      <header class="race-card-head">
+        <div>
+          <h3 class="race-card-name">Transat Atlantique</h3>
+          <p class="race-card-meta">Class40 · 3 200 NM</p>
+        </div>
+        <span class="chip chip-live"><span class="dot"></span> En direct</span>
+      </header>
+      <div class="race-card-map">
+        <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M30,60 Q100,85 180,95 Q240,100 300,120" stroke="#1a2840" stroke-width="1.5" fill="none" opacity="0.65" stroke-linecap="round" stroke-dasharray="3 3"/>
+          <path d="M30,60 Q100,85 160,95" stroke="#c9a227" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="30" cy="60" r="4" fill="#2d8a4e"/>
+          <circle cx="180" cy="95" r="2.5" fill="#c9a227"/>
+          <circle cx="300" cy="120" r="4" fill="#c9a227" stroke="#1a2840" stroke-width="1"/>
+          <circle cx="160" cy="95" r="3" fill="#1a2840"/>
+        </svg>
+      </div>
+      <div class="race-card-leader">
+        <span>1er · <strong>tradewind</strong></span>
+        <span class="nb">186 skippers</span>
+      </div>
+    </a>
+
+    <!-- Course 3 -->
+    <a href="#" class="race-card">
+      <header class="race-card-head">
+        <div>
+          <h3 class="race-card-name">Route des Glaces</h3>
+          <p class="race-card-meta">Ultim · 5 400 NM</p>
+        </div>
+        <span class="chip chip-live"><span class="dot"></span> En direct</span>
+      </header>
+      <div class="race-card-map">
+        <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M40,130 Q100,40 180,50 Q240,60 290,110" stroke="#1a2840" stroke-width="1.5" fill="none" opacity="0.65" stroke-linecap="round" stroke-dasharray="3 3"/>
+          <path d="M40,130 Q90,60 130,55" stroke="#c9a227" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="40" cy="130" r="4" fill="#2d8a4e"/>
+          <circle cx="180" cy="50" r="2.5" fill="#c9a227"/>
+          <circle cx="290" cy="110" r="4" fill="#c9a227" stroke="#1a2840" stroke-width="1"/>
+          <circle cx="130" cy="55" r="3" fill="#1a2840"/>
+        </svg>
+      </div>
+      <div class="race-card-leader">
+        <span>1er · <strong>cap_horn</strong></span>
+        <span class="nb">72 skippers</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODE CARRIÈRE (fond navy)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="block-wide career">
+  <div class="inner">
+    <div class="career-text">
+      <p class="eyebrow">04 · Carrière skipper</p>
+      <h2>Une seule <em>coque</em>.<br>Mille milles.</h2>
+      <p>
+        Le <strong>mode Carrière</strong>, c'est la version longue de Nemo.
+        Tu démarres avec un bateau récent mais vierge d'équipement — Figaro,
+        Class40, IMOCA ou Ultim selon la course qui te lance. Chaque épreuve
+        que tu finis laisse une trace : un podium, des crédits, une upgrade.
+      </p>
+
+      <div class="emphasis">
+        Ton bateau vieillit avec toi, prend des couleurs, gagne en performance.
+      </div>
+
+      <p>
+        Les crédits se gagnent en course et financent tes upgrades — voiles,
+        foils, électronique. Le <strong>mode Carrière</strong> te donne accès
+        à la persistance de ton bateau, à ta progression sur la saison, et au
+        palmarès officiel du circuit.
+      </p>
+
+      <a href="#" class="btn btn-gold" style="margin-top: 16px;">
+        Rejoindre le circuit <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <div class="career-visual">
+      <p class="visual-eyebrow">Aperçu Marina</p>
+      <h4>Ta flotte — Saison 2026</h4>
+
+      <div class="career-boats">
+        <div class="career-boat">
+          <svg viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M10,42 L50,42 L44,52 L16,52 Z" fill="#3a4a6b"/>
+            <line x1="30" y1="42" x2="30" y2="12" stroke="#f5f0e8" stroke-width="1.5"/>
+            <path d="M31,12 L48,40 L31,36 Z" fill="#f5f0e8" opacity="0.9"/>
+          </svg>
+          <div class="stage">Figaro III</div>
+        </div>
+        <div class="career-boat">
+          <svg viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M8,42 L52,42 L46,52 L14,52 Z" fill="#9e2a2a"/>
+            <line x1="30" y1="42" x2="30" y2="8" stroke="#f5f0e8" stroke-width="1.5"/>
+            <path d="M31,8 L50,40 L31,36 Z" fill="#f5f0e8"/>
+            <text x="39" y="28" font-family="Bebas Neue" font-size="11" fill="#9e2a2a">12</text>
+          </svg>
+          <div class="stage">IMOCA 60</div>
+        </div>
+        <div class="career-boat">
+          <svg viewBox="0 0 60 60" aria-hidden="true">
+            <g opacity="0.35">
+              <path d="M10,42 L50,42 L44,52 L16,52 Z" fill="#f5f0e8"/>
+              <line x1="30" y1="42" x2="30" y2="15" stroke="#f5f0e8" stroke-width="1.5"/>
+            </g>
+            <text x="30" y="30" font-family="Space Mono" font-size="16" fill="#c9a227" text-anchor="middle" font-weight="700">+</text>
+          </svg>
+          <div class="stage">Ultim · à débloquer</div>
+        </div>
+      </div>
+
+      <div class="career-timeline">
+        <div class="career-stat">
+          <p class="label">Crédits</p>
+          <p class="value">4&nbsp;820<small>cr</small></p>
+        </div>
+        <div class="career-stat">
+          <p class="label">Podiums</p>
+          <p class="value">07<small>saison</small></p>
+        </div>
+        <div class="career-stat">
+          <p class="label">Upgrades</p>
+          <p class="value">12<small>/18</small></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JOURNAL DE BORD (news)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="block">
+  <header class="section-head">
+    <div>
+      <p class="eyebrow" style="color: var(--gold-dark)">05 · Actualités · Saison 2026</p>
+      <h2>Journal de bord.</h2>
+    </div>
+    <a href="#" class="section-link">Toutes les actualités <span>→</span></a>
+  </header>
+
+  <div class="news-grid">
+    <article class="news-card">
+      <div class="news-image">
+        <img
+          src="https://images.unsplash.com/photo-1527847263472-aa5338d178b8?auto=format&fit=crop&w=800&q=80"
+          alt=""
+          onerror="this.parentElement.innerHTML='<div class=\'news-image-svg\'><svg viewBox=\'0 0 60 60\'><path d=\'M10,42 L50,42 L44,52 L16,52 Z\' fill=\'#f5f0e8\' opacity=\'0.6\'/><line x1=\'30\' y1=\'42\' x2=\'30\' y2=\'12\' stroke=\'#f5f0e8\' stroke-width=\'1.5\'/></svg></div>'"
+        />
+      </div>
+      <div class="news-body">
+        <div class="news-meta">
+          <span class="cat-chip">Course</span>
+          <span class="news-date">14 avr 2026</span>
+        </div>
+        <h3 class="news-title">Transat en Double 2026 : inscriptions ouvertes</h3>
+        <p class="news-excerpt">
+          Départ le 12 mai depuis Concarneau. 40 binômes Class40 attendus
+          sur une route de 4 200 NM.
+        </p>
+        <span class="news-read">Lire →</span>
+      </div>
+    </article>
+
+    <article class="news-card">
+      <div class="news-image">
+        <div class="news-image-svg">
+          <svg viewBox="0 0 100 80" aria-hidden="true">
+            <g stroke="#f5f0e8" fill="none" stroke-width="0.8">
+              <circle cx="50" cy="40" r="30"/>
+              <circle cx="50" cy="40" r="20"/>
+              <circle cx="50" cy="40" r="10"/>
+              <line x1="50" y1="5" x2="50" y2="75"/>
+              <line x1="15" y1="40" x2="85" y2="40"/>
+            </g>
+            <path d="M50,15 Q72,20 78,40 Q74,60 58,65 Q50,66 50,60 Z" fill="#c9a22750" stroke="#c9a227" stroke-width="1.2"/>
+            <circle cx="50" cy="40" r="2" fill="#c9a227"/>
+          </svg>
+        </div>
+      </div>
+      <div class="news-body">
+        <div class="news-meta">
+          <span class="cat-chip">Balance</span>
+          <span class="news-date">08 avr 2026</span>
+        </div>
+        <h3 class="news-title">v2.3 — ajustement polaires IMOCA foils</h3>
+        <p class="news-excerpt">
+          Réglage du rendement aérodynamique dans la zone 12-14 nds. Changelog
+          complet et données brutes disponibles.
+        </p>
+        <span class="news-read">Lire →</span>
+      </div>
+    </article>
+
+    <article class="news-card">
+      <div class="news-image">
+        <img
+          src="https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=800&q=80"
+          alt=""
+          onerror="this.parentElement.innerHTML='<div class=\'news-image-svg\'><svg viewBox=\'0 0 60 60\'><path d=\'M10,42 L50,42 L44,52 L16,52 Z\' fill=\'#f5f0e8\' opacity=\'0.6\'/></svg></div>'"
+        />
+      </div>
+      <div class="news-body">
+        <div class="news-meta">
+          <span class="cat-chip">Interview</span>
+          <span class="news-date">02 avr 2026</span>
+        </div>
+        <h3 class="news-title">Laperouse : « La météo n'est pas une loterie »</h3>
+        <p class="news-excerpt">
+          Rencontre avec la n°1 saison 2026 — 7 podiums en 9 courses. Stratégie
+          de routage et lecture des fronts.
+        </p>
+        <span class="news-read">Lire →</span>
+      </div>
+    </article>
+
+    <article class="news-card">
+      <div class="news-image">
+        <div class="news-image-svg">
+          <svg viewBox="0 0 100 80" aria-hidden="true">
+            <g stroke="#f5f0e8" fill="none" stroke-width="0.6" opacity="0.6">
+              <path d="M10,60 Q30,50 50,55 Q70,60 90,50"/>
+              <path d="M10,50 Q30,40 50,45 Q70,50 90,40"/>
+              <path d="M10,40 Q30,30 50,35 Q70,40 90,30"/>
+            </g>
+            <!-- sextant -->
+            <g transform="translate(50, 40)">
+              <path d="M-20,0 L20,0 L20,-3 L-20,-3 Z" fill="#c9a227"/>
+              <path d="M-20,-3 A25,25 0 0 1 20,-3" fill="none" stroke="#c9a227" stroke-width="1.5"/>
+              <line x1="0" y1="0" x2="10" y2="-18" stroke="#c9a227" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="2" fill="#c9a227"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div class="news-body">
+        <div class="news-meta">
+          <span class="cat-chip">Dev</span>
+          <span class="news-date">28 mar 2026</span>
+        </div>
+        <h3 class="news-title">Nouveau sextant tactique disponible</h3>
+        <p class="news-excerpt">
+          Overlay de routage longue distance, intégration directe aux grib
+          GFS et ECMWF. Disponible pour tous les tiers.
+        </p>
+        <span class="news-read">Lire →</span>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PODIUM SAISON (preuve sociale)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="block podium-section">
+  <header class="section-head">
+    <div>
+      <p class="eyebrow" style="color: var(--gold-dark)">06 · Circuit Nemo</p>
+      <h2>Ils sont en tête.</h2>
+    </div>
+    <a href="#" class="section-link">Classement complet <span>→</span></a>
+  </header>
+
+  <div class="podium-grid">
+    <!-- 2e -->
+    <article class="podium-card p2">
+      <div class="podium-pos">02<sup>e</sup></div>
+      <div><span class="podium-flag"></span></div>
+      <h3 class="podium-name">northwind</h3>
+      <p class="podium-city">Amsterdam · NL</p>
+      <p class="podium-points">8&nbsp;420<small>pts</small></p>
+    </article>
+
+    <!-- 1er (centre) -->
+    <article class="podium-card p1">
+      <div class="podium-pos">01<sup>er</sup></div>
+      <div><span class="podium-flag"></span></div>
+      <h3 class="podium-name">laperouse</h3>
+      <p class="podium-city">La Trinité · FR</p>
+      <p class="podium-points">9&nbsp;186<small>pts</small></p>
+    </article>
+
+    <!-- 3e -->
+    <article class="podium-card p3">
+      <div class="podium-pos">03<sup>e</sup></div>
+      <div><span class="podium-flag it"></span></div>
+      <h3 class="podium-name">bora_c</h3>
+      <p class="podium-city">Trieste · IT</p>
+      <p class="podium-points">8&nbsp;104<small>pts</small></p>
+    </article>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Produit</h5>
+      <ul>
+        <li><a href="#">Courses</a></li>
+        <li><a href="#">Classement</a></li>
+        <li><a href="#">Marina</a></li>
+        <li><a href="#">Mode carrière</a></li>
+        <li><a href="#">Mode spectateur</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Légal</h5>
+      <ul>
+        <li><a href="#">CGU</a></li>
+        <li><a href="#">Confidentialité</a></li>
+        <li><a href="#">Mentions légales</a></li>
+        <li><a href="#">Cookies</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:hello@nemo.sail">hello@nemo.sail</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <a href="#" class="brand">NE<span style="color: var(--gold)">M</span>O</a>
+    <p class="copy">© 2026 Nemo · Hébergé en Europe</p>
+  </div>
+</footer>
+
+</body>
+</html>
