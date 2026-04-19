@@ -98,8 +98,8 @@
     "tiers": {
       "SERIE":  { "priceRange": [0, 0],         "maintenanceMul": 1.0 },
       "BRONZE": { "priceRange": [1500, 3500],   "maintenanceMul": 1.5 },
-      "SILVER": { "priceRange": [4500, 8000],   "maintenanceMul": 2.0 },
-      "GOLD":   { "priceRange": [10000, 15000], "maintenanceMul": 3.0 },
+      "SILVER": { "priceRange": [3500, 6500],   "maintenanceMul": 2.0 },
+      "GOLD":   { "priceRange": [7000, 11000],  "maintenanceMul": 3.0 },
       "PROTO":  { "priceRange": null,           "maintenanceMul": 4.5 }
     },
 
@@ -168,7 +168,7 @@
         "profile": "portant débridé",
         "description": "Nez en scow, explosif au portant au détriment des allures serrées.",
         "compat": ["CLASS40"],
-        "cost": 7200,
+        "cost": 6000,
         "effects": {
           "speedByTwa": [-0.03, -0.02, 0.04, 0.08, 0.04],
           "speedByTws": [0, 0.02, 0.03],
@@ -245,7 +245,7 @@
         "profile": "stable musclé",
         "description": "Carbone haut module, manœuvres accélérées et puissance accrue.",
         "compat": ["CLASS40", "IMOCA60"],
-        "cost": 6800,
+        "cost": 5800,
         "effects": {
           "speedByTwa": [0.02, 0.02, 0.03, 0.03, 0.02],
           "speedByTws": [0, 0.01, 0.02],
@@ -305,7 +305,7 @@
         "profile": "rendement haut",
         "description": "Technologie 3Di North Sails, rendement exceptionnel sur tous les allures.",
         "compat": ["CLASS40", "IMOCA60"],
-        "cost": 12500,
+        "cost": 10000,
         "effects": {
           "speedByTwa": [0.04, 0.05, 0.06, 0.05, 0.04],
           "speedByTws": [0.02, 0.03, 0.02],
@@ -385,7 +385,7 @@
         "profile": "vol agressif",
         "description": "Foils en S, vol partiel agressif au grand largue.",
         "compat": ["CLASS40"],
-        "cost": 7800,
+        "cost": 6500,
         "effects": {
           "speedByTwa": [-0.04, -0.02, 0.08, 0.14, 0.05],
           "speedByTws": [-0.02, 0.04, 0.10],
@@ -1025,8 +1025,8 @@
       "top10": 30
     },
     "completionBonus": {
-      "FIGARO": 200, "CLASS40": 300, "OCEAN_FIFTY": 500,
-      "IMOCA60": 450, "ULTIM": 700
+      "FIGARO": 400, "CLASS40": 600, "OCEAN_FIFTY": 1000,
+      "IMOCA60": 900, "ULTIM": 1400
     }
   },
   "tick": {
