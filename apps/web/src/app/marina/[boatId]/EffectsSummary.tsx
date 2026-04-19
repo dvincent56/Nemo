@@ -3,43 +3,131 @@ import styles from './EffectsSummary.module.css';
 
 interface EffectsSummaryProps {
   effects: CatalogEffects | null;
-  /** 'text' = inline deltas ("+3% au près"), 'bars' = labeled bars with percentages. */
+  /** 'text' = signed inline deltas, 'bars' = labeled gauges with percentages. */
   variant?: 'text' | 'bars';
 }
 
 interface Criterion {
   key: string;
   label: string;
-  /** Raw percentage change — positive = better, negative = worse. */
+  /** Raw percentage change — positive = beneficial, negative = detrimental. */
   pct: number;
-  detail: string;
+}
+
+const MANEUVER_LABEL = {
+  tack: 'virement',
+  gybe: 'empannage',
+  sailChange: 'changement de voile',
+} as const;
+
+type ManeuverKey = keyof typeof MANEUVER_LABEL;
+
+function pct(x: number): number {
+  return Math.round(x * 100);
 }
 
 /**
- * Derives 4 normalized criteria from raw engine effects:
- *  - Près = average speed gain on TWA bands 0-1 (<60° and 60-90°)
- *  - Portant = average gain on TWA bands 2-4 (90-120, 120-150, 150-180)
- *  - Gros temps = speed gain in the heavy-wind TWS band (>20 kt)
- *  - Durabilité = inverse of the worst wear multiplier (wear 1.4× → -40%)
+ * Derives normalized criteria for gauge display.
+ * Each criterion's pct is a signed % where positive = better for the player.
  */
 export function summarizeEffects(e: CatalogEffects): Criterion[] {
   const upwind = (e.speedByTwa[0] + e.speedByTwa[1]) / 2;
   const downwind = (e.speedByTwa[2] + e.speedByTwa[3] + e.speedByTwa[4]) / 3;
-  const heavy = e.speedByTws[2];
+  const lightWind = e.speedByTws[0];
+  const mediumWind = e.speedByTws[1];
+  const heavyWind = e.speedByTws[2];
 
   const wearValues = Object.values(e.wearMul ?? {}).filter((v): v is number => typeof v === 'number');
   const worstWear = wearValues.length ? Math.max(...wearValues) : 1;
   const wearDelta = -(worstWear - 1);
 
-  const pct = (x: number) => Math.round(x * 100);
-  const signed = (v: number) => `${v > 0 ? '+' : ''}${v}%`;
+  // Maneuvers: aggregate duration savings and speed retention across the 3 types
+  const maneuverTypes: ManeuverKey[] = ['tack', 'gybe', 'sailChange'];
+  const durDeltas: number[] = [];
+  const speedDeltas: number[] = [];
+  for (const k of maneuverTypes) {
+    const m = e.maneuverMul?.[k];
+    if (!m) continue;
+    durDeltas.push(1 - m.dur);     // dur 0.85 → +15% (faster)
+    speedDeltas.push(m.speed - 1); // speed 1.10 → +10% (retained)
+  }
+  const durAvg = durDeltas.length ? durDeltas.reduce((a, b) => a + b, 0) / durDeltas.length : 0;
+  const speedAvg = speedDeltas.length ? speedDeltas.reduce((a, b) => a + b, 0) / speedDeltas.length : 0;
 
   return [
-    { key: 'upwind',   label: 'Près',        pct: pct(upwind),    detail: `${signed(pct(upwind))} vitesse au près` },
-    { key: 'downwind', label: 'Portant',     pct: pct(downwind),  detail: `${signed(pct(downwind))} vitesse au portant` },
-    { key: 'heavy',    label: 'Gros temps',  pct: pct(heavy),     detail: `${signed(pct(heavy))} vitesse par grand vent` },
-    { key: 'wear',     label: 'Durabilité',  pct: pct(wearDelta), detail: `${signed(pct(wearDelta))} usure` },
+    { key: 'upwind',        label: 'Près',             pct: pct(upwind) },
+    { key: 'downwind',      label: 'Portant',          pct: pct(downwind) },
+    { key: 'lightWind',     label: 'Vent léger',       pct: pct(lightWind) },
+    { key: 'mediumWind',    label: 'Vent moyen',       pct: pct(mediumWind) },
+    { key: 'heavyWind',     label: 'Gros temps',       pct: pct(heavyWind) },
+    { key: 'maneuverDur',   label: 'Temps manœuvres',  pct: pct(durAvg) },
+    { key: 'maneuverSpeed', label: 'Vitesse manœuvres', pct: pct(speedAvg) },
+    { key: 'wear',          label: 'Durabilité',       pct: pct(wearDelta) },
   ];
+}
+
+/**
+ * Detailed text lines for the drawer — breaks down maneuver effects per type
+ * so the user sees every concrete bonus ('-15% temps virement', etc.).
+ */
+export function detailLines(e: CatalogEffects): { text: string; tone: 'good' | 'bad' }[] {
+  const lines: { text: string; tone: 'good' | 'bad' }[] = [];
+  const push = (v: number, label: string, invert = false): void => {
+    if (v === 0) return;
+    const beneficial = invert ? v < 0 : v > 0;
+    // For dur: we feed the raw delta (dur - 1), so negative raw = less time = good → display with minus sign
+    const tone: 'good' | 'bad' = beneficial ? 'good' : 'bad';
+    const sign = v > 0 ? '+' : '';
+    lines.push({ text: `${sign}${v}% ${label}`, tone });
+  };
+
+  push(pct((e.speedByTwa[0] + e.speedByTwa[1]) / 2), 'vitesse au près');
+  push(pct((e.speedByTwa[2] + e.speedByTwa[3] + e.speedByTwa[4]) / 3), 'vitesse au portant');
+  push(pct(e.speedByTws[0]), 'vitesse par vent léger');
+  push(pct(e.speedByTws[1]), 'vitesse par vent moyen');
+  push(pct(e.speedByTws[2]), 'vitesse par grand vent');
+
+  // Maneuvers: per-type so the user sees exactly which is improved
+  const maneuverTypes: ManeuverKey[] = ['tack', 'gybe', 'sailChange'];
+  for (const k of maneuverTypes) {
+    const m = e.maneuverMul?.[k];
+    if (!m) continue;
+    const label = MANEUVER_LABEL[k];
+    const durPct = pct(m.dur - 1);    // raw delta (-15% = -15% temps = better)
+    const speedPct = pct(m.speed - 1);
+    push(durPct, `temps ${label}`, true); // invert: negative raw = good
+    push(speedPct, `vitesse pendant ${label}`);
+  }
+
+  // Wear: push the worst axis
+  const wearValues = Object.values(e.wearMul ?? {}).filter((v): v is number => typeof v === 'number');
+  if (wearValues.length > 0) {
+    const worst = Math.max(...wearValues);
+    const wearPct = pct(worst - 1);
+    push(wearPct, 'usure', true); // invert: negative raw (less wear) = good
+  }
+
+  return lines;
+}
+
+/** Extra info about the item (activation thresholds, grounding, etc). Always shown as neutral. */
+export function itemNotes(e: CatalogEffects): string[] {
+  const notes: string[] = [];
+  const { minTws, maxTws } = e.activation ?? {};
+  if (minTws !== undefined && maxTws !== undefined) {
+    notes.push(`Actif entre ${minTws} et ${maxTws} nœuds de vent`);
+  } else if (minTws !== undefined) {
+    notes.push(`Actif au-dessus de ${minTws} nœuds de vent`);
+  } else if (maxTws !== undefined) {
+    notes.push(`Actif en dessous de ${maxTws} nœuds de vent`);
+  }
+  if (e.groundingLossMul !== null && e.groundingLossMul < 1) {
+    notes.push(`Réduit la pénalité d'échouage (×${e.groundingLossMul})`);
+  }
+  if (e.polarTargetsDeg !== null && e.polarTargetsDeg > 0) {
+    notes.push(`Assistance polaire ±${e.polarTargetsDeg}°`);
+  }
+  return notes;
 }
 
 /**
@@ -47,13 +135,18 @@ export function summarizeEffects(e: CatalogEffects): Criterion[] {
  * synthetic CatalogEffects object. Matches the engine semantics:
  *  - speed deltas stack multiplicatively; for display we keep the linearized sum
  *    (upper bound accurate within 1% for typical values <±0.1)
- *  - wear multipliers multiply across items
+ *  - wear and maneuver multipliers multiply across items
  */
 export function aggregateInstalledEffects(items: InstalledUpgrade[]): CatalogEffects {
   const out: CatalogEffects = {
     speedByTwa: [0, 0, 0, 0, 0],
     speedByTws: [0, 0, 0],
     wearMul: { hull: 1, rig: 1, sail: 1, elec: 1 },
+    maneuverMul: {
+      tack: { dur: 1, speed: 1 },
+      gybe: { dur: 1, speed: 1 },
+      sailChange: { dur: 1, speed: 1 },
+    },
     polarTargetsDeg: null,
     groundingLossMul: null,
   };
@@ -67,6 +160,16 @@ export function aggregateInstalledEffects(items: InstalledUpgrade[]): CatalogEff
       if (typeof e.wearMul.rig  === 'number') out.wearMul.rig  = (out.wearMul.rig  ?? 1) * e.wearMul.rig;
       if (typeof e.wearMul.sail === 'number') out.wearMul.sail = (out.wearMul.sail ?? 1) * e.wearMul.sail;
       if (typeof e.wearMul.elec === 'number') out.wearMul.elec = (out.wearMul.elec ?? 1) * e.wearMul.elec;
+    }
+    if (e.maneuverMul && out.maneuverMul) {
+      for (const k of ['tack', 'gybe', 'sailChange'] as const) {
+        const src = e.maneuverMul[k];
+        const dst = out.maneuverMul[k];
+        if (src && dst) {
+          dst.dur *= src.dur;
+          dst.speed *= src.speed;
+        }
+      }
     }
   }
   return out;
@@ -91,21 +194,30 @@ function Bar({ pct }: { pct: number }): React.ReactElement {
 
 export function EffectsSummary({ effects, variant = 'bars' }: EffectsSummaryProps): React.ReactElement | null {
   if (!effects) return null;
-  const rows = summarizeEffects(effects);
-  const significant = rows.filter((r) => r.pct !== 0);
-  if (significant.length === 0) return null;
 
   if (variant === 'text') {
+    const lines = detailLines(effects);
+    const notes = itemNotes(effects);
+    if (lines.length === 0 && notes.length === 0) return null;
     return (
       <ul className={styles.textList} aria-label="Effets principaux">
-        {significant.map((r) => (
-          <li key={r.key} className={`${styles.textItem} ${r.pct > 0 ? styles.pctGood : styles.pctBad}`}>
-            {r.detail}
+        {lines.map((l, i) => (
+          <li key={`eff-${i}`} className={`${styles.textItem} ${l.tone === 'good' ? styles.pctGood : styles.pctBad}`}>
+            {l.text}
+          </li>
+        ))}
+        {notes.map((n, i) => (
+          <li key={`note-${i}`} className={`${styles.textItem} ${styles.textNote}`}>
+            {n}
           </li>
         ))}
       </ul>
     );
   }
+
+  const rows = summarizeEffects(effects);
+  const significant = rows.filter((r) => r.pct !== 0);
+  if (significant.length === 0) return null;
 
   return (
     <div className={styles.wrapper} aria-label="Profil d'effet">

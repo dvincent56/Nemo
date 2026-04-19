@@ -76,3 +76,11 @@
   content: '▸ ';
   opacity: 0.5;
 }
+.textNote {
+  color: var(--t3);
+  font-style: italic;
+}
+.textNote::before {
+  content: '⚑ ';
+  opacity: 0.5;
+}
