@@ -87,8 +87,23 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   // Update MapLibre sources with projection result
   const updateMapSources = useCallback((result: ProjectionResult) => {
     const m = mapRef.current;
-    if (!m || !m.isStyleLoaded()) return;
+    if (!m) {
+      console.log('[Projection] render skipped: no map yet');
+      return;
+    }
+    if (!m.isStyleLoaded()) {
+      console.log('[Projection] render skipped: style not loaded');
+      return;
+    }
+    const lineSrcExists = !!m.getSource('projection-line');
+    if (!lineSrcExists) {
+      console.log('[Projection] render skipped: projection-line source not added yet');
+      return;
+    }
     const map = m;
+    const first = result.points[0];
+    const last = result.points[result.points.length - 1];
+    console.log('[Projection] render:', result.points.length, 'points, first:', first ? `${first.lat.toFixed(2)},${first.lon.toFixed(2)}` : '?', 'last:', last ? `${last.lat.toFixed(2)},${last.lon.toFixed(2)}` : '?');
 
     // Line source: one LineString segment per pair of points with bspRatio property
     const lineFeatures: GeoJSON.Feature[] = [];
@@ -194,8 +209,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       .then((polar) => {
         polarRef.current = polar;
         console.log('[Projection] polar loaded:', boatClass);
+        // Polar may have loaded after the initial compute attempt was skipped
+        requestCompute(true);
       })
       .catch((err) => console.error('[Projection] polar fetch failed:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Trigger recalculation
