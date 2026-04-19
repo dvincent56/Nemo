@@ -188,7 +188,7 @@
         "description": "Carène proto au rendement maximal, mais extrêmement fragile.",
         "compat": ["CLASS40"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 30, "avgRankPctMax": 0.15 },
+        "unlockCriteria": { "racesFinished": 30 },
         "effects": {
           "speedByTwa": [0.06, 0.06, 0.06, 0.06, 0.06],
           "speedByTws": [0.02, 0.02, 0.02],
@@ -325,7 +325,7 @@
         "description": "Voiles taillées spécifiquement pour le bateau, réservées aux experts.",
         "compat": ["CLASS40", "IMOCA60"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 25, "avgRankPctMax": 0.20 },
+        "unlockCriteria": { "racesFinished": 25 },
         "effects": {
           "speedByTwa": [0.06, 0.07, 0.08, 0.07, 0.06],
           "speedByTws": [0.03, 0.04, 0.03],
@@ -367,7 +367,7 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.06, 0.04, 0],
           "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "rig": 1.40, "hull": 1.20 },
+          "wearMul": { "hull": 1.40, "rig": 1.20 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
@@ -389,7 +389,7 @@
         "effects": {
           "speedByTwa": [-0.04, -0.02, 0.08, 0.14, 0.05],
           "speedByTws": [-0.02, 0.04, 0.10],
-          "wearMul": { "rig": 1.80, "hull": 1.30 },
+          "wearMul": { "hull": 1.80, "rig": 1.30 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
@@ -408,11 +408,11 @@
         "description": "Foils proto à vol total, gains spectaculaires mais usure extrême.",
         "compat": ["CLASS40"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 40, "top10Finishes": 8 },
+        "unlockCriteria": { "racesFinished": 40 },
         "effects": {
           "speedByTwa": [-0.06, -0.03, 0.12, 0.22, 0.10],
           "speedByTws": [-0.03, 0.06, 0.14],
-          "wearMul": { "rig": 2.20, "hull": 1.60 },
+          "wearMul": { "hull": 2.20, "rig": 1.60 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
@@ -685,7 +685,7 @@
         "effects": {
           "speedByTwa": [-0.01, 0, 0.03, 0.06, 0.02],
           "speedByTws": [0, 0.01, 0.02],
-          "wearMul": { "rig": 1.20, "hull": 1.10 },
+          "wearMul": { "hull": 1.20, "rig": 1.10 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
@@ -783,7 +783,7 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.04, 0.10, 0.04],
           "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "rig": 1.30, "hull": 1.10 },
+          "wearMul": { "hull": 1.30, "rig": 1.10 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
@@ -862,7 +862,7 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.05, 0.12, 0.04],
           "speedByTws": [0, 0.03, 0.05],
-          "wearMul": { "rig": 1.50, "hull": 1.20 },
+          "wearMul": { "hull": 1.50, "rig": 1.20 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
@@ -960,7 +960,7 @@
         "effects": {
           "speedByTwa": [-0.04, 0, 0.10, 0.20, 0.10],
           "speedByTws": [0, 0.05, 0.10],
-          "wearMul": { "rig": 1.80, "hull": 1.40 },
+          "wearMul": { "hull": 1.80, "rig": 1.40 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
