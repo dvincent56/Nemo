@@ -75,9 +75,32 @@ export function aggregateEffects(
   let hasGrounding = false;
 
   for (const item of items) {
-    if (!isActive(item, tws)) continue;
-
     const fx = item.effects;
+    const active = isActive(item, tws);
+
+    // Passive effects are always applied (foil drag, reinforcement weight,
+    // etc.) — even when the item's activation window is not met.
+    const p = fx.passiveEffects;
+    if (p) {
+      if (p.speedByTwa) {
+        speedByTwa[0] *= 1 + p.speedByTwa[0];
+        speedByTwa[1] *= 1 + p.speedByTwa[1];
+        speedByTwa[2] *= 1 + p.speedByTwa[2];
+        speedByTwa[3] *= 1 + p.speedByTwa[3];
+        speedByTwa[4] *= 1 + p.speedByTwa[4];
+      }
+      if (p.speedByTws) {
+        speedByTws[0] *= 1 + p.speedByTws[0];
+        speedByTws[1] *= 1 + p.speedByTws[1];
+        speedByTws[2] *= 1 + p.speedByTws[2];
+      }
+      if (p.wearMul?.hull !== undefined) wearMul.hull *= p.wearMul.hull;
+      if (p.wearMul?.rig  !== undefined) wearMul.rig  *= p.wearMul.rig;
+      if (p.wearMul?.sail !== undefined) wearMul.sail *= p.wearMul.sail;
+      if (p.wearMul?.elec !== undefined) wearMul.elec *= p.wearMul.elec;
+    }
+
+    if (!active) continue;
 
     // speedByTwa — multiplicative: base * (1 + delta). Unrolled for noUncheckedIndexedAccess.
     speedByTwa[0] *= 1 + fx.speedByTwa[0];

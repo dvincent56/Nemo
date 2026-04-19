@@ -35,6 +35,12 @@ export interface InstalledUpgrade {
   effects: CatalogEffects | null;
 }
 
+export interface PassiveEffects {
+  speedByTwa?: [number, number, number, number, number];
+  speedByTws?: [number, number, number];
+  wearMul?: { hull?: number; rig?: number; sail?: number; elec?: number };
+}
+
 export interface CatalogEffects {
   speedByTwa: [number, number, number, number, number];
   speedByTws: [number, number, number];
@@ -43,6 +49,8 @@ export interface CatalogEffects {
   polarTargetsDeg: number | null;
   activation?: { minTws?: number; maxTws?: number };
   groundingLossMul: number | null;
+  /** Effects applied regardless of activation window (e.g. foil drag in light wind). */
+  passiveEffects?: PassiveEffects;
 }
 
 export interface CatalogItem {

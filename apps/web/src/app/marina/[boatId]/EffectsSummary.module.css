@@ -84,3 +84,17 @@
   content: '⚑ ';
   opacity: 0.5;
 }
+
+.textSectionLabel {
+  margin-top: 0.25rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.625rem;
+}
+.textSectionLabel::before { content: none; }
+
+.textPassive::before {
+  content: '◎ ';
+  opacity: 0.6;
+}

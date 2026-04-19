@@ -1,5 +1,27 @@
-import type { CatalogEffects, InstalledUpgrade } from '@/lib/marina-api';
+import type { CatalogEffects, InstalledUpgrade, PassiveEffects } from '@/lib/marina-api';
 import styles from './EffectsSummary.module.css';
+
+/** Merge passiveEffects into a synthetic effects view — used for displaying a
+ * worst-case / total impact regardless of activation state. */
+function mergePassive(e: CatalogEffects): CatalogEffects {
+  const p = e.passiveEffects;
+  if (!p) return e;
+  return {
+    ...e,
+    speedByTwa: [0, 1, 2, 3, 4].map((i) =>
+      (e.speedByTwa[i] ?? 0) + (p.speedByTwa?.[i] ?? 0),
+    ) as CatalogEffects['speedByTwa'],
+    speedByTws: [0, 1, 2].map((i) =>
+      (e.speedByTws[i] ?? 0) + (p.speedByTws?.[i] ?? 0),
+    ) as CatalogEffects['speedByTws'],
+    wearMul: {
+      hull: (e.wearMul?.hull ?? 1) * (p.wearMul?.hull ?? 1),
+      rig:  (e.wearMul?.rig  ?? 1) * (p.wearMul?.rig  ?? 1),
+      sail: (e.wearMul?.sail ?? 1) * (p.wearMul?.sail ?? 1),
+      elec: (e.wearMul?.elec ?? 1) * (p.wearMul?.elec ?? 1),
+    },
+  };
+}
 
 interface EffectsSummaryProps {
   effects: CatalogEffects | null;
@@ -76,47 +98,68 @@ export function summarizeEffects(e: CatalogEffects): Criterion[] {
 /**
  * Detailed text lines for the drawer — breaks down maneuver effects per type
  * so the user sees every concrete bonus ('-15% temps virement', etc.).
+ * Lines from passiveEffects are flagged `passive: true` so the UI can mark
+ * them as "toujours appliqué" (vs active = only when activation is met).
  */
-export function detailLines(e: CatalogEffects): { text: string; tone: 'good' | 'bad' }[] {
-  const lines: { text: string; tone: 'good' | 'bad' }[] = [];
-  const push = (v: number, label: string, invert = false): void => {
+export function detailLines(e: CatalogEffects): { text: string; tone: 'good' | 'bad'; passive?: boolean }[] {
+  const lines: { text: string; tone: 'good' | 'bad'; passive?: boolean }[] = [];
+  const push = (v: number, label: string, options: { invert?: boolean; passive?: boolean } = {}): void => {
     if (v === 0) return;
-    const beneficial = invert ? v < 0 : v > 0;
-    // For dur: we feed the raw delta (dur - 1), so negative raw = less time = good → display with minus sign
+    const beneficial = options.invert ? v < 0 : v > 0;
     const tone: 'good' | 'bad' = beneficial ? 'good' : 'bad';
     const sign = v > 0 ? '+' : '';
-    lines.push({ text: `${sign}${v}% ${label}`, tone });
+    const passive = options.passive ?? false;
+    lines.push(passive ? { text: `${sign}${v}% ${label}`, tone, passive } : { text: `${sign}${v}% ${label}`, tone });
   };
 
+  const wearLabels = {
+    hull: 'usure coque',
+    rig:  'usure gréement',
+    sail: 'usure voiles',
+    elec: 'usure électro',
+  } as const;
+
+  // Active speed effects
   push(pct((e.speedByTwa[0] + e.speedByTwa[1]) / 2), 'vitesse au près');
   push(pct((e.speedByTwa[2] + e.speedByTwa[3] + e.speedByTwa[4]) / 3), 'vitesse au portant');
   push(pct(e.speedByTws[0]), 'vitesse par vent léger');
   push(pct(e.speedByTws[1]), 'vitesse par vent moyen');
   push(pct(e.speedByTws[2]), 'vitesse par grand vent');
 
-  // Maneuvers: per-type so the user sees exactly which is improved
+  // Active maneuvers per type
   const maneuverTypes: ManeuverKey[] = ['tack', 'gybe', 'sailChange'];
   for (const k of maneuverTypes) {
     const m = e.maneuverMul?.[k];
     if (!m) continue;
     const label = MANEUVER_LABEL[k];
-    const durPct = pct(m.dur - 1);    // raw delta (-15% = -15% temps = better)
-    const speedPct = pct(m.speed - 1);
-    push(durPct, `temps ${label}`, true); // invert: negative raw = good
-    push(speedPct, `vitesse pendant ${label}`);
+    push(pct(m.dur - 1), `temps ${label}`, { invert: true });
+    push(pct(m.speed - 1), `vitesse pendant ${label}`);
   }
 
-  // Wear: surface every affected axis separately so bonuses and maluses both show
-  const wearLabels: Record<'hull' | 'rig' | 'sail' | 'elec', string> = {
-    hull: 'usure coque',
-    rig:  'usure gréement',
-    sail: 'usure voiles',
-    elec: 'usure électro',
-  };
+  // Active wear (axis by axis so bonuses show too)
   for (const axis of ['hull', 'rig', 'sail', 'elec'] as const) {
     const v = e.wearMul?.[axis];
     if (typeof v !== 'number' || v === 1) continue;
-    push(pct(v - 1), wearLabels[axis], true);
+    push(pct(v - 1), wearLabels[axis], { invert: true });
+  }
+
+  // Passive effects (always on, regardless of activation window)
+  const p = e.passiveEffects;
+  if (p) {
+    if (p.speedByTwa) {
+      push(pct((p.speedByTwa[0] + p.speedByTwa[1]) / 2), 'vitesse au près', { passive: true });
+      push(pct((p.speedByTwa[2] + p.speedByTwa[3] + p.speedByTwa[4]) / 3), 'vitesse au portant', { passive: true });
+    }
+    if (p.speedByTws) {
+      push(pct(p.speedByTws[0]), 'vitesse par vent léger', { passive: true });
+      push(pct(p.speedByTws[1]), 'vitesse par vent moyen', { passive: true });
+      push(pct(p.speedByTws[2]), 'vitesse par grand vent', { passive: true });
+    }
+    for (const axis of ['hull', 'rig', 'sail', 'elec'] as const) {
+      const v = p.wearMul?.[axis];
+      if (typeof v !== 'number' || v === 1) continue;
+      push(pct(v - 1), wearLabels[axis], { invert: true, passive: true });
+    }
   }
 
   return lines;
@@ -162,9 +205,26 @@ export function aggregateInstalledEffects(items: InstalledUpgrade[]): CatalogEff
     polarTargetsDeg: null,
     groundingLossMul: null,
   };
+  const addPassive = (p: PassiveEffects | undefined): void => {
+    if (!p) return;
+    if (p.speedByTwa) {
+      for (let i = 0; i < 5; i++) out.speedByTwa[i] = (out.speedByTwa[i] ?? 0) + (p.speedByTwa[i] ?? 0);
+    }
+    if (p.speedByTws) {
+      for (let i = 0; i < 3; i++) out.speedByTws[i] = (out.speedByTws[i] ?? 0) + (p.speedByTws[i] ?? 0);
+    }
+    if (p.wearMul && out.wearMul) {
+      if (typeof p.wearMul.hull === 'number') out.wearMul.hull = (out.wearMul.hull ?? 1) * p.wearMul.hull;
+      if (typeof p.wearMul.rig  === 'number') out.wearMul.rig  = (out.wearMul.rig  ?? 1) * p.wearMul.rig;
+      if (typeof p.wearMul.sail === 'number') out.wearMul.sail = (out.wearMul.sail ?? 1) * p.wearMul.sail;
+      if (typeof p.wearMul.elec === 'number') out.wearMul.elec = (out.wearMul.elec ?? 1) * p.wearMul.elec;
+    }
+  };
+
   for (const it of items) {
     const e = it.effects;
     if (!e) continue;
+    // Active effects (we display worst-case: as if always active)
     for (let i = 0; i < 5; i++) out.speedByTwa[i] = (out.speedByTwa[i] ?? 0) + (e.speedByTwa[i] ?? 0);
     for (let i = 0; i < 3; i++) out.speedByTws[i] = (out.speedByTws[i] ?? 0) + (e.speedByTws[i] ?? 0);
     if (e.wearMul && out.wearMul) {
@@ -183,8 +243,15 @@ export function aggregateInstalledEffects(items: InstalledUpgrade[]): CatalogEff
         }
       }
     }
+    // Passive drag / wear are always on — stack on top of active
+    addPassive(e.passiveEffects);
   }
   return out;
+}
+
+/** Bars shown on boat detail use effective (active + passive) values. */
+export function effectiveForDisplay(e: CatalogEffects): CatalogEffects {
+  return mergePassive(e);
 }
 
 function Bar({ pct }: { pct: number }): React.ReactElement {
@@ -211,10 +278,20 @@ export function EffectsSummary({ effects, variant = 'bars' }: EffectsSummaryProp
     const lines = detailLines(effects);
     const notes = itemNotes(effects);
     if (lines.length === 0 && notes.length === 0) return null;
+    const activeLines = lines.filter((l) => !l.passive);
+    const passiveLines = lines.filter((l) => l.passive);
     return (
       <ul className={styles.textList} aria-label="Effets principaux">
-        {lines.map((l, i) => (
+        {activeLines.map((l, i) => (
           <li key={`eff-${i}`} className={`${styles.textItem} ${l.tone === 'good' ? styles.pctGood : styles.pctBad}`}>
+            {l.text}
+          </li>
+        ))}
+        {passiveLines.length > 0 && (
+          <li className={`${styles.textItem} ${styles.textSectionLabel}`}>Toujours actif :</li>
+        )}
+        {passiveLines.map((l, i) => (
+          <li key={`pass-${i}`} className={`${styles.textItem} ${styles.textPassive} ${l.tone === 'good' ? styles.pctGood : styles.pctBad}`}>
             {l.text}
           </li>
         ))}

@@ -371,7 +371,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.03, 0, 0]
+          }
         }
       },
       {
@@ -390,7 +393,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.05, -0.02, 0]
+          }
         }
       },
       {
@@ -410,7 +416,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.08, -0.04, 0]
+          }
         }
       },
       {
@@ -680,7 +689,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.02, 0, 0]
+          }
         }
       },
       {
@@ -775,7 +787,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.04, 0, 0]
+          }
         }
       },
       {
@@ -851,7 +866,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.05, -0.02, 0]
+          }
         }
       },
       {
@@ -946,7 +964,10 @@
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.06, -0.02, 0]
+          }
         }
       }
     ]

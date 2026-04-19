@@ -10,8 +10,23 @@ export const BoatClassZ = z.enum(['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60',
 
 export const SlotAvailabilityZ = z.enum(['open', 'monotype', 'absent']);
 
+// Passive effects are always applied regardless of activation window.
+// Use this to model constraints like foil drag that exists whether the
+// foil is lifting or not (applies even below minTws).
+export const PassiveEffectsZ = z.object({
+  speedByTwa: z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]).optional(),
+  speedByTws: z.tuple([z.number(), z.number(), z.number()]).optional(),
+  wearMul: z.object({
+    hull: z.number().optional(),
+    rig: z.number().optional(),
+    sail: z.number().optional(),
+    elec: z.number().optional(),
+  }).optional(),
+});
+
 // speedByTwa and speedByTws are required in JSON (core mechanics).
 // wearMul, maneuverMul, activation default to {} if omitted (= no effect for that dimension).
+// `passiveEffects` is an optional companion block applied regardless of activation.
 export const UpgradeEffectsZ = z.object({
   speedByTwa: z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]),
   speedByTws: z.tuple([z.number(), z.number(), z.number()]),
@@ -32,6 +47,7 @@ export const UpgradeEffectsZ = z.object({
     maxTws: z.number().optional(),
   }).optional().default({}),
   groundingLossMul: z.number().nullable().default(null),
+  passiveEffects: PassiveEffectsZ.optional(),
 });
 
 export const UnlockCriteriaZ = z.object({
@@ -73,5 +89,6 @@ export type UpgradeSlot = z.infer<typeof UpgradeSlotZ>;
 export type UpgradeTier = z.infer<typeof UpgradeTierZ>;
 export type SlotAvailability = z.infer<typeof SlotAvailabilityZ>;
 export type UpgradeEffects = z.infer<typeof UpgradeEffectsZ>;
+export type PassiveEffects = z.infer<typeof PassiveEffectsZ>;
 export type UpgradeItem = z.infer<typeof UpgradeItemZ>;
 export type UpgradesBlock = z.infer<typeof UpgradesBlockZ>;
