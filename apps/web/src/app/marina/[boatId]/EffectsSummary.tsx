@@ -37,9 +37,13 @@ export function summarizeEffects(e: CatalogEffects): Criterion[] {
   const mediumWind = e.speedByTws[1];
   const heavyWind = e.speedByTws[2];
 
-  const wearValues = Object.values(e.wearMul ?? {}).filter((v): v is number => typeof v === 'number');
-  const worstWear = wearValues.length ? Math.max(...wearValues) : 1;
-  const wearDelta = -(worstWear - 1);
+  // Per-axis wear deltas. wearMul 1.20 = +20% usure = -20% durabilité.
+  // wearMul 0.55 = -45% usure = +45% durabilité.
+  const wearAxis = (v: number | undefined): number => (typeof v === 'number' ? -(v - 1) : 0);
+  const hullWear = wearAxis(e.wearMul?.hull);
+  const rigWear = wearAxis(e.wearMul?.rig);
+  const sailWear = wearAxis(e.wearMul?.sail);
+  const elecWear = wearAxis(e.wearMul?.elec);
 
   // Maneuvers: aggregate duration savings and speed retention across the 3 types
   const maneuverTypes: ManeuverKey[] = ['tack', 'gybe', 'sailChange'];
@@ -62,7 +66,10 @@ export function summarizeEffects(e: CatalogEffects): Criterion[] {
     { key: 'heavyWind',     label: 'Gros temps',       pct: pct(heavyWind) },
     { key: 'maneuverDur',   label: 'Temps manœuvres',  pct: pct(durAvg) },
     { key: 'maneuverSpeed', label: 'Vitesse manœuvres', pct: pct(speedAvg) },
-    { key: 'wear',          label: 'Durabilité',       pct: pct(wearDelta) },
+    { key: 'hullWear',      label: 'Solidité coque',      pct: pct(hullWear) },
+    { key: 'rigWear',       label: 'Solidité gréement',   pct: pct(rigWear) },
+    { key: 'sailWear',      label: 'Solidité voiles',     pct: pct(sailWear) },
+    { key: 'elecWear',      label: 'Solidité électro',    pct: pct(elecWear) },
   ];
 }
 
@@ -99,12 +106,17 @@ export function detailLines(e: CatalogEffects): { text: string; tone: 'good' | '
     push(speedPct, `vitesse pendant ${label}`);
   }
 
-  // Wear: push the worst axis
-  const wearValues = Object.values(e.wearMul ?? {}).filter((v): v is number => typeof v === 'number');
-  if (wearValues.length > 0) {
-    const worst = Math.max(...wearValues);
-    const wearPct = pct(worst - 1);
-    push(wearPct, 'usure', true); // invert: negative raw (less wear) = good
+  // Wear: surface every affected axis separately so bonuses and maluses both show
+  const wearLabels: Record<'hull' | 'rig' | 'sail' | 'elec', string> = {
+    hull: 'usure coque',
+    rig:  'usure gréement',
+    sail: 'usure voiles',
+    elec: 'usure électro',
+  };
+  for (const axis of ['hull', 'rig', 'sail', 'elec'] as const) {
+    const v = e.wearMul?.[axis];
+    if (typeof v !== 'number' || v === 1) continue;
+    push(pct(v - 1), wearLabels[axis], true);
   }
 
   return lines;
