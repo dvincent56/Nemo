@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   fetchMyUpgrades, fetchCatalog, installUpgrade, uninstallUpgrade, buyAndInstall, purchaseUpgrade,
-  type CatalogItem, type InventoryItem, type UpgradeSlot, type BoatClass,
+  type CatalogItem, type InventoryItem, type UpgradeSlot, type BoatClass, type PlayerStats,
 } from '@/lib/marina-api';
 import { SLOT_LABEL, TIER_LABEL } from '../data';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -12,6 +12,52 @@ import { EffectsSummary } from './EffectsSummary';
 import styles from './SlotDrawer.module.css';
 
 type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
+
+interface CriterionRow {
+  label: string;
+  met: boolean;
+  currentLabel: string;
+}
+
+function renderUnlockRows(
+  criteria: NonNullable<CatalogItem['unlockCriteria']>,
+  stats: PlayerStats | null,
+): CriterionRow[] {
+  const rows: CriterionRow[] = [];
+  if (criteria.racesFinished !== undefined) {
+    const current = stats?.racesFinished ?? 0;
+    rows.push({
+      label: `${criteria.racesFinished} courses finies`,
+      met: current >= criteria.racesFinished,
+      currentLabel: `${current}`,
+    });
+  }
+  if (criteria.top10Finishes !== undefined) {
+    const current = stats?.top10Finishes ?? 0;
+    rows.push({
+      label: `${criteria.top10Finishes} top 10`,
+      met: current >= criteria.top10Finishes,
+      currentLabel: `${current}`,
+    });
+  }
+  if (criteria.avgRankPctMax !== undefined) {
+    const current = stats?.avgRankPct ?? 1;
+    rows.push({
+      label: `Classement moyen ≤ ${Math.round(criteria.avgRankPctMax * 100)}%`,
+      met: current <= criteria.avgRankPctMax,
+      currentLabel: `${Math.round(current * 100)}%`,
+    });
+  }
+  if (criteria.currentStreak !== undefined) {
+    const current = stats?.currentStreak ?? 0;
+    rows.push({
+      label: `Série en cours ≥ ${criteria.currentStreak}`,
+      met: current >= criteria.currentStreak,
+      currentLabel: `${current}`,
+    });
+  }
+  return rows;
+}
 
 interface SlotDrawerProps {
   open: boolean;
@@ -34,10 +80,12 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingPurchase>(null);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
 
   const loadDrawerData = useCallback(async () => {
     try {
       const [inv, cat] = await Promise.all([fetchMyUpgrades(), fetchCatalog()]);
+      setStats(inv.stats);
       const compatByCatalogId = new Map(cat.items.map((i) => [i.id, i.compat]));
       setInventory(inv.inventory.filter((i) => {
         if (i.slot !== slot) return false;
@@ -221,6 +269,10 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                   const isInstalledOnThisBoat = item.id === installedCatalogId;
                   const copiesAvailable = availableByCatalogId.get(item.id) ?? 0;
                   const canAfford = item.cost === null || credits >= item.cost;
+                  const isLocked = item.cost === null;
+                  const unlockRows = isLocked && item.unlockCriteria
+                    ? renderUnlockRows(item.unlockCriteria, stats)
+                    : [];
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
@@ -236,6 +288,20 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                           </span>
                         )}
                         <EffectsSummary effects={item.effects} variant="text" />
+                        {unlockRows.length > 0 && (
+                          <ul className={styles.unlockList} aria-label="Critères de déblocage">
+                            <li className={styles.unlockHeader}>Nécessite :</li>
+                            {unlockRows.map((row, i) => (
+                              <li
+                                key={`unlock-${i}`}
+                                className={`${styles.unlockRow} ${row.met ? styles.unlockMet : styles.unlockPending}`}
+                              >
+                                <span>{row.label}</span>
+                                <span className={styles.unlockCurrent}>{row.currentLabel}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                       <div className={styles.itemAction}>
                         <span className={`${styles.itemCost} ${!canAfford ? styles.itemCostUnafford : ''}`}>

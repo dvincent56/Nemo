@@ -63,7 +63,13 @@ export interface CatalogItem {
   compat: BoatClass[];
   cost: number | null;
   effects: CatalogEffects;
-  unlockCriteria?: { racesFinished?: number; avgRankPctMax?: number; or?: boolean };
+  unlockCriteria?: {
+    racesFinished?: number;
+    avgRankPctMax?: number;
+    top10Finishes?: number;
+    currentStreak?: number;
+    or?: boolean;
+  };
 }
 
 export interface InventoryItem {
@@ -126,9 +132,19 @@ export async function fetchCatalog(boatClass?: string): Promise<{
   return apiFetch(`/api/v1/upgrades/catalog${q}`);
 }
 
+export interface PlayerStats {
+  racesFinished: number;
+  wins: number;
+  podiums: number;
+  top10Finishes: number;
+  avgRankPct: number;
+  currentStreak: number;
+}
+
 export async function fetchMyUpgrades(): Promise<{
   inventory: InventoryItem[];
   credits: number;
+  stats: PlayerStats;
 }> {
   return apiFetch('/api/v1/players/me/upgrades');
 }

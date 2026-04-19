@@ -91,6 +91,39 @@
 
 .itemCostUnafford { color: var(--danger); }
 
+/* Unlock criteria list for Proto items */
+.unlockList {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+}
+.unlockHeader {
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.unlockRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.unlockRow::before {
+  content: '▸ ';
+  opacity: 0.5;
+}
+.unlockCurrent {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.unlockMet { color: var(--live); }
+.unlockPending { color: var(--t2); }
+
 .content {
   flex: 1;
   overflow-y: auto;

@@ -137,7 +137,18 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
       };
     });
 
-    return { inventory, credits: player.credits };
+    return {
+      inventory,
+      credits: player.credits,
+      stats: {
+        racesFinished: player.racesFinished,
+        wins: player.wins,
+        podiums: player.podiums,
+        top10Finishes: player.top10Finishes,
+        avgRankPct: player.avgRankPct,
+        currentStreak: player.currentStreak,
+      },
+    };
   });
 
   // =========================================================================
