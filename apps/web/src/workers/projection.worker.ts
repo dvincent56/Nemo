@@ -60,7 +60,21 @@ async function ensureBalance(): Promise<void> {
 // ── Main simulation ──
 
 function simulate(input: ProjectionInput): ProjectionResult {
-  const getWeatherAt = createWindLookup(input.windGrid, input.windData);
+  const rawGetWeatherAt = createWindLookup(input.windGrid, input.windData);
+
+  // Compute the offset between the player-facing TWD (hud) and the local grid TWD
+  // at the boat's position. Apply this offset to all sampled wind directions so
+  // the projection starts consistent with what the player sees in the HUD/Compass.
+  const initSample = rawGetWeatherAt(input.lat, input.lon, input.nowMs);
+  const twdOffset = initSample
+    ? (((input.referenceTwd - initSample.twd + 540) % 360) - 180)
+    : 0;
+
+  const getWeatherAt = (lat: number, lon: number, ms: number) => {
+    const w = rawGetWeatherAt(lat, lon, ms);
+    if (!w) return null;
+    return { ...w, twd: ((w.twd + twdOffset) % 360 + 360) % 360 };
+  };
 
   const polar: PolarData = input.polar;
   const bspMax = computeBspMax(polar);
@@ -102,6 +116,8 @@ function simulate(input: ProjectionInput): ProjectionResult {
   const initTwa = twaLock ?? computeTWA(hdg, initWeather.twd);
   console.log('[Worker] init', {
     lat, lon, hdg, twaLock,
+    referenceTwd: input.referenceTwd,
+    twdOffset,
     initTwd: initWeather.twd,
     initTws: initWeather.tws,
     initTwa,

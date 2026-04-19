@@ -32,6 +32,10 @@ export interface ProjectionInput {
   activeTransition: { endMs: number; speedFactor: number } | null;
   /** Previous TWA for maneuver detection on first step */
   prevTwa: number | null;
+  /** Reference TWD shown to the player at boat position (hud.twd).
+   *  The worker applies (referenceTwd - localGridTwd) as offset to all
+   *  grid wind directions so the projection starts consistent with the UI. */
+  referenceTwd: number;
   /** Weather grid config */
   windGrid: {
     bounds: { north: number; south: number; east: number; west: number };

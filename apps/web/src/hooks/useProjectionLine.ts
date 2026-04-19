@@ -71,10 +71,24 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   const workerRef = useRef<Worker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(map);
+  const lastResultRef = useRef<ProjectionResult | null>(null);
+
+  // Keep mapRef in sync without re-running effects when map changes
+  useEffect(() => {
+    mapRef.current = map;
+    // If we already have a result and the map just became ready, render it
+    if (map && lastResultRef.current) {
+      updateMapSources(lastResultRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
 
   // Update MapLibre sources with projection result
   const updateMapSources = useCallback((result: ProjectionResult) => {
-    if (!map || !map.isStyleLoaded()) return;
+    const m = mapRef.current;
+    if (!m || !m.isStyleLoaded()) return;
+    const map = m;
 
     // Line source: one LineString segment per pair of points with bspRatio property
     const lineFeatures: GeoJSON.Feature[] = [];
@@ -125,7 +139,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     const manSrc = map.getSource('projection-markers-maneuver') as maplibregl.GeoJSONSource | undefined;
     manSrc?.setData({ type: 'FeatureCollection', features: manFeatures });
-  }, [map]);
+  }, []);
 
   // Initialize Worker
   useEffect(() => {
@@ -150,6 +164,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
           maneuverMarkers: e.data.result.maneuverMarkers.length,
           bspMax: e.data.result.bspMax,
         });
+        lastResultRef.current = e.data.result;
         updateMapSources(e.data.result);
       } else if (e.data.type === 'error') {
         console.error('[Projection] worker error:', e.data.message);
@@ -165,7 +180,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [updateMapSources, map]);
+  }, [updateMapSources]);
 
   // Load polar data
   useEffect(() => {
@@ -262,6 +277,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
           ? { endMs: sail.transitionEndMs, speedFactor: 0.7 }
           : null,
         prevTwa: hud.twa || null,
+        referenceTwd: hud.twd,
         windGrid: {
           bounds: grid.bounds,
           resolution: grid.resolution,
