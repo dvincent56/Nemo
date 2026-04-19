@@ -18,11 +18,13 @@ interface SlotDrawerProps {
   boatClass: string;
   /** Catalog id currently installed in this slot on this boat (to show badge + Retirer action). */
   installedCatalogId?: string | undefined;
+  /** Player credits, shown in the Buy tab as a budget reminder. */
+  credits: number;
   onClose: () => void;
   onChanged: () => void;
 }
 
-export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
+export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, credits, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
   const [tab, setTab] = useState<'install' | 'buy'>('install');
   // All inventory items for this slot+class (compatible), including the one installed on this boat
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -146,6 +148,13 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
           </button>
         </nav>
 
+        {tab === 'buy' && (
+          <div className={styles.creditsBar}>
+            <span className={styles.creditsLabel}>Crédits disponibles</span>
+            <span className={styles.creditsValue}>{credits.toLocaleString('fr-FR')} cr.</span>
+          </div>
+        )}
+
         <div className={styles.content}>
           {loading ? (
             <p className={styles.loading}>Chargement…</p>
@@ -206,6 +215,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                 catalog.map((item) => {
                   const isInstalledOnThisBoat = item.id === installedCatalogId;
                   const copiesAvailable = availableByCatalogId.get(item.id) ?? 0;
+                  const canAfford = item.cost === null || credits >= item.cost;
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
@@ -222,7 +232,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                         )}
                       </div>
                       <div className={styles.itemAction}>
-                        <span className={styles.itemCost}>
+                        <span className={`${styles.itemCost} ${!canAfford ? styles.itemCostUnafford : ''}`}>
                           {item.cost !== null ? `${item.cost.toLocaleString('fr-FR')} cr.` : 'Verrouillé'}
                         </span>
                         {item.cost !== null && (
@@ -231,8 +241,8 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                               type="button"
                               className={styles.itemBtnGhost}
                               onClick={() => setPending({ item, mode: 'buy-stock' })}
-                              disabled={busy !== null}
-                              title="Ajouter une copie à ton inventaire"
+                              disabled={busy !== null || !canAfford}
+                              title={!canAfford ? 'Crédits insuffisants' : 'Ajouter une copie à ton inventaire'}
                             >
                               Acheter (stock)
                             </button>
@@ -241,7 +251,8 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                               type="button"
                               className={styles.itemBtn}
                               onClick={() => setPending({ item, mode: 'buy-and-install' })}
-                              disabled={busy !== null}
+                              disabled={busy !== null || !canAfford}
+                              title={!canAfford ? 'Crédits insuffisants' : undefined}
                             >
                               Acheter et installer
                             </button>

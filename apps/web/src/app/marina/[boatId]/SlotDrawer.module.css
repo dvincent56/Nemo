@@ -67,6 +67,30 @@
   border-bottom-color: var(--gold);
 }
 
+.creditsBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 1.5rem;
+  background: var(--navy-soft);
+  border-bottom: 1px solid var(--navy-line);
+}
+.creditsLabel {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.creditsValue {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.itemCostUnafford { color: var(--danger); }
+
 .content {
   flex: 1;
   overflow-y: auto;

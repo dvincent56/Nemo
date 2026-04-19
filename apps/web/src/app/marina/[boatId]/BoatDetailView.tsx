@@ -286,6 +286,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
           boatId={boat.id}
           boatClass={boat.boatClass}
           installedCatalogId={installedBySlot.get(drawerSlot)?.catalogId}
+          credits={credits}
           onClose={() => setDrawerSlot(null)}
           onChanged={load}
         />
