@@ -55,7 +55,7 @@ function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: stri
       let value: number | string | boolean;
       if (o.type === 'CAP') value = Number(o.value['heading'] ?? o.value['cap'] ?? 0);
       else if (o.type === 'TWA') value = Number(o.value['twa'] ?? 0);
-      else if (o.type === 'SAIL') value = String(o.value['sail'] ?? 'GEN');
+      else if (o.type === 'SAIL') value = String(o.value['sail'] ?? 'JIB');
       else value = Boolean(o.value['auto'] ?? false);
 
       let triggerMs = Date.now();

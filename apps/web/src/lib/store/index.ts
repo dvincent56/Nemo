@@ -65,7 +65,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
         if (boatId === ownBoatId) {
           const sailIdx = Number(m['sail'] ?? 2);
-          const currentSail = SAIL_CODES[sailIdx] ?? 'GEN';
+          const currentSail = SAIL_CODES[sailIdx] ?? 'JIB';
           const twaColorCode = Number(m['twaColor'] ?? 1);
           nextHud = {
             ...s.hud,

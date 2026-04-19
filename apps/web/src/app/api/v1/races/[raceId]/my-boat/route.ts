@@ -31,7 +31,7 @@ export async function GET(
     rankTrend: 2,
     wearGlobal: 82,
     wearDetail: { hull: 88, rig: 79, sails: 75, electronics: 86 },
-    currentSail: 'GEN',
+    currentSail: 'JIB',
     sailAuto: false,
     transitionStartMs: 0,
     transitionEndMs: 0,
