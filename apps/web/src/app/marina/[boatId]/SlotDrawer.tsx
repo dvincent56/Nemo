@@ -7,6 +7,7 @@ import {
 } from '@/lib/marina-api';
 import { SLOT_LABEL, TIER_LABEL } from '../data';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import Tooltip from '@/components/ui/Tooltip';
 import styles from './SlotDrawer.module.css';
 
 type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
@@ -124,6 +125,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
   };
 
   return (
+    <>
     <div className={styles.overlay} onClick={onClose}>
       <aside className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <header className={styles.header}>
@@ -237,22 +239,35 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                         </span>
                         {item.cost !== null && (
                           isInstalledOnThisBoat || copiesAvailable > 0 ? (
-                            <button
-                              type="button"
-                              className={styles.itemBtnGhost}
-                              onClick={() => setPending({ item, mode: 'buy-stock' })}
-                              disabled={busy !== null || !canAfford}
-                              title={!canAfford ? 'Crédits insuffisants' : 'Ajouter une copie à ton inventaire'}
+                            <Tooltip
+                              text={!canAfford ? 'Crédits insuffisants' : 'Ajouter une copie à ton inventaire'}
+                              position="left"
                             >
-                              Acheter (stock)
-                            </button>
+                              <button
+                                type="button"
+                                className={styles.itemBtnGhost}
+                                onClick={() => setPending({ item, mode: 'buy-stock' })}
+                                disabled={busy !== null || !canAfford}
+                              >
+                                Acheter (stock)
+                              </button>
+                            </Tooltip>
+                          ) : !canAfford ? (
+                            <Tooltip text="Crédits insuffisants" position="left">
+                              <button
+                                type="button"
+                                className={styles.itemBtn}
+                                disabled
+                              >
+                                Acheter et installer
+                              </button>
+                            </Tooltip>
                           ) : (
                             <button
                               type="button"
                               className={styles.itemBtn}
                               onClick={() => setPending({ item, mode: 'buy-and-install' })}
-                              disabled={busy !== null || !canAfford}
-                              title={!canAfford ? 'Crédits insuffisants' : undefined}
+                              disabled={busy !== null}
                             >
                               Acheter et installer
                             </button>
@@ -268,33 +283,34 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
         </div>
 
       </aside>
-
-      {pending && (
-        <ConfirmDialog
-          open={!!pending}
-          title={pending.mode === 'buy-and-install'
-            ? `Acheter et installer ?`
-            : `Acheter et ajouter à l'inventaire ?`}
-          body={
-            <>
-              <strong>{pending.item.name}</strong>{' '}({TIER_LABEL[pending.item.tier]}) pour{' '}
-              <strong>{pending.item.cost?.toLocaleString('fr-FR')} cr.</strong>
-              {pending.mode === 'buy-and-install'
-                ? ' — l\'item sera installé immédiatement sur ce bateau.'
-                : ' — l\'item partira dans ton inventaire.'}
-            </>
-          }
-          confirmLabel={pending.mode === 'buy-and-install' ? 'Acheter et installer' : 'Acheter'}
-          disabled={busy !== null}
-          onCancel={() => setPending(null)}
-          onConfirm={async () => {
-            const { item, mode } = pending;
-            setPending(null);
-            if (mode === 'buy-and-install') await handleBuyAndInstall(item.id);
-            else await handlePurchaseOnly(item.id);
-          }}
-        />
-      )}
     </div>
+
+    {pending && (
+      <ConfirmDialog
+        open={!!pending}
+        title={pending.mode === 'buy-and-install'
+          ? `Acheter et installer ?`
+          : `Acheter et ajouter à l'inventaire ?`}
+        body={
+          <>
+            <strong>{pending.item.name}</strong>{' '}({TIER_LABEL[pending.item.tier]}) pour{' '}
+            <strong>{pending.item.cost?.toLocaleString('fr-FR')} cr.</strong>
+            {pending.mode === 'buy-and-install'
+              ? ' — l\'item sera installé immédiatement sur ce bateau.'
+              : ' — l\'item partira dans ton inventaire.'}
+          </>
+        }
+        confirmLabel={pending.mode === 'buy-and-install' ? 'Acheter et installer' : 'Acheter'}
+        disabled={busy !== null}
+        onCancel={() => setPending(null)}
+        onConfirm={async () => {
+          const { item, mode } = pending;
+          setPending(null);
+          if (mode === 'buy-and-install') await handleBuyAndInstall(item.id);
+          else await handlePurchaseOnly(item.id);
+        }}
+      />
+    )}
+    </>
   );
 }

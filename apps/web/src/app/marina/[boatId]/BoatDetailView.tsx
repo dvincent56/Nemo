@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Pagination, BoatSvg } from '@/components/ui';
+import Tooltip from '@/components/ui/Tooltip';
 import {
   fetchBoatDetail, fetchCatalog,
   type BoatRecord, type InstalledUpgrade, type UpgradeSlot, type SlotAvailability,
@@ -130,14 +131,15 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
           {/* Action bar */}
           <div className={styles.heroActions}>
             {inRace ? (
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.btnPrimary}`}
-                disabled
-                title="Impossible pendant la course"
-              >
-                Personnaliser →
-              </button>
+              <Tooltip text="Impossible pendant la course" position="top">
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  disabled
+                >
+                  Personnaliser →
+                </button>
+              </Tooltip>
             ) : (
               <Link
                 href={`/marina/${boat.id}/customize` as Parameters<typeof Link>[0]['href']}
@@ -146,24 +148,32 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
                 Personnaliser →
               </Link>
             )}
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnSecondary}`}
-              onClick={() => setShowRepair(true)}
-              disabled={inRace || !needsRepair}
-              title={inRace ? 'Impossible pendant la course' : !needsRepair ? 'Bateau en parfait état' : 'Réparer'}
+            <Tooltip
+              text={inRace ? 'Impossible pendant la course' : !needsRepair ? 'Bateau en parfait état' : 'Réparer'}
+              position="top"
             >
-              Réparer
-            </button>
-            <button
-              type="button"
-              className={`${styles.btn} ${styles.btnDanger}`}
-              onClick={() => setShowSell(true)}
-              disabled={inRace}
-              title={inRace ? 'Impossible pendant la course' : 'Vendre ce bateau'}
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnSecondary}`}
+                onClick={() => setShowRepair(true)}
+                disabled={inRace || !needsRepair}
+              >
+                Réparer
+              </button>
+            </Tooltip>
+            <Tooltip
+              text={inRace ? 'Impossible pendant la course' : 'Vendre ce bateau'}
+              position="top"
             >
-              Vendre
-            </button>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnDanger}`}
+                onClick={() => setShowSell(true)}
+                disabled={inRace}
+              >
+                Vendre
+              </button>
+            </Tooltip>
           </div>
         </div>
       </section>

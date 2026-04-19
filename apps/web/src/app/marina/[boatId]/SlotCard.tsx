@@ -1,5 +1,6 @@
 import { SLOT_LABEL, TIER_LABEL, type UpgradeSlot, type InstalledUpgrade } from '../data';
 import type { SlotAvailability } from '@/lib/marina-api';
+import Tooltip from '@/components/ui/Tooltip';
 import styles from './SlotCard.module.css';
 
 interface SlotCardProps {
@@ -32,13 +33,17 @@ export function SlotCard({ slot, availability, installed, locked, onChangeSlot }
 
       {isMonotype ? (
         <p className={styles.monotype}>Réglementation classe</p>
+      ) : locked ? (
+        <Tooltip text="Modification impossible pendant la course" position="top">
+          <button type="button" className={styles.changeBtn} disabled>
+            Changer →
+          </button>
+        </Tooltip>
       ) : (
         <button
           type="button"
           className={styles.changeBtn}
           onClick={() => onChangeSlot(slot)}
-          disabled={locked}
-          title={locked ? 'Modification impossible pendant la course' : `Changer ${SLOT_LABEL[slot]}`}
         >
           Changer →
         </button>
