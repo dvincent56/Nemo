@@ -111,16 +111,16 @@ export default function WeatherTimeline(): React.ReactElement {
 
       {/* Controls */}
       <div className={styles.controls}>
-        <Tooltip text="Reculer de 6h" position="top">
+        <Tooltip text="Reculer de 6h" position="bottom">
           <button type="button" className={styles.btn} onClick={stepBack}>◀</button>
         </Tooltip>
-        <Tooltip text="Avancer de 6h" position="top">
+        <Tooltip text="Avancer de 6h" position="bottom">
           <button type="button" className={styles.btn} onClick={stepForward}>▶</button>
         </Tooltip>
 
         {/* Speed buttons */}
         {speeds.map((s) => (
-          <Tooltip key={s} text={`Vitesse ×${s}`} position="top">
+          <Tooltip key={s} text={`Vitesse ×${s}`} position="bottom">
             <button
               type="button"
               className={`${styles.speedBtn} ${playbackSpeed === s && !isLive ? styles.btnActive : ''}`}
@@ -132,7 +132,7 @@ export default function WeatherTimeline(): React.ReactElement {
         ))}
 
         {/* Live button */}
-        <Tooltip text="Revenir en direct" shortcut="L" position="top">
+        <Tooltip text="Revenir en direct" shortcut="L" position="bottom">
           <button
             type="button"
             className={`${styles.liveBtn} ${isLive ? styles.liveBtnActive : ''}`}

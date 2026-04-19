@@ -186,7 +186,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         </div>
 
         {/* Ranking tab (left edge — desktop) */}
-        <Tooltip text="Classement" shortcut="C" position="right" className={styles.rankingTabWrap ?? ''}>
+        <Tooltip text="Classement" shortcut="C" position="bottom" className={styles.rankingTabWrap ?? ''}>
           <button
             className={styles.rankingTab}
             onClick={() => handlePanelToggle('ranking')}
@@ -231,7 +231,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && (
           <div className={styles.rightStack}>
             <div className={styles.actionButtons}>
-              <Tooltip text="Gérer les voiles" shortcut="V" position="left">
+              <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
                   onClick={() => handlePanelToggle('sails')}
@@ -241,7 +241,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   <span>Voiles</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Programmer les ordres" shortcut="P" position="left">
+              <Tooltip text="Programmer les ordres" shortcut="P" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'programming' ? styles.actionBtnActive : ''}`}
                   onClick={() => handlePanelToggle('programming')}
@@ -251,7 +251,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   <span>Prog.</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="left">
+              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
                 <button
                   className={styles.actionBtn}
                   onClick={() => useGameStore.getState().setFollowBoat(true)}
@@ -262,24 +262,26 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                 </button>
               </Tooltip>
               <div className={styles.zoomGroup}>
-                <button
-                  className={styles.zoomBtn}
-                  title="Zoom +"
-                  type="button"
-                  onClick={() => {
-                    const { center, zoom } = useGameStore.getState().map;
-                    useGameStore.getState().setMapView(center, Math.min(zoom + 1, 18));
-                  }}
-                ><Plus size={18} strokeWidth={2.5} /></button>
-                <button
-                  className={styles.zoomBtn}
-                  title="Zoom −"
-                  type="button"
-                  onClick={() => {
-                    const { center, zoom } = useGameStore.getState().map;
-                    useGameStore.getState().setMapView(center, Math.max(zoom - 1, 1));
-                  }}
-                ><Minus size={18} strokeWidth={2.5} /></button>
+                <Tooltip text="Zoom +" position="bottom">
+                  <button
+                    className={styles.zoomBtn}
+                    type="button"
+                    onClick={() => {
+                      const { center, zoom } = useGameStore.getState().map;
+                      useGameStore.getState().setMapView(center, Math.min(zoom + 1, 18));
+                    }}
+                  ><Plus size={18} strokeWidth={2.5} /></button>
+                </Tooltip>
+                <Tooltip text="Zoom −" position="bottom">
+                  <button
+                    className={styles.zoomBtn}
+                    type="button"
+                    onClick={() => {
+                      const { center, zoom } = useGameStore.getState().map;
+                      useGameStore.getState().setMapView(center, Math.max(zoom - 1, 1));
+                    }}
+                  ><Minus size={18} strokeWidth={2.5} /></button>
+                </Tooltip>
               </div>
             </div>
             <Compass />

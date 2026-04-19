@@ -462,7 +462,7 @@ export default function Compass(): React.ReactElement {
 
         {/* Action buttons */}
         <div className={styles.actions}>
-          <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="top">
+          <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
             <button
               type="button"
               className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
@@ -474,7 +474,7 @@ export default function Compass(): React.ReactElement {
               <span>TWA</span>
             </button>
           </Tooltip>
-          <Tooltip text="Appliquer le cap modifié" shortcut="Entrée" position="top">
+          <Tooltip text="Appliquer le cap modifié" shortcut="Entrée" position="bottom">
             <button
               type="button"
               className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}

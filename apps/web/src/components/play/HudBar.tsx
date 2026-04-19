@@ -111,9 +111,11 @@ function HudBarInner(): React.ReactElement {
 
       {/* Quit button */}
       <div className={styles.end}>
-        <Link href="/races" className={styles.quit} title="Quitter et revenir aux courses">
-          ← Quitter
-        </Link>
+        <Tooltip text="Quitter et revenir aux courses" position="bottom">
+          <Link href="/races" className={styles.quit}>
+            ← Quitter
+          </Link>
+        </Tooltip>
       </div>
     </div>
   );
