@@ -52,7 +52,7 @@ export function computeTWA(heading: number, twd: number): number {
 export interface PolarData {
   twa: number[];
   tws: number[];
-  speeds: number[][];
+  speeds: Record<string, number[][]>;
 }
 
 function findBracket(arr: number[], value: number): { i0: number; i1: number; t: number } {
@@ -70,17 +70,36 @@ function findBracket(arr: number[], value: number): { i0: number; i1: number; t:
   return { i0: 0, i1: 0, t: 0 };
 }
 
-export function getPolarSpeed(polar: PolarData, twa: number, tws: number): number {
+export function getPolarSpeed(polar: PolarData, sail: string, twa: number, tws: number): number {
   const absTwa = Math.min(Math.abs(twa), 180);
-  const a = findBracket(polar.twa, absTwa);
-  const s = findBracket(polar.tws, tws);
+  const sailSpeeds = polar.speeds[sail];
+  if (!sailSpeeds || !Array.isArray(sailSpeeds)) {
+    // Fallback: take the first available sail to avoid returning 0 (which would
+    // freeze the projection). Logged so the upstream sail name mismatch is visible.
+    const first = Object.values(polar.speeds)[0];
+    if (!first) return 0;
+    return getPolarSpeedFromGrid(first, polar.twa, polar.tws, absTwa, tws);
+  }
+  return getPolarSpeedFromGrid(sailSpeeds, polar.twa, polar.tws, absTwa, tws);
+}
 
-  const r0 = polar.speeds[a.i0]!;
-  const r1 = polar.speeds[a.i1]!;
-  const v00 = r0[s.i0]!;
-  const v01 = r0[s.i1]!;
-  const v10 = r1[s.i0]!;
-  const v11 = r1[s.i1]!;
+function getPolarSpeedFromGrid(
+  speeds: number[][],
+  twaAxis: number[],
+  twsAxis: number[],
+  absTwa: number,
+  tws: number,
+): number {
+  const a = findBracket(twaAxis, absTwa);
+  const s = findBracket(twsAxis, tws);
+
+  const r0 = speeds[a.i0];
+  const r1 = speeds[a.i1];
+  if (!Array.isArray(r0) || !Array.isArray(r1)) return 0;
+  const v00 = r0[s.i0] ?? 0;
+  const v01 = r0[s.i1] ?? 0;
+  const v10 = r1[s.i0] ?? 0;
+  const v11 = r1[s.i1] ?? 0;
 
   const top = v00 * (1 - s.t) + v01 * s.t;
   const bot = v10 * (1 - s.t) + v11 * s.t;
@@ -90,9 +109,14 @@ export function getPolarSpeed(polar: PolarData, twa: number, tws: number): numbe
 /** Compute BSP max across all TWA/TWS combinations for gradient normalization. */
 export function computeBspMax(polar: PolarData): number {
   let max = 0;
-  for (const row of polar.speeds) {
-    for (const v of row) {
-      if (v > max) max = v;
+  if (!polar.speeds || typeof polar.speeds !== 'object') return 0;
+  for (const sailSpeeds of Object.values(polar.speeds)) {
+    if (!Array.isArray(sailSpeeds)) continue;
+    for (const row of sailSpeeds) {
+      if (!Array.isArray(row)) continue;
+      for (const v of row) {
+        if (typeof v === 'number' && v > max) max = v;
+      }
     }
   }
   return max;
@@ -221,6 +245,7 @@ export function transitionSpeedFactor(transition: { endMs: number; speedFactor: 
 
 export function computeBsp(
   polar: PolarData,
+  sail: string,
   twa: number,
   tws: number,
   condition: ConditionState,
@@ -229,7 +254,7 @@ export function computeBsp(
   transition: { endMs: number; speedFactor: number } | null,
   nowMs: number,
 ): number {
-  const baseBsp = getPolarSpeed(polar, twa, tws);
+  const baseBsp = getPolarSpeed(polar, sail, twa, tws);
   const twaBand = bandFor(Math.abs(twa), [60, 90, 120, 150]);
   const twsBand = bandFor(tws, [10, 20]);
 

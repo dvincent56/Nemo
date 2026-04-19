@@ -105,12 +105,12 @@ function simulate(input: ProjectionInput): ProjectionResult {
     initTwd: initWeather.twd,
     initTws: initWeather.tws,
     initTwa,
-    initBsp: computeBsp(polar, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
+    initBsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
   });
   points.push({
     lat, lon,
     timestamp: currentMs,
-    bsp: computeBsp(polar, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
+    bsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
     tws: initWeather.tws,
     twd: initWeather.twd,
   });
@@ -130,7 +130,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
         const weather = getWeatherAt(lat, lon, currentMs);
         if (!weather) break;
         const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
-        const bsp = computeBsp(polar, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+        const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
         const newPos = advancePosition({ lat, lon }, hdg, bsp, partialDt);
         lat = newPos.lat;
         lon = newPos.lon;
@@ -212,7 +212,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
         points.push({
           lat, lon,
           timestamp: currentMs,
-          bsp: computeBsp(polar, twa, weather.tws, condition, effects, maneuver, transition, currentMs),
+          bsp: computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs),
           tws: weather.tws,
           twd: weather.twd,
         });
@@ -240,7 +240,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
     }
 
     // Compute BSP
-    const bsp = computeBsp(polar, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+    const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
 
     // Advance position
     const newPos = advancePosition({ lat, lon }, hdg, bsp, dt);
@@ -272,7 +272,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
     const weatherAtNew = getWeatherAt(lat, lon, currentMs);
     if (!weatherAtNew) break;
     const twaAtNew = twaLock !== null ? twaLock : computeTWA(hdg, weatherAtNew.twd);
-    const bspAtNew = computeBsp(polar, twaAtNew, weatherAtNew.tws, condition, effects, maneuver, transition, currentMs);
+    const bspAtNew = computeBsp(polar, activeSail, twaAtNew, weatherAtNew.tws, condition, effects, maneuver, transition, currentMs);
 
     points.push({
       lat, lon,
