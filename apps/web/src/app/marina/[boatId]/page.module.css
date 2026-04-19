@@ -705,6 +705,11 @@
   padding: 0 var(--page-px, 1.5rem);
 }
 
+.effectsWrap {
+  max-width: 540px;
+  padding: 0 var(--page-px, 1.5rem);
+}
+
 .loading {
   font-family: var(--font-body);
   font-size: 0.875rem;

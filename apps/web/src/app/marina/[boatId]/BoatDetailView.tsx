@@ -16,6 +16,7 @@ import { SlotCard } from './SlotCard';
 import { SlotDrawer } from './SlotDrawer';
 import { RepairModal } from './RepairModal';
 import { SellModal } from './SellModal';
+import { EffectsSummary, aggregateInstalledEffects } from './EffectsSummary';
 import styles from './page.module.css';
 
 const HISTORY_PAGE_SIZE = 5;
@@ -200,6 +201,22 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
             <p className={styles.statCellLabel}>Upgrades installés</p>
             <p className={styles.statCellValue}>{installed.length}<small>/7</small></p>
           </div>
+        </div>
+      </section>
+
+      {/* Aggregated effects — vs a stock boat */}
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <div>
+            <p className={styles.sectionEyebrow}>Profil</p>
+            <h2 className={styles.sectionTitle}>Performance vs série</h2>
+          </div>
+          <p className={styles.sectionAside}>
+            Cumul des effets des upgrades installés comparé à un bateau série.
+          </p>
+        </div>
+        <div className={styles.effectsWrap}>
+          <EffectsSummary effects={aggregateInstalledEffects(installed)} variant="bars" />
         </div>
       </section>
 

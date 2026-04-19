@@ -8,6 +8,7 @@ import {
 import { SLOT_LABEL, TIER_LABEL } from '../data';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import Tooltip from '@/components/ui/Tooltip';
+import { EffectsSummary } from './EffectsSummary';
 import styles from './SlotDrawer.module.css';
 
 type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
@@ -169,6 +170,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                   const isInstalledHere =
                     item.installedOn?.boatId === boatId && item.installedOn.slot === slot;
                   const isInstalledElsewhere = !isInstalledHere && !!item.installedOn;
+                  const catalogMatch = catalog.find((c) => c.id === item.upgradeCatalogId);
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
@@ -180,6 +182,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                         {isInstalledElsewhere && (
                           <span className={styles.badgeElsewhere}>Installé sur un autre bateau</span>
                         )}
+                        <EffectsSummary effects={catalogMatch?.effects ?? null} variant="text" />
                       </div>
                       {isInstalledHere ? (
                         <button
@@ -232,6 +235,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                             {copiesAvailable === 1 ? '1 en inventaire' : `${copiesAvailable} en inventaire`}
                           </span>
                         )}
+                        <EffectsSummary effects={item.effects} variant="text" />
                       </div>
                       <div className={styles.itemAction}>
                         <span className={`${styles.itemCost} ${!canAfford ? styles.itemCostUnafford : ''}`}>

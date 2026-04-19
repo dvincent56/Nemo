@@ -1,0 +1,78 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--navy-line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 5rem 1fr 3rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.track {
+  position: relative;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--navy-soft);
+}
+
+.midline {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 1px;
+  height: 8px;
+  background: var(--navy-rule);
+}
+
+.fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 150ms ease, left 150ms ease;
+}
+.fillGood    { background: var(--live); }
+.fillBad     { background: var(--danger); }
+.fillNeutre  { background: var(--t3); }
+
+.pct {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-align: right;
+  color: var(--t2);
+}
+.pctGood { color: var(--live); font-weight: 600; }
+.pctBad  { color: var(--danger); font-weight: 600; }
+
+/* Text variant (drawer) — no bars, just inline deltas */
+.textList {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.textItem {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+.textItem::before {
+  content: '▸ ';
+  opacity: 0.5;
+}
