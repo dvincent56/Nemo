@@ -48,7 +48,12 @@ export function RepairModal({ open, boat, credits, onClose, onRepaired }: Repair
   };
 
   return (
-    <dialog ref={ref} className={styles.dialog} onClose={onClose}>
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      onClose={onClose}
+      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+    >
       <h2 className={styles.title}>Réparer {boat.name}</h2>
 
       <div className={styles.axes}>

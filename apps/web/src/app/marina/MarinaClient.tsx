@@ -134,6 +134,12 @@ export default function MarinaClient(): React.ReactElement {
                 {credits.toLocaleString('fr-FR')}<small>cr.</small>
               </p>
             </div>
+            <Link
+              href={'/marina/inventory' as Parameters<typeof Link>[0]['href']}
+              className={styles.inventoryLink}
+            >
+              Inventaire upgrades →
+            </Link>
           </div>
         </div>
       </section>

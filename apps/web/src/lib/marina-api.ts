@@ -77,15 +77,17 @@ export interface RepairBreakdown {
   total: number;
 }
 
-function authHeaders(): HeadersInit {
-  return { 'Content-Type': 'application/json' };
-}
-
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  // Only set Content-Type when we're actually sending JSON — Fastify parses
+  // the body eagerly when the header is set, which breaks empty POST/DELETE.
+  const hasBody = init?.body !== undefined && init.body !== null;
   const res = await fetch(new URL(path, API_BASE), {
     credentials: 'include',
     ...init,
-    headers: { ...authHeaders(), ...init?.headers },
+    headers: {
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...init?.headers,
+    },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -172,4 +174,12 @@ export async function sellBoat(boatId: string) {
     creditsAfter: number;
     returnedUpgrades: { playerUpgradeId: string; catalogId: string; name: string; tier: string }[];
   }>(`/api/v1/boats/${boatId}`, { method: 'DELETE' });
+}
+
+export async function sellUpgrade(playerUpgradeId: string) {
+  return apiFetch<{
+    sold: boolean;
+    refund: number;
+    creditsAfter: number;
+  }>(`/api/v1/upgrades/${playerUpgradeId}`, { method: 'DELETE' });
 }

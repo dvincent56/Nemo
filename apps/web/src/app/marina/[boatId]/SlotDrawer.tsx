@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   fetchMyUpgrades, fetchCatalog, installUpgrade, uninstallUpgrade, buyAndInstall, purchaseUpgrade,
   type CatalogItem, type InventoryItem, type UpgradeSlot, type BoatClass,
 } from '@/lib/marina-api';
 import { SLOT_LABEL, TIER_LABEL } from '../data';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import styles from './SlotDrawer.module.css';
+
+type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
 
 interface SlotDrawerProps {
   open: boolean;
@@ -26,27 +29,32 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingPurchase>(null);
+
+  const loadDrawerData = useCallback(async () => {
+    try {
+      const [inv, cat] = await Promise.all([fetchMyUpgrades(), fetchCatalog()]);
+      const compatByCatalogId = new Map(cat.items.map((i) => [i.id, i.compat]));
+      setInventory(inv.inventory.filter((i) => {
+        if (i.slot !== slot) return false;
+        const compat = compatByCatalogId.get(i.upgradeCatalogId);
+        return compat?.includes(boatClass as BoatClass) ?? false;
+      }));
+      setCatalog(cat.items.filter((i) =>
+        i.slot === slot
+        && i.compat.includes(boatClass as BoatClass)
+        && i.tier !== 'SERIE',
+      ));
+    } finally {
+      setLoading(false);
+    }
+  }, [slot, boatClass]);
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    Promise.all([fetchMyUpgrades(), fetchCatalog()])
-      .then(([inv, cat]) => {
-        const compatByCatalogId = new Map(cat.items.map((i) => [i.id, i.compat]));
-        setInventory(inv.inventory.filter((i) => {
-          if (i.slot !== slot) return false;
-          const compat = compatByCatalogId.get(i.upgradeCatalogId);
-          return compat?.includes(boatClass as BoatClass) ?? false;
-        }));
-        setCatalog(cat.items.filter((i) =>
-          i.slot === slot
-          && i.compat.includes(boatClass as BoatClass)
-          && i.tier !== 'SERIE',
-        ));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [open, slot, boatId, boatClass]);
+    loadDrawerData().catch((err) => console.error('drawer load failed', err));
+  }, [open, loadDrawerData]);
 
   // How many copies of each catalog id the player owns that are NOT installed
   const availableByCatalogId = useMemo(() => {
@@ -65,9 +73,10 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     try {
       await installUpgrade(boatId, playerUpgradeId);
       onChanged();
-      onClose();
+      await loadDrawerData();
     } catch (err) {
       console.error('install failed', err);
+    } finally {
       setBusy(null);
     }
   };
@@ -77,9 +86,10 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     try {
       await uninstallUpgrade(boatId, slot);
       onChanged();
-      onClose();
+      await loadDrawerData();
     } catch (err) {
       console.error('uninstall failed', err);
+    } finally {
       setBusy(null);
     }
   };
@@ -89,9 +99,10 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     try {
       await buyAndInstall(itemId, boatId);
       onChanged();
-      onClose();
+      await loadDrawerData();
     } catch (err) {
       console.error('buy-and-install failed', err);
+    } finally {
       setBusy(null);
     }
   };
@@ -101,11 +112,11 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     try {
       await purchaseUpgrade(itemId);
       onChanged();
-      // Keep drawer open, switch to install tab so the user sees the new inventory item
+      await loadDrawerData();
       setTab('install');
-      setBusy(null);
     } catch (err) {
       console.error('purchase failed', err);
+    } finally {
       setBusy(null);
     }
   };
@@ -219,7 +230,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                             <button
                               type="button"
                               className={styles.itemBtnGhost}
-                              onClick={() => handlePurchaseOnly(item.id)}
+                              onClick={() => setPending({ item, mode: 'buy-stock' })}
                               disabled={busy !== null}
                               title="Ajouter une copie à ton inventaire"
                             >
@@ -229,7 +240,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                             <button
                               type="button"
                               className={styles.itemBtn}
-                              onClick={() => handleBuyAndInstall(item.id)}
+                              onClick={() => setPending({ item, mode: 'buy-and-install' })}
                               disabled={busy !== null}
                             >
                               Acheter et installer
@@ -245,19 +256,34 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
           )}
         </div>
 
-        {installedCatalogId && (
-          <footer className={styles.footer}>
-            <button
-              type="button"
-              className={styles.revertBtn}
-              onClick={handleUninstall}
-              disabled={busy !== null}
-            >
-              Revenir au stock (Série)
-            </button>
-          </footer>
-        )}
       </aside>
+
+      {pending && (
+        <ConfirmDialog
+          open={!!pending}
+          title={pending.mode === 'buy-and-install'
+            ? `Acheter et installer ?`
+            : `Acheter et ajouter à l'inventaire ?`}
+          body={
+            <>
+              <strong>{pending.item.name}</strong>{' '}({TIER_LABEL[pending.item.tier]}) pour{' '}
+              <strong>{pending.item.cost?.toLocaleString('fr-FR')} cr.</strong>
+              {pending.mode === 'buy-and-install'
+                ? ' — l\'item sera installé immédiatement sur ce bateau.'
+                : ' — l\'item partira dans ton inventaire.'}
+            </>
+          }
+          confirmLabel={pending.mode === 'buy-and-install' ? 'Acheter et installer' : 'Acheter'}
+          disabled={busy !== null}
+          onCancel={() => setPending(null)}
+          onConfirm={async () => {
+            const { item, mode } = pending;
+            setPending(null);
+            if (mode === 'buy-and-install') await handleBuyAndInstall(item.id);
+            else await handlePurchaseOnly(item.id);
+          }}
+        />
+      )}
     </div>
   );
 }

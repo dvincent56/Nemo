@@ -731,4 +731,56 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
     },
   );
 
+  // =========================================================================
+  // DELETE /api/v1/upgrades/:id — sell an owned upgrade back to credits
+  // Refund = paidCredits × buybackUpgradePct% (floor). 0 for admin-granted items.
+  // =========================================================================
+
+  app.delete<{ Params: { id: string } }>(
+    '/api/v1/upgrades/:id',
+    { preHandler: [enforceAuth] },
+    async (req, reply) => {
+      const auth = req.auth!;
+      const db = getDb();
+      if (!db) { reply.code(503); return { error: 'database unavailable' }; }
+
+      const upgradeId = req.params.id;
+      if (!isValidUuid(upgradeId)) { reply.code(400); return { error: 'invalid upgrade id' }; }
+
+      const player = await findPlayerBySub(db, auth.sub);
+      if (!player) { reply.code(404); return { error: 'player not found' }; }
+
+      // Verify ownership
+      const [pu] = await db.select().from(playerUpgrades).where(
+        and(eq(playerUpgrades.id, upgradeId), eq(playerUpgrades.playerId, player.id)),
+      );
+      if (!pu) { reply.code(404); return { error: 'upgrade not found in inventory' }; }
+
+      // Must not be installed anywhere (CASCADE would silently take it off a boat)
+      const [installed] = await db.select().from(boatInstalledUpgrades)
+        .where(eq(boatInstalledUpgrades.playerUpgradeId, upgradeId));
+      if (installed) {
+        reply.code(409);
+        return { error: 'upgrade installed on a boat — uninstall first', boatId: installed.boatId, slot: installed.slot };
+      }
+
+      const refund = Math.floor(pu.paidCredits * GameBalance.economy.buybackUpgradePct / 100);
+
+      await db.transaction(async (tx) => {
+        await tx.delete(playerUpgrades).where(eq(playerUpgrades.id, upgradeId));
+        if (refund > 0) {
+          await tx.update(players)
+            .set({ credits: sql`${players.credits} + ${refund}` })
+            .where(eq(players.id, player.id));
+        }
+      });
+
+      return {
+        sold: true,
+        refund,
+        creditsAfter: player.credits + refund,
+      };
+    },
+  );
+
 }

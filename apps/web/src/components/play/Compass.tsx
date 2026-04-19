@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { SailId } from '@nemo/shared-types';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { Lock, LockOpen, Check } from 'lucide-react';
@@ -25,8 +26,8 @@ const R_OUTER = 96;
 const R_INNER = 82;
 
 const SAIL_RANGES: Record<string, [number, number]> = {
-  LW: [0, 60], JIB: [30, 100], GEN: [50, 140],
-  C0: [60, 150], HG: [100, 170], SPI: [120, 180],
+  JIB: [30, 100], LJ: [0, 70], SS: [0, 60],
+  C0: [60, 150], SPI: [80, 180], HG: [100, 180], LG: [80, 170],
 };
 
 function pt(r: number, deg: number): { x: number; y: number } {
@@ -45,10 +46,10 @@ function isInVmgZone(twa: number): boolean {
 
 /** Determine which sail would be selected for a given TWA in auto mode */
 function bestSailForTwa(absT: number): string | null {
-  const order = ['SPI', 'C0', 'HG', 'GEN', 'JIB', 'LW'];
+  const order = ['SPI', 'HG', 'LG', 'C0', 'JIB', 'LJ', 'SS'];
   for (const s of order) {
-    const [mn, mx] = SAIL_RANGES[s]!;
-    if (absT >= mn && absT <= mx) return s;
+    const range = SAIL_RANGES[s];
+    if (range && absT >= range[0] && absT <= range[1]) return s;
   }
   return null;
 }
@@ -132,12 +133,19 @@ export default function Compass(): React.ReactElement {
   // Estimated BSP from polars — only during heading edit
   const polar = getCachedPolar(boatClass);
   const displayBsp = applyActive && polar
-    ? getPolarSpeed(polar, displayTwa, tws)
+    ? getPolarSpeed(polar, currentSail, displayTwa, tws)
     : bsp;
 
   // BSP efficiency color: compare to max polar speed at current TWS
   const maxPolarBsp = polar
-    ? Math.max(...polar.twa.map((a) => getPolarSpeed(polar, a, tws)))
+    ? Math.max(...polar.twa.map((a) => {
+        let best = 0;
+        for (const s of Object.keys(polar.speeds)) {
+          const v = getPolarSpeed(polar, s as SailId, a, tws);
+          if (v > best) best = v;
+        }
+        return best;
+      }))
     : 0;
   const bspRatio = maxPolarBsp > 0 ? displayBsp / maxPolarBsp : 1;
   const bspColor = bspRatio >= 0.85 ? styles.live     // vert — efficace

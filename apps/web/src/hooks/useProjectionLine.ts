@@ -129,10 +129,18 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
   // Initialize Worker
   useEffect(() => {
-    const worker = new Worker(
-      new URL('../workers/projection.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
+    console.log('[Projection] hook mounted, map =', map ? 'ready' : 'null');
+    let worker: Worker;
+    try {
+      worker = new Worker(
+        new URL('../workers/projection.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+      console.log('[Projection] worker created');
+    } catch (err) {
+      console.error('[Projection] worker init failed:', err);
+      return;
+    }
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
       if (e.data.type === 'result') {
@@ -148,12 +156,16 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       }
     };
 
+    worker.onerror = (e: ErrorEvent) => {
+      console.error('[Projection] worker runtime error:', e.message, e.filename, e.lineno);
+    };
+
     workerRef.current = worker;
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
-  }, [updateMapSources]);
+  }, [updateMapSources, map]);
 
   // Load polar data
   useEffect(() => {

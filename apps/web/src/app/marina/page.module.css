@@ -425,6 +425,21 @@
   letter-spacing: 0.04em;
 }
 
+/* --- Inventory link in counters row --- */
+.inventoryLink {
+  align-self: center;
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--navy-line);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: border-color 150ms, color 150ms;
+}
+.inventoryLink:hover { border-color: var(--gold); color: var(--gold-dark); }
+
 /* --- Banners --- */
 .errorBanner {
   margin: 0 var(--page-px, 1.5rem) 1.5rem;

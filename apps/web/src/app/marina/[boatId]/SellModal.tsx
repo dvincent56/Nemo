@@ -37,7 +37,12 @@ export function SellModal({ open, boat, installedUpgrades, onClose }: SellModalP
   };
 
   return (
-    <dialog ref={ref} className={styles.dialog} onClose={onClose}>
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      onClose={onClose}
+      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+    >
       <h2 className={styles.title}>Vendre {boat.name} ?</h2>
       <p className={styles.warning}>Cette action est irréversible.</p>
 
