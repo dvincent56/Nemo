@@ -20,8 +20,8 @@ export interface ProjectionInput {
   twaLock: number | null;
   /** Programmed segments — ordered list of future orders */
   segments: ProjectionSegment[];
-  /** Polar table: { twa: number[], tws: number[], speeds: number[][] } */
-  polar: { twa: number[]; tws: number[]; speeds: number[][] };
+  /** Polar table: per-sail speed grids keyed by SailId */
+  polar: { twa: number[]; tws: number[]; speeds: Record<string, number[][]> };
   /** Aggregated upgrade effects */
   effects: ProjectionEffects;
   /** Current wear condition (0-100 per component) */

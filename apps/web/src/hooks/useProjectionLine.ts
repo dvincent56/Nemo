@@ -70,7 +70,7 @@ function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: stri
 export function useProjectionLine(map: maplibregl.Map | null): void {
   const workerRef = useRef<Worker | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: number[][] } | null>(null);
+  const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
 
   // Update MapLibre sources with projection result
   const updateMapSources = useCallback((result: ProjectionResult) => {
