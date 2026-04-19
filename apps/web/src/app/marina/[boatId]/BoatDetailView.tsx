@@ -131,7 +131,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
           {/* Action bar */}
           <div className={styles.heroActions}>
             {inRace ? (
-              <Tooltip text="Impossible pendant la course" position="top">
+              <Tooltip text="Impossible pendant la course" position="bottom">
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnPrimary}`}
@@ -150,7 +150,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
             )}
             <Tooltip
               text={inRace ? 'Impossible pendant la course' : !needsRepair ? 'Bateau en parfait état' : 'Réparer'}
-              position="top"
+              position="bottom"
             >
               <button
                 type="button"
@@ -163,7 +163,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
             </Tooltip>
             <Tooltip
               text={inRace ? 'Impossible pendant la course' : 'Vendre ce bateau'}
-              position="top"
+              position="bottom"
             >
               <button
                 type="button"

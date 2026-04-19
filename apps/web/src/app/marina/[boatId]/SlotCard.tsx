@@ -34,7 +34,7 @@ export function SlotCard({ slot, availability, installed, locked, onChangeSlot }
       {isMonotype ? (
         <p className={styles.monotype}>Réglementation classe</p>
       ) : locked ? (
-        <Tooltip text="Modification impossible pendant la course" position="top">
+        <Tooltip text="Modification impossible pendant la course" position="bottom">
           <button type="button" className={styles.changeBtn} disabled>
             Changer →
           </button>

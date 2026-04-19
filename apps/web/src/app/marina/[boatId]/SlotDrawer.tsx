@@ -241,7 +241,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                           isInstalledOnThisBoat || copiesAvailable > 0 ? (
                             <Tooltip
                               text={!canAfford ? 'Crédits insuffisants' : 'Ajouter une copie à ton inventaire'}
-                              position="left"
+                              position="bottom"
                             >
                               <button
                                 type="button"
@@ -253,7 +253,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                               </button>
                             </Tooltip>
                           ) : !canAfford ? (
-                            <Tooltip text="Crédits insuffisants" position="left">
+                            <Tooltip text="Crédits insuffisants" position="bottom">
                               <button
                                 type="button"
                                 className={styles.itemBtn}
