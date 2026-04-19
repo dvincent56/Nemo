@@ -8,28 +8,35 @@ import styles from './SailPanel.module.css';
 
 /* ── Sail icon SVGs (vue de profil, mât à gauche) ── */
 const SAIL_ICONS: Record<SailId, React.ReactElement> = {
-  LW: (
-    <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
-      <line x1="6" y1="2" x2="6" y2="38" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M6 4 Q18 12 20 22 Q18 30 6 36" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.15" />
-    </svg>
-  ),
   JIB: (
     <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
       <line x1="6" y1="2" x2="6" y2="38" stroke="currentColor" strokeWidth="1.5" />
       <path d="M6 3 L6 37 L22 37 Z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
-  GEN: (
+  LJ: (
     <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
       <line x1="6" y1="2" x2="6" y2="38" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M6 3 Q22 10 26 20 Q22 30 6 37" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.15" />
+      <path d="M6 4 Q16 14 18 24 Q16 32 6 36" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.10" strokeDasharray="3 2" />
+    </svg>
+  ),
+  SS: (
+    <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
+      <line x1="6" y1="2" x2="6" y2="38" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 6 L6 34 L16 34 Z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
   C0: (
     <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
       <line x1="6" y1="2" x2="6" y2="38" stroke="currentColor" strokeWidth="1.5" />
       <path d="M6 3 Q28 8 30 20 Q28 32 6 37" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.15" />
+    </svg>
+  ),
+  SPI: (
+    <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
+      <line x1="4" y1="2" x2="4" y2="38" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4 3 Q32 6 30 20 Q32 34 4 37" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.2" />
+      <line x1="4" y1="3" x2="20" y2="2" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 1" />
     </svg>
   ),
   HG: (
@@ -40,35 +47,43 @@ const SAIL_ICONS: Record<SailId, React.ReactElement> = {
       <line x1="8" y1="37" x2="4" y2="34" stroke="currentColor" strokeWidth="1" />
     </svg>
   ),
-  SPI: (
+  LG: (
     <svg viewBox="0 0 32 40" fill="none" className={styles.sailIcon}>
-      <line x1="4" y1="2" x2="4" y2="38" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M4 3 Q32 6 30 20 Q32 34 4 37" stroke="currentColor" strokeWidth="1.2" fill="currentColor" fillOpacity="0.2" />
-      <line x1="4" y1="3" x2="20" y2="2" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 1" />
+      <line x1="8" y1="2" x2="8" y2="38" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 4 Q22 8 26 20 Q22 32 8 36" stroke="currentColor" strokeWidth="1.0" fill="currentColor" fillOpacity="0.10" strokeDasharray="3 2" />
+      <line x1="8" y1="4" x2="4" y2="7" stroke="currentColor" strokeWidth="0.8" />
     </svg>
   ),
 };
 
 /** Transition durations by sail pair (from game-balance.json). Default 180s. */
 const TRANSITION_TIMES: Record<string, number> = {
-  GEN_SPI: 300, SPI_GEN: 300,
+  JIB_LJ: 120, LJ_JIB: 120,
+  JIB_SS: 150, SS_JIB: 150,
+  JIB_C0: 180, C0_JIB: 180,
+  C0_SPI: 300, SPI_C0: 300,
   C0_HG: 240, HG_C0: 240,
-  JIB_GEN: 120, GEN_JIB: 120,
-  C0_SPI: 360, SPI_C0: 360,
-  LW_JIB: 180, JIB_LW: 180,
+  SPI_HG: 240, HG_SPI: 240,
+  SPI_LG: 180, LG_SPI: 180,
+  HG_LG: 180, LG_HG: 180,
+  SS_C0: 180, C0_SS: 180,
+  LJ_SS: 150, SS_LJ: 150,
+  JIB_SPI: 360, SPI_JIB: 360,
+  LJ_C0: 240, C0_LJ: 240,
 };
 
 function getTransitionDuration(from: SailId, to: SailId): number {
   return TRANSITION_TIMES[`${from}_${to}`] ?? 180;
 }
 
-const SAILS: { id: SailId; name: string; twaMin: number; twaMax: number }[] = [
-  { id: 'LW', name: 'Light Wind', twaMin: 0, twaMax: 60 },
-  { id: 'JIB', name: 'Foc', twaMin: 30, twaMax: 100 },
-  { id: 'GEN', name: 'Genoa', twaMin: 50, twaMax: 140 },
-  { id: 'C0', name: 'Code 0', twaMin: 60, twaMax: 150 },
-  { id: 'HG', name: 'Heavy Genoa', twaMin: 100, twaMax: 170 },
-  { id: 'SPI', name: 'Spinnaker', twaMin: 120, twaMax: 180 },
+const SAILS: { id: SailId; name: string }[] = [
+  { id: 'JIB', name: 'Foc' },
+  { id: 'LJ', name: 'Foc léger' },
+  { id: 'SS', name: 'Trinquette' },
+  { id: 'C0', name: 'Code 0' },
+  { id: 'SPI', name: 'Spinnaker' },
+  { id: 'HG', name: 'Gennaker lourd' },
+  { id: 'LG', name: 'Gennaker léger' },
 ];
 
 export default function SailPanel(): React.ReactElement {
@@ -89,10 +104,9 @@ export default function SailPanel(): React.ReactElement {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isTransitioning = transitionEndMs > 0 && now < transitionEndMs;
 
-  // Compute estimated speed per sail from polar + current TWA/TWS
+  // Polar data for per-sail speed estimates at current TWA/TWS
   const absTwa = Math.min(Math.abs(twa), 180);
   const polar = polarReady ? getCachedPolar(boatClass) : null;
-  const baseBsp = polar ? getPolarSpeed(polar, absTwa, tws) : null;
 
   useEffect(() => {
     if (!isTransitioning) {
@@ -163,7 +177,8 @@ export default function SailPanel(): React.ReactElement {
           const isActive = s.id === currentSail;
           const isCandidate = s.id === candidateSail;
           const disabled = isTransitioning && !isActive;
-          const inRange = absTwa >= s.twaMin && absTwa <= s.twaMax;
+          const estimatedBsp = polar ? getPolarSpeed(polar, s.id, absTwa, tws) : null;
+          const inRange = estimatedBsp !== null && estimatedBsp > 0.5;
           return (
             <button
               key={s.id}
@@ -178,7 +193,7 @@ export default function SailPanel(): React.ReactElement {
                   <span className={styles.sailRowName}>{s.id}</span>
                   <span className={styles.sailRowFullName}>{s.name}</span>
                   <span className={inRange ? styles.sailRowSpeed : styles.sailRowSpeedOff}>
-                    {baseBsp !== null ? `${baseBsp.toFixed(1)} kn` : '—'}
+                    {estimatedBsp !== null ? `${estimatedBsp.toFixed(1)} kn` : '—'}
                   </span>
                 </div>
                 {/* Transition progress bar — only on active sail during penalty */}
