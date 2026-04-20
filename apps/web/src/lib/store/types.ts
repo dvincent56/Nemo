@@ -20,6 +20,8 @@ export interface HudState {
   rank: number; totalParticipants: number; rankTrend: number;
   wearGlobal: number; wearDetail: WearDetail;
   lat: number; lon: number;
+  /** Server lock state — the angle if locked, null if in heading mode. */
+  twaLock: number | null;
 }
 
 export type SailAvailability = 'active' | 'available' | 'disabled';
@@ -71,6 +73,11 @@ export interface LayersState {
   opponents: boolean;
   zones: boolean;
   coastline: boolean;
+}
+
+export interface MapAppearanceState {
+  oceanPresetId: string;
+  landPresetId: string;
 }
 
 export type PanelName = 'ranking' | 'sails' | 'programming';
@@ -143,6 +150,7 @@ export interface GameStore {
   selection: SelectionState;
   timeline: TimelineState;
   layers: LayersState;
+  mapAppearance: MapAppearanceState;
   panel: PanelState;
   weather: WeatherState;
   connection: ConnectionState;
@@ -165,6 +173,8 @@ export interface GameStore {
   goLive: () => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   toggleLayer: (layer: LayerName) => void;
+  setOceanPreset: (id: string) => void;
+  setLandPreset: (id: string) => void;
   openPanel: (p: PanelName) => void;
   closePanel: () => void;
   setWeatherGrid: (grid: WeatherGrid, expiresAt: Date) => void;

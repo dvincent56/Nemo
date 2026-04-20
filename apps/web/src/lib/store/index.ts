@@ -17,7 +17,7 @@ import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
-export type { TimelineState, LayersState, PanelState, WeatherState } from './types';
+export type { TimelineState, LayersState, PanelState, WeatherState, MapAppearanceState } from './types';
 export type { ConnectionState, ProgState, OrderEntry, BoatLive } from './types';
 export type { ConnState, PanelName, LayerName, PlaybackSpeed, TwaColor } from './types';
 export type { GfsStatus } from './types';
@@ -87,6 +87,7 @@ export const useGameStore = create<GameStore>((set) => ({
             twd: twdFromMsg,
             tws: twsFromMsg,
             twa: typeof serverTwaLock === 'number' ? serverTwaLock : derivedTwa,
+            twaLock: typeof serverTwaLock === 'number' ? serverTwaLock : null,
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             twaColor: twaColorFromCode(twaColorCode),
           };
