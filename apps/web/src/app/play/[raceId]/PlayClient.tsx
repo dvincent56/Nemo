@@ -165,7 +165,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
       {/* Row 2 — Map + floating elements */}
       <div className={styles.mapArea}>
-        <MapCanvas />
+        <MapCanvas enableProjection={canInteract} />
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}

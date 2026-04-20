@@ -85,11 +85,17 @@ export let mapInstance: maplibregl.Map | null = null;
 /** Flag to avoid zoom feedback loop (map move → store → map zoom) */
 let _syncingFromMap = false;
 
-export default function MapCanvas(): React.ReactElement {
+interface MapCanvasProps {
+  /** Show the 7-day projection line for the player's own boat.
+   *  Set to false in spectator mode (no own boat). */
+  enableProjection?: boolean;
+}
+
+export default function MapCanvas({ enableProjection = true }: MapCanvasProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
-  useProjectionLine(readyMap);
+  useProjectionLine(enableProjection ? readyMap : null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
