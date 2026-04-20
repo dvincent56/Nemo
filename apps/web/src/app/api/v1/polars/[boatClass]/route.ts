@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const BOAT_FILES: Record<string, string> = {
+  CRUISER_RACER: 'cruiser-racer.json',
   FIGARO: 'figaro.json',
   CLASS40: 'class40.json',
   OCEAN_FIFTY: 'ocean-fifty.json',

@@ -30,7 +30,7 @@ function createDemoRuntime(): BoatRuntime {
     id: 'demo-boat-1',
     ownerId: 'demo-owner',
     name: 'Nemo Démo',
-    boatClass: 'CLASS40',
+    boatClass: 'CRUISER_RACER',
     position: START_POS,
     heading: 216,
     bsp: 0,
@@ -46,7 +46,7 @@ function createDemoRuntime(): BoatRuntime {
     segmentState: { position: START_POS, heading: 216, twaLock: null, sail: 'JIB', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'CRUISER_RACER'),
     prevTwa: null,
     maneuver: null,
   };

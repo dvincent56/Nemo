@@ -10,6 +10,7 @@ const RAD_TO_DEG = 180 / Math.PI;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const POLAR_FILES: Record<BoatClass, string> = {
+  CRUISER_RACER: 'cruiser-racer.json',
   FIGARO: 'figaro.json',
   CLASS40: 'class40.json',
   OCEAN_FIFTY: 'ocean-fifty.json',

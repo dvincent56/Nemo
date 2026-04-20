@@ -52,36 +52,23 @@
   "sails": {
     "transitionPenalty": 0.7,
     "transitionTimes": {
-      "GEN_SPI": 300,
-      "SPI_GEN": 300,
-      "C0_HG": 240,
-      "HG_C0": 240,
-      "JIB_GEN": 120,
-      "GEN_JIB": 120,
-      "C0_SPI": 360,
-      "SPI_C0": 360,
-      "LW_JIB": 180,
-      "JIB_LW": 180
-    },
-    "overlapDegrees": {
-      "LW": 8,
-      "JIB": 8,
-      "GEN": 10,
-      "C0": 10,
-      "HG": 8,
-      "SPI": 8
-    },
-    "definitions": {
-      "LW": { "twaMin": 0, "twaMax": 60 },
-      "JIB": { "twaMin": 30, "twaMax": 100 },
-      "GEN": { "twaMin": 50, "twaMax": 140 },
-      "C0": { "twaMin": 60, "twaMax": 150 },
-      "HG": { "twaMin": 100, "twaMax": 170 },
-      "SPI": { "twaMin": 120, "twaMax": 180 }
+      "JIB_LJ": 120, "LJ_JIB": 120,
+      "JIB_SS": 150, "SS_JIB": 150,
+      "JIB_C0": 180, "C0_JIB": 180,
+      "C0_SPI": 300, "SPI_C0": 300,
+      "C0_HG": 240, "HG_C0": 240,
+      "SPI_HG": 240, "HG_SPI": 240,
+      "SPI_LG": 180, "LG_SPI": 180,
+      "HG_LG": 180, "LG_HG": 180,
+      "SS_C0": 180, "C0_SS": 180,
+      "LJ_SS": 150, "SS_LJ": 150,
+      "JIB_SPI": 360, "SPI_JIB": 360,
+      "LJ_C0": 240, "C0_LJ": 240
     }
   },
   "rewards": {
     "distanceRates": {
+      "CRUISER_RACER": 0.5,
       "FIGARO": 0.8,
       "CLASS40": 1.0,
       "OCEAN_FIFTY": 1.6,
@@ -112,12 +99,15 @@
     "tiers": {
       "SERIE":  { "priceRange": [0, 0],         "maintenanceMul": 1.0 },
       "BRONZE": { "priceRange": [1500, 3500],   "maintenanceMul": 1.5 },
-      "SILVER": { "priceRange": [4500, 8000],   "maintenanceMul": 2.0 },
-      "GOLD":   { "priceRange": [10000, 15000], "maintenanceMul": 3.0 },
+      "SILVER": { "priceRange": [3500, 6500],   "maintenanceMul": 2.0 },
+      "GOLD":   { "priceRange": [7000, 11000],  "maintenanceMul": 3.0 },
       "PROTO":  { "priceRange": null,           "maintenanceMul": 4.5 }
     },
 
     "slotsByClass": {
+      "CRUISER_RACER": { "HULL": "monotype", "MAST": "monotype", "SAILS": "monotype",
+                         "FOILS": "absent", "KEEL": "monotype",
+                         "ELECTRONICS": "monotype", "REINFORCEMENT": "absent" },
       "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
                        "FOILS": "monotype", "KEEL": "monotype",
                        "ELECTRONICS": "open", "REINFORCEMENT": "open" },
@@ -182,7 +172,7 @@
         "profile": "portant débridé",
         "description": "Nez en scow, explosif au portant au détriment des allures serrées.",
         "compat": ["CLASS40"],
-        "cost": 7200,
+        "cost": 6000,
         "effects": {
           "speedByTwa": [-0.03, -0.02, 0.04, 0.08, 0.04],
           "speedByTws": [0, 0.02, 0.03],
@@ -202,7 +192,7 @@
         "description": "Carène proto au rendement maximal, mais extrêmement fragile.",
         "compat": ["CLASS40"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 30, "avgRankPctMax": 0.15 },
+        "unlockCriteria": { "racesFinished": 30 },
         "effects": {
           "speedByTwa": [0.06, 0.06, 0.06, 0.06, 0.06],
           "speedByTws": [0.02, 0.02, 0.02],
@@ -259,7 +249,7 @@
         "profile": "stable musclé",
         "description": "Carbone haut module, manœuvres accélérées et puissance accrue.",
         "compat": ["CLASS40", "IMOCA60"],
-        "cost": 6800,
+        "cost": 5800,
         "effects": {
           "speedByTwa": [0.02, 0.02, 0.03, 0.03, 0.02],
           "speedByTws": [0, 0.01, 0.02],
@@ -319,7 +309,7 @@
         "profile": "rendement haut",
         "description": "Technologie 3Di North Sails, rendement exceptionnel sur tous les allures.",
         "compat": ["CLASS40", "IMOCA60"],
-        "cost": 12500,
+        "cost": 10000,
         "effects": {
           "speedByTwa": [0.04, 0.05, 0.06, 0.05, 0.04],
           "speedByTws": [0.02, 0.03, 0.02],
@@ -339,7 +329,7 @@
         "description": "Voiles taillées spécifiquement pour le bateau, réservées aux experts.",
         "compat": ["CLASS40", "IMOCA60"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 25, "avgRankPctMax": 0.20 },
+        "unlockCriteria": { "racesFinished": 25 },
         "effects": {
           "speedByTwa": [0.06, 0.07, 0.08, 0.07, 0.06],
           "speedByTws": [0.03, 0.04, 0.03],
@@ -381,11 +371,14 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.06, 0.04, 0],
           "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "rig": 1.40, "hull": 1.20 },
+          "wearMul": { "hull": 1.40, "rig": 1.20 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.03, 0, 0]
+          }
         }
       },
       {
@@ -396,15 +389,18 @@
         "profile": "vol agressif",
         "description": "Foils en S, vol partiel agressif au grand largue.",
         "compat": ["CLASS40"],
-        "cost": 7800,
+        "cost": 6500,
         "effects": {
           "speedByTwa": [-0.04, -0.02, 0.08, 0.14, 0.05],
           "speedByTws": [-0.02, 0.04, 0.10],
-          "wearMul": { "rig": 1.80, "hull": 1.30 },
+          "wearMul": { "hull": 1.80, "rig": 1.30 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.05, -0.02, 0]
+          }
         }
       },
       {
@@ -416,15 +412,18 @@
         "description": "Foils proto à vol total, gains spectaculaires mais usure extrême.",
         "compat": ["CLASS40"],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 40, "top10Finishes": 8 },
+        "unlockCriteria": { "racesFinished": 40 },
         "effects": {
           "speedByTwa": [-0.06, -0.03, 0.12, 0.22, 0.10],
           "speedByTws": [-0.03, 0.06, 0.14],
-          "wearMul": { "rig": 2.20, "hull": 1.60 },
+          "wearMul": { "hull": 2.20, "rig": 1.60 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.08, -0.04, 0]
+          }
         }
       },
       {
@@ -690,11 +689,14 @@
         "effects": {
           "speedByTwa": [-0.01, 0, 0.03, 0.06, 0.02],
           "speedByTws": [0, 0.01, 0.02],
-          "wearMul": { "rig": 1.20, "hull": 1.10 },
+          "wearMul": { "hull": 1.20, "rig": 1.10 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.02, 0, 0]
+          }
         }
       },
       {
@@ -785,11 +787,14 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.04, 0.10, 0.04],
           "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "rig": 1.30, "hull": 1.10 },
+          "wearMul": { "hull": 1.30, "rig": 1.10 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.04, 0, 0]
+          }
         }
       },
       {
@@ -861,11 +866,14 @@
         "effects": {
           "speedByTwa": [-0.02, 0, 0.05, 0.12, 0.04],
           "speedByTws": [0, 0.03, 0.05],
-          "wearMul": { "rig": 1.50, "hull": 1.20 },
+          "wearMul": { "hull": 1.50, "rig": 1.20 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 14 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.05, -0.02, 0]
+          }
         }
       },
       {
@@ -956,11 +964,14 @@
         "effects": {
           "speedByTwa": [-0.04, 0, 0.10, 0.20, 0.10],
           "speedByTws": [0, 0.05, 0.10],
-          "wearMul": { "rig": 1.80, "hull": 1.40 },
+          "wearMul": { "hull": 1.80, "rig": 1.40 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": { "minTws": 12 },
-          "groundingLossMul": null
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.06, -0.02, 0]
+          }
         }
       }
     ]
@@ -969,6 +980,7 @@
     "sailChange": {
       "transitionSpeedFactor": 0.70,
       "transitionTimeSec": {
+        "CRUISER_RACER": 240,
         "FIGARO": 180,
         "CLASS40": 240,
         "OCEAN_FIFTY": 300,
@@ -979,6 +991,7 @@
     "tack": {
       "speedFactor": 0.60,
       "durationSec": {
+        "CRUISER_RACER": 75,
         "FIGARO": 60,
         "CLASS40": 90,
         "OCEAN_FIFTY": 150,
@@ -989,6 +1002,7 @@
     "gybe": {
       "speedFactor": 0.55,
       "durationSec": {
+        "CRUISER_RACER": 100,
         "FIGARO": 90,
         "CLASS40": 120,
         "OCEAN_FIFTY": 200,
@@ -1018,8 +1032,9 @@
       "top10": 30
     },
     "completionBonus": {
-      "FIGARO": 200, "CLASS40": 300, "OCEAN_FIFTY": 500,
-      "IMOCA60": 450, "ULTIM": 700
+      "CRUISER_RACER": 200,
+      "FIGARO": 400, "CLASS40": 600, "OCEAN_FIFTY": 1000,
+      "IMOCA60": 900, "ULTIM": 1400
     }
   },
   "tick": {

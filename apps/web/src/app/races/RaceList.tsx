@@ -7,9 +7,10 @@ import { Card, Chip } from '@/components/ui';
 import { courseLengthNM, formatDistance, type DistanceUnit } from '@/lib/geo';
 import styles from './page.module.css';
 
-const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', 'FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
+const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', 'CRUISER_RACER', 'FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
 
 const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
+  CRUISER_RACER: 'Cruiser Racer',
   FIGARO: 'Figaro III',
   CLASS40: 'Class40',
   OCEAN_FIFTY: 'Ocean Fifty',

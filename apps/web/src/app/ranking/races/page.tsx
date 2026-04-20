@@ -7,6 +7,7 @@ import styles from './page.module.css';
 export const dynamic = 'force-dynamic';
 
 const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
+  CRUISER_RACER: 'Cruiser Racer',
   FIGARO: 'Figaro III',
   CLASS40: 'Class40',
   OCEAN_FIFTY: 'Ocean Fifty',

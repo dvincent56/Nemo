@@ -15,7 +15,7 @@ export async function GET(
   const { raceId: _raceId } = await params;
 
   const state: BoatState = {
-    boatClass: 'CLASS40',
+    boatClass: 'CRUISER_RACER',
     // 47°04'00.29"N / 3°24'21.08"W — VR benchmark position for projection comparison
     lat: 47.066747,
     lon: -3.405856,

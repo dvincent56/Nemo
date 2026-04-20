@@ -11,7 +11,7 @@ export const WEB_BASE = process.env['NEXT_PUBLIC_WEB_BASE'] ?? 'http://localhost
 export interface RaceSummary {
   id: string;
   name: string;
-  boatClass: 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+  boatClass: 'CRUISER_RACER' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
   status: 'DRAFT' | 'PUBLISHED' | 'BRIEFING' | 'LIVE' | 'FINISHED' | 'ARCHIVED';
   tierRequired: 'FREE' | 'CAREER';
   startsAt: string;
@@ -39,7 +39,7 @@ export async function fetchRaces(filters: { class?: string; status?: string } = 
 // ---------------------------------------------------------------------------
 
 export interface BoatState {
-  boatClass: 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+  boatClass: 'CRUISER_RACER' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
   lat: number;
   lon: number;
   hdg: number;

@@ -68,6 +68,7 @@
   },
   "rewards": {
     "distanceRates": {
+      "CRUISER_RACER": 0.5,
       "FIGARO": 0.8,
       "CLASS40": 1.0,
       "OCEAN_FIFTY": 1.6,
@@ -104,6 +105,9 @@
     },
 
     "slotsByClass": {
+      "CRUISER_RACER": { "HULL": "monotype", "MAST": "monotype", "SAILS": "monotype",
+                         "FOILS": "absent", "KEEL": "monotype",
+                         "ELECTRONICS": "monotype", "REINFORCEMENT": "absent" },
       "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
                        "FOILS": "monotype", "KEEL": "monotype",
                        "ELECTRONICS": "open", "REINFORCEMENT": "open" },
@@ -976,6 +980,7 @@
     "sailChange": {
       "transitionSpeedFactor": 0.70,
       "transitionTimeSec": {
+        "CRUISER_RACER": 240,
         "FIGARO": 180,
         "CLASS40": 240,
         "OCEAN_FIFTY": 300,
@@ -986,6 +991,7 @@
     "tack": {
       "speedFactor": 0.60,
       "durationSec": {
+        "CRUISER_RACER": 75,
         "FIGARO": 60,
         "CLASS40": 90,
         "OCEAN_FIFTY": 150,
@@ -996,6 +1002,7 @@
     "gybe": {
       "speedFactor": 0.55,
       "durationSec": {
+        "CRUISER_RACER": 100,
         "FIGARO": 90,
         "CLASS40": 120,
         "OCEAN_FIFTY": 200,
@@ -1025,6 +1032,7 @@
       "top10": 30
     },
     "completionBonus": {
+      "CRUISER_RACER": 200,
       "FIGARO": 400, "CLASS40": 600, "OCEAN_FIFTY": 1000,
       "IMOCA60": 900, "ULTIM": 1400
     }
