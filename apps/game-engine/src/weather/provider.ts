@@ -90,12 +90,24 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
       mwp.set(toArr(hourData.mwp), offset);
     }
 
+    const loaded: WeatherGridUV = { ...meta, u, v, swh, mwdSin, mwdCos, mwp };
+    console.log('[weather] loaded grid', {
+      runTs,
+      bbox: meta.bbox,
+      resolution: meta.resolution,
+      shape: meta.shape,
+      forecastHours: meta.forecastHours.slice(0, 5),
+    });
+
     // NOAA GFS ships lon in 0..360 convention. Normalise to -180..180 so the
     // rest of the stack (frontend included) can work with the standard range.
     if (meta.bbox.lonMin >= 0 && meta.bbox.lonMax > 180) {
-      return rollLon0To360ToNeg180To180({ ...meta, u, v, swh, mwdSin, mwdCos, mwp });
+      const rolled = rollLon0To360ToNeg180To180(loaded);
+      console.log('[weather] rolled lon 0..360 → -180..180, new bbox:', rolled.bbox);
+      return rolled;
     }
-    return { ...meta, u, v, swh, mwdSin, mwdCos, mwp };
+    console.log('[weather] bbox already in -180..180 range, no roll needed');
+    return loaded;
   }
 
   /**
