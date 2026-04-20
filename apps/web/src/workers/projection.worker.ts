@@ -172,6 +172,8 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
   // Track which time marker hours we've passed
   let nextTimeMarkerIdx = 0;
+  let stepCount = 0;
+  let prevHdgForJumpDetect: number | null = null;
 
   // Initial point
   const initWeather = getWeatherAt(lat, lon, currentMs);
@@ -344,6 +346,26 @@ function simulate(input: ProjectionInput): ProjectionResult {
       // Heading = TWD + TWA (reverse of computeTWA)
       hdg = ((weather.twd + twaLock) % 360 + 360) % 360;
     }
+
+    // Diagnostic: log TWD at 0/15/30/45/60/90/120/180min to spot interpolation
+    // artefacts, and flag any >20° heading jump between successive steps.
+    stepCount++;
+    const elapsedMin = (currentMs - startMs) / 60000;
+    const snapshotMin = [0, 15, 30, 45, 60, 90, 120, 180];
+    if (snapshotMin.includes(Math.round(elapsedMin))) {
+      console.log(`[Worker] t+${Math.round(elapsedMin)}min`, {
+        lat: lat.toFixed(3), lon: lon.toFixed(3),
+        hdg: Math.round(hdg), twd: Math.round(weather.twd),
+        tws: weather.tws.toFixed(1), twa: Math.round(twa),
+      });
+    }
+    if (prevHdgForJumpDetect !== null) {
+      const jump = Math.abs(((hdg - prevHdgForJumpDetect + 540) % 360) - 180);
+      if (jump > 20) {
+        console.warn(`[Worker] heading jump at step ${stepCount} (t+${elapsedMin.toFixed(1)}min): ${Math.round(prevHdgForJumpDetect)}° → ${Math.round(hdg)}° (twd=${Math.round(weather.twd)}°)`);
+      }
+    }
+    prevHdgForJumpDetect = hdg;
 
     // Compute BSP — apply zone modulation for the segment we're ABOUT to traverse
     let bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
