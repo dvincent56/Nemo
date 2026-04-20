@@ -2,6 +2,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { useGameStore } from '@/lib/store';
+import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type {
   ProjectionInput,
   ProjectionSegment,
@@ -12,6 +13,62 @@ import type {
 
 const DEBOUNCE_HDG_MS = 100;
 const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
+const MS_TO_KTS = 1.94384;
+
+/**
+ * Convert the multi-hour decoded GRIB grid (u/v/swh/mwdSin/mwdCos/mwp per hour)
+ * into a packed Float32Array of (tws/twd/swh/swellDir/swellPeriod) for the worker.
+ * One layer per forecast hour — enables temporal interpolation.
+ */
+function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
+  data: Float32Array;
+  timestamps: number[];
+  cols: number;
+  rows: number;
+  resolution: number;
+  bounds: { north: number; south: number; east: number; west: number };
+} {
+  const { header, data: src } = decoded;
+  const { numLat, numLon, numHours } = header;
+  const pointsPerHour = numLat * numLon;
+  const out = new Float32Array(numHours * pointsPerHour * FIELDS_PER_POINT);
+  const timestamps: number[] = [];
+
+  for (let h = 0; h < numHours; h++) {
+    timestamps.push((header.runTimestamp + h * 3600) * 1000);
+    const srcHour = h * pointsPerHour * 6;
+    const outHour = h * pointsPerHour * FIELDS_PER_POINT;
+    for (let i = 0; i < pointsPerHour; i++) {
+      const sb = srcHour + i * 6;
+      const u = src[sb]!;
+      const v = src[sb + 1]!;
+      const swh = src[sb + 2]!;
+      const mwdSin = src[sb + 3]!;
+      const mwdCos = src[sb + 4]!;
+      const mwp = src[sb + 5]!;
+      const tws = Math.sqrt(u * u + v * v) * MS_TO_KTS;
+      const twd = ((Math.atan2(-u, -v) * 180 / Math.PI) + 360) % 360;
+      const swellDir = Number.isFinite(mwdSin) && Number.isFinite(mwdCos)
+        ? ((Math.atan2(mwdSin, mwdCos) * 180 / Math.PI) + 360) % 360
+        : 0;
+      const ob = outHour + i * FIELDS_PER_POINT;
+      out[ob] = tws;
+      out[ob + 1] = twd;
+      out[ob + 2] = Number.isFinite(swh) ? Math.max(0, swh) : 0;
+      out[ob + 3] = swellDir;
+      out[ob + 4] = Number.isFinite(mwp) ? mwp : 0;
+    }
+  }
+
+  return {
+    data: out,
+    timestamps,
+    cols: numLon,
+    rows: numLat,
+    resolution: header.gridStepLat,
+    bounds: { north: header.latMax, south: header.latMin, east: header.lonMax, west: header.lonMin },
+  };
+}
 
 const BOAT_CLASS_FILES: Record<string, string> = {
   FIGARO: 'figaro.json',
@@ -20,30 +77,6 @@ const BOAT_CLASS_FILES: Record<string, string> = {
   IMOCA60: 'imoca60.json',
   ULTIM: 'ultim.json',
 };
-
-/**
- * Packs the WeatherGrid into a flat Float32Array for transfer to the Worker.
- */
-function packWindData(grid: { points: Array<{ tws: number; twd: number; swellHeight: number; swellDir: number; swellPeriod: number }>; timestamps: number[] }): Float32Array {
-  const numPoints = grid.points.length;
-  const numTimestamps = grid.timestamps.length;
-  const data = new Float32Array(numTimestamps * numPoints * FIELDS_PER_POINT);
-
-  for (let t = 0; t < numTimestamps; t++) {
-    const offset = t * numPoints * FIELDS_PER_POINT;
-    for (let i = 0; i < numPoints; i++) {
-      const p = grid.points[i]!;
-      const base = offset + i * FIELDS_PER_POINT;
-      data[base] = p.tws;
-      data[base + 1] = p.twd;
-      data[base + 2] = p.swellHeight;
-      data[base + 3] = p.swellDir;
-      data[base + 4] = p.swellPeriod;
-    }
-  }
-
-  return data;
-}
 
 /**
  * Convert store's orderQueue to ProjectionSegments.
@@ -73,6 +106,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(map);
   const lastResultRef = useRef<ProjectionResult | null>(null);
+  // Cache for packed wind data, keyed by DecodedWeatherGrid reference
+  const packedWindRef = useRef<{
+    decoded: DecodedWeatherGrid;
+    packed: ReturnType<typeof packWindDataFromDecoded>;
+  } | null>(null);
 
   // Keep mapRef in sync without re-running effects when map changes
   useEffect(() => {
@@ -216,9 +254,9 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const doCompute = () => {
       const state = useGameStore.getState();
       const { hud, sail, weather, prog, preview } = state;
-      const grid = weather.gridData;
-      if (!grid) {
-        console.log('[Projection] skip: no weather grid');
+      const decoded = weather.decodedGrid;
+      if (!decoded) {
+        console.log('[Projection] skip: no decoded weather grid');
         return;
       }
       if (!hud.lat && !hud.lon) {
@@ -242,6 +280,13 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         if (effectiveTwaLock === -180) effectiveTwaLock = 180;
       }
 
+      // Pack wind data from decoded grid (all forecast hours). Cached by decoded ref.
+      if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
+        console.log('[Projection] packing wind data from', decoded.header.numHours, 'hours');
+        packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
+      }
+      const packed = packedWindRef.current.packed;
+
       const nowMs = Date.now();
       console.log('[Projection] computing...', {
         lat: hud.lat, lon: hud.lon,
@@ -249,10 +294,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         twd: hud.twd,
         twaLock: effectiveTwaLock,
         sail: effectiveSail,
-        grid_timestamps: grid.timestamps.length,
+        grid_hours: decoded.header.numHours,
       });
 
-      const windData = packWindData(grid);
+      // Transfer a copy of the packed data so the cached buffer survives
+      const windData = new Float32Array(packed.data);
 
       const input: ProjectionInput = {
         lat: hud.lat,
@@ -290,11 +336,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         prevTwa: hud.twa || null,
         referenceTwd: hud.twd,
         windGrid: {
-          bounds: grid.bounds,
-          resolution: grid.resolution,
-          cols: grid.cols,
-          rows: grid.rows,
-          timestamps: grid.timestamps,
+          bounds: packed.bounds,
+          resolution: packed.resolution,
+          cols: packed.cols,
+          rows: packed.rows,
+          timestamps: packed.timestamps,
         },
         windData,
       };
@@ -318,7 +364,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevSailAuto = useGameStore.getState().sail.sailAuto;
     let prevQueue = useGameStore.getState().prog.orderQueue;
     let prevTick = useGameStore.getState().lastTickUnix;
-    let prevGrid = useGameStore.getState().weather.gridData;
+    let prevGrid = useGameStore.getState().weather.decodedGrid;
     let prevPreviewHdg = useGameStore.getState().preview.hdg;
     let prevPreviewSail = useGameStore.getState().preview.sail;
     let prevPreviewTwaLocked = useGameStore.getState().preview.twaLocked;
@@ -330,7 +376,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const autoChanged = s.sail.sailAuto !== prevSailAuto;
       const queueChanged = s.prog.orderQueue !== prevQueue;
       const tickChanged = s.lastTickUnix !== prevTick;
-      const gridChanged = s.weather.gridData !== prevGrid;
+      const gridChanged = s.weather.decodedGrid !== prevGrid;
       const previewHdgChanged = s.preview.hdg !== prevPreviewHdg;
       const previewSailChanged = s.preview.sail !== prevPreviewSail;
       const previewTwaLockedChanged = s.preview.twaLocked !== prevPreviewTwaLocked;
@@ -341,7 +387,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevSailAuto = s.sail.sailAuto;
       prevQueue = s.prog.orderQueue;
       prevTick = s.lastTickUnix;
-      prevGrid = s.weather.gridData;
+      prevGrid = s.weather.decodedGrid;
       prevPreviewHdg = s.preview.hdg;
       prevPreviewSail = s.preview.sail;
       prevPreviewTwaLocked = s.preview.twaLocked;
