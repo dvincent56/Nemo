@@ -200,10 +200,19 @@ export default function MapCanvas({ enableProjection = true }: MapCanvasProps): 
         type: 'circle',
         source: 'projection-markers-time',
         paint: {
-          'circle-radius': 4,
+          // Major markers (with a label) are bigger; minor (unlabelled) dots
+          // give density between major checkpoints so curves are readable.
+          'circle-radius': [
+            'case', ['==', ['get', 'label'], ''], 2, 4,
+          ],
           'circle-color': '#f5f0e8',
           'circle-stroke-color': '#1a2744',
-          'circle-stroke-width': 1.5,
+          'circle-stroke-width': [
+            'case', ['==', ['get', 'label'], ''], 0.5, 1.5,
+          ],
+          'circle-opacity': [
+            'case', ['==', ['get', 'label'], ''], 0.6, 1,
+          ],
         },
       });
       map.addLayer({

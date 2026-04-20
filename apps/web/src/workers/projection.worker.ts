@@ -51,7 +51,13 @@ function getStepSize(elapsedSec: number): number {
 
 // ── Time marker labels ──
 
-const TIME_MARKER_HOURS = [1, 2, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168];
+// Major markers carry a visible label; minor ones are unlabelled dots so the
+// projection line has enough visual density to show curves between major
+// checkpoints (e.g. the turn between 24h and 48h).
+const MAJOR_MARKERS = [1, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168];
+const MINOR_MARKERS = [2, 9, 15, 18, 21, 30, 36, 42, 60, 84, 108, 132, 156];
+const TIME_MARKER_HOURS = [...MAJOR_MARKERS, ...MINOR_MARKERS].sort((a, b) => a - b);
+const isMajorMarker = (h: number): boolean => MAJOR_MARKERS.includes(h);
 
 /**
  * Pick the sail with the highest BSP at the given TWA/TWS, among sails
@@ -477,17 +483,20 @@ function simulate(input: ProjectionInput): ProjectionResult {
       elapsedHours >= TIME_MARKER_HOURS[nextTimeMarkerIdx]!
     ) {
       const h = TIME_MARKER_HOURS[nextTimeMarkerIdx]!;
-      console.log(`[Worker] ${h}h marker`, {
-        lat: lat.toFixed(3),
-        lon: lon.toFixed(3),
-        hdg: Math.round(hdg),
-        bsp: bspAtNew.toFixed(2),
-        tws: weatherAtNew.tws.toFixed(1),
-        twd: Math.round(weatherAtNew.twd),
-      });
+      const major = isMajorMarker(h);
+      if (major) {
+        console.log(`[Worker] ${h}h marker`, {
+          lat: lat.toFixed(3),
+          lon: lon.toFixed(3),
+          hdg: Math.round(hdg),
+          bsp: bspAtNew.toFixed(2),
+          tws: weatherAtNew.tws.toFixed(1),
+          twd: Math.round(weatherAtNew.twd),
+        });
+      }
       timeMarkers.push({
         index: points.length - 1,
-        label: `${h}h`,
+        label: major ? `${h}h` : '',
       });
       nextTimeMarkerIdx++;
     }
