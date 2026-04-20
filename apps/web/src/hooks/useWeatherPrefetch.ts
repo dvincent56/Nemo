@@ -22,6 +22,9 @@ export function useWeatherPrefetch(options?: { phase2?: boolean }) {
 
     async function prefetch() {
       try {
+        // Fetch phase 1 first (fast feedback); then, if requested, replace
+        // with the combined phase1+phase2 set so the projection covers the
+        // whole 10-day horizon.
         const grid1 = await fetchWeatherGrid({
           bounds: DEFAULT_BOUNDS,
           hours: PREFETCH_HOURS_PHASE1,
@@ -30,12 +33,12 @@ export function useWeatherPrefetch(options?: { phase2?: boolean }) {
         setDecodedWeatherGrid(grid1);
 
         if (options?.phase2) {
-          const grid2 = await fetchWeatherGrid({
+          const gridFull = await fetchWeatherGrid({
             bounds: DEFAULT_BOUNDS,
-            hours: PREFETCH_HOURS_PHASE2,
+            hours: [...PREFETCH_HOURS_PHASE1, ...PREFETCH_HOURS_PHASE2],
           });
           if (cancelled) return;
-          setDecodedWeatherGrid(grid2);
+          setDecodedWeatherGrid(gridFull);
         }
       } catch {
         // silently ignore

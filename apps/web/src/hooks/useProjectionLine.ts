@@ -37,9 +37,13 @@ function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
   const pointsPerHour = numLat * numLon;
   const out = new Float32Array(numHours * pointsPerHour * FIELDS_PER_POINT);
   const timestamps: number[] = [];
+  // Layers aren't necessarily one hour apart — use the actual hour offsets
+  // attached by fetchWeatherGrid (fallback to sequential hours if missing).
+  const hoursList = decoded.hours ?? Array.from({ length: numHours }, (_, i) => i);
 
   for (let h = 0; h < numHours; h++) {
-    timestamps.push((header.runTimestamp + h * 3600) * 1000);
+    const forecastHour = hoursList[h] ?? h;
+    timestamps.push((header.runTimestamp + forecastHour * 3600) * 1000);
     const srcHour = h * pointsPerHour * 6;
     const outHour = h * pointsPerHour * FIELDS_PER_POINT;
     for (let i = 0; i < pointsPerHour; i++) {

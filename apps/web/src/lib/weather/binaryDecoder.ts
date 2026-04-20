@@ -21,6 +21,11 @@ export interface WeatherGridHeader {
 export interface DecodedWeatherGrid {
   header: WeatherGridHeader;
   data: Float32Array;
+  /** Forecast hour offsets (from runTimestamp) for each layer in `data`, in
+   *  the same order. Populated by fetchWeatherGrid with the requested hours
+   *  list so downstream consumers can build correct timestamps when layers
+   *  aren't one hour apart. */
+  hours?: number[];
 }
 
 export function decodeWeatherGrid(buf: ArrayBuffer): DecodedWeatherGrid {

@@ -15,7 +15,12 @@ export async function fetchWeatherGrid(opts: PrefetchOptions): Promise<DecodedWe
   const res = await fetch(url);
   if (!res.ok) throw new Error(`weather grid fetch failed: ${res.status}`);
   const buf = await res.arrayBuffer();
-  return decodeWeatherGrid(buf);
+  const decoded = decodeWeatherGrid(buf);
+  // Attach the requested hours so consumers (e.g. projection packing) know the
+  // actual forecast offsets each layer represents — server packs one layer per
+  // hour entry, in the order we requested.
+  decoded.hours = opts.hours;
+  return decoded;
 }
 
 export const PREFETCH_HOURS_PHASE1 = [0, 3, 6, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48];
