@@ -90,7 +90,53 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
       mwp.set(toArr(hourData.mwp), offset);
     }
 
+    // NOAA GFS ships lon in 0..360 convention. Normalise to -180..180 so the
+    // rest of the stack (frontend included) can work with the standard range.
+    if (meta.bbox.lonMin >= 0 && meta.bbox.lonMax > 180) {
+      return rollLon0To360ToNeg180To180({ ...meta, u, v, swh, mwdSin, mwdCos, mwp });
+    }
     return { ...meta, u, v, swh, mwdSin, mwdCos, mwp };
+  }
+
+  /**
+   * Shift columns so the grid goes from -180..180 (standard) instead of 0..360
+   * (NOAA GFS native). The wrap point lands exactly at col = cols/2.
+   */
+  function rollLon0To360ToNeg180To180(grid: WeatherGridUV): WeatherGridUV {
+    const { rows, cols } = grid.shape;
+    const half = Math.floor(cols / 2);
+    const slots = grid.forecastHours.length;
+    const plane = rows * cols;
+
+    const shift = (src: Float32Array): Float32Array => {
+      const out = new Float32Array(src.length);
+      for (let s = 0; s < slots; s++) {
+        const base = s * plane;
+        for (let r = 0; r < rows; r++) {
+          const rowBase = base + r * cols;
+          // Copy [half..end] to [0..(cols-half)], and [0..half] to [(cols-half)..end]
+          out.set(src.subarray(rowBase + half, rowBase + cols), rowBase);
+          out.set(src.subarray(rowBase, rowBase + half), rowBase + (cols - half));
+        }
+      }
+      return out;
+    };
+
+    return {
+      ...grid,
+      bbox: {
+        latMin: grid.bbox.latMin,
+        latMax: grid.bbox.latMax,
+        lonMin: grid.bbox.lonMin - 180,
+        lonMax: grid.bbox.lonMax - 180,
+      },
+      u: shift(grid.u),
+      v: shift(grid.v),
+      swh: shift(grid.swh),
+      mwdSin: shift(grid.mwdSin),
+      mwdCos: shift(grid.mwdCos),
+      mwp: shift(grid.mwp),
+    };
   }
 
   async function loadLatest(): Promise<WeatherGridUV> {
