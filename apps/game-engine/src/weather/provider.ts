@@ -102,9 +102,14 @@ export async function createNoaaProvider(redis: RedisLike): Promise<WeatherProvi
     // NOAA GFS ships lon in 0..360 convention. Normalise to -180..180 so the
     // rest of the stack (frontend included) can work with the standard range.
     if (meta.bbox.lonMin >= 0 && meta.bbox.lonMax > 180) {
-      const rolled = rollLon0To360ToNeg180To180(loaded);
-      console.log('[weather] rolled lon 0..360 → -180..180, new bbox:', rolled.bbox);
-      return rolled;
+      try {
+        const rolled = rollLon0To360ToNeg180To180(loaded);
+        console.log('[weather] rolled lon 0..360 → -180..180, new bbox:', rolled.bbox);
+        return rolled;
+      } catch (err) {
+        console.error('[weather] roll failed:', err);
+        return loaded;
+      }
     }
     console.log('[weather] bbox already in -180..180 range, no roll needed');
     return loaded;
