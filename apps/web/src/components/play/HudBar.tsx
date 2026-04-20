@@ -49,6 +49,12 @@ function HudBarInner(): React.ReactElement {
             <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
           </div>
         </Tooltip>
+        <Tooltip text="Direction du vent (d'où il vient)" position="bottom">
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>TWD</span>
+            <span className={styles.statValue}>{Math.round(hud.twd)}°</span>
+          </div>
+        </Tooltip>
         <Tooltip text="Angle du vent / bateau" position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWA</span>
