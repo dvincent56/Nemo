@@ -152,9 +152,11 @@ export default function Compass(): React.ReactElement {
     : bspRatio >= 0.6 ? styles.warn                    // orange — moyen
     : styles.danger;                                   // rouge — inefficace
 
-  // Check sail change implication when editing
+  // Check sail change implication when editing.
+  // Only surfaces a notification when the player is previewing a *different*
+  // heading than the current one — no-op for incidental taps on the compass.
   const checkSailChange = useCallback((newHdg: number) => {
-    if (!sailAuto) { setPendingSailChange(null); return; }
+    if (!sailAuto || newHdg === hdg) { setPendingSailChange(null); return; }
     const newTwa = Math.abs(((newHdg - twd + 540) % 360) - 180);
     const newBest = bestSailForTwa(newTwa);
     if (newBest && newBest !== currentSail) {
@@ -162,7 +164,7 @@ export default function Compass(): React.ReactElement {
     } else {
       setPendingSailChange(null);
     }
-  }, [sailAuto, twd, currentSail]);
+  }, [sailAuto, twd, currentSail, hdg]);
 
   // ── SVG direct DOM update (60fps during drag) ──
   const writeSvg = useCallback((target: number) => {
