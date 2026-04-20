@@ -87,7 +87,7 @@ export interface TimeMarker {
 
 export interface ManeuverMarker {
   index: number;
-  type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change';
+  type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change' | 'grounding';
   detail: string;
 }
 

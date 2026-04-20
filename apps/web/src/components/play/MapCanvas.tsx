@@ -185,8 +185,12 @@ export default function MapCanvas(): React.ReactElement {
         type: 'circle',
         source: 'projection-markers-maneuver',
         paint: {
-          'circle-radius': 5,
-          'circle-color': '#c9a84c',
+          'circle-radius': [
+            'case', ['==', ['get', 'type'], 'grounding'], 7, 5,
+          ],
+          'circle-color': [
+            'case', ['==', ['get', 'type'], 'grounding'], '#c0392b', '#c9a84c',
+          ],
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1.5,
         },
@@ -206,6 +210,7 @@ export default function MapCanvas(): React.ReactElement {
         sail_change: 'Changement de voile',
         cap_change: 'Changement de cap',
         twa_change: 'Verrouillage TWA',
+        grounding: 'Échouage',
       };
 
       const maneuverHtml = (type: string, detail: string): string => {

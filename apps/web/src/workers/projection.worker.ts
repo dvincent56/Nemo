@@ -24,6 +24,7 @@ import {
   type ManeuverState,
 } from '../lib/projection/simulate';
 import { createWindLookup } from '../lib/projection/windLookup';
+import { CoastlineIndex } from '../lib/projection/coastline';
 import { GameBalance } from '@nemo/game-balance/browser';
 
 // ── Adaptive step config ──
@@ -79,6 +80,28 @@ async function ensureBalance(): Promise<void> {
   const json = await resp.json();
   GameBalance.load(json);
   balanceReady = true;
+}
+
+// ── Coastline for grounding detection ──
+
+const coast = new CoastlineIndex();
+let coastReady = false;
+let coastLoading: Promise<void> | null = null;
+
+async function ensureCoastline(): Promise<void> {
+  if (coastReady) return;
+  if (coastLoading) return coastLoading;
+  coastLoading = (async () => {
+    try {
+      const resp = await fetch('/data/coastline.geojson');
+      const json = await resp.json() as GeoJSON.FeatureCollection;
+      coast.load(json);
+      coastReady = true;
+    } catch (err) {
+      console.error('[Worker] coastline load failed:', err);
+    }
+  })();
+  return coastLoading;
 }
 
 // ── Main simulation ──
@@ -306,6 +329,31 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
     // Advance position
     const newPos = advancePosition({ lat, lon }, hdg, bsp, dt);
+
+    // Grounding check: if the segment crosses coastline, stop projection at impact.
+    if (coastReady) {
+      const hit = coast.segmentCrossesCoast(lat, lon, newPos.lat, newPos.lon, 6);
+      if (hit) {
+        // Record grounding marker and final point, then exit the loop.
+        points.push({
+          lat: hit.lat,
+          lon: hit.lon,
+          timestamp: currentMs,
+          bsp: 0,
+          tws: weather.tws,
+          twd: weather.twd,
+        });
+        maneuverMarkers.push({
+          index: points.length - 1,
+          type: 'grounding',
+          detail: 'Échouage — collision avec la côte',
+        });
+        lat = hit.lat;
+        lon = hit.lon;
+        break;
+      }
+    }
+
     lat = newPos.lat;
     lon = newPos.lon;
 
@@ -372,12 +420,16 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
 // ── Worker message handler ──
 
+// Kick off coastline load immediately so it's ready by the time the
+// first compute request lands.
+ensureCoastline();
+
 self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
   const msg = e.data;
 
   if (msg.type === 'compute') {
     try {
-      await ensureBalance();
+      await Promise.all([ensureBalance(), ensureCoastline()]);
       const result = simulate(msg.input);
       const out: WorkerOutMessage = { type: 'result', result };
       self.postMessage(out);
