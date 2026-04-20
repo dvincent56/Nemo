@@ -107,6 +107,32 @@ export default function MapCanvas(): React.ReactElement {
     mapInstance = map;
 
     map.once('load', () => {
+      // ── Exclusion zones (filled polygons + borders) ──
+      map.addSource('exclusion-zones', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'exclusion-zones-fill',
+        type: 'fill',
+        source: 'exclusion-zones',
+        paint: {
+          'fill-color': ['get', 'color'],
+          'fill-opacity': 0.15,
+        },
+      });
+      map.addLayer({
+        id: 'exclusion-zones-outline',
+        type: 'line',
+        source: 'exclusion-zones',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.5,
+          'line-opacity': 0.7,
+          'line-dasharray': [3, 2],
+        },
+      });
+
       map.addSource('my-trail', {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
@@ -264,6 +290,59 @@ export default function MapCanvas(): React.ReactElement {
         }
       });
 
+      // ── Exclusion zone tooltip ──
+      const ZONE_CATEGORY_LABEL: Record<string, string> = {
+        DST: 'Dispositif de Séparation du Trafic',
+        ZEA: 'Zone d\'Exclusion Arctique/Antarctique',
+        ZPC: 'Zone de Protection des Cétacés',
+        ZES: 'Zone Interdite Spéciale',
+      };
+
+      const zonePopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: true,
+        offset: 10,
+        className: 'projection-maneuver-popup',
+      });
+
+      const zoneHtml = (props: Record<string, unknown>): string => {
+        const category = String(props['category'] ?? '');
+        const name = String(props['name'] ?? '');
+        const reason = String(props['reason'] ?? '');
+        const mult = Number(props['speedMultiplier'] ?? 1);
+        const color = String(props['color'] ?? '#c9a84c');
+        const penaltyPct = Math.round((1 - mult) * 100);
+        const catLabel = ZONE_CATEGORY_LABEL[category] ?? category;
+        return `<div style="font-size:12px;color:#f5f0e8;max-width:260px;">
+          <strong style="color:${color};">${name}</strong>
+          <div style="color:#aab2c0;font-size:11px;margin-top:2px;">${catLabel}</div>
+          <div style="margin-top:6px;line-height:1.4;">${reason}</div>
+          <div style="margin-top:6px;color:${color};"><strong>Pénalité : −${penaltyPct} % de vitesse</strong></div>
+        </div>`;
+      };
+
+      map.on('mouseenter', 'exclusion-zones-fill', (e) => {
+        map.getCanvas().style.cursor = 'help';
+        const f = e.features?.[0];
+        if (!f) return;
+        zonePopup.setLngLat(e.lngLat).setHTML(zoneHtml(f.properties ?? {})).addTo(map);
+      });
+      map.on('mousemove', 'exclusion-zones-fill', (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        zonePopup.setLngLat(e.lngLat).setHTML(zoneHtml(f.properties ?? {}));
+      });
+      map.on('mouseleave', 'exclusion-zones-fill', () => {
+        map.getCanvas().style.cursor = '';
+        zonePopup.remove();
+      });
+      map.on('click', 'exclusion-zones-fill', (e) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        if (zonePopup.isOpen()) zonePopup.remove();
+        else zonePopup.setLngLat(e.lngLat).setHTML(zoneHtml(f.properties ?? {})).addTo(map);
+      });
+
       // Seed boat source with current store position immediately
       const initHud = useGameStore.getState().hud;
       const hasPos = !!(initHud.lat || initHud.lon);
@@ -395,6 +474,38 @@ export default function MapCanvas(): React.ReactElement {
     const unsub = useGameStore.subscribe(syncBoat);
     syncBoat(useGameStore.getState());
     return unsub;
+  }, []);
+
+  /* ── Exclusion zones: sync source when store.zones changes ── */
+  useEffect(() => {
+    type StoreZones = ReturnType<typeof useGameStore.getState>['zones'];
+    const applyZones = (zones: StoreZones): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      const src = map.getSource('exclusion-zones') as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      const features: GeoJSON.Feature[] = zones.map((z) => ({
+        type: 'Feature',
+        geometry: z.geometry,
+        properties: {
+          id: z.id,
+          name: z.name,
+          category: z.category ?? '',
+          reason: z.reason,
+          speedMultiplier: z.speedMultiplier ?? 1,
+          color: z.color,
+        },
+      }));
+      src.setData({ type: 'FeatureCollection', features });
+    };
+    applyZones(useGameStore.getState().zones);
+    let prev = useGameStore.getState().zones;
+    return useGameStore.subscribe((s) => {
+      if (s.zones !== prev) {
+        prev = s.zones;
+        applyZones(s.zones);
+      }
+    });
   }, []);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
-import { fetchMyBoat } from '@/lib/api';
+import { fetchMyBoat, fetchRaceZones } from '@/lib/api';
 import { connectRace, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
@@ -72,6 +72,11 @@ function useBoatInit(raceId: string): void {
 
       // Pre-load polar data for this boat class (cached for Compass estimation)
       loadPolar(boat.boatClass).catch(() => {});
+
+      // Load race exclusion zones (DST/ZEA/ZPC/ZES)
+      fetchRaceZones(raceId)
+        .then((zones) => { if (!cancelled) store.setZones(zones); })
+        .catch(() => {});
 
 
       // Once initial state is loaded, open WS for live deltas

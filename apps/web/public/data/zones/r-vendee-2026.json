@@ -1,0 +1,158 @@
+{
+  "zones": [
+    {
+      "id": "dst-ouessant",
+      "raceId": "r-vendee-2026",
+      "name": "DST Ouessant",
+      "type": "PENALTY",
+      "category": "DST",
+      "reason": "Dispositif de Séparation du Trafic — zone maritime très fréquentée au large de la pointe de la Bretagne. Réduction de vitesse pour éviter les collisions avec les cargos.",
+      "speedMultiplier": 0.3,
+      "color": "#f1c40f",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.65, 48.95],
+          [-5.10, 48.95],
+          [-5.10, 48.25],
+          [-5.65, 48.25],
+          [-5.65, 48.95]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "dst-cap-finisterre",
+      "raceId": "r-vendee-2026",
+      "name": "DST Cap Finisterre",
+      "type": "PENALTY",
+      "category": "DST",
+      "reason": "Dispositif de Séparation du Trafic — route maritime dense au large du cap Finisterre (Galice). Rail de navigation à éviter.",
+      "speedMultiplier": 0.3,
+      "color": "#f1c40f",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-9.90, 43.20],
+          [-9.10, 43.20],
+          [-9.10, 42.50],
+          [-9.90, 42.50],
+          [-9.90, 43.20]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "zpc-madere",
+      "raceId": "r-vendee-2026",
+      "name": "ZPC Madère",
+      "type": "PENALTY",
+      "category": "ZPC",
+      "reason": "Zone de Protection des Cétacés — sanctuaire marin autour de l'archipel de Madère. Ralentissement obligatoire pour protéger les dauphins et les cachalots.",
+      "speedMultiplier": 0.3,
+      "color": "#2ecc71",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-17.80, 33.30],
+          [-15.80, 33.30],
+          [-15.80, 32.20],
+          [-17.80, 32.20],
+          [-17.80, 33.30]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "zpc-canaries",
+      "raceId": "r-vendee-2026",
+      "name": "ZPC Canaries",
+      "type": "PENALTY",
+      "category": "ZPC",
+      "reason": "Zone de Protection des Cétacés — entre Tenerife et La Gomera. Zone à forte densité de populations résidentes de cétacés.",
+      "speedMultiplier": 0.3,
+      "color": "#2ecc71",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-17.50, 28.80],
+          [-15.90, 28.80],
+          [-15.90, 27.60],
+          [-17.50, 27.60],
+          [-17.50, 28.80]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "zpc-cap-vert",
+      "raceId": "r-vendee-2026",
+      "name": "ZPC Cap-Vert",
+      "type": "PENALTY",
+      "category": "ZPC",
+      "reason": "Zone de Protection des Cétacés — archipel du Cap-Vert, route migratoire des baleines à bosse.",
+      "speedMultiplier": 0.3,
+      "color": "#2ecc71",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-25.80, 17.30],
+          [-22.60, 17.30],
+          [-22.60, 14.70],
+          [-25.80, 14.70],
+          [-25.80, 17.30]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "zes-mauritanie",
+      "raceId": "r-vendee-2026",
+      "name": "ZES Mauritanie",
+      "type": "PENALTY",
+      "category": "ZES",
+      "reason": "Zone Interdite Spéciale — bande côtière de la Mauritanie, forte densité de pêche et zones sensibles à éviter.",
+      "speedMultiplier": 0.3,
+      "color": "#e74c3c",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-17.60, 20.80],
+          [-16.00, 20.80],
+          [-16.00, 16.00],
+          [-17.60, 16.00],
+          [-17.60, 20.80]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    },
+    {
+      "id": "zea-antarctique",
+      "raceId": "r-vendee-2026",
+      "name": "ZEA Antarctique",
+      "type": "PENALTY",
+      "category": "ZEA",
+      "reason": "Zone d'Exclusion Antarctique — barrière sud infranchissable pour éviter les icebergs. Les skippers doivent rester au nord de cette limite.",
+      "speedMultiplier": 0.1,
+      "color": "#5dade2",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-180, -45],
+          [180, -45],
+          [180, -90],
+          [-180, -90],
+          [-180, -45]
+        ]]
+      },
+      "activeFrom": null,
+      "activeTo": null
+    }
+  ]
+}

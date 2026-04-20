@@ -71,6 +71,15 @@ export async function fetchMyBoat(raceId: string): Promise<BoatState | null> {
   return (await res.json()) as BoatState;
 }
 
+import type { ExclusionZone } from '@nemo/shared-types';
+
+export async function fetchRaceZones(raceId: string): Promise<ExclusionZone[]> {
+  const res = await fetch(new URL(`/api/v1/races/${raceId}/zones`, WEB_BASE));
+  if (!res.ok) return [];
+  const json = (await res.json()) as { zones: ExclusionZone[] };
+  return json.zones ?? [];
+}
+
 export async function fetchRace(id: string): Promise<RaceSummary | null> {
   const res = await fetch(new URL(`/api/v1/races/${id}`, API_BASE), { next: { revalidate: 30 } });
   if (res.status === 404) return null;

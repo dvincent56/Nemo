@@ -85,6 +85,15 @@ export interface OrderEnvelope {
  */
 export type ExclusionZoneType = 'WARN' | 'PENALTY';
 
+/**
+ * Real-world category — drives visual color and default tooltip text.
+ * DST  : Dispositif de Séparation du Trafic (Traffic Separation Scheme)
+ * ZEA  : Zone d'Exclusion Arctique / Antarctique (ice gate)
+ * ZPC  : Zone de Protection des Cétacés
+ * ZES  : Zone Interdite Spéciale (conflict / fishing density / etc.)
+ */
+export type ExclusionZoneCategory = 'DST' | 'ZEA' | 'ZPC' | 'ZES';
+
 export interface GeoJsonPolygon {
   type: 'Polygon';
   coordinates: [number, number][][];
@@ -95,6 +104,7 @@ export interface ExclusionZone {
   raceId: string;
   name: string;
   type: ExclusionZoneType;
+  category?: ExclusionZoneCategory;
   geometry: GeoJsonPolygon;
   speedMultiplier?: number;
   color: string;
