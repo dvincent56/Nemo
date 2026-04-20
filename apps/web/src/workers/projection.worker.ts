@@ -200,12 +200,12 @@ function simulate(input: ProjectionInput): ProjectionResult {
         case 'TWA':
           twaLock = seg.value as number;
           markerType = 'twa_change';
-          markerDetail = `TWA ${prevTwaLock !== null ? Math.round(prevTwaLock) + '°' : 'off'} → ${Math.round(twaLock)}° lock`;
+          markerDetail = `TWA verrouillé à ${Math.round(twaLock)}°${prevTwaLock !== null ? ` (précédent : ${Math.round(prevTwaLock)}°)` : ''}`;
           break;
         case 'SAIL': {
           activeSail = seg.value as typeof activeSail;
           markerType = 'sail_change';
-          markerDetail = `Voile: ${prevSail} → ${activeSail}`;
+          markerDetail = `${prevSail} → ${activeSail}`;
           // Sail change penalty
           const transKey = `${prevSail}_${activeSail}`;
           const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
@@ -230,7 +230,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
           if (man) {
             maneuver = man;
             markerType = Math.abs(newTwa) < 90 ? 'tack' : 'gybe';
-            markerDetail += ` (${markerType})`;
+            markerDetail += markerType === 'tack' ? ' — virement' : ' — empannage';
           }
         }
       }

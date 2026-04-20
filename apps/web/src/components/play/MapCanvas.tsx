@@ -200,6 +200,19 @@ export default function MapCanvas(): React.ReactElement {
         className: 'projection-maneuver-popup',
       });
 
+      const MANEUVER_LABEL: Record<string, string> = {
+        tack: 'Virement',
+        gybe: 'Empannage',
+        sail_change: 'Changement de voile',
+        cap_change: 'Changement de cap',
+        twa_change: 'Verrouillage TWA',
+      };
+
+      const maneuverHtml = (type: string, detail: string): string => {
+        const label = MANEUVER_LABEL[type] ?? type;
+        return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${label}</strong><br/>${detail}</div>`;
+      };
+
       map.on('mouseenter', 'projection-markers-maneuver-icon', (e) => {
         map.getCanvas().style.cursor = 'pointer';
         const feature = e.features?.[0];
@@ -209,7 +222,7 @@ export default function MapCanvas(): React.ReactElement {
         const type = feature.properties?.type ?? '';
         maneuverPopup
           .setLngLat(coords)
-          .setHTML(`<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${type.toUpperCase()}</strong><br/>${detail}</div>`)
+          .setHTML(maneuverHtml(type, detail))
           .addTo(map);
       });
 
@@ -230,7 +243,7 @@ export default function MapCanvas(): React.ReactElement {
         } else {
           maneuverPopup
             .setLngLat(coords)
-            .setHTML(`<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${type.toUpperCase()}</strong><br/>${detail}</div>`)
+            .setHTML(maneuverHtml(type, detail))
             .addTo(map);
         }
       });

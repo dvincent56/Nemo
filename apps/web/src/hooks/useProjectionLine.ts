@@ -79,6 +79,46 @@ const BOAT_CLASS_FILES: Record<string, string> = {
 };
 
 /**
+ * Single-snapshot fallback: pack a WeatherGrid (already tws/twd) when the
+ * decoded multi-hour binary isn't available yet.
+ */
+function packWindDataFromSnapshot(grid: {
+  points: Array<{ tws: number; twd: number; swellHeight: number; swellDir: number; swellPeriod: number }>;
+  cols: number;
+  rows: number;
+  resolution: number;
+  bounds: { north: number; south: number; east: number; west: number };
+  timestamps: number[];
+}): {
+  data: Float32Array;
+  timestamps: number[];
+  cols: number;
+  rows: number;
+  resolution: number;
+  bounds: { north: number; south: number; east: number; west: number };
+} {
+  const n = grid.points.length;
+  const data = new Float32Array(n * FIELDS_PER_POINT);
+  for (let i = 0; i < n; i++) {
+    const p = grid.points[i]!;
+    const b = i * FIELDS_PER_POINT;
+    data[b] = p.tws;
+    data[b + 1] = p.twd;
+    data[b + 2] = p.swellHeight;
+    data[b + 3] = p.swellDir;
+    data[b + 4] = p.swellPeriod;
+  }
+  return {
+    data,
+    timestamps: grid.timestamps.length > 0 ? [grid.timestamps[0]!] : [Date.now()],
+    cols: grid.cols,
+    rows: grid.rows,
+    resolution: grid.resolution,
+    bounds: grid.bounds,
+  };
+}
+
+/**
  * Convert store's orderQueue to ProjectionSegments.
  */
 function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: string; time?: number }; value: Record<string, unknown> }>): ProjectionSegment[] {
@@ -255,8 +295,9 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const state = useGameStore.getState();
       const { hud, sail, weather, prog, preview } = state;
       const decoded = weather.decodedGrid;
-      if (!decoded) {
-        console.log('[Projection] skip: no decoded weather grid');
+      const snapshot = weather.gridData;
+      if (!decoded && !snapshot) {
+        console.log('[Projection] skip: no weather grid');
         return;
       }
       if (!hud.lat && !hud.lon) {
@@ -280,12 +321,17 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         if (effectiveTwaLock === -180) effectiveTwaLock = 180;
       }
 
-      // Pack wind data from decoded grid (all forecast hours). Cached by decoded ref.
-      if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
-        console.log('[Projection] packing wind data from', decoded.header.numHours, 'hours');
-        packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
+      // Pack wind data — prefer multi-hour decoded, fall back to single snapshot.
+      let packed: ReturnType<typeof packWindDataFromDecoded>;
+      if (decoded) {
+        if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
+          console.log('[Projection] packing wind data from', decoded.header.numHours, 'hours');
+          packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
+        }
+        packed = packedWindRef.current.packed;
+      } else {
+        packed = packWindDataFromSnapshot(snapshot!);
       }
-      const packed = packedWindRef.current.packed;
 
       const nowMs = Date.now();
       console.log('[Projection] computing...', {
@@ -294,7 +340,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         twd: hud.twd,
         twaLock: effectiveTwaLock,
         sail: effectiveSail,
-        grid_hours: decoded.header.numHours,
+        grid_hours: packed.timestamps.length,
       });
 
       // Transfer a copy of the packed data so the cached buffer survives
@@ -364,7 +410,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevSailAuto = useGameStore.getState().sail.sailAuto;
     let prevQueue = useGameStore.getState().prog.orderQueue;
     let prevTick = useGameStore.getState().lastTickUnix;
-    let prevGrid = useGameStore.getState().weather.decodedGrid;
+    let prevDecoded = useGameStore.getState().weather.decodedGrid;
+    let prevSnapshot = useGameStore.getState().weather.gridData;
     let prevPreviewHdg = useGameStore.getState().preview.hdg;
     let prevPreviewSail = useGameStore.getState().preview.sail;
     let prevPreviewTwaLocked = useGameStore.getState().preview.twaLocked;
@@ -376,7 +423,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const autoChanged = s.sail.sailAuto !== prevSailAuto;
       const queueChanged = s.prog.orderQueue !== prevQueue;
       const tickChanged = s.lastTickUnix !== prevTick;
-      const gridChanged = s.weather.decodedGrid !== prevGrid;
+      const gridChanged = s.weather.decodedGrid !== prevDecoded || s.weather.gridData !== prevSnapshot;
       const previewHdgChanged = s.preview.hdg !== prevPreviewHdg;
       const previewSailChanged = s.preview.sail !== prevPreviewSail;
       const previewTwaLockedChanged = s.preview.twaLocked !== prevPreviewTwaLocked;
@@ -387,7 +434,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevSailAuto = s.sail.sailAuto;
       prevQueue = s.prog.orderQueue;
       prevTick = s.lastTickUnix;
-      prevGrid = s.weather.decodedGrid;
+      prevDecoded = s.weather.decodedGrid;
+      prevSnapshot = s.weather.gridData;
       prevPreviewHdg = s.preview.hdg;
       prevPreviewSail = s.preview.sail;
       prevPreviewTwaLocked = s.preview.twaLocked;
