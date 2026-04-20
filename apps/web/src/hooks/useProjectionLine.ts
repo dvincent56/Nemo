@@ -41,6 +41,32 @@ function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
   // attached by fetchWeatherGrid (fallback to sequential hours if missing).
   const hoursList = decoded.hours ?? Array.from({ length: numHours }, (_, i) => i);
 
+  console.log('[Projection] GRIB header:', {
+    runTs: header.runTimestamp,
+    runDate: new Date(header.runTimestamp * 1000).toISOString(),
+    numLat, numLon, numHours,
+    stepLat: header.gridStepLat, stepLon: header.gridStepLon,
+    bounds: { north: header.latMax, south: header.latMin, east: header.lonMax, west: header.lonMin },
+    hoursList: hoursList.slice(0, 10),
+  });
+  // Sample a few raw u,v values at known positions to verify data integrity.
+  // Expected: u,v in m/s; sqrt(u² + v²) × 1.944 ≈ knots.
+  {
+    const sampleLat = 47, sampleLon = -3;
+    const latIdx = Math.max(0, Math.min(numLat - 1, Math.round((header.latMax - sampleLat) / header.gridStepLat)));
+    const lonIdx = Math.max(0, Math.min(numLon - 1, Math.round((sampleLon - header.lonMin) / header.gridStepLon)));
+    const base = (latIdx * numLon + lonIdx) * 6;
+    const u = src[base]!;
+    const v = src[base + 1]!;
+    const ms = Math.sqrt(u * u + v * v);
+    console.log('[Projection] sample (47°N, -3°W) hour 0 raw:', {
+      latIdx, lonIdx, u: u.toFixed(3), v: v.toFixed(3),
+      magnitude_ms: ms.toFixed(2),
+      magnitude_kn_if_ms: (ms * MS_TO_KTS).toFixed(2),
+      magnitude_kn_if_already_kn: ms.toFixed(2),
+    });
+  }
+
   for (let h = 0; h < numHours; h++) {
     const forecastHour = hoursList[h] ?? h;
     timestamps.push((header.runTimestamp + forecastHour * 3600) * 1000);
