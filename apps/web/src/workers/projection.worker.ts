@@ -71,6 +71,20 @@ function pickOptimalSail(polar: PolarData, twa: number, tws: number): string {
   return best ?? Object.keys(polar.speeds)[0]!;
 }
 
+/**
+ * Overlap zone check — a sail stays selected (no auto-switch) while TWA
+ * remains within `overlapDegrees` of the edge of its operating range.
+ * Matches the game-engine's sails.ts isInOverlapZone() so the projection
+ * doesn't predict switches the server would skip.
+ */
+function isInOverlapZone(sail: string, twaAbs: number): boolean {
+  const def = (GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }>)[sail];
+  const overlap = (GameBalance.sails.overlapDegrees as Record<string, number>)[sail];
+  if (!def || overlap === undefined) return false;
+  const distToEdge = Math.min(Math.abs(twaAbs - def.twaMin), Math.abs(twaAbs - def.twaMax));
+  return distToEdge <= overlap;
+}
+
 // ── Init: load GameBalance on worker start ──
 
 let balanceReady = false;
@@ -300,11 +314,14 @@ function simulate(input: ProjectionInput): ProjectionResult {
     // If in TWA lock mode, update heading from wind direction
     const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
 
-    // Auto-sail: switch to optimal sail if in auto mode and not currently transitioning
+    // Auto-sail: switch to optimal sail if in auto mode and not currently transitioning.
+    // Respect overlap zone (server does the same) to avoid predicting switches
+    // that never happen because the current sail is still in its overlap range.
     const isTransitioning = transition !== null && currentMs < transition.endMs;
     if (sailAuto && !isTransitioning) {
       const optimal = pickOptimalSail(polar, twa, weather.tws);
-      if (optimal !== activeSail) {
+      const twaAbs = Math.min(Math.abs(twa), 180);
+      if (optimal !== activeSail && !isInOverlapZone(activeSail, twaAbs)) {
         const transKey = `${activeSail}_${optimal}`;
         const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
         const sailTransDurAdj = sailTransDur * effects.maneuverMul.sailChange.dur;
