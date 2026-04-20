@@ -39,6 +39,13 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   const numHours = opts.hours.length;
   const plane = grid.shape.rows * grid.shape.cols;
 
+  // Actual geographic extent of the clipped subset — must match the body,
+  // NOT the requested bounds (which may extend beyond the source grid).
+  const actualLatMin = grid.bbox.latMin + rowStart * res;
+  const actualLatMax = grid.bbox.latMin + rowEnd * res;
+  const actualLonMin = grid.bbox.lonMin + colStart * res;
+  const actualLonMax = grid.bbox.lonMin + colEnd * res;
+
   const bodyFloats = numHours * numLat * numLon * 6;
   const totalBytes = HEADER_SIZE + bodyFloats * 4;
   const buf = new ArrayBuffer(totalBytes);
@@ -50,10 +57,10 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   dv.setUint32(off, opts.nextRunExpectedUtc, true); off += 4;
   dv.setUint8(off, opts.weatherStatus); off += 4; // +3 padding
   dv.setFloat32(off, opts.blendAlpha, true); off += 4;
-  dv.setFloat32(off, opts.bounds.latMin, true); off += 4;
-  dv.setFloat32(off, opts.bounds.latMax, true); off += 4;
-  dv.setFloat32(off, opts.bounds.lonMin, true); off += 4;
-  dv.setFloat32(off, opts.bounds.lonMax, true); off += 4;
+  dv.setFloat32(off, actualLatMin, true); off += 4;
+  dv.setFloat32(off, actualLatMax, true); off += 4;
+  dv.setFloat32(off, actualLonMin, true); off += 4;
+  dv.setFloat32(off, actualLonMax, true); off += 4;
   dv.setFloat32(off, res, true); off += 4;
   dv.setFloat32(off, res, true); off += 4;
   dv.setUint16(off, numLat, true); off += 2;
