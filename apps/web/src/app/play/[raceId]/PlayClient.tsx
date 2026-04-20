@@ -133,16 +133,15 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const lastTickUnix = useGameStore((s) => s.lastTickUnix);
   useEffect(() => {
     if (!gridData || (!boatLat && !boatLon)) return;
+    // Once the first server tick lands, HUD TWS/TWD/TWA all come from the
+    // server payload (same data the engine uses for BSP). We only seed from
+    // local GFS before that to avoid showing empty values on first paint.
+    if (lastTickUnix !== null) return;
     const wind = interpolateGfsWind(gridData, boatLat, boatLon);
     const tws = Math.round(wind.tws * 10) / 10;
-    if (lastTickUnix !== null) {
-      // Server is authoritative for TWD/TWA; only local TWS.
-      useGameStore.getState().setHud({ tws });
-    } else {
-      const twd = Math.round(wind.twd);
-      const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
-      useGameStore.getState().setHud({ twd, tws, twa });
-    }
+    const twd = Math.round(wind.twd);
+    const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
+    useGameStore.getState().setHud({ twd, tws, twa });
   }, [gridData, boatLat, boatLon, boatHdg, lastTickUnix]);
 
   if (access.kind === 'blocked') {

@@ -40,6 +40,8 @@ export interface MyBoatFullUpdate extends FullUpdate {
   /** TWD used by the server to compute heading this tick (degrees). Allows
    *  the client to render TWA from the same reference as the engine. */
   twd: number;
+  /** TWS at the boat position for the tick's forecast moment (knots). */
+  tws: number;
   /** Locked TWA value (degrees signed), or null when heading-mode. */
   twaLock: number | null;
   transitionStartMs: number;   // timestamp when sail change started (0 = none)
@@ -100,6 +102,7 @@ export function buildFullUpdate(
     twaColor,
     coastRisk: outcome.coastRisk,
     twd: ((runtime.boat.heading - outcome.twa) % 360 + 360) % 360,
+    tws: outcome.tws,
     twaLock: runtime.segmentState.twaLock,
     transitionStartMs: sailState.transitionStartMs,
     transitionEndMs: sailState.transitionEndMs,

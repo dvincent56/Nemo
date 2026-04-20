@@ -70,9 +70,11 @@ export const useGameStore = create<GameStore>((set) => ({
           const currentSail = SAIL_CODES[sailIdx] ?? 'JIB';
           const twaColorCode = Number(m['twaColor'] ?? 1);
           const serverTwd = m['twd'];
+          const serverTws = m['tws'];
           const serverTwaLock = m['twaLock'];
           const hdgFromMsg = Number(m['hdg'] ?? s.hud.hdg);
           const twdFromMsg = typeof serverTwd === 'number' ? serverTwd : s.hud.twd;
+          const twsFromMsg = typeof serverTws === 'number' ? serverTws : s.hud.tws;
           // Prefer the authoritative TWA (server's TWD + heading) over the
           // locally-interpolated one, so the displayed TWA matches the engine.
           const derivedTwa = ((hdgFromMsg - twdFromMsg + 540) % 360) - 180;
@@ -83,6 +85,7 @@ export const useGameStore = create<GameStore>((set) => ({
             hdg: hdgFromMsg,
             bsp: Number(m['bsp'] ?? s.hud.bsp),
             twd: twdFromMsg,
+            tws: twsFromMsg,
             twa: typeof serverTwaLock === 'number' ? serverTwaLock : derivedTwa,
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             twaColor: twaColorFromCode(twaColorCode),
