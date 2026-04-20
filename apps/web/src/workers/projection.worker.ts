@@ -18,6 +18,7 @@ import {
   computeWearDelta,
   applyWear,
   detectManeuver,
+  getPolarSpeed,
   type PolarData,
   type ConditionState,
   type ManeuverState,
@@ -49,6 +50,24 @@ function getStepSize(elapsedSec: number): number {
 // ── Time marker labels ──
 
 const TIME_MARKER_HOURS = [1, 2, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168];
+
+/**
+ * Pick the sail with the highest BSP at the given TWA/TWS, among sails
+ * whose operating range covers the TWA.
+ */
+function pickOptimalSail(polar: PolarData, twa: number, tws: number): string {
+  const twaAbs = Math.min(Math.abs(twa), 180);
+  const sailDefs = GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }>;
+  let best: string | null = null;
+  let bestBsp = -Infinity;
+  for (const sail of Object.keys(polar.speeds)) {
+    const def = sailDefs[sail];
+    if (def && (twaAbs < def.twaMin || twaAbs > def.twaMax)) continue;
+    const bsp = getPolarSpeed(polar, sail, twaAbs, tws);
+    if (bsp > bestBsp) { bestBsp = bsp; best = sail; }
+  }
+  return best ?? Object.keys(polar.speeds)[0]!;
+}
 
 // ── Init: load GameBalance on worker start ──
 
@@ -95,7 +114,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let hdg = input.hdg;
   let twaLock = input.twaLock;
   let activeSail = input.activeSail;
-  // sailAuto tracked for future auto-sail logic in projection
+  let sailAuto = input.sailAuto;
   let condition: ConditionState = { ...input.condition };
   let maneuver: ManeuverState | null = input.activeManeuver ? { ...input.activeManeuver } : null;
   let transition: { endMs: number; speedFactor: number } | null =
@@ -198,7 +217,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
           break;
         }
         case 'MODE':
-          // sailAuto state tracked for future auto-sail projection
+          sailAuto = seg.value as boolean;
           break;
       }
 
@@ -255,6 +274,28 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
     // If in TWA lock mode, update heading from wind direction
     const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
+
+    // Auto-sail: switch to optimal sail if in auto mode and not currently transitioning
+    const isTransitioning = transition !== null && currentMs < transition.endMs;
+    if (sailAuto && !isTransitioning) {
+      const optimal = pickOptimalSail(polar, twa, weather.tws);
+      if (optimal !== activeSail) {
+        const transKey = `${activeSail}_${optimal}`;
+        const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
+        const sailTransDurAdj = sailTransDur * effects.maneuverMul.sailChange.dur;
+        transition = {
+          endMs: currentMs + sailTransDurAdj * 1000,
+          speedFactor: GameBalance.sails.transitionPenalty * effects.maneuverMul.sailChange.speed,
+        };
+        maneuverMarkers.push({
+          index: points.length,
+          type: 'sail_change',
+          detail: `Auto: ${activeSail} → ${optimal}`,
+        });
+        activeSail = optimal as typeof activeSail;
+      }
+    }
+
     if (twaLock !== null) {
       // Heading = TWD + TWA (reverse of computeTWA)
       hdg = ((weather.twd + twaLock) % 360 + 360) % 360;
