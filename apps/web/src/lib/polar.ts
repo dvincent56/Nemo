@@ -63,12 +63,16 @@ function findBracket(arr: readonly number[], value: number): { i0: number; i1: n
 
 /**
  * Bilinear interpolation on the polar grid.
+ * Dead zone: below the first TWA in the polar axis the boat cannot sail
+ * upwind (face-to-wind), BSP forced to 0 instead of clamping to the row.
  * Returns estimated BSP in knots for the given TWA and TWS.
  */
 export function getPolarSpeed(polar: Polar, sail: SailId, twa: number, tws: number): number {
   const absTwa = Math.min(Math.abs(twa), 180);
   const sailSpeeds = polar.speeds[sail];
   if (!sailSpeeds) return 0;
+  const minTwa = polar.twa[0];
+  if (minTwa !== undefined && absTwa < minTwa) return 0;
   const a = findBracket(polar.twa, absTwa);
   const s = findBracket(polar.tws, tws);
 

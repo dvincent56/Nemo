@@ -90,6 +90,9 @@ function getPolarSpeedFromGrid(
   absTwa: number,
   tws: number,
 ): number {
+  // Dead zone: below the first TWA in the polar axis → 0 (face-to-wind).
+  const minTwa = twaAxis[0];
+  if (minTwa !== undefined && absTwa < minTwa) return 0;
   const a = findBracket(twaAxis, absTwa);
   const s = findBracket(twsAxis, tws);
 
