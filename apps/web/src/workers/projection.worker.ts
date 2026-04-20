@@ -25,7 +25,7 @@ import {
 } from '../lib/projection/simulate';
 import { createWindLookup } from '../lib/projection/windLookup';
 import { CoastlineIndex } from '../lib/projection/coastline';
-import { zoneSpeedModulator } from '../lib/projection/zones';
+import { zoneSpeedModulator, segmentEntersZone } from '../lib/projection/zones';
 import { GameBalance } from '@nemo/game-balance/browser';
 
 // ── Adaptive step config ──
@@ -326,27 +326,46 @@ function simulate(input: ProjectionInput): ProjectionResult {
       hdg = ((weather.twd + twaLock) % 360 + 360) % 360;
     }
 
-    // Compute BSP — then apply zone modulation at current position
+    // Compute BSP — apply zone modulation for the segment we're ABOUT to traverse
     let bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
-    const zoneHit = zoneSpeedModulator(lat, lon, input.zones, currentMs);
-    if (zoneHit.factor !== 1) {
-      bsp *= zoneHit.factor;
+    const zoneAtStart = zoneSpeedModulator(lat, lon, input.zones, currentMs);
+    if (zoneAtStart.factor !== 1) {
+      bsp *= zoneAtStart.factor;
     }
-    // Track zone entries for marker annotation
-    const currentHitSet = new Set(zoneHit.hitNames);
-    for (const name of zoneHit.hitNames) {
-      if (!zonesInside.has(name)) {
-        maneuverMarkers.push({
-          index: points.length,
-          type: 'zone_entry',
-          detail: `${name} (×${zoneHit.factor.toFixed(2)} vitesse)`,
-        });
-      }
-    }
-    zonesInside = currentHitSet;
 
     // Advance position
     const newPos = advancePosition({ lat, lon }, hdg, bsp, dt);
+
+    // Detect zone entries on the segment (fromStart → newPos). For each zone
+    // we weren't inside at the start, find the intersection with the zone
+    // boundary and place the marker exactly there.
+    for (const z of input.zones) {
+      if (zonesInside.has(z.name)) continue;
+      // If the endpoint is inside the zone but the start wasn't → we entered it
+      // during this step. Use segmentEntersZone to get the crossing point.
+      const endInside = zoneSpeedModulator(newPos.lat, newPos.lon, [z], currentMs).factor !== 1;
+      if (!endInside) continue;
+      const cross = segmentEntersZone(lat, lon, newPos.lat, newPos.lon, z);
+      if (!cross) continue;
+      // Insert a point at the crossing (outside-side, with pre-zone BSP) so the
+      // rendered line color transitions exactly at the boundary.
+      points.push({
+        lat: cross.lat,
+        lon: cross.lon,
+        timestamp: currentMs + cross.t * dt * 1000,
+        bsp: bsp / (zoneAtStart.factor !== 1 ? zoneAtStart.factor : 1),
+        tws: weather.tws,
+        twd: weather.twd,
+      });
+      maneuverMarkers.push({
+        index: points.length - 1,
+        type: 'zone_entry',
+        detail: `${z.name} (×${z.speedMultiplier.toFixed(2)} vitesse)`,
+      });
+    }
+    // Refresh zonesInside from the endpoint state
+    const endHit = zoneSpeedModulator(newPos.lat, newPos.lon, input.zones, currentMs);
+    zonesInside = new Set(endHit.hitNames);
 
     // Grounding check: if the segment crosses coastline, stop projection at impact.
     if (coastReady) {
