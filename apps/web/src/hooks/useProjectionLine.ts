@@ -87,23 +87,16 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   // Update MapLibre sources with projection result
   const updateMapSources = useCallback((result: ProjectionResult) => {
     const m = mapRef.current;
-    if (!m) {
-      console.log('[Projection] render skipped: no map yet');
-      return;
-    }
-    if (!m.isStyleLoaded()) {
-      console.log('[Projection] render skipped: style not loaded');
-      return;
-    }
-    const lineSrcExists = !!m.getSource('projection-line');
-    if (!lineSrcExists) {
-      console.log('[Projection] render skipped: projection-line source not added yet');
+    if (!m) return;
+    // If sources aren't added yet, schedule a retry on next idle frame.
+    // isStyleLoaded() is unreliable — relying on source presence instead.
+    if (!m.getSource('projection-line')) {
+      m.once('idle', () => {
+        if (lastResultRef.current) updateMapSources(lastResultRef.current);
+      });
       return;
     }
     const map = m;
-    const first = result.points[0];
-    const last = result.points[result.points.length - 1];
-    console.log('[Projection] render:', result.points.length, 'points, first:', first ? `${first.lat.toFixed(2)},${first.lon.toFixed(2)}` : '?', 'last:', last ? `${last.lat.toFixed(2)},${last.lon.toFixed(2)}` : '?');
 
     // Line source: one LineString segment per pair of points with bspRatio property
     const lineFeatures: GeoJSON.Feature[] = [];

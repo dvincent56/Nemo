@@ -26,19 +26,24 @@ import { createWindLookup } from '../lib/projection/windLookup';
 import { GameBalance } from '@nemo/game-balance/browser';
 
 // ── Adaptive step config ──
+// Tuned for responsiveness: fine grain where course/manoeuvres matter,
+// coarser for long-range where wind varies slowly.
 
-const STEP_30S = 30;
+const STEP_1M = 60;
 const STEP_5M = 5 * 60;
 const STEP_15M = 15 * 60;
+const STEP_30M = 30 * 60;
 
-const HOURS_3 = 3 * 3600;
-const HOURS_24 = 24 * 3600;
+const HOUR_1 = 1 * 3600;
+const HOURS_12 = 12 * 3600;
+const HOURS_48 = 48 * 3600;
 const DAYS_7 = 7 * 24 * 3600;
 
 function getStepSize(elapsedSec: number): number {
-  if (elapsedSec < HOURS_3) return STEP_30S;
-  if (elapsedSec < HOURS_24) return STEP_5M;
-  return STEP_15M;
+  if (elapsedSec < HOUR_1) return STEP_1M;
+  if (elapsedSec < HOURS_12) return STEP_5M;
+  if (elapsedSec < HOURS_48) return STEP_15M;
+  return STEP_30M;
 }
 
 // ── Time marker labels ──

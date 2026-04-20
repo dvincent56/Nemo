@@ -137,9 +137,8 @@ export default function MapCanvas(): React.ReactElement {
             0.75, '#27ae60',
             1.0, '#27ae60',
           ],
-          'line-width': 2.5,
-          'line-opacity': 0.8,
-          'line-dasharray': [4, 3],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
+          'line-opacity': 0.85,
         },
       });
 
