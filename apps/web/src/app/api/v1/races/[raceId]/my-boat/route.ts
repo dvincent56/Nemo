@@ -15,9 +15,10 @@ export async function GET(
   const { raceId: _raceId } = await params;
 
   const state: BoatState = {
-    boatClass: 'IMOCA60',
-    lat: 47.0,
-    lon: -3.0,
+    boatClass: 'CLASS40',
+    // 47°04'00.29"N / 3°24'21.08"W — VR benchmark position for projection comparison
+    lat: 47.066747,
+    lon: -3.405856,
     hdg: 216,
     bsp: 11.4,
     twd: 0,   // will be overwritten by GFS interpolation client-side

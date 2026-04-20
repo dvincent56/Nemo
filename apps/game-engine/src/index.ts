@@ -24,12 +24,14 @@ const log = pino({ name: 'game-engine' });
  * des BoatRuntime arrivera en Phase 4 (inscription en course → hydratation DB).
  */
 function createDemoRuntime(): BoatRuntime {
+  // 47°04'00.29"N / 3°24'21.08"W — VR benchmark start for projection comparison
+  const START_POS = { lat: 47.066747, lon: -3.405856 };
   const boat: Boat = {
     id: 'demo-boat-1',
     ownerId: 'demo-owner',
     name: 'Nemo Démo',
-    boatClass: 'IMOCA60',
-    position: { lat: 47.0, lon: -3.0 },
+    boatClass: 'CLASS40',
+    position: START_POS,
     heading: 216,
     bsp: 0,
     sail: 'JIB',
@@ -41,10 +43,10 @@ function createDemoRuntime(): BoatRuntime {
     raceId: 'r-vendee-2026',
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     sailState: { active: 'JIB', pending: null, transitionStartMs: 0, transitionEndMs: 0, autoMode: false, timeOutOfRangeSec: 0 },
-    segmentState: { position: { lat: 47.0, lon: -3.0 }, heading: 216, twaLock: null, sail: 'JIB', sailAuto: false },
+    segmentState: { position: START_POS, heading: 216, twaLock: null, sail: 'JIB', sailAuto: false },
     orderHistory: [],
     zonesAlerted: new Set(),
-    loadout: resolveBoatLoadout('demo-boat-1', [], 'IMOCA60'),
+    loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
   };

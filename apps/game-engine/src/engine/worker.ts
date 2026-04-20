@@ -48,7 +48,7 @@ async function main() {
   const init = workerData as WorkerInit;
 
   await GameBalance.loadFromDisk();
-  const polar: Polar = await loadPolar('IMOCA60');
+  const polar: Polar = await loadPolar('CLASS40');
   const weather: WeatherProvider = await createWeather();
   const zones: IndexedZone[] = buildZoneIndex([]);
 
