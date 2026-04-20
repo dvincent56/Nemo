@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
+import {
+  findOceanPreset,
+  findLandPreset,
+  DEFAULT_OCEAN_ID,
+  DEFAULT_LAND_ID,
+} from '@/lib/mapAppearance';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 
@@ -39,41 +45,43 @@ const COUNTRY_LABELS: GeoJSON.FeatureCollection = {
   ],
 };
 
-const STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  name: 'Nemo Ocean',
-  sources: {
-    'osm-tiles': {
-      type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png'],
-      tileSize: 256,
-    },
-    'country-labels': {
-      type: 'geojson',
-      data: COUNTRY_LABELS,
-    },
-  },
-  layers: [
-    { id: 'background', type: 'background', paint: { 'background-color': '#0a2035' } },
-    { id: 'dark-tiles', type: 'raster', source: 'osm-tiles', paint: { 'raster-opacity': 0.6 } },
-    {
-      id: 'country-names',
-      type: 'symbol',
-      source: 'country-labels',
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-size': 13,
-        'text-letter-spacing': 0.15,
-        'text-allow-overlap': false,
+function buildStyle(oceanColor: string, landTileUrl: string): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    name: 'Nemo Ocean',
+    sources: {
+      'osm-tiles': {
+        type: 'raster',
+        tiles: [landTileUrl],
+        tileSize: 256,
       },
-      paint: {
-        'text-color': 'rgba(180, 190, 210, 0.55)',
-        'text-halo-color': 'rgba(10, 22, 40, 0.6)',
-        'text-halo-width': 1,
+      'country-labels': {
+        type: 'geojson',
+        data: COUNTRY_LABELS,
       },
     },
-  ],
-};
+    layers: [
+      { id: 'background', type: 'background', paint: { 'background-color': oceanColor } },
+      { id: 'dark-tiles', type: 'raster', source: 'osm-tiles', paint: { 'raster-opacity': 0.6 } },
+      {
+        id: 'country-names',
+        type: 'symbol',
+        source: 'country-labels',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-size': 13,
+          'text-letter-spacing': 0.15,
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': 'rgba(180, 190, 210, 0.55)',
+          'text-halo-color': 'rgba(10, 22, 40, 0.6)',
+          'text-halo-width': 1,
+        },
+      },
+    ],
+  };
+}
 
 
 const BOAT_COLOR = '#c9a227';
@@ -100,9 +108,15 @@ export default function MapCanvas({ enableProjection = true }: MapCanvasProps): 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    const initAppearance = useGameStore.getState().mapAppearance;
+    const initOcean = findOceanPreset(initAppearance.oceanPresetId)?.color
+      ?? findOceanPreset(DEFAULT_OCEAN_ID)!.color;
+    const initLand = findLandPreset(initAppearance.landPresetId)?.tileUrl
+      ?? findLandPreset(DEFAULT_LAND_ID)!.tileUrl;
+
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: buildStyle(initOcean, initLand),
       center: [-3.0, 47.0],
       zoom: 5,
       attributionControl: false,
@@ -505,6 +519,58 @@ export default function MapCanvas({ enableProjection = true }: MapCanvasProps): 
     const unsub = useGameStore.subscribe(syncBoat);
     syncBoat(useGameStore.getState());
     return unsub;
+  }, []);
+
+  /* ── Apparence : couleur d'océan ── */
+  useEffect(() => {
+    const apply = (oceanPresetId: string): void => {
+      const map = mapRef.current;
+      if (!map || !map.getLayer('background')) return;
+      const preset = findOceanPreset(oceanPresetId);
+      if (!preset) return;
+      map.setPaintProperty('background', 'background-color', preset.color);
+    };
+    apply(useGameStore.getState().mapAppearance.oceanPresetId);
+    let prev = useGameStore.getState().mapAppearance.oceanPresetId;
+    return useGameStore.subscribe((s) => {
+      if (s.mapAppearance.oceanPresetId !== prev) {
+        prev = s.mapAppearance.oceanPresetId;
+        apply(prev);
+      }
+    });
+  }, []);
+
+  /* ── Apparence : style de terre (swap source raster) ── */
+  useEffect(() => {
+    const apply = (landPresetId: string): void => {
+      const map = mapRef.current;
+      if (!map || !map.getSource('osm-tiles')) return;
+      const preset = findLandPreset(landPresetId);
+      if (!preset) return;
+      map.removeLayer('dark-tiles');
+      map.removeSource('osm-tiles');
+      map.addSource('osm-tiles', {
+        type: 'raster',
+        tiles: [preset.tileUrl],
+        tileSize: 256,
+      });
+      map.addLayer(
+        {
+          id: 'dark-tiles',
+          type: 'raster',
+          source: 'osm-tiles',
+          paint: { 'raster-opacity': 0.6 },
+        },
+        'country-names',
+      );
+    };
+    let prev = useGameStore.getState().mapAppearance.landPresetId;
+    return useGameStore.subscribe((s) => {
+      if (s.mapAppearance.landPresetId !== prev) {
+        prev = s.mapAppearance.landPresetId;
+        apply(prev);
+      }
+    });
   }, []);
 
   /* ── Exclusion zones: sync source when store.zones changes ── */
