@@ -1,6 +1,6 @@
 'use client';
 
-import type { SailId, OrderTrigger, BoatClass } from '@nemo/shared-types';
+import type { SailId, OrderTrigger, BoatClass, ExclusionZone } from '@nemo/shared-types';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
@@ -148,6 +148,7 @@ export interface GameStore {
   connection: ConnectionState;
   prog: ProgState;
   preview: import('./previewSlice').PreviewState;
+  zones: ExclusionZone[];
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
 
@@ -178,4 +179,5 @@ export interface GameStore {
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
+  setZones: (zones: ExclusionZone[]) => void;
 }

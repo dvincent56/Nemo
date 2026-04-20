@@ -25,6 +25,7 @@ import {
 } from '../lib/projection/simulate';
 import { createWindLookup } from '../lib/projection/windLookup';
 import { CoastlineIndex } from '../lib/projection/coastline';
+import { zoneSpeedModulator } from '../lib/projection/zones';
 import { GameBalance } from '@nemo/game-balance/browser';
 
 // ── Adaptive step config ──
@@ -143,6 +144,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let transition: { endMs: number; speedFactor: number } | null =
     input.activeTransition ? { ...input.activeTransition } : null;
   let prevTwa = input.prevTwa;
+  let zonesInside = new Set<string>();
 
   const startMs = input.nowMs;
   let currentMs = startMs;
@@ -324,8 +326,24 @@ function simulate(input: ProjectionInput): ProjectionResult {
       hdg = ((weather.twd + twaLock) % 360 + 360) % 360;
     }
 
-    // Compute BSP
-    const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+    // Compute BSP — then apply zone modulation at current position
+    let bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+    const zoneHit = zoneSpeedModulator(lat, lon, input.zones, currentMs);
+    if (zoneHit.factor !== 1) {
+      bsp *= zoneHit.factor;
+    }
+    // Track zone entries for marker annotation
+    const currentHitSet = new Set(zoneHit.hitNames);
+    for (const name of zoneHit.hitNames) {
+      if (!zonesInside.has(name)) {
+        maneuverMarkers.push({
+          index: points.length,
+          type: 'zone_entry',
+          detail: `${name} (×${zoneHit.factor.toFixed(2)} vitesse)`,
+        });
+      }
+    }
+    zonesInside = currentHitSet;
 
     // Advance position
     const newPos = advancePosition({ lat, lon }, hdg, bsp, dt);

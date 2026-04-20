@@ -36,6 +36,10 @@ export interface ProjectionInput {
    *  The worker applies (referenceTwd - localGridTwd) as offset to all
    *  grid wind directions so the projection starts consistent with the UI. */
   referenceTwd: number;
+  /** Race exclusion zones (WARN/PENALTY) — projection applies speedMultiplier
+   *  when the boat is inside a zone. Each zone is temporally gated by
+   *  activeFrom/activeTo if provided. */
+  zones: ProjectionZone[];
   /** Weather grid config */
   windGrid: {
     bounds: { north: number; south: number; east: number; west: number };
@@ -56,6 +60,20 @@ export interface ProjectionSegment {
   type: 'CAP' | 'TWA' | 'SAIL' | 'MODE';
   /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for MODE */
   value: number | string | boolean;
+}
+
+export interface ProjectionZone {
+  id: string;
+  name: string;
+  type: 'WARN' | 'PENALTY';
+  speedMultiplier: number;
+  /** Flattened polygon ring as [lon0, lat0, lon1, lat1, ...] — first ring only,
+   *  holes not supported for projection simplicity. */
+  ring: number[];
+  bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
+  /** Unix ms; null = always active */
+  activeFromMs: number | null;
+  activeToMs: number | null;
 }
 
 export interface ProjectionEffects {
@@ -87,7 +105,7 @@ export interface TimeMarker {
 
 export interface ManeuverMarker {
   index: number;
-  type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change' | 'grounding';
+  type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change' | 'grounding' | 'zone_entry';
   detail: string;
 }
 

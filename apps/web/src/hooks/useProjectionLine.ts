@@ -3,13 +3,17 @@ import { useEffect, useRef, useCallback } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { useGameStore } from '@/lib/store';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
+import type { ExclusionZone } from '@nemo/shared-types';
 import type {
   ProjectionInput,
   ProjectionSegment,
+  ProjectionZone,
   WorkerInMessage,
   WorkerOutMessage,
   ProjectionResult,
 } from '@/lib/projection/types';
+
+const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
 const DEBOUNCE_HDG_MS = 100;
 const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
@@ -115,6 +119,36 @@ function packWindDataFromSnapshot(grid: {
     rows: grid.rows,
     resolution: grid.resolution,
     bounds: grid.bounds,
+  };
+}
+
+/**
+ * Convert an ExclusionZone (GeoJSON polygon) to a ProjectionZone (flat ring
+ * with precomputed bbox and ms timestamps).
+ */
+function toProjectionZone(z: ExclusionZone): ProjectionZone | null {
+  const outerRing = z.geometry.coordinates[0];
+  if (!outerRing || outerRing.length < 3) return null;
+  const ring: number[] = [];
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  for (const p of outerRing) {
+    const lon = p[0]!;
+    const lat = p[1]!;
+    ring.push(lon, lat);
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+  }
+  return {
+    id: z.id,
+    name: z.name,
+    type: z.type,
+    speedMultiplier: z.speedMultiplier ?? ZONE_DEFAULT_MULTIPLIER[z.type],
+    ring,
+    bbox: { minLat, maxLat, minLon, maxLon },
+    activeFromMs: z.activeFrom ? Date.parse(z.activeFrom) : null,
+    activeToMs: z.activeTo ? Date.parse(z.activeTo) : null,
   };
 }
 
@@ -293,7 +327,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     const doCompute = () => {
       const state = useGameStore.getState();
-      const { hud, sail, weather, prog, preview } = state;
+      const { hud, sail, weather, prog, preview, zones } = state;
       const decoded = weather.decodedGrid;
       const snapshot = weather.gridData;
       if (!decoded && !snapshot) {
@@ -381,6 +415,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
           : null,
         prevTwa: hud.twa || null,
         referenceTwd: hud.twd,
+        zones: zones.map(toProjectionZone).filter((z): z is ProjectionZone => z !== null),
         windGrid: {
           bounds: packed.bounds,
           resolution: packed.resolution,
@@ -412,6 +447,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevTick = useGameStore.getState().lastTickUnix;
     let prevDecoded = useGameStore.getState().weather.decodedGrid;
     let prevSnapshot = useGameStore.getState().weather.gridData;
+    let prevZones = useGameStore.getState().zones;
     let prevPreviewHdg = useGameStore.getState().preview.hdg;
     let prevPreviewSail = useGameStore.getState().preview.sail;
     let prevPreviewTwaLocked = useGameStore.getState().preview.twaLocked;
@@ -424,6 +460,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const queueChanged = s.prog.orderQueue !== prevQueue;
       const tickChanged = s.lastTickUnix !== prevTick;
       const gridChanged = s.weather.decodedGrid !== prevDecoded || s.weather.gridData !== prevSnapshot;
+      const zonesChanged = s.zones !== prevZones;
       const previewHdgChanged = s.preview.hdg !== prevPreviewHdg;
       const previewSailChanged = s.preview.sail !== prevPreviewSail;
       const previewTwaLockedChanged = s.preview.twaLocked !== prevPreviewTwaLocked;
@@ -436,6 +473,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevTick = s.lastTickUnix;
       prevDecoded = s.weather.decodedGrid;
       prevSnapshot = s.weather.gridData;
+      prevZones = s.zones;
       prevPreviewHdg = s.preview.hdg;
       prevPreviewSail = s.preview.sail;
       prevPreviewTwaLocked = s.preview.twaLocked;
@@ -446,6 +484,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         requestCompute(false);
       } else if (
         sailChanged || autoChanged || queueChanged || tickChanged || gridChanged ||
+        zonesChanged ||
         previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged
       ) {
         requestCompute(true);

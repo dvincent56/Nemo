@@ -211,6 +211,7 @@ export default function MapCanvas(): React.ReactElement {
         cap_change: 'Changement de cap',
         twa_change: 'Verrouillage TWA',
         grounding: 'Échouage',
+        zone_entry: 'Entrée en zone',
       };
 
       const DATE_FMT = new Intl.DateTimeFormat('fr-FR', {

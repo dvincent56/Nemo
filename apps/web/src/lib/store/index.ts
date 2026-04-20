@@ -14,6 +14,7 @@ import { createWeatherSlice } from './weatherSlice';
 import { createConnectionSlice } from './connectionSlice';
 import { createProgSlice } from './progSlice';
 import { createPreviewSlice } from './previewSlice';
+import { createZonesSlice } from './zonesSlice';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
 export type { TimelineState, LayersState, PanelState, WeatherState } from './types';
@@ -39,6 +40,7 @@ export const useGameStore = create<GameStore>((set) => ({
   ...createConnectionSlice(set),
   ...createProgSlice(set),
   ...createPreviewSlice(set),
+  ...createZonesSlice(set),
 
   boats: new Map(),
   lastTickUnix: null,
