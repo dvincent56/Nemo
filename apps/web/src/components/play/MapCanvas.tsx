@@ -108,14 +108,29 @@ export default function MapCanvas(): React.ReactElement {
 
     map.once('load', () => {
       // ── Exclusion zones (filled polygons + borders) ──
-      map.addSource('exclusion-zones', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
+      const initZones = useGameStore.getState().zones;
+      const initZonesVisible = useGameStore.getState().layers.zones;
+      const initZonesFC: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: initZones.map((z) => ({
+          type: 'Feature',
+          geometry: z.geometry,
+          properties: {
+            id: z.id,
+            name: z.name,
+            category: z.category ?? '',
+            reason: z.reason,
+            speedMultiplier: z.speedMultiplier ?? 1,
+            color: z.color,
+          },
+        })),
+      };
+      map.addSource('exclusion-zones', { type: 'geojson', data: initZonesFC });
       map.addLayer({
         id: 'exclusion-zones-fill',
         type: 'fill',
         source: 'exclusion-zones',
+        layout: { visibility: initZonesVisible ? 'visible' : 'none' },
         paint: {
           'fill-color': ['get', 'color'],
           'fill-opacity': 0.15,
@@ -125,6 +140,7 @@ export default function MapCanvas(): React.ReactElement {
         id: 'exclusion-zones-outline',
         type: 'line',
         source: 'exclusion-zones',
+        layout: { visibility: initZonesVisible ? 'visible' : 'none' },
         paint: {
           'line-color': ['get', 'color'],
           'line-width': 1.5,
@@ -507,6 +523,20 @@ export default function MapCanvas(): React.ReactElement {
       }
     });
   }, []);
+
+  /* ── Exclusion zones visibility toggle ── */
+  const zonesVisible = useGameStore((s) => s.layers.zones);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const vis = zonesVisible ? 'visible' : 'none';
+    if (map.getLayer('exclusion-zones-fill')) {
+      map.setLayoutProperty('exclusion-zones-fill', 'visibility', vis);
+    }
+    if (map.getLayer('exclusion-zones-outline')) {
+      map.setLayoutProperty('exclusion-zones-outline', 'visibility', vis);
+    }
+  }, [zonesVisible]);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
   const coastlineVisible = useGameStore((s) => s.layers.coastline);
