@@ -4,8 +4,6 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
 import { mapInstance } from '@/components/play/MapCanvas';
 import { parseGfsWind } from '@/lib/weather/gfsParser';
-import { decodeWeatherGrid } from '@/lib/weather/binaryDecoder';
-import { decodedGridToWeatherGrid } from '@/lib/weather/gridFromBinary';
 import type { WeatherGrid } from '@/lib/store/types';
 
 /**
@@ -190,39 +188,24 @@ export default function WindOverlay(): React.ReactElement {
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
-  // Load GFS data
+  // Consume the grid already loaded by useWeatherPrefetch — single source of
+  // truth so HUD, cursor tooltip and projection all agree on TWS/TWD.
+  // Fallback to the bundled wind.json only if no grid is present at all.
+  const gridData = useGameStore((s) => s.weather.gridData);
   useEffect(() => {
-    if (gridRef.current) return;
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3001';
-
-    function loadFromWindJson() {
-      fetch('/data/wind.json')
-        .then((r) => r.json())
-        .then((j) => {
-          const grid = parseGfsWind(j);
-          gridRef.current = grid;
-          useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
-        })
-        .catch((e) => console.warn('Wind data load failed:', e));
+    if (gridData) {
+      gridRef.current = gridData;
+      return;
     }
-
-    function loadFromApi() {
-      fetch(`${apiBase}/api/v1/weather/grid?hours=0`)
-        .then((r) => { if (!r.ok) throw new Error(`status ${r.status}`); return r.arrayBuffer(); })
-        .then((buf) => {
-          const decoded = decodeWeatherGrid(buf);
-          const grid = decodedGridToWeatherGrid(decoded);
-          gridRef.current = grid;
-          useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
-        })
-        .catch(() => loadFromWindJson());
-    }
-
-    fetch(`${apiBase}/api/v1/weather/status`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((status) => { if (status && status.next > 0) loadFromApi(); else loadFromWindJson(); })
-      .catch(() => loadFromWindJson());
-  }, []);
+    fetch('/data/wind.json')
+      .then((r) => r.json())
+      .then((j) => {
+        const grid = parseGfsWind(j);
+        gridRef.current = grid;
+        useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
+      })
+      .catch((e) => console.warn('Wind data load failed:', e));
+  }, [gridData]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
