@@ -91,7 +91,9 @@ let balanceReady = false;
 
 async function ensureBalance(): Promise<void> {
   if (balanceReady) return;
-  const resp = await fetch('/data/game-balance.json');
+  // cache: 'no-store' bypasses the Workbox SW cache so schema additions
+  // (new boat classes, etc.) show up immediately on next load.
+  const resp = await fetch('/data/game-balance.json', { cache: 'no-store' });
   const json = await resp.json();
   GameBalance.load(json);
   balanceReady = true;
