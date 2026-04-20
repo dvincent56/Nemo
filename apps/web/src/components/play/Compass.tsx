@@ -322,14 +322,19 @@ export default function Compass(): React.ReactElement {
   };
 
   // ── Toggle TWA lock ──
+  // Sends the order to the server immediately so the engine actually honours
+  // the lock — without this, the boat keeps executing the last CAP order.
   const toggleTwaLock = () => {
     if (twaLocked) {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ twaLocked: false });
+      // Revert to heading mode: send current heading as a fresh CAP order
+      sendOrder({ type: 'CAP', value: { heading: hdg } });
     } else {
       setTwaLocked(true);
       setLockedTwa(twa);
       useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: twa });
+      sendOrder({ type: 'TWA', value: { twa } });
     }
   };
 
