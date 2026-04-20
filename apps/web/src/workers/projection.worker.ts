@@ -110,7 +110,7 @@ async function ensureCoastline(): Promise<void> {
   if (coastLoading) return coastLoading;
   coastLoading = (async () => {
     try {
-      const resp = await fetch('/data/coastline.geojson');
+      const resp = await fetch('/data/coastline.geojson', { cache: 'no-store' });
       const json = await resp.json() as GeoJSON.FeatureCollection;
       coast.load(json);
       coastReady = true;

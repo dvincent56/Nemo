@@ -310,11 +310,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const file = BOAT_CLASS_FILES[boatClass];
     if (!file) return;
 
-    fetch(`/data/polars/${file}`)
+    fetch(`/data/polars/${file}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((polar) => {
         polarRef.current = polar;
-        console.log('[Projection] polar loaded:', boatClass);
+        console.log('[Projection] polar loaded:', boatClass, '— TWA axis:', polar.twa?.length, 'pts, TWS axis:', polar.tws?.length, 'pts, sails:', Object.keys(polar.speeds ?? {}).join(','));
         // Polar may have loaded after the initial compute attempt was skipped
         requestCompute(true);
       })

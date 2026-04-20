@@ -73,13 +73,8 @@ function findBracket(arr: number[], value: number): { i0: number; i1: number; t:
 export function getPolarSpeed(polar: PolarData, sail: string, twa: number, tws: number): number {
   const absTwa = Math.min(Math.abs(twa), 180);
   const sailSpeeds = polar.speeds[sail];
-  if (!sailSpeeds || !Array.isArray(sailSpeeds)) {
-    // Fallback: take the first available sail to avoid returning 0 (which would
-    // freeze the projection). Logged so the upstream sail name mismatch is visible.
-    const first = Object.values(polar.speeds)[0];
-    if (!first) return 0;
-    return getPolarSpeedFromGrid(first, polar.twa, polar.tws, absTwa, tws);
-  }
+  // Unavailable sail (e.g., Cruiser Racer only has JIB/SPI) → 0.
+  if (!sailSpeeds || !Array.isArray(sailSpeeds)) return 0;
   return getPolarSpeedFromGrid(sailSpeeds, polar.twa, polar.tws, absTwa, tws);
 }
 
