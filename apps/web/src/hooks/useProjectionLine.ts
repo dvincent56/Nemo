@@ -218,7 +218,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         return {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-          properties: { type: m.type, detail: m.detail },
+          properties: { type: m.type, detail: m.detail, timestamp: p.timestamp },
         };
       })
       .filter(Boolean) as GeoJSON.Feature[];

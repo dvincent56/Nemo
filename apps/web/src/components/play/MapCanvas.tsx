@@ -213,9 +213,17 @@ export default function MapCanvas(): React.ReactElement {
         grounding: 'Échouage',
       };
 
-      const maneuverHtml = (type: string, detail: string): string => {
+      const DATE_FMT = new Intl.DateTimeFormat('fr-FR', {
+        weekday: 'short', day: '2-digit', month: 'short',
+        hour: '2-digit', minute: '2-digit',
+      });
+
+      const maneuverHtml = (type: string, detail: string, timestamp: number | undefined): string => {
         const label = MANEUVER_LABEL[type] ?? type;
-        return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:#c9a84c;">${label}</strong><br/>${detail}</div>`;
+        const accent = type === 'grounding' ? '#c0392b' : '#c9a84c';
+        const when = timestamp ? DATE_FMT.format(new Date(timestamp)) : '';
+        const whenLine = when ? `<div style="color:#aab2c0;font-size:11px;margin-top:2px;">${when}</div>` : '';
+        return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:${accent};">${label}</strong><br/>${detail}${whenLine}</div>`;
       };
 
       map.on('mouseenter', 'projection-markers-maneuver-icon', (e) => {
@@ -225,9 +233,10 @@ export default function MapCanvas(): React.ReactElement {
         const coords = feature.geometry.coordinates as [number, number];
         const detail = feature.properties?.detail ?? '';
         const type = feature.properties?.type ?? '';
+        const timestamp = feature.properties?.timestamp as number | undefined;
         maneuverPopup
           .setLngLat(coords)
-          .setHTML(maneuverHtml(type, detail))
+          .setHTML(maneuverHtml(type, detail, timestamp))
           .addTo(map);
       });
 
@@ -242,13 +251,14 @@ export default function MapCanvas(): React.ReactElement {
         const coords = feature.geometry.coordinates as [number, number];
         const detail = feature.properties?.detail ?? '';
         const type = feature.properties?.type ?? '';
+        const timestamp = feature.properties?.timestamp as number | undefined;
 
         if (maneuverPopup.isOpen()) {
           maneuverPopup.remove();
         } else {
           maneuverPopup
             .setLngLat(coords)
-            .setHTML(maneuverHtml(type, detail))
+            .setHTML(maneuverHtml(type, detail, timestamp))
             .addTo(map);
         }
       });
