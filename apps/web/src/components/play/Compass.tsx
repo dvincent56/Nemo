@@ -326,17 +326,23 @@ export default function Compass(): React.ReactElement {
   // ── Toggle TWA lock ──
   // Sends the order to the server immediately so the engine actually honours
   // the lock — without this, the boat keeps executing the last CAP order.
+  // If the player is currently previewing a heading (compass drag), we lock
+  // on THAT preview's TWA, not on the server's last known twa.
   const toggleTwaLock = () => {
     if (twaLocked) {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ twaLocked: false });
-      // Revert to heading mode: send current heading as a fresh CAP order
-      sendOrder({ type: 'CAP', value: { heading: hdg } });
+      // Revert to heading mode: send current heading (or preview) as CAP order
+      const hdgToSend = targetHdg !== null ? targetHdg : hdg;
+      sendOrder({ type: 'CAP', value: { heading: hdgToSend } });
     } else {
+      const effectiveTwa = targetHdg !== null
+        ? (((targetHdg - twd + 540) % 360) - 180)
+        : twa;
       setTwaLocked(true);
-      setLockedTwa(twa);
-      useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: twa });
-      sendOrder({ type: 'TWA', value: { twa } });
+      setLockedTwa(effectiveTwa);
+      useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: effectiveTwa });
+      sendOrder({ type: 'TWA', value: { twa: effectiveTwa } });
     }
   };
 
