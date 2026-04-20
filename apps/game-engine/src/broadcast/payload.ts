@@ -37,6 +37,11 @@ export interface MyBoatFullUpdate extends FullUpdate {
   overlapFactor: number;
   twaColor: 0 | 1 | 2 | 3;
   coastRisk: 0 | 1 | 2 | 3;
+  /** TWD used by the server to compute heading this tick (degrees). Allows
+   *  the client to render TWA from the same reference as the engine. */
+  twd: number;
+  /** Locked TWA value (degrees signed), or null when heading-mode. */
+  twaLock: number | null;
   transitionStartMs: number;   // timestamp when sail change started (0 = none)
   transitionEndMs: number;     // timestamp when sail change ends (0 = none)
   sailAuto: boolean;           // auto mode active
@@ -94,6 +99,8 @@ export function buildFullUpdate(
     overlapFactor: outcome.overlapFactor,
     twaColor,
     coastRisk: outcome.coastRisk,
+    twd: ((runtime.boat.heading - outcome.twa) % 360 + 360) % 360,
+    twaLock: runtime.segmentState.twaLock,
     transitionStartMs: sailState.transitionStartMs,
     transitionEndMs: sailState.transitionEndMs,
     sailAuto: sailState.autoMode,

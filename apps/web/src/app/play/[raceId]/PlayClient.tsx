@@ -118,19 +118,29 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   useBoatInit(race.id);
   useHotkeys(canInteract);
 
-  // Sync HUD wind values from GFS grid at boat position
+  // Sync HUD wind values from GFS grid at boat position.
+  // Only updates TWS (wind speed) locally — TWD/TWA come from the server tick
+  // payload so they stay consistent with the engine (and TWA-lock behaves).
+  // When no server tick has landed yet, we seed the full set from GFS to avoid
+  // an empty compass on first paint.
   const gridData = useGameStore((s) => s.weather.gridData);
   const boatLat = useGameStore((s) => s.hud.lat);
   const boatLon = useGameStore((s) => s.hud.lon);
   const boatHdg = useGameStore((s) => s.hud.hdg);
+  const lastTickUnix = useGameStore((s) => s.lastTickUnix);
   useEffect(() => {
     if (!gridData || (!boatLat && !boatLon)) return;
     const wind = interpolateGfsWind(gridData, boatLat, boatLon);
-    const twd = Math.round(wind.twd);
     const tws = Math.round(wind.tws * 10) / 10;
-    const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
-    useGameStore.getState().setHud({ twd, tws, twa });
-  }, [gridData, boatLat, boatLon, boatHdg]);
+    if (lastTickUnix !== null) {
+      // Server is authoritative for TWD/TWA; only local TWS.
+      useGameStore.getState().setHud({ tws });
+    } else {
+      const twd = Math.round(wind.twd);
+      const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
+      useGameStore.getState().setHud({ twd, tws, twa });
+    }
+  }, [gridData, boatLat, boatLon, boatHdg, lastTickUnix]);
 
   if (access.kind === 'blocked') {
     return (
