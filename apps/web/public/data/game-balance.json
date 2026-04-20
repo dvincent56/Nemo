@@ -105,9 +105,9 @@
     },
 
     "slotsByClass": {
-      "CRUISER_RACER": { "HULL": "monotype", "MAST": "monotype", "SAILS": "monotype",
-                         "FOILS": "absent", "KEEL": "monotype",
-                         "ELECTRONICS": "monotype", "REINFORCEMENT": "absent" },
+      "CRUISER_RACER": { "HULL": "absent", "MAST": "absent", "SAILS": "absent",
+                         "FOILS": "absent", "KEEL": "absent",
+                         "ELECTRONICS": "absent", "REINFORCEMENT": "absent" },
       "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
                        "FOILS": "monotype", "KEEL": "monotype",
                        "ELECTRONICS": "open", "REINFORCEMENT": "open" },
