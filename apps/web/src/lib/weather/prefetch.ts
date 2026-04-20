@@ -12,7 +12,9 @@ export async function fetchWeatherGrid(opts: PrefetchOptions): Promise<DecodedWe
   const boundsStr = `${opts.bounds.latMin},${opts.bounds.lonMin},${opts.bounds.latMax},${opts.bounds.lonMax}`;
   const hoursStr = opts.hours.join(',');
   const url = `${API_BASE}/api/v1/weather/grid?bounds=${boundsStr}&hours=${hoursStr}`;
-  const res = await fetch(url);
+  // cache: 'no-store' bypasses the Workbox SW so a server restart / bbox
+  // change is picked up on the next page load without a manual purge.
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`weather grid fetch failed: ${res.status}`);
   const buf = await res.arrayBuffer();
   const decoded = decodeWeatherGrid(buf);
