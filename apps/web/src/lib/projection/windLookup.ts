@@ -35,8 +35,9 @@ export function createWindLookup(
   function sampleLayer(layerIdx: number, lat: number, lon: number): WeatherAtPoint {
     const offset = layerIdx * floatsPerLayer;
 
+    // Grid is packed south-to-north, west-to-east (matches server encoder).
     const fx = (lon - bounds.west) / resolution;
-    const fy = (bounds.north - lat) / resolution;
+    const fy = (lat - bounds.south) / resolution;
     const ix = Math.floor(fx);
     const iy = Math.floor(fy);
     const dx = fx - ix;
