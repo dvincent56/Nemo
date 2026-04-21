@@ -92,7 +92,14 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
         onClick={() => setAppearanceOpen(true)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setAppearanceOpen(true); }}
+        aria-haspopup="dialog"
+        aria-expanded={appearanceOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setAppearanceOpen(true);
+          }
+        }}
       >
         <span className={styles.rowLabel}>
           <span className={styles.icon}>◐</span>

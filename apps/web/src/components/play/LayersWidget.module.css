@@ -154,4 +154,5 @@
 @media (max-width: 600px) {
   .separator { margin: 2px 0 0; }
   .chevron { display: none; }
+  .appearanceRow { padding: 8px 0; }
 }
