@@ -2,23 +2,13 @@
 // apps/web/src/app/dev/simulator/SetupPanel.tsx
 
 import type { SimBoatSetup, SimOrder } from '@/lib/simulator/types';
-import type { BoatClass, SailId } from '@nemo/shared-types';
+import type { SailId } from '@nemo/shared-types';
 import type { SimStatus } from '@/hooks/useSimulatorWorker';
+import { CLASS_LABEL as CLASS_LABELS } from '@/lib/boat-classes';
 import styles from './SetupPanel.module.css';
 import { OrderHistory } from './OrderHistory';
 import type { OrderHistoryEntry } from './OrderHistory';
 import { OrderInput } from './OrderInput';
-
-// ── Labels ──────────────────────────────────────────────────────────────────
-
-const CLASS_LABELS: Record<BoatClass, string> = {
-  CRUISER_RACER: 'Cruiser-Racer',
-  FIGARO: 'Figaro 3',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
 
 const SLOT_LABELS: Record<string, string> = {
   HULL: 'Coque',

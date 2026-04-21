@@ -15,20 +15,12 @@ const GB = require('@nemo/game-balance/config') as {
     items: UpgradeItem[];
   };
 };
+import { BOAT_CLASS_ORDER, CLASS_LABEL as CLASS_LABELS } from '@/lib/boat-classes';
 import styles from './BoatSetupModal.module.css';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const ALL_CLASSES: BoatClass[] = ['CLASS40', 'FIGARO', 'IMOCA60', 'OCEAN_FIFTY', 'ULTIM'];
-
-const CLASS_LABELS: Record<BoatClass, string> = {
-  CRUISER_RACER: 'Cruiser-Racer',
-  FIGARO: 'Figaro 3',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
+const ALL_CLASSES: readonly BoatClass[] = BOAT_CLASS_ORDER;
 
 const SLOT_LABELS: Record<UpgradeSlot, string> = {
   HULL: 'Coque',
