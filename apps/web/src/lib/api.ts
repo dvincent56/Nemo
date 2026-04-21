@@ -1,3 +1,6 @@
+import type { BoatClass, ExclusionZone } from '@nemo/shared-types';
+export type { BoatClass };
+
 export const API_BASE =
   process.env['NEXT_PUBLIC_API_BASE'] ?? process.env['API_BASE'] ?? 'http://localhost:3001';
 
@@ -11,7 +14,7 @@ export const WEB_BASE = process.env['NEXT_PUBLIC_WEB_BASE'] ?? 'http://localhost
 export interface RaceSummary {
   id: string;
   name: string;
-  boatClass: 'CRUISER_RACER' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+  boatClass: BoatClass;
   status: 'DRAFT' | 'PUBLISHED' | 'BRIEFING' | 'LIVE' | 'FINISHED' | 'ARCHIVED';
   tierRequired: 'FREE' | 'CAREER';
   startsAt: string;
@@ -39,7 +42,7 @@ export async function fetchRaces(filters: { class?: string; status?: string } = 
 // ---------------------------------------------------------------------------
 
 export interface BoatState {
-  boatClass: 'CRUISER_RACER' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+  boatClass: BoatClass;
   lat: number;
   lon: number;
   hdg: number;
@@ -113,8 +116,6 @@ export async function fetchMyBoat(raceId: string): Promise<BoatState | null> {
   if (!fallback.ok) return null;
   return (await fallback.json()) as BoatState;
 }
-
-import type { ExclusionZone } from '@nemo/shared-types';
 
 export async function fetchRaceZones(raceId: string): Promise<ExclusionZone[]> {
   const res = await fetch(new URL(`/api/v1/races/${raceId}/zones`, WEB_BASE));

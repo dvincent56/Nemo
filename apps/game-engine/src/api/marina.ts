@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray } from 'drizzle-orm';
-import { GameBalance, type UpgradeItem, type UpgradeSlot, type UpgradeTier } from '@nemo/game-balance';
+import { GameBalance, BoatClassZ, type UpgradeItem, type UpgradeSlot, type UpgradeTier } from '@nemo/game-balance';
 import type { BoatClass } from '@nemo/shared-types';
 import { enforceAuth } from '../auth/cognito.js';
 import { getDb, type DbClient } from '../db/client.js';
@@ -19,7 +19,7 @@ import {
   type UnlockCriteria,
 } from './marina.helpers.js';
 
-const VALID_CLASSES = new Set(['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM', 'MINI650']);
+const VALID_CLASSES: Set<BoatClass> = new Set(BoatClassZ.options);
 const MAX_BOATS_PER_CLASS = 5;
 
 // ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
     const { items, slots, slotsByClass, tiers } = GameBalance.upgrades;
 
     let filtered = items;
-    if (q.boatClass && VALID_CLASSES.has(q.boatClass)) {
+    if (q.boatClass && VALID_CLASSES.has(q.boatClass as BoatClass)) {
       filtered = items.filter((it) => it.compat.includes(q.boatClass as BoatClass));
     }
 
@@ -221,7 +221,7 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
       if (!db) { reply.code(503); return { error: 'database unavailable' }; }
 
       const { boatClass, name } = req.body ?? {};
-      if (!boatClass || !VALID_CLASSES.has(boatClass)) {
+      if (!boatClass || !VALID_CLASSES.has(boatClass as BoatClass)) {
         reply.code(400); return { error: 'invalid boatClass' };
       }
       if (!name || typeof name !== 'string' || name.trim().length === 0 || name.length > 50) {
