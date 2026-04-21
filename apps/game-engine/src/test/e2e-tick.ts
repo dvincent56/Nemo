@@ -7,8 +7,9 @@ import { createFixtureProvider } from '../weather/provider.js';
 
 /**
  * Phase 1 e2e (modèle événementiel) — bateau sans ordres, 10 ticks de 30s.
- * Fixture TWS=12 kts slot 0, TWA=180° (vent arrière), Class40 SPI ≈ 3.8–4.7 kts
- * (per-sail polars, TWS monte 12→15 sur 10 ticks). Fenêtre [0.25, 0.55] NM.
+ * Fixture u/v encodé en m/s (GFS) → TWS ≈ 23.3 kts slot 0, rampe à ~29 kts
+ * sur 10 ticks après conversion MS_TO_KNOTS (commit 0c540ca). TWA=180°
+ * (vent arrière), Class40 SPI ≈ 6.5–9.4 kts, distance observée ~0.661 NM.
  */
 async function main(): Promise<void> {
   await GameBalance.loadFromDisk();
@@ -66,7 +67,7 @@ async function main(): Promise<void> {
   const totalNm = haversineNM(startPos, runtime.boat.position);
   const eastDelta = runtime.boat.position.lon - startPos.lon;
   assert.ok(eastDelta > 0, 'no east progress');
-  assert.ok(totalNm >= 0.25 && totalNm <= 0.55, `distance ${totalNm.toFixed(3)} NM out of [0.25, 0.55]`);
+  assert.ok(totalNm >= 0.60 && totalNm <= 0.72, `distance ${totalNm.toFixed(3)} NM out of [0.60, 0.72]`);
   console.log(`\n✓ Phase 1 e2e OK — ${totalNm.toFixed(3)} NM est.`);
 }
 
