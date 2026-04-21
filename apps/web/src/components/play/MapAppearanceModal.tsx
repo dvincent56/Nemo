@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useGameStore } from '@/lib/store';
 import { OCEAN_PRESETS, LAND_PRESETS } from '@/lib/mapAppearance';
 import styles from './MapAppearanceModal.module.css';
@@ -15,6 +16,15 @@ export default function MapAppearanceModal({ open, onClose }: MapAppearanceModal
   const setOceanPreset = useGameStore((s) => s.setOceanPreset);
   const setLandPreset = useGameStore((s) => s.setLandPreset);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
@@ -23,6 +33,7 @@ export default function MapAppearanceModal({ open, onClose }: MapAppearanceModal
         className={styles.modal}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Apparence de la carte"
       >
         <header className={styles.header}>
