@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { WeatherPoint } from '@nemo/shared-types';
-import { decodeGridFromBase64, decodeGridFromBase64Legacy, getForecastAt, type WeatherGridUV, type WeatherGridUVMeta } from './grid.js';
+import { decodeGridFromBase64Legacy, getForecastAt, type WeatherGridUV, type WeatherGridUVMeta } from './grid.js';
 import { blendGridForecast, isBlendComplete, BLEND_DURATION_MS, type BlendState } from './blend.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

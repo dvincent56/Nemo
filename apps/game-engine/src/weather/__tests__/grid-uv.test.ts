@@ -87,7 +87,6 @@ describe('getForecastAt (U/V grid)', () => {
       shape: { rows: 1, cols: 1 },
       forecastHours: [0, 6],
     };
-    const n = 2; // 2 slots * 1 row * 1 col
     const grid: WeatherGridUV = {
       ...meta,
       u: Float32Array.from([0, -10]),
