@@ -135,25 +135,6 @@
   pointer-events: none;
 }
 
-/* Sail change notification */
-.sailNotif {
-  background: rgba(201, 162, 39, 0.12);
-  border: 1px solid rgba(201, 162, 39, 0.4);
-  border-radius: 4px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: #f5f0e8;
-  line-height: 1.3;
-}
-
-.sailNotifStrong {
-  color: #c9a227;
-  font-weight: 700;
-}
-
 /* Confirm modal overlay */
 .modalOverlay {
   position: fixed;
@@ -243,7 +224,6 @@
     gap: 6px;
   }
   .readouts { display: none; }
-  .sailNotif { display: none; }
 }
 
 /* Phone width */
@@ -254,7 +234,6 @@
     gap: 6px;
   }
   .readouts { display: none; }
-  .sailNotif { display: none; }
   .actions { gap: 4px; padding-top: 6px; }
   .actionBtn { min-height: 30px; font-size: 8px; padding: 4px 3px; gap: 3px; }
 }

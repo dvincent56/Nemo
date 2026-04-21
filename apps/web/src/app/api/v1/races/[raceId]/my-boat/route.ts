@@ -14,24 +14,28 @@ export async function GET(
 ): Promise<NextResponse<BoatState>> {
   const { raceId: _raceId } = await params;
 
+  // Mirrors game-engine/src/index.ts::createDemoRuntime — keep in sync until
+  // the engine exposes a runtime snapshot endpoint that this route can proxy.
+  // Dynamic fields (bsp, vmg, dtf, rank, wear, overlap) start at sensible
+  // neutral values and get overwritten by the first WS tick payload.
   const state: BoatState = {
     boatClass: 'CRUISER_RACER',
-    // 47°04'00.29"N / 3°24'21.08"W — VR benchmark position for projection comparison
-    lat: 47.066747,
-    lon: -3.405856,
+    // 45°44'10.04"N / 5°50'23.31"W
+    lat: 45.736122,
+    lon: -5.839808,
     hdg: 216,
-    bsp: 11.4,
-    twd: 0,   // will be overwritten by GFS interpolation client-side
+    bsp: 0,
+    twd: 0,   // overwritten client-side by GFS interpolation until first tick
     tws: 0,
     twa: 0,
-    vmg: 9.8,
-    dtf: 1642,
-    overlapFactor: 0.94,
-    rank: 12,
-    totalParticipants: 428,
-    rankTrend: 2,
-    wearGlobal: 82,
-    wearDetail: { hull: 88, rig: 79, sails: 75, electronics: 86 },
+    vmg: 0,
+    dtf: 0,
+    overlapFactor: 1,
+    rank: 0,
+    totalParticipants: 0,
+    rankTrend: 0,
+    wearGlobal: 100,
+    wearDetail: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     currentSail: 'JIB',
     sailAuto: false,
     transitionStartMs: 0,

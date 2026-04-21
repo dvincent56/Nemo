@@ -40,7 +40,7 @@ const STEP_30M = 30 * 60;
 const HOUR_1 = 1 * 3600;
 const HOURS_12 = 12 * 3600;
 const HOURS_48 = 48 * 3600;
-const DAYS_7 = 7 * 24 * 3600;
+const DAYS_5 = 5 * 24 * 3600;
 
 function getStepSize(elapsedSec: number): number {
   if (elapsedSec < HOUR_1) return STEP_1M;
@@ -54,41 +54,35 @@ function getStepSize(elapsedSec: number): number {
 // Major markers carry a visible label; minor ones are unlabelled dots so the
 // projection line has enough visual density to show curves between major
 // checkpoints (e.g. the turn between 24h and 48h).
-const MAJOR_MARKERS = [1, 3, 6, 12, 24, 48, 72, 96, 120, 144, 168];
-const MINOR_MARKERS = [2, 9, 15, 18, 21, 30, 36, 42, 60, 84, 108, 132, 156];
+const MAJOR_MARKERS = [1, 3, 6, 12, 24, 48, 72, 96, 120];
+const MINOR_MARKERS = [2, 9, 15, 18, 21, 30, 36, 42, 60, 84, 108];
 const TIME_MARKER_HOURS = [...MAJOR_MARKERS, ...MINOR_MARKERS].sort((a, b) => a - b);
 const isMajorMarker = (h: number): boolean => MAJOR_MARKERS.includes(h);
 
 /**
- * Pick the sail with the highest BSP at the given TWA/TWS, among sails
- * whose operating range covers the TWA.
+ * Pick the sail with the highest BSP at the given TWA/TWS. The polar
+ * itself encodes the valid range (speed > 0 = in range), matching the
+ * game-engine's pickOptimalSail().
  */
 function pickOptimalSail(polar: PolarData, twa: number, tws: number): string {
   const twaAbs = Math.min(Math.abs(twa), 180);
-  const sailDefs = GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }>;
   let best: string | null = null;
   let bestBsp = -Infinity;
   for (const sail of Object.keys(polar.speeds)) {
-    const def = sailDefs[sail];
-    if (def && (twaAbs < def.twaMin || twaAbs > def.twaMax)) continue;
     const bsp = getPolarSpeed(polar, sail, twaAbs, tws);
     if (bsp > bestBsp) { bestBsp = bsp; best = sail; }
   }
   return best ?? Object.keys(polar.speeds)[0]!;
 }
 
-/**
- * Overlap zone check — a sail stays selected (no auto-switch) while TWA
- * remains within `overlapDegrees` of the edge of its operating range.
- * Matches the game-engine's sails.ts isInOverlapZone() so the projection
- * doesn't predict switches the server would skip.
- */
-function isInOverlapZone(sail: string, twaAbs: number): boolean {
-  const def = (GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }>)[sail];
-  const overlap = (GameBalance.sails.overlapDegrees as Record<string, number>)[sail];
-  if (!def || overlap === undefined) return false;
-  const distToEdge = Math.min(Math.abs(twaAbs - def.twaMin), Math.abs(twaAbs - def.twaMax));
-  return distToEdge <= overlap;
+/** Mirror of engine/sails.ts::isSailInRange — keep the active sail while
+ *  its declared TWA range still covers the boat's TWA, so the projection
+ *  predicts the same auto-switch hysteresis as the live engine. */
+function isSailInRange(sail: string, twaAbs: number): boolean {
+  const defs = GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }> | undefined;
+  const def = defs?.[sail];
+  if (!def) return true;
+  return twaAbs >= def.twaMin && twaAbs <= def.twaMax;
 }
 
 // ── Init: load GameBalance on worker start ──
@@ -127,10 +121,19 @@ async function ensureCoastline(): Promise<void> {
   return coastLoading;
 }
 
+// ── Cached wind grid ──
+// The wind grid is heavy (10-30 MB). We receive it once via a `setWindGrid`
+// message and keep it here so subsequent `compute` messages stay small — no
+// per-drag Float32Array reallocation/transfer.
+let cachedWindLookup: ReturnType<typeof createWindLookup> | null = null;
+
 // ── Main simulation ──
 
 function simulate(input: ProjectionInput): ProjectionResult {
-  const rawGetWeatherAt = createWindLookup(input.windGrid, input.windData);
+  if (!cachedWindLookup) {
+    throw new Error('projection: wind grid not set (setWindGrid must be sent before compute)');
+  }
+  const rawGetWeatherAt = cachedWindLookup;
 
   // Compute the offset between the player-facing TWD (hud) and the local grid TWD
   // at the boat's position. Apply this offset to all sampled wind directions so
@@ -170,7 +173,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
   const startMs = input.nowMs;
   let currentMs = startMs;
-  const endMs = startMs + DAYS_7 * 1000;
+  const endMs = startMs + DAYS_5 * 1000;
 
   // Sort segments by trigger time
   const segments = [...input.segments].sort((a, b) => a.triggerMs - b.triggerMs);
@@ -194,12 +197,12 @@ function simulate(input: ProjectionInput): ProjectionResult {
     initTwd: initWeather.twd,
     initTws: initWeather.tws,
     initTwa,
-    initBsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
+    initBsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs, initWeather, hdg),
   });
   points.push({
     lat, lon,
     timestamp: currentMs,
-    bsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs),
+    bsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs, initWeather, hdg),
     tws: initWeather.tws,
     twd: initWeather.twd,
   });
@@ -219,7 +222,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
         const weather = getWeatherAt(lat, lon, currentMs);
         if (!weather) break;
         const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
-        const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+        const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg);
         const newPos = advancePosition({ lat, lon }, hdg, bsp, partialDt);
         lat = newPos.lat;
         lon = newPos.lon;
@@ -301,7 +304,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
         points.push({
           lat, lon,
           timestamp: currentMs,
-          bsp: computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs),
+          bsp: computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg),
           tws: weather.tws,
           twd: weather.twd,
         });
@@ -325,13 +328,16 @@ function simulate(input: ProjectionInput): ProjectionResult {
     const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
 
     // Auto-sail: switch to optimal sail if in auto mode and not currently transitioning.
-    // Respect overlap zone (server does the same) to avoid predicting switches
-    // that never happen because the current sail is still in its overlap range.
+    // Mirror the engine's hysteresis: stay on the current sail while its
+    // declared TWA range still covers us, so the projection doesn't predict
+    // flap switches for sub-percent BSP gains.
     const isTransitioning = transition !== null && currentMs < transition.endMs;
-    if (sailAuto && !isTransitioning) {
+    const twaAbs = Math.min(Math.abs(twa), 180);
+    const currentBsp = getPolarSpeed(polar, activeSail, twaAbs, weather.tws);
+    const stayInRange = isSailInRange(activeSail, twaAbs) && currentBsp > 0;
+    if (sailAuto && !isTransitioning && !stayInRange) {
       const optimal = pickOptimalSail(polar, twa, weather.tws);
-      const twaAbs = Math.min(Math.abs(twa), 180);
-      if (optimal !== activeSail && !isInOverlapZone(activeSail, twaAbs)) {
+      if (optimal !== activeSail) {
         const transKey = `${activeSail}_${optimal}`;
         const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
         const sailTransDurAdj = sailTransDur * effects.maneuverMul.sailChange.dur;
@@ -373,8 +379,16 @@ function simulate(input: ProjectionInput): ProjectionResult {
     }
     prevHdgForJumpDetect = hdg;
 
-    // Compute BSP — apply zone modulation for the segment we're ABOUT to traverse
-    let bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs);
+    // Compute BSP — apply zone modulation for the segment we're ABOUT to traverse.
+    // In auto mode, when the hysteresis keeps a sub-optimal sail active (inside
+    // its range but not the global best), the engine awards the optimal sail's
+    // BSP via overlapFactor. Mirror that by looking up polar speed on the
+    // optimal sail, not the visually-active one. In manual mode the player
+    // assumes their choice: BSP is the active sail's polar speed, no bonus.
+    const bspSail = sailAuto
+      ? pickOptimalSail(polar, twa, weather.tws)
+      : activeSail;
+    let bsp = computeBsp(polar, bspSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg);
     const zoneAtStart = zoneSpeedModulator(lat, lon, input.zones, currentMs);
     if (zoneAtStart.factor !== 1) {
       bsp *= zoneAtStart.factor;
@@ -466,7 +480,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
     const weatherAtNew = getWeatherAt(lat, lon, currentMs);
     if (!weatherAtNew) break;
     const twaAtNew = twaLock !== null ? twaLock : computeTWA(hdg, weatherAtNew.twd);
-    const bspAtNew = computeBsp(polar, activeSail, twaAtNew, weatherAtNew.tws, condition, effects, maneuver, transition, currentMs);
+    const bspAtNew = computeBsp(polar, activeSail, twaAtNew, weatherAtNew.tws, condition, effects, maneuver, transition, currentMs, weatherAtNew, hdg);
 
     points.push({
       lat, lon,
@@ -494,9 +508,10 @@ function simulate(input: ProjectionInput): ProjectionResult {
           twd: Math.round(weatherAtNew.twd),
         });
       }
+      const label = major ? (h >= 72 ? `${h / 24}j` : `${h}h`) : '';
       timeMarkers.push({
         index: points.length - 1,
-        label: major ? `${h}h` : '',
+        label,
       });
       nextTimeMarkerIdx++;
     }
@@ -513,6 +528,11 @@ ensureCoastline();
 
 self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
   const msg = e.data;
+
+  if (msg.type === 'setWindGrid') {
+    cachedWindLookup = createWindLookup(msg.windGrid, msg.windData);
+    return;
+  }
 
   if (msg.type === 'compute') {
     try {

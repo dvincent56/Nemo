@@ -40,17 +40,23 @@ export interface WearConfig {
 
 export interface SwellConfig {
   thresholdMeters: number;
+  maxHeightMeters: number;
   maxSpeedBonus: number;
   maxSpeedMalus: number;
   sideMaxMalus: number;
-  frontAngle: number;
-  backAngle: number;
+  /** Width (deg) of the following-sea sector centred on the stern. */
+  followingSectorDeg: number;
+  /** Width (deg) of the head-sea sector centred on the bow. */
+  headSectorDeg: number;
 }
 
 export interface SailsConfig {
   transitionPenalty: number;
   transitionTimes: Record<string, number>;
-  overlapDegrees: Record<SailId, number>;
+  /** Operating TWA range per sail. The auto-sail picker keeps the current
+   *  sail while its TWA lies within this range — even if another sail
+   *  would be marginally faster — so the boat doesn't flap between sails
+   *  across a 0.5 kt gain during the 360 s transition penalty. */
   definitions: Record<SailId, { twaMin: number; twaMax: number }>;
 }
 

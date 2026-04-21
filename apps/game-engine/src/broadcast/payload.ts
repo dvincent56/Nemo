@@ -102,8 +102,8 @@ export function buildFullUpdate(
     twaColor,
     coastRisk: outcome.coastRisk,
     twd: ((runtime.boat.heading - outcome.twa) % 360 + 360) % 360,
-    // Engine keeps TWS in m/s internally (matches GFS u/v); broadcast in knots.
-    tws: outcome.tws * 1.94384,
+    // TWS is already in knots (uvToTwsTwd converts at the U/V boundary).
+    tws: outcome.tws,
     twaLock: runtime.segmentState.twaLock,
     transitionStartMs: sailState.transitionStartMs,
     transitionEndMs: sailState.transitionEndMs,

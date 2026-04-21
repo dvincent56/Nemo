@@ -52,7 +52,8 @@ describe('createNoaaProvider with blending', () => {
     assert.equal(provider.blendAlpha, 0);
 
     const wp = provider.getForecastAt(0.1, 0.1, runTs);
-    assert.ok(Math.abs(wp.tws - 10) < 0.5, `expected tws≈10, got ${wp.tws}`);
+    // 10 m/s → ~19.44 kn (engine converts at uvToTwsTwd).
+    assert.ok(Math.abs(wp.tws - 10 * 1.94384) < 0.5, `expected tws≈19.44 kn, got ${wp.tws}`);
   });
 
   it('transitions to blending when a new run arrives via pub/sub', async () => {

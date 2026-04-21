@@ -19,16 +19,77 @@ interface TickDoneMsg {
   outcomes: TickOutcome[];
 }
 
+export interface BoatSnapshot {
+  runtime: BoatRuntime;
+  outcome: TickOutcome;
+  seq: number;
+}
+
 export class TickManager {
   private worker: Worker | null = null;
   private timer: NodeJS.Timeout | null = null;
   private redis: RedisPair | null = null;
+  /** Last tick result per boat — read by HTTP routes that need a current
+   *  runtime snapshot (e.g. /api/v1/races/:raceId/runtime/:boatId). */
+  private snapshots = new Map<string, BoatSnapshot>();
 
   constructor(redis: RedisPair | null = null) {
     this.redis = redis;
   }
 
+  /** Returns the latest runtime snapshot for a boat, or null if it hasn't
+   *  been ticked yet (ie. engine is still booting). */
+  getBoatSnapshot(boatId: string): BoatSnapshot | null {
+    return this.snapshots.get(boatId) ?? null;
+  }
+
+  /** Replace the live runtimes in the tick worker and force an immediate
+   *  tick so the snapshot carries real BSP/TWA/TWS instead of the neutral
+   *  seed. Used by /api/v1/dev/reset-demo — without the forced tick the
+   *  client would see bsp=0 for up to tickIntervalSeconds after reset. */
+  async replaceRuntimes(runtimes: BoatRuntime[]): Promise<void> {
+    this.seedSnapshots(runtimes);
+    if (!this.worker) return;
+    this.worker.postMessage({ kind: 'setRuntimes', runtimes });
+    await new Promise<void>((resolve) => {
+      const onMsg = (msg: unknown): void => {
+        if ((msg as { kind: string }).kind === 'tick:done') {
+          this.worker!.off('message', onMsg);
+          resolve();
+        }
+      };
+      this.worker!.on('message', onMsg);
+      this.worker!.postMessage({ kind: 'tick' });
+    });
+  }
+
+  /** Seed snapshots from the initial runtimes so HTTP readers have a value
+   *  to return before the first tick fires. Dynamic outcome fields
+   *  (bsp/twa/tws/overlap) start neutral and are replaced on the first
+   *  tick:done message. */
+  private seedSnapshots(initialRuntimes: BoatRuntime[]): void {
+    for (const rt of initialRuntimes) {
+      this.snapshots.set(rt.boat.id, {
+        runtime: rt,
+        outcome: {
+          runtime: rt,
+          segments: [],
+          bsp: rt.boat.bsp,
+          twa: 0,
+          tws: 0,
+          overlapFactor: 1,
+          zoneAlerts: [],
+          zoneCleared: [],
+          coastRisk: 0,
+          grounded: false,
+        },
+        seq: 0,
+      });
+    }
+  }
+
   async start(initialRuntimes: BoatRuntime[]): Promise<void> {
+    this.seedSnapshots(initialRuntimes);
     const isDevTs = import.meta.url.endsWith('.ts');
     // Dev : worker-bootstrap.mjs register tsx explicitement avant de charger
     // worker.ts (contourne la propagation loader défaillante dans les Worker
@@ -66,16 +127,18 @@ export class TickManager {
   }
 
   private async onTickDone(msg: TickDoneMsg): Promise<void> {
-    if (!this.redis) return;
-    // Regroupe par raceId puis publie un batch par course.
+    // Cache the latest snapshot per boat for HTTP readers — done first so
+    // the data is available even when Redis (and thus broadcasts) is down.
     const byRace = new Map<string, { runtime: BoatRuntime; outcome: TickOutcome }[]>();
     for (let i = 0; i < msg.runtimes.length; i++) {
       const rt = msg.runtimes[i]!;
       const oc = msg.outcomes[i]!;
+      this.snapshots.set(rt.boat.id, { runtime: rt, outcome: oc, seq: msg.seq });
       const list = byRace.get(rt.raceId) ?? [];
       list.push({ runtime: rt, outcome: oc });
       byRace.set(rt.raceId, list);
     }
+    if (!this.redis) return;
     for (const [raceId, list] of byRace.entries()) {
       const payload = list.map(({ runtime, outcome }) =>
         buildFullUpdate(runtime, outcome, msg.seq, true), // isOwner=true pour tous en phase 3

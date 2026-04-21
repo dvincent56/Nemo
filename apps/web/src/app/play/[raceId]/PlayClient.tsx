@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
-import { fetchMyBoat, fetchRaceZones } from '@/lib/api';
+import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
 import { connectRace, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
@@ -49,7 +49,14 @@ function useBoatInit(raceId: string): void {
     store.goLive();
     let cancelled = false;
 
-    fetchMyBoat(raceId).then((boat) => {
+    // Dev-only: reset the demo runtime to its configured START_POS before
+    // reading initial state, so opening Play always lands on the intended
+    // position rather than wherever the continuously-ticking engine drifted
+    // to. No-op in prod (endpoint returns 404 when NEMO_DEV_ROUTES=0).
+    const reset = fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
+      .catch(() => null);
+
+    reset.then(() => fetchMyBoat(raceId)).then((boat) => {
       if (cancelled || !boat) return;
       store.setHud({
         boatClass: boat.boatClass,
@@ -59,6 +66,7 @@ function useBoatInit(raceId: string): void {
         rank: boat.rank, totalParticipants: boat.totalParticipants,
         rankTrend: boat.rankTrend, wearGlobal: boat.wearGlobal,
         wearDetail: boat.wearDetail,
+        ...(boat.effects ? { effects: boat.effects } : {}),
       });
       store.setSail({
         currentSail: boat.currentSail,

@@ -17,6 +17,13 @@
   animation: tooltipFadeIn 150ms ease;
 }
 
+.tipRich {
+  display: block;
+  padding: 10px 12px;
+  white-space: normal;
+  min-width: 180px;
+}
+
 .text {
   font-family: var(--font-body);
   font-size: 12px;

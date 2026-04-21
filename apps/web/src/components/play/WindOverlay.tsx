@@ -52,10 +52,19 @@ function getCachedWind(grid: WeatherGrid, lat: number, lon: number, frame: numbe
   const y0 = Math.max(0, Math.min(iy, rows - 1));
   const y1 = Math.min(y0 + 1, rows - 1);
 
-  const p00 = points[y0 * cols + x0]!;
-  const p10 = points[y0 * cols + x1]!;
-  const p01 = points[y1 * cols + x0]!;
-  const p11 = points[y1 * cols + x1]!;
+  const p00 = points[y0 * cols + x0];
+  const p10 = points[y0 * cols + x1];
+  const p01 = points[y1 * cols + x0];
+  const p11 = points[y1 * cols + x1];
+
+  if (!p00 || !p10 || !p01 || !p11) {
+    // Grid may be mid-swap (rows/cols updated before points). Return zero
+    // so the animation keeps running; the next frame will recompute with
+    // the consistent grid.
+    const zero: CachedWind = { u: 0, v: 0, tws: 0 };
+    windCache.set(key, zero);
+    return zero;
+  }
 
   const toR = Math.PI / 180;
   const u =

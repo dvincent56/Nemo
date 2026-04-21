@@ -148,24 +148,8 @@
 /* Wear indicator */
 .wearStat {
   composes: stat;
-  cursor: pointer;
-  position: relative;
 }
-.wearTooltip {
-  display: none;
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
-  background: #1a2840;
-  border: 1px solid rgba(245, 240, 232, 0.16);
-  border-radius: 4px;
-  padding: 12px 14px;
-  min-width: 180px;
-  z-index: 50;
-}
-.wearStat:hover .wearTooltip,
-.wearStat:focus-within .wearTooltip {
+.wearBreakdown {
   display: block;
 }
 .wearRow {

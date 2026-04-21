@@ -40,17 +40,15 @@ export interface ProjectionInput {
    *  when the boat is inside a zone. Each zone is temporally gated by
    *  activeFrom/activeTo if provided. */
   zones: ProjectionZone[];
-  /** Weather grid config */
-  windGrid: {
-    bounds: { north: number; south: number; east: number; west: number };
-    resolution: number;
-    cols: number;
-    rows: number;
-    /** Timestamps (ms) for each time layer */
-    timestamps: number[];
-  };
-  /** Flattened weather data: Float32Array with FIELDS_PER_POINT floats per grid point per timestamp */
-  windData: Float32Array;
+}
+
+export interface WindGridHeader {
+  bounds: { north: number; south: number; east: number; west: number };
+  resolution: number;
+  cols: number;
+  rows: number;
+  /** Timestamps (ms) for each time layer */
+  timestamps: number[];
 }
 
 export interface ProjectionSegment {
@@ -119,8 +117,11 @@ export interface ProjectionResult {
 // ── Worker Messages ──
 
 export type WorkerInMessage =
-  | { type: 'compute'; input: ProjectionInput }
-  | { type: 'updateWind'; windData: Float32Array; timestamps: number[] };
+  /** Seed the worker with the current weather grid. Sent once on grid load
+   *  (and again only when the grid itself changes). Transferable — the
+   *  caller's windData buffer is neutered after posting. */
+  | { type: 'setWindGrid'; windGrid: WindGridHeader; windData: Float32Array }
+  | { type: 'compute'; input: ProjectionInput };
 
 export type WorkerOutMessage =
   | { type: 'result'; result: ProjectionResult }

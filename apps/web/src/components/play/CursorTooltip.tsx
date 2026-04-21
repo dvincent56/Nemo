@@ -163,7 +163,7 @@ export default function CursorTooltip(): React.ReactElement | null {
           </div>
           <div className={styles.row}>
             <span className={styles.label}>TWS</span>
-            <span className={styles.value}>{data.tws.toFixed(1)} kn</span>
+            <span className={styles.value}>{data.tws.toFixed(3)} kn</span>
           </div>
           {swellOn && (
             <div className={styles.row}>

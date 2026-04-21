@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import styles from './Tooltip.module.css';
 
 interface TooltipProps {
-  text: string;
+  text?: string;
+  content?: React.ReactNode;
   shortcut?: string;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -15,6 +16,7 @@ interface TooltipProps {
 
 export default function Tooltip({
   text,
+  content,
   shortcut,
   children,
   position = 'bottom',
@@ -126,11 +128,11 @@ export default function Tooltip({
         createPortal(
           <div
             ref={tipRef}
-            className={styles.tip}
+            className={`${styles.tip} ${content ? styles.tipRich : ''}`}
             style={{ ...tipStyle, pointerEvents: 'none' }}
             role="tooltip"
           >
-            <span className={styles.text}>{text}</span>
+            {content ?? <span className={styles.text}>{text}</span>}
             {shortcut && <kbd className={styles.kbd}>{shortcut}</kbd>}
           </div>,
           document.body,

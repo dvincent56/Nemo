@@ -1,7 +1,7 @@
 import type { Boat, OrderEnvelope, Polar, Position } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { computeTWA } from '@nemo/polar-lib';
-import { applyWear, computeWearDelta, conditionSpeedPenalty, type ConditionState } from './wear.js';
+import { applyWear, computeWearDelta, conditionSpeedPenalty, swellSpeedFactor, type ConditionState } from './wear.js';
 import {
   advanceSailState,
   computeOverlapFactor,
@@ -123,8 +123,10 @@ export function runTick(
     twaAtStart,
     weather.tws,
     deps.polar,
+    newSailState.autoMode,
   );
   const conditionFactor = conditionSpeedPenalty(runtime.condition);
+  const swellFactor = swellSpeedFactor(weather.swh, weather.mwd, runtime.segmentState.heading);
 
   const twaBand = bandFor(Math.abs(twaAtStart), [60, 90, 120, 150]);
   const twsBand = bandFor(weather.tws, [10, 20]);
@@ -133,6 +135,7 @@ export function runTick(
     * overlapFactor
     * conditionFactor
     * manEval.factor
+    * swellFactor
     * aggEffects.speedByTwa[twaBand]!
     * aggEffects.speedByTws[twsBand]!;
 

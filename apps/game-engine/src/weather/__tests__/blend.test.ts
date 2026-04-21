@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { blendGridForecast, type BlendState } from '../blend.js';
 import type { WeatherGridUV } from '../grid.js';
 
+const MS_TO_KN = 1.94384;
+
 function makeGrid(runTs: number, u: number, v: number, swh: number): WeatherGridUV {
   return {
     runTs,
@@ -27,7 +29,7 @@ describe('blendGridForecast', () => {
       blendStartMs: 0,
     };
     const wp = blendGridForecast(state, 0, 0, 0, Date.now());
-    assert.ok(Math.abs(wp.tws - 10) < 0.1);
+    assert.ok(Math.abs(wp.tws - 10 * MS_TO_KN) < 0.1);
     assert.ok(Math.abs(wp.twd - 0) < 1);
   });
 
@@ -39,7 +41,9 @@ describe('blendGridForecast', () => {
       blendStartMs: now - 1800000, // started 30min ago
     };
     const wp = blendGridForecast(state, 0, 0, 0, now);
-    assert.ok(Math.abs(wp.tws - 7.071) < 0.1);
+    // pointA.tws and pointB.tws are already in knots (uvToTwsTwd converts).
+    // Blending 10 kn from north with 10 kn from east at 50/50 → √(5²+5²)·√2 ≈ 7.071 · kn.
+    assert.ok(Math.abs(wp.tws - 7.071 * MS_TO_KN) < 0.1);
     assert.ok(Math.abs(wp.swh - 3) < 0.1);
   });
 
@@ -51,7 +55,7 @@ describe('blendGridForecast', () => {
       blendStartMs: now - 3601000,
     };
     const wp = blendGridForecast(state, 0, 0, 0, now);
-    assert.ok(Math.abs(wp.tws - 10) < 0.1);
+    assert.ok(Math.abs(wp.tws - 10 * MS_TO_KN) < 0.1);
     assert.ok(Math.abs(wp.twd - 90) < 1);
     assert.ok(Math.abs(wp.swh - 4) < 0.1);
   });

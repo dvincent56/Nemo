@@ -33,16 +33,35 @@ export function pickOptimalSail(polar: Polar, twa: number, tws: number): SailId 
   return best;
 }
 
+/** True if `twaAbs` sits inside the declared TWA range of `sail`.
+ *  Used by the auto-sail logic as a hysteresis: while the current sail
+ *  covers the TWA we don't switch for marginal BSP gains. */
+export function isSailInRange(sail: SailId, twaAbs: number): boolean {
+  const def = GameBalance.sails.definitions[sail];
+  if (!def) return true;
+  return twaAbs >= def.twaMin && twaAbs <= def.twaMax;
+}
+
 /**
- * Facteur de recouvrement : compare la BSP de la voile active à la voile optimale.
- * Si la voile active est sous-optimale, renvoie le ratio optimal/active.
+ * Bonus de recouvrement — n'a de sens qu'en mode voile auto.
+ *
+ * Quand l'hystérésis d'auto garde la voile active dans sa plage alors
+ * qu'une autre voile serait marginalement plus rapide, le moteur accorde
+ * la BSP de la voile optimale (ratio opt/active ≥ 1) ; le joueur profite
+ * de la vitesse optimale tout en évitant la pénalité de changement de
+ * voile — à ses risques : le moindre décalage de vent fait bascule et il
+ * encaisse les 360 s de transition.
+ *
+ * Mode manuel : 1.0 sans exception. Le joueur assume sa voile.
  */
 export function computeOverlapFactor(
   activeSail: SailId,
   twa: number,
   tws: number,
   polar: Polar,
+  autoMode: boolean,
 ): number {
+  if (!autoMode) return 1.0;
   const twaAbs = Math.min(Math.abs(twa), 180);
   const activeBsp = getPolarSpeed(polar, activeSail, twaAbs, tws);
   if (activeBsp <= 0) return 1.0;
@@ -95,13 +114,19 @@ export function advanceSailState(
 
   const isManoeuvring = next.transitionEndMs > 0 && nowMs < next.transitionEndMs;
   if (next.autoMode && !isManoeuvring) {
-    const optimal = pickOptimalSail(polar, twa, tws);
-    if (optimal !== next.active) {
-      const dur = getTransitionDuration(next.active, optimal, loadoutEffects);
-      next.active = optimal;
-      next.pending = null;
-      next.transitionStartMs = nowMs;
-      next.transitionEndMs = nowMs + dur * 1000;
+    // Keep the current sail while its TWA range still covers us — avoids
+    // flapping across a crossover for a sub-percent BSP gain, given that
+    // every switch costs a 120-360 s ×0.7 transition penalty.
+    const stayInRange = isSailInRange(next.active, twaAbs) && activeBsp > 0;
+    if (!stayInRange) {
+      const optimal = pickOptimalSail(polar, twa, tws);
+      if (optimal !== next.active) {
+        const dur = getTransitionDuration(next.active, optimal, loadoutEffects);
+        next.active = optimal;
+        next.pending = null;
+        next.transitionStartMs = nowMs;
+        next.transitionEndMs = nowMs + dur * 1000;
+      }
     }
   }
 

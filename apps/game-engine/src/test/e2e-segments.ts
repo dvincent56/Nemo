@@ -95,13 +95,13 @@ async function main(): Promise<void> {
 
   let expected: Position = { ...startPos };
   // Segment 1 : [0, 8000) heading 90°
-  const bsp1 = getPolarSpeed(polar, twa(90), TWS);
+  const bsp1 = getPolarSpeed(polar, 'SPI', twa(90), TWS);
   expected = advancePosition(expected, 90, bsp1, 8);
   // Segment 2 : [8000, 20000) heading 180°
-  const bsp2 = getPolarSpeed(polar, twa(180), TWS);
+  const bsp2 = getPolarSpeed(polar, 'SPI', twa(180), TWS);
   expected = advancePosition(expected, 180, bsp2, 12);
   // Segment 3 : [20000, 30000) heading 270°
-  const bsp3 = getPolarSpeed(polar, twa(270), TWS);
+  const bsp3 = getPolarSpeed(polar, 'SPI', twa(270), TWS);
   expected = advancePosition(expected, 270, bsp3, 10);
 
   // --- Position naïve (scénario faux : 30s plein sur le dernier cap) ---

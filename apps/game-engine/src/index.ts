@@ -15,6 +15,8 @@ import { seedDevPlayer } from './db/seed-dev.js';
 import { connectRedis } from './infra/redis.js';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider, type RedisLike } from './weather/provider.js';
 import { registerWeatherRoutes } from './routes/weather.js';
+import { registerRuntimeRoutes } from './api/runtime.js';
+import { registerDevRoutes } from './api/dev.js';
 
 const log = pino({ name: 'game-engine' });
 
@@ -23,9 +25,9 @@ const log = pino({ name: 'game-engine' });
  * que le broadcast pipeline soit testable visuellement. La création réelle
  * des BoatRuntime arrivera en Phase 4 (inscription en course → hydratation DB).
  */
-function createDemoRuntime(): BoatRuntime {
-  // 47°04'00.29"N / 3°24'21.08"W — VR benchmark start for projection comparison
-  const START_POS = { lat: 47.066747, lon: -3.405856 };
+export function createDemoRuntime(): BoatRuntime {
+  // 45°44'10.04"N / 5°50'23.31"W
+  const START_POS = { lat: 45.736122, lon: -5.839808 };
   const boat: Boat = {
     id: 'demo-boat-1',
     ownerId: 'demo-owner',
@@ -106,8 +108,15 @@ async function main() {
     }
   }
 
+  // Default to NOAA (live GFS via Redis) so dev + prod share the same data
+  // source. Pass `NEMO_WEATHER_MODE=fixture` to force the bundled static
+  // fixture (offline dev, tests).
   let weather: WeatherProvider;
-  if (process.env['NEMO_WEATHER_MODE'] === 'noaa') {
+  const weatherMode = process.env['NEMO_WEATHER_MODE'] ?? 'noaa';
+  if (weatherMode === 'fixture') {
+    weather = await createFixtureProvider();
+    log.info('weather provider: fixture (NEMO_WEATHER_MODE=fixture)');
+  } else {
     try {
       const { default: Redis } = await import('ioredis');
       const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
@@ -122,20 +131,24 @@ async function main() {
       weather = await createNoaaProvider(redisLike);
       log.info('weather provider: NOAA (live GFS)');
     } catch (err) {
-      log.warn({ err }, 'NOAA provider failed in index, falling back to fixture');
+      log.warn({ err }, 'NOAA provider failed, falling back to fixture');
       weather = await createFixtureProvider();
     }
-  } else {
-    weather = await createFixtureProvider();
   }
   registerWeatherRoutes(app, () => weather);
+
+  const redis = connectRedis();
+  const tick = new TickManager(redis);
+  registerRuntimeRoutes(app, tick);
+  if (process.env['NEMO_DEV_ROUTES'] !== '0') {
+    registerDevRoutes(app, tick, createDemoRuntime);
+    log.info('dev routes enabled — POST /api/v1/dev/reset-demo available');
+  }
 
   const port = Number(process.env['PORT'] ?? 3001);
   await app.listen({ port, host: '0.0.0.0' });
   log.info({ port }, 'game-engine listening');
 
-  const redis = connectRedis();
-  const tick = new TickManager(redis);
   tick.start([createDemoRuntime()]).catch((err) => {
     log.error({ err }, 'tick worker failed to start — HTTP still up, gameplay disabled');
   });

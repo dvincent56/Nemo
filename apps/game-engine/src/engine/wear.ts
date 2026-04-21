@@ -18,6 +18,43 @@ function windMultiplier(tws: number): number {
   return Math.min(maxFactor, 1 + excess * (maxFactor - 1));
 }
 
+/**
+ * BSP modulation by swell.
+ * - swh ≤ thresholdMeters : no effect (calm sea)
+ * - Head sea (encounter ∈ [0, headSectorDeg]) : malus up to maxSpeedMalus %,
+ *   peaks at bow, tapers linearly to 0 at the sector edge
+ * - Following sea (encounter ∈ [180 − followingSectorDeg, 180]) : bonus up
+ *   to maxSpeedBonus %, peaks astern
+ * - Beam (in between) : malus up to sideMaxMalus %, peaks mid-sector
+ * Intensity ramps 0→1 between thresholdMeters and maxHeightMeters.
+ *
+ * `mwd` is direction waves come FROM (GFS WW3 convention, same as wind).
+ * Encounter angle 0° = swell hits bow, 180° = swell pushes stern.
+ */
+export function swellSpeedFactor(swh: number, mwd: number, heading: number): number {
+  const cfg = GameBalance.swell;
+  if (swh <= cfg.thresholdMeters) return 1.0;
+  const span = cfg.maxHeightMeters - cfg.thresholdMeters;
+  const h = span > 0 ? clamp((swh - cfg.thresholdMeters) / span, 0, 1) : 1;
+  const rel = Math.abs(((heading - mwd + 540) % 360) - 180);
+
+  if (rel < cfg.headSectorDeg) {
+    const coef = 1 - rel / cfg.headSectorDeg;
+    return 1 - (cfg.maxSpeedMalus / 100) * h * coef;
+  }
+  if (rel > 180 - cfg.followingSectorDeg) {
+    const coef = 1 - (180 - rel) / cfg.followingSectorDeg;
+    return 1 + (cfg.maxSpeedBonus / 100) * h * coef;
+  }
+  // Beam sector — between the head and following sectors. Peak malus at centre.
+  const zoneLow = cfg.headSectorDeg;
+  const zoneHigh = 180 - cfg.followingSectorDeg;
+  const zoneCentre = (zoneLow + zoneHigh) / 2;
+  const zoneHalf = (zoneHigh - zoneLow) / 2;
+  const coef = zoneHalf > 0 ? 1 - Math.abs(rel - zoneCentre) / zoneHalf : 0;
+  return 1 - (cfg.sideMaxMalus / 100) * h * coef;
+}
+
 function swellMultiplier(w: WeatherPoint, heading: number): number {
   const cfg = GameBalance.wear.swellMultipliers;
   if (w.swh <= cfg.thresholdMeters) return 1.0;

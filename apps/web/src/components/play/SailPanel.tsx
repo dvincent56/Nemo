@@ -108,6 +108,13 @@ export default function SailPanel(): React.ReactElement {
   const absTwa = Math.min(Math.abs(twa), 180);
   const polar = polarReady ? getCachedPolar(boatClass) : null;
 
+  // Only show sails that the boat's polar actually defines. For classes
+  // like CRUISER_RACER the polar only carries JIB + SPI — listing the full
+  // 7-sail set here would dangle empty rows.
+  const availableSails = polar
+    ? SAILS.filter((s) => (s.id as string) in polar.speeds)
+    : SAILS;
+
   useEffect(() => {
     if (!isTransitioning) {
       if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -173,7 +180,7 @@ export default function SailPanel(): React.ReactElement {
 
       {/* Sail list */}
       <div className={styles.sailList}>
-        {SAILS.map((s) => {
+        {availableSails.map((s) => {
           const isActive = s.id === currentSail;
           const isCandidate = s.id === candidateSail;
           const disabled = isTransitioning && !isActive;
@@ -193,7 +200,7 @@ export default function SailPanel(): React.ReactElement {
                   <span className={styles.sailRowName}>{s.id}</span>
                   <span className={styles.sailRowFullName}>{s.name}</span>
                   <span className={inRange ? styles.sailRowSpeed : styles.sailRowSpeedOff}>
-                    {estimatedBsp !== null ? `${estimatedBsp.toFixed(1)} kn` : '—'}
+                    {estimatedBsp !== null ? `${estimatedBsp.toFixed(3)} kn` : '—'}
                   </span>
                 </div>
                 {/* Transition progress bar — only on active sail during penalty */}

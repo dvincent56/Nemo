@@ -15,7 +15,7 @@ import type {
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
-const DEBOUNCE_HDG_MS = 100;
+const DEBOUNCE_HDG_MS = 33;
 const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
 const MS_TO_KTS = 1.94384;
 
@@ -216,6 +216,9 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     decoded: DecodedWeatherGrid;
     packed: ReturnType<typeof packWindDataFromDecoded>;
   } | null>(null);
+  // Tracks which packed grid has already been seeded to the worker — avoids
+  // re-transferring 10-30 MB of wind data on every compute.
+  const seededPackedRef = useRef<ReturnType<typeof packWindDataFromDecoded> | null>(null);
 
   // Keep mapRef in sync without re-running effects when map changes
   useEffect(() => {
@@ -333,9 +336,12 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     };
   }, [updateMapSources]);
 
-  // Load polar data
+  // Load polar data — reactive to boatClass so that when the first MyBoat
+  // payload arrives and overrides the default INITIAL_HUD boat class, we
+  // refetch the right polar (the default polar's sail set would otherwise
+  // drive the projection's auto-switch into sails the boat doesn't carry).
+  const boatClass = useGameStore((s) => s.hud.boatClass);
   useEffect(() => {
-    const boatClass = useGameStore.getState().hud.boatClass;
     if (!boatClass) return;
     const file = BOAT_CLASS_FILES[boatClass];
     if (!file) return;
@@ -345,12 +351,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       .then((polar) => {
         polarRef.current = polar;
         console.log('[Projection] polar loaded:', boatClass, '— TWA axis:', polar.twa?.length, 'pts, TWS axis:', polar.tws?.length, 'pts, sails:', Object.keys(polar.speeds ?? {}).join(','));
-        // Polar may have loaded after the initial compute attempt was skipped
         requestCompute(true);
       })
       .catch((err) => console.error('[Projection] polar fetch failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [boatClass]);
 
   // Trigger recalculation
   const requestCompute = useCallback((immediate = false) => {
@@ -386,30 +391,54 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         if (effectiveTwaLock === -180) effectiveTwaLock = 180;
       }
 
+      console.log('[Projection] input', {
+        hudHdg: hud.hdg,
+        hudTwa: hud.twa,
+        hudTwaLock: hud.twaLock,
+        previewHdg: preview.hdg,
+        previewTwaLocked: preview.twaLocked,
+        previewLockedTwa: preview.lockedTwa,
+        effectiveHdg,
+        effectiveTwaLock,
+        effectiveSail,
+        sailAuto: sail.sailAuto,
+      });
+
       // Pack wind data — prefer multi-hour decoded, fall back to single snapshot.
+      // The packed buffer is kept on the main thread (cached in packedWindRef)
+      // only so we can detect when the grid has changed and needs re-seeding.
       let packed: ReturnType<typeof packWindDataFromDecoded>;
       if (decoded) {
         if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
           console.log('[Projection] packing wind data from', decoded.header.numHours, 'hours');
           packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
+          seededPackedRef.current = null; // grid changed — need to re-seed the worker
         }
         packed = packedWindRef.current.packed;
       } else {
         packed = packWindDataFromSnapshot(snapshot!);
       }
 
-      const nowMs = Date.now();
-      console.log('[Projection] computing...', {
-        lat: hud.lat, lon: hud.lon,
-        hdg: effectiveHdg,
-        twd: hud.twd,
-        twaLock: effectiveTwaLock,
-        sail: effectiveSail,
-        grid_hours: packed.timestamps.length,
-      });
+      // Seed the worker once per grid — subsequent `compute` messages carry
+      // only boat state (~1 KB) instead of re-transferring 10-30 MB of wind.
+      if (seededPackedRef.current !== packed) {
+        const seed = new Float32Array(packed.data); // copy because we transfer
+        const seedMsg: WorkerInMessage = {
+          type: 'setWindGrid',
+          windGrid: {
+            bounds: packed.bounds,
+            resolution: packed.resolution,
+            cols: packed.cols,
+            rows: packed.rows,
+            timestamps: packed.timestamps,
+          },
+          windData: seed,
+        };
+        workerRef.current!.postMessage(seedMsg, [seed.buffer]);
+        seededPackedRef.current = packed;
+      }
 
-      // Transfer a copy of the packed data so the cached buffer survives
-      const windData = new Float32Array(packed.data);
+      const nowMs = Date.now();
 
       const input: ProjectionInput = {
         lat: hud.lat,
@@ -422,16 +451,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         twaLock: effectiveTwaLock,
         segments: orderQueueToSegments(prog.orderQueue),
         polar: polarRef.current!,
-        effects: {
-          speedByTwa: [1, 1, 1, 1, 1],
-          speedByTws: [1, 1, 1],
-          wearMul: { hull: 1, rig: 1, sail: 1, elec: 1 },
-          maneuverMul: {
-            tack: { dur: 1, speed: 1 },
-            gybe: { dur: 1, speed: 1 },
-            sailChange: { dur: 1, speed: 1 },
-          },
-        },
+        // Real aggregated loadout effects from the engine — upgrade bonuses
+        // and wear multipliers shape the predicted trajectory the same way
+        // they shape the live tick.
+        effects: hud.effects,
         condition: {
           hull: hud.wearDetail.hull,
           rig: hud.wearDetail.rig,
@@ -447,18 +470,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         prevTwa: hud.twa || null,
         referenceTwd: hud.twd,
         zones: zones.map(toProjectionZone).filter((z): z is ProjectionZone => z !== null),
-        windGrid: {
-          bounds: packed.bounds,
-          resolution: packed.resolution,
-          cols: packed.cols,
-          rows: packed.rows,
-          timestamps: packed.timestamps,
-        },
-        windData,
       };
 
       const msg: WorkerInMessage = { type: 'compute', input };
-      workerRef.current!.postMessage(msg, [windData.buffer]);
+      workerRef.current!.postMessage(msg);
     };
 
     if (immediate) {

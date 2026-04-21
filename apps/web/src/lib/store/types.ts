@@ -2,6 +2,7 @@
 
 import type { SailId, OrderTrigger, BoatClass, ExclusionZone } from '@nemo/shared-types';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
+import type { BoatEffects } from '@/lib/api';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
 
@@ -22,6 +23,9 @@ export interface HudState {
   lat: number; lon: number;
   /** Server lock state — the angle if locked, null if in heading mode. */
   twaLock: number | null;
+  /** Aggregated loadout effects from the engine — used by the projection
+   *  worker so upgrade bonuses/penalties shape the predicted trajectory. */
+  effects: BoatEffects;
 }
 
 export type SailAvailability = 'active' | 'available' | 'disabled';

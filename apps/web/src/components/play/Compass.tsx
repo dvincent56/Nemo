@@ -8,6 +8,7 @@ import { Lock, LockOpen, Check } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
 
+
 /* ── Constants ────────────────────────────────────── */
 const VB = 220; // viewBox size
 
@@ -25,11 +26,6 @@ const CY = VB / 2;
 const R_OUTER = 96;
 const R_INNER = 82;
 
-const SAIL_RANGES: Record<string, [number, number]> = {
-  JIB: [30, 100], LJ: [0, 70], SS: [0, 60],
-  C0: [60, 150], SPI: [80, 180], HG: [100, 180], LG: [80, 170],
-};
-
 function pt(r: number, deg: number): { x: number; y: number } {
   const rad = ((deg - 90) * Math.PI) / 180;
   return {
@@ -42,16 +38,6 @@ function pt(r: number, deg: number): { x: number; y: number } {
 function isInVmgZone(twa: number): boolean {
   const a = Math.abs(twa);
   return (a >= 38 && a <= 54) || (a >= 140 && a <= 162);
-}
-
-/** Determine which sail would be selected for a given TWA in auto mode */
-function bestSailForTwa(absT: number): string | null {
-  const order = ['SPI', 'HG', 'LG', 'C0', 'JIB', 'LJ', 'SS'];
-  for (const s of order) {
-    const range = SAIL_RANGES[s];
-    if (range && absT >= range[0] && absT <= range[1]) return s;
-  }
-  return null;
 }
 
 /** Animated wind indicators — wavy radial lines flowing toward compass center */
@@ -111,8 +97,10 @@ export default function Compass(): React.ReactElement {
   const [targetHdg, setTargetHdg] = useState<number | null>(null);
   const [twaLocked, setTwaLocked] = useState(false);
   const [lockedTwa, setLockedTwa] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [pendingSailChange, setPendingSailChange] = useState<string | null>(null);
+  // Mirror of the last lock state we committed to the server — updated
+  // optimistically on apply() so the Valider button greys out immediately
+  // rather than waiting 2-3 s for the next tick broadcast to round-trip.
+  const [committedTwaLock, setCommittedTwaLock] = useState<number | null>(null);
 
   // Store subscriptions
   const hdg = useGameStore((s) => s.hud.hdg);
@@ -120,12 +108,21 @@ export default function Compass(): React.ReactElement {
   const tws = useGameStore((s) => s.hud.tws);
   const bsp = useGameStore((s) => s.hud.bsp);
   const twa = useGameStore((s) => s.hud.twa);
+  const serverTwaLock = useGameStore((s) => s.hud.twaLock);
   const boatClass = useGameStore((s) => s.hud.boatClass);
   const currentSail = useGameStore((s) => s.sail.currentSail);
-  const sailAuto = useGameStore((s) => s.sail.sailAuto);
+
+  // Lock state differs from the last committed value → needs validation.
+  // committedTwaLock mirrors what we've told the server (optimistically on
+  // apply, or via server broadcast sync below), so the Valider button
+  // deactivates immediately after click.
+  const lockStateChanged =
+    (twaLocked && committedTwaLock === null) ||
+    (!twaLocked && committedTwaLock !== null) ||
+    (twaLocked && committedTwaLock !== null && Math.round(lockedTwa) !== Math.round(committedTwaLock));
 
   // Displayed values — live update during drag
-  const applyActive = targetHdg !== null && targetHdg !== hdg;
+  const applyActive = (targetHdg !== null && targetHdg !== hdg) || lockStateChanged;
   const displayHdg = targetHdg ?? hdg;
   const displayTwa = ((displayHdg - twd + 540) % 360) - 180;
   const vmgGlow = isInVmgZone(displayTwa);
@@ -151,20 +148,6 @@ export default function Compass(): React.ReactElement {
   const bspColor = bspRatio >= 0.85 ? styles.live     // vert — efficace
     : bspRatio >= 0.6 ? styles.warn                    // orange — moyen
     : styles.danger;                                   // rouge — inefficace
-
-  // Check sail change implication when editing.
-  // Only surfaces a notification when the player is previewing a *different*
-  // heading than the current one — no-op for incidental taps on the compass.
-  const checkSailChange = useCallback((newHdg: number) => {
-    if (!sailAuto || newHdg === hdg) { setPendingSailChange(null); return; }
-    const newTwa = Math.abs(((newHdg - twd + 540) % 360) - 180);
-    const newBest = bestSailForTwa(newTwa);
-    if (newBest && newBest !== currentSail) {
-      setPendingSailChange(`${currentSail} → ${newBest}`);
-    } else {
-      setPendingSailChange(null);
-    }
-  }, [sailAuto, twd, currentSail, hdg]);
 
   // ── SVG direct DOM update (60fps during drag) ──
   const writeSvg = useCallback((target: number) => {
@@ -193,13 +176,18 @@ export default function Compass(): React.ReactElement {
     }
   }, [hdg, twd]);
 
-  // TWA lock: adjust heading when wind shifts
+  // Sync local lock state from server — reflect authoritative state in
+  // both the preview toggle and the committed mirror, so the UI stays
+  // aligned if the server clears/changes the lock externally.
   useEffect(() => {
-    if (twaLocked) {
-      const newHdg = ((twd + lockedTwa) + 360) % 360;
-      useGameStore.getState().setHud({ hdg: Math.round(newHdg) });
+    if (serverTwaLock !== null) {
+      setTwaLocked(true);
+      setLockedTwa(serverTwaLock);
+    } else {
+      setTwaLocked(false);
     }
-  }, [twaLocked, lockedTwa, twd]);
+    setCommittedTwaLock(serverTwaLock);
+  }, [serverTwaLock]);
 
   // ── Drag handling ──
   const getHdgFromEvent = (e: PointerEvent): number | null => {
@@ -228,7 +216,6 @@ export default function Compass(): React.ReactElement {
       if (h !== null) {
         setTargetHdg(h);
         writeSvg(h);
-        checkSailChange(h);
         useGameStore.getState().setEditMode(true);
         useGameStore.getState().setPreview({ hdg: h });
       }
@@ -239,7 +226,6 @@ export default function Compass(): React.ReactElement {
       if (h !== null) {
         setTargetHdg(h);
         writeSvg(h);
-        checkSailChange(h);
         useGameStore.getState().setPreview({ hdg: h });
       }
     };
@@ -254,7 +240,6 @@ export default function Compass(): React.ReactElement {
         const base = prev ?? hdg;
         const h = (base + delta + 360) % 360;
         writeSvg(h);
-        checkSailChange(h);
         if (h !== hdg) useGameStore.getState().setEditMode(true);
         useGameStore.getState().setPreview({ hdg: h });
         return h;
@@ -271,14 +256,14 @@ export default function Compass(): React.ReactElement {
       window.removeEventListener('pointerup', onUp);
       svg.removeEventListener('wheel', onWheel);
     };
-  }, [hdg, writeSvg, checkSailChange]);
+  }, [hdg, writeSvg]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && applyActive) {
         e.preventDefault();
-        setShowModal(true);
+        cancelEdit();
       }
       if (e.key === 'Enter' && applyActive) {
         e.preventDefault();
@@ -293,29 +278,38 @@ export default function Compass(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  // ── Apply heading ──
+  // ── Apply heading / lock state ──
+  // A single validation path: commits both heading changes AND lock toggles
+  // so the player can compose the two (e.g. drag + lock) then validate once.
+  // Orders are rounded to integer degrees to match what the UI displays —
+  // otherwise TWA derived from (hdg − twd) carries the fractional TWD and
+  // the engine ends up computing on e.g. 169.70° when the player saw 170°.
   const apply = () => {
-    if (targetHdg === null) return;
+    if (!applyActive) return;
     if (twaLocked) {
-      const newTwa = ((targetHdg - twd + 540) % 360) - 180;
+      const newTwaRaw = targetHdg !== null
+        ? ((targetHdg - twd + 540) % 360) - 180
+        : lockedTwa;
+      const newTwa = Math.round(newTwaRaw);
       setLockedTwa(newTwa);
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
+      setCommittedTwaLock(newTwa);
       useGameStore.getState().setPreview({ hdg: null, twaLocked: true, lockedTwa: newTwa });
+      if (targetHdg !== null) useGameStore.getState().setHud({ hdg: targetHdg });
     } else {
-      sendOrder({ type: 'CAP', value: { heading: targetHdg } });
-      useGameStore.getState().setPreview({ hdg: null });
+      const heading = Math.round(targetHdg ?? hdg);
+      sendOrder({ type: 'CAP', value: { heading } });
+      setCommittedTwaLock(null);
+      useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
+      if (targetHdg !== null) useGameStore.getState().setHud({ hdg: targetHdg });
     }
-    useGameStore.getState().setHud({ hdg: targetHdg });
     setTargetHdg(null);
-    setPendingSailChange(null);
     useGameStore.getState().setEditMode(false);
   };
 
   // ── Cancel editing ──
   const cancelEdit = () => {
     setTargetHdg(null);
-    setPendingSailChange(null);
-    setShowModal(false);
     useGameStore.getState().setEditMode(false);
     useGameStore.getState().setPreview({ hdg: null });
     writeSvg(hdg);
@@ -323,26 +317,24 @@ export default function Compass(): React.ReactElement {
     if (ghost) ghost.style.opacity = '0';
   };
 
-  // ── Toggle TWA lock ──
-  // Sends the order to the server immediately so the engine actually honours
-  // the lock — without this, the boat keeps executing the last CAP order.
+  // ── Toggle TWA lock (preview only) ──
+  // Toggling the lock button never commits an order by itself — it only
+  // updates the local preview so the projection line reflects the new mode.
+  // The player must click Apply (check button) or hit Entrée to validate.
   // If the player is currently previewing a heading (compass drag), we lock
-  // on THAT preview's TWA, not on the server's last known twa.
+  // on THAT preview's TWA; otherwise we lock on the current live TWA.
   const toggleTwaLock = () => {
     if (twaLocked) {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ twaLocked: false });
-      // Revert to heading mode: send current heading (or preview) as CAP order
-      const hdgToSend = targetHdg !== null ? targetHdg : hdg;
-      sendOrder({ type: 'CAP', value: { heading: hdgToSend } });
     } else {
-      const effectiveTwa = targetHdg !== null
+      const rawTwa = targetHdg !== null
         ? (((targetHdg - twd + 540) % 360) - 180)
         : twa;
+      const effectiveTwa = Math.round(rawTwa);
       setTwaLocked(true);
       setLockedTwa(effectiveTwa);
       useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: effectiveTwa });
-      sendOrder({ type: 'TWA', value: { twa: effectiveTwa } });
     }
   };
 
@@ -377,13 +369,13 @@ export default function Compass(): React.ReactElement {
           <div>
             <p className={styles.readoutLabel}>Vit. bateau</p>
             <p className={`${styles.readoutValue} ${bspColor}`}>
-              {displayBsp.toFixed(1)} <small>nds</small>
+              {displayBsp.toFixed(3)} <small>nds</small>
             </p>
           </div>
           <div>
             <p className={styles.readoutLabel}>Vent local</p>
             <p className={styles.readoutValue}>
-              {tws.toFixed(1)} <small>nds</small>
+              {tws.toFixed(3)} <small>nds</small>
             </p>
           </div>
           <div>
@@ -463,16 +455,6 @@ export default function Compass(): React.ReactElement {
           </svg>
         </div>
 
-        {/* Sail change notification */}
-        {pendingSailChange && (
-          <div className={styles.sailNotif}>
-            <span>⛵</span>
-            <span>
-              Changement de voile auto : <span className={styles.sailNotifStrong}>{pendingSailChange}</span>
-            </span>
-          </div>
-        )}
-
         {/* Action buttons */}
         <div className={styles.actions}>
           <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
@@ -487,44 +469,18 @@ export default function Compass(): React.ReactElement {
               <span>TWA</span>
             </button>
           </Tooltip>
-          <Tooltip text="Appliquer le cap modifié" shortcut="Entrée" position="bottom">
+          <Tooltip text="Valider l'ordre (cap ou TWA lock)" shortcut="Entrée" position="bottom">
             <button
               type="button"
               className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
               onClick={apply}
             >
               <Check size={14} strokeWidth={3} />
-              {applyActive && targetHdg !== null ? <span>{Math.round(targetHdg)}°</span> : null}
+              <span>Valider</span>
             </button>
           </Tooltip>
         </div>
       </div>
-
-      {/* Confirm modal */}
-      {showModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <p className={styles.modalTitle}>Cap non appliqué</p>
-            <p className={styles.modalText}>
-              Vous avez modifié le cap cible à{' '}
-              <strong style={{ color: '#c9a227' }}>
-                {targetHdg !== null ? `${Math.round(targetHdg)}°` : ''}
-              </strong>{' '}
-              sans l&apos;appliquer.
-            </p>
-            <div className={styles.modalActions}>
-              <button type="button" className={`${styles.modalBtn} ${styles.modalBtnDanger}`}
-                onClick={cancelEdit}>
-                Annuler
-              </button>
-              <button type="button" className={`${styles.modalBtn} ${styles.modalBtnPrimary}`}
-                onClick={() => setShowModal(false)}>
-                Continuer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

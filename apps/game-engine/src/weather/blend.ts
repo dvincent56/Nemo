@@ -1,6 +1,6 @@
 import type { WeatherPoint } from '@nemo/shared-types';
 import { getForecastAt, type WeatherGridUV } from './grid.js';
-import { lerp, uvToTwsTwd, recomposeAngle } from './grid-uv.js';
+import { lerp, recomposeAngle } from './grid-uv.js';
 
 export const BLEND_DURATION_MS = 3_600_000; // 1 hour
 
@@ -32,9 +32,13 @@ export function blendGridForecast(
   const uB = -pointB.tws * Math.sin(radB);
   const vB = -pointB.tws * Math.cos(radB);
 
+  // Note: uA/vA/uB/vB are reconstructed from WeatherPoint.tws which is
+  // already in knots (see grid-uv.ts::uvToTwsTwd), so we must NOT re-apply
+  // the m/s→knots factor here. Compute magnitude/direction directly.
   const u = lerp(uA, uB, alpha);
   const v = lerp(vA, vB, alpha);
-  const { tws, twd } = uvToTwsTwd(u, v);
+  const tws = Math.sqrt(u * u + v * v);
+  const twd = ((Math.atan2(-u, -v) * 180) / Math.PI + 360) % 360;
 
   // Blend MWD in sin/cos space
   const mwdRadA = (pointA.mwd * Math.PI) / 180;

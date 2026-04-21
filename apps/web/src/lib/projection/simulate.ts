@@ -158,6 +158,33 @@ function swellWearMultiplier(swh: number, swellDir: number, heading: number, swe
   return 1 + dirFactor * heightFactor * periodFactor;
 }
 
+/**
+ * BSP modulation by swell — mirrors game-engine/src/engine/wear.ts::swellSpeedFactor.
+ * Kept in sync so the projection line reflects the same physics as the live engine.
+ */
+function swellSpeedFactor(swh: number, swellDir: number, heading: number): number {
+  const cfg = GameBalance.swell;
+  if (swh <= cfg.thresholdMeters) return 1.0;
+  const span = cfg.maxHeightMeters - cfg.thresholdMeters;
+  const h = span > 0 ? Math.max(0, Math.min(1, (swh - cfg.thresholdMeters) / span)) : 1;
+  const rel = Math.abs(((heading - swellDir + 540) % 360) - 180);
+
+  if (rel < cfg.headSectorDeg) {
+    const coef = 1 - rel / cfg.headSectorDeg;
+    return 1 - (cfg.maxSpeedMalus / 100) * h * coef;
+  }
+  if (rel > 180 - cfg.followingSectorDeg) {
+    const coef = 1 - (180 - rel) / cfg.followingSectorDeg;
+    return 1 + (cfg.maxSpeedBonus / 100) * h * coef;
+  }
+  const zoneLow = cfg.headSectorDeg;
+  const zoneHigh = 180 - cfg.followingSectorDeg;
+  const zoneCentre = (zoneLow + zoneHigh) / 2;
+  const zoneHalf = (zoneHigh - zoneLow) / 2;
+  const coef = zoneHalf > 0 ? 1 - Math.abs(rel - zoneCentre) / zoneHalf : 0;
+  return 1 - (cfg.sideMaxMalus / 100) * h * coef;
+}
+
 export function computeWearDelta(
   weather: WeatherAtPoint,
   heading: number,
@@ -251,17 +278,23 @@ export function computeBsp(
   maneuver: ManeuverState | null,
   transition: { endMs: number; speedFactor: number } | null,
   nowMs: number,
+  weather?: { swh: number; swellDir: number },
+  heading?: number,
 ): number {
   const baseBsp = getPolarSpeed(polar, sail, twa, tws);
   const twaBand = bandFor(Math.abs(twa), [60, 90, 120, 150]);
   const twsBand = bandFor(tws, [10, 20]);
+  const swellFactor = weather && heading !== undefined
+    ? swellSpeedFactor(weather.swh, weather.swellDir, heading)
+    : 1;
 
   const multiplier =
     effects.speedByTwa[twaBand]! *
     effects.speedByTws[twsBand]! *
     conditionSpeedPenalty(condition) *
     maneuverSpeedFactor(maneuver, nowMs) *
-    transitionSpeedFactor(transition, nowMs, effects);
+    transitionSpeedFactor(transition, nowMs, effects) *
+    swellFactor;
 
   return baseBsp * multiplier;
 }

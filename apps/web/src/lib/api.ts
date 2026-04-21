@@ -62,13 +62,56 @@ export interface BoatState {
   maneuverKind: 0 | 1 | 2;
   maneuverStartMs: number;
   maneuverEndMs: number;
+  twaLock?: number | null;
+  effects?: BoatEffects;
 }
 
+export interface BoatEffects {
+  speedByTwa: [number, number, number, number, number];
+  speedByTws: [number, number, number];
+  wearMul: { hull: number; rig: number; sail: number; elec: number };
+  maneuverMul: {
+    tack: { dur: number; speed: number };
+    gybe: { dur: number; speed: number };
+    sailChange: { dur: number; speed: number };
+  };
+  polarTargetsDeg?: number;
+  groundingLossMul?: number;
+}
+
+export const NEUTRAL_BOAT_EFFECTS: BoatEffects = {
+  speedByTwa: [1, 1, 1, 1, 1],
+  speedByTws: [1, 1, 1],
+  wearMul: { hull: 1, rig: 1, sail: 1, elec: 1 },
+  maneuverMul: {
+    tack: { dur: 1, speed: 1 },
+    gybe: { dur: 1, speed: 1 },
+    sailChange: { dur: 1, speed: 1 },
+  },
+};
+
+const DEMO_BOAT_ID = process.env['NEXT_PUBLIC_DEMO_BOAT_ID'] ?? 'demo-boat-1';
+
 export async function fetchMyBoat(raceId: string): Promise<BoatState | null> {
-  const res = await fetch(new URL(`/api/v1/races/${raceId}/my-boat`, WEB_BASE));
-  if (res.status === 404) return null;
-  if (!res.ok) return null;
-  return (await res.json()) as BoatState;
+  // Read the authoritative runtime snapshot from the game engine so the HUD
+  // doesn't flash mocked values before the first WS tick arrives. The Next
+  // proxy route at /api/v1/races/:raceId/my-boat is kept as a fallback for
+  // local dev when the engine isn't reachable.
+  const engineUrl = new URL(
+    `/api/v1/races/${raceId}/runtime/${DEMO_BOAT_ID}`,
+    API_BASE,
+  );
+  try {
+    const res = await fetch(engineUrl);
+    if (res.ok) return (await res.json()) as BoatState;
+    if (res.status === 404) return null;
+  } catch {
+    // network/engine down — fall through to the Next mock
+  }
+  const fallback = await fetch(new URL(`/api/v1/races/${raceId}/my-boat`, WEB_BASE));
+  if (fallback.status === 404) return null;
+  if (!fallback.ok) return null;
+  return (await fallback.json()) as BoatState;
 }
 
 import type { ExclusionZone } from '@nemo/shared-types';

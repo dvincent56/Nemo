@@ -15,9 +15,15 @@ export interface TwsTwdPoint {
   twd: number;
 }
 
-/** Convert U/V components to TWS (knots or m/s — same unit) and TWD (degrees compass). */
+/** m/s → knots (used to convert GFS U/V magnitudes to the unit expected by
+ *  polars, wear thresholds, and loadout activation bands). */
+export const MS_TO_KNOTS = 1.94384;
+
+/** Convert U/V components (m/s) to TWS (**knots**) and TWD (degrees compass).
+ *  The whole engine treats TWS as knots downstream (polar lookup, wear, bands),
+ *  so we convert once at the U/V boundary rather than spraying factors later. */
 export function uvToTwsTwd(u: number, v: number): TwsTwdPoint {
-  const tws = Math.sqrt(u * u + v * v);
+  const tws = Math.sqrt(u * u + v * v) * MS_TO_KNOTS;
   const twd = ((Math.atan2(-u, -v) * 180) / Math.PI + 360) % 360;
   return { tws, twd };
 }
