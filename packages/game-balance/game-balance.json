@@ -303,7 +303,7 @@
         "name": "Voiles Mylar Class40",
         "profile": "polyvalent stable",
         "description": "Mylar laminé, bon équilibre rendement/durabilité.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": ["CLASS40", "IMOCA60", "MINI650"],
         "cost": 5800,
         "effects": {
           "speedByTwa": [0, 0.02, 0.03, 0.02, 0],
@@ -504,7 +504,7 @@
         "name": "Pack Électronique Base",
         "profile": "lisible sans analyse",
         "description": "Instrumentation de base, données claires sans analyse avancée.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
         "cost": 0,
         "effects": {
           "speedByTwa": [0, 0, 0, 0, 0],
@@ -523,7 +523,7 @@
         "name": "Pack Électronique Course",
         "profile": "cibles polaires",
         "description": "Calculateur de polaires embarqué, optimisation des angles cibles.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
         "cost": 2200,
         "effects": {
           "speedByTwa": [0.01, 0.01, 0.01, 0.01, 0.01],
@@ -544,7 +544,7 @@
         "name": "Pack Électronique Offshore",
         "profile": "routage embarqué",
         "description": "Routage météo embarqué avec optimisation des angles au degré près.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
         "cost": 4800,
         "effects": {
           "speedByTwa": [0.02, 0.02, 0.02, 0.02, 0.02],
@@ -986,6 +986,142 @@
           "passiveEffects": {
             "speedByTws": [-0.06, -0.02, 0]
           }
+        }
+      },
+      {
+        "id": "hull-mini650-monotype",
+        "slot": "HULL",
+        "tier": "SERIE",
+        "name": "Coque Mini 6.50 Série",
+        "profile": "réglementaire",
+        "description": "Coque de série Mini 6.50, conforme aux règles de jauge Série.",
+        "compat": ["MINI650"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "mast-mini650-monotype",
+        "slot": "MAST",
+        "tier": "SERIE",
+        "name": "Mât Mini 6.50 Série",
+        "profile": "réglementaire",
+        "description": "Mât aluminium de série Mini 6.50.",
+        "compat": ["MINI650"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "keel-mini650-monotype",
+        "slot": "KEEL",
+        "tier": "SERIE",
+        "name": "Quille Mini 6.50 Série",
+        "profile": "fixe à bulbe",
+        "description": "Quille fixe à bulbe, conforme à la jauge Mini Série.",
+        "compat": ["MINI650"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-mini650-none",
+        "slot": "FOILS",
+        "tier": "SERIE",
+        "name": "Sans Foils Mini 6.50",
+        "profile": "coque seule",
+        "description": "Configuration sans foils, coque pure en mode déplacement.",
+        "compat": ["MINI650"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-mini650-lateral",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils Latéraux Mini 6.50",
+        "profile": "reaching modeste",
+        "description": "Petits foils latéraux Mini Proto, gain léger au reaching dès 14 nds.",
+        "compat": ["MINI650"],
+        "cost": 3000,
+        "effects": {
+          "speedByTwa": [-0.01, 0, 0.04, 0.03, 0],
+          "speedByTws": [0, 0.01, 0.02],
+          "wearMul": { "hull": 1.30, "rig": 1.15 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 14 },
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [-0.02, 0, 0]
+          }
+        }
+      },
+      {
+        "id": "sails-mini650-dacron",
+        "slot": "SAILS",
+        "tier": "SERIE",
+        "name": "Voiles Dacron Mini 6.50",
+        "profile": "polyvalent",
+        "description": "Jeu Dacron de série, polyvalent et durable.",
+        "compat": ["MINI650"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-mini650-cert",
+        "slot": "SAILS",
+        "tier": "BRONZE",
+        "name": "Voiles Certifiées Classe Mini",
+        "profile": "rendement classe",
+        "description": "Voiles certifiées classe Mini, meilleur rendement dans les limites du règlement.",
+        "compat": ["MINI650"],
+        "cost": 2200,
+        "effects": {
+          "speedByTwa": [0.02, 0.02, 0.03, 0.02, 0.01],
+          "speedByTws": [0.01, 0.02, 0.01],
+          "wearMul": { "sail": 1.20 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
         }
       }
     ]
