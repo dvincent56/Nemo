@@ -31,9 +31,9 @@ export const PRESETS: Preset[] = [
     id: 'class40-foiler',
     name: 'Class40 Foiler Fort Temps',
     boatClass: 'CLASS40',
-    description: 'Foils proto + voiles custom — fusée au-delà de 18 kts, handicapé sous 10 kts.',
+    description: 'Foils proto + scow + mylar — fusée au-delà de 14 kts, largement battu sous 10 kts.',
     initialSail: 'JIB',
-    upgradeIds: ['hull-class40-scow', 'sails-class40-north-custom', 'foils-class40-proto', 'keel-class40-canting'],
+    upgradeIds: ['hull-class40-scow', 'sails-class40-mylar', 'foils-class40-proto', 'keel-class40-canting'],
   },
   {
     id: 'imoca60-light-air',
