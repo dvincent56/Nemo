@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync-game-balance": "node ../../scripts/sync-game-balance.mjs",
+    "predev": "pnpm sync-game-balance",
+    "prebuild": "pnpm sync-game-balance",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -42,15 +42,25 @@
     }
   },
   "swell": {
-    "thresholdMeters": 1.5,
-    "maxSpeedBonus": 4,
-    "maxSpeedMalus": 12,
-    "sideMaxMalus": 5,
-    "frontAngle": 135,
-    "backAngle": 45
+    "thresholdMeters": 2.0,
+    "maxHeightMeters": 5.0,
+    "maxSpeedBonus": 5,
+    "maxSpeedMalus": 4,
+    "sideMaxMalus": 2,
+    "followingSectorDeg": 60,
+    "headSectorDeg": 60
   },
   "sails": {
     "transitionPenalty": 0.7,
+    "definitions": {
+      "JIB": { "twaMin": 28, "twaMax": 130 },
+      "LJ":  { "twaMin": 28, "twaMax": 120 },
+      "SS":  { "twaMin": 28, "twaMax": 90 },
+      "C0":  { "twaMin": 55, "twaMax": 140 },
+      "SPI": { "twaMin": 95, "twaMax": 180 },
+      "HG":  { "twaMin": 75, "twaMax": 165 },
+      "LG":  { "twaMin": 70, "twaMax": 150 }
+    },
     "transitionTimes": {
       "JIB_LJ": 120, "LJ_JIB": 120,
       "JIB_SS": 150, "SS_JIB": 150,
