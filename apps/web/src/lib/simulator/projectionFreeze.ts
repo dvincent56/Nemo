@@ -16,7 +16,7 @@ import type {
 } from '@/lib/projection/types';
 import type { WindGridConfig } from '@/lib/projection/windLookup';
 import { createWindLookup } from '@/lib/projection/windLookup';
-import { aggregateEffects } from '@nemo/game-engine-core';
+import { aggregateEffects } from '@nemo/game-engine-core/browser';
 import type { SimBoatSetup } from './types';
 import type { Position } from '@nemo/shared-types';
 import type { Polar } from '@nemo/shared-types';

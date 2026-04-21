@@ -3,7 +3,7 @@
 
 import { useState, useId } from 'react';
 import type { BoatClass, SailId } from '@nemo/shared-types';
-import { resolveBoatLoadout } from '@nemo/game-engine-core';
+import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
 import type { UpgradeItem, UpgradeSlot } from '@nemo/game-balance/browser';
 import type { SimBoatSetup } from '@/lib/simulator/types';
 // Import game-balance catalog statically — Next.js/webpack resolves this via transpilePackages

@@ -3,15 +3,15 @@
 
 import type { Polar, Position, SailId } from '@nemo/shared-types';
 import type { BoatClass } from '@nemo/shared-types';
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 import {
   runTick,
   buildZoneIndex,
   CoastlineIndex,
   type BoatRuntime,
   type CoastlineProbe,
-} from '@nemo/game-engine-core';
-import type { WeatherProvider } from '@nemo/game-engine-core';
+} from '@nemo/game-engine-core/browser';
+import type { WeatherProvider } from '@nemo/game-engine-core/browser';
 import type { WeatherPoint } from '@nemo/shared-types';
 import { createWindLookup, type WindGridConfig } from '../projection/windLookup';
 import type {
