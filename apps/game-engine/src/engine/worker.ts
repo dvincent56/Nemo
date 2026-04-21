@@ -4,10 +4,15 @@ import pino from 'pino';
 import type { OrderEnvelope, Polar } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { runTick, type BoatRuntime, type TickOutcome } from './tick.js';
-import { buildZoneIndex, type IndexedZone } from './zones.js';
+import { runTick, type BoatRuntime, type TickOutcome, type CoastlineProbe } from '@nemo/game-engine-core';
+import { buildZoneIndex, type IndexedZone } from '@nemo/game-engine-core';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider } from '../weather/provider.js';
-import { loadCoastline } from './coastline.js';
+import {
+  loadCoastline,
+  isCoastlineLoaded,
+  segmentCrossesCoast,
+  coastRiskLevel,
+} from './coastline.js';
 
 interface WorkerInit {
   runtimes: BoatRuntime[];
@@ -62,6 +67,13 @@ async function main() {
     log.warn({ err }, 'coastline not loaded — grounding detection disabled');
   }
 
+  // Adapter: wrap module-level coastline functions into the CoastlineProbe interface
+  const coastline: CoastlineProbe = {
+    isLoaded: isCoastlineLoaded,
+    segmentCrossesCoast,
+    coastRiskLevel,
+  };
+
   let runtimes: BoatRuntime[] = init.runtimes ?? [];
   let seq = 0;
   const TICK_MS = GameBalance.tickIntervalSeconds * 1000;
@@ -98,7 +110,7 @@ async function main() {
       const tickEndMs = tickStartMs + TICK_MS;
       lastTickEnd = tickEndMs;
       const outcomes: TickOutcome[] = runtimes.map(
-        (r) => runTick(r, { polar, weather, zones }, tickStartMs, tickEndMs),
+        (r) => runTick(r, { polar, weather, zones, coastline }, tickStartMs, tickEndMs),
       );
       runtimes = outcomes.map((o) => o.runtime);
       for (const o of outcomes) {

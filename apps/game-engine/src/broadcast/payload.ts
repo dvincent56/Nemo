@@ -1,5 +1,5 @@
 import { encode } from '@msgpack/msgpack';
-import type { BoatRuntime, TickOutcome } from '../engine/tick.js';
+import type { BoatRuntime, TickOutcome } from '@nemo/game-engine-core';
 
 /**
  * Protocole broadcast V1 — taille serrée, encodage MessagePack compact.

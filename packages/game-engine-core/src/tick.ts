@@ -15,10 +15,15 @@ import {
 import type { SailId } from '@nemo/shared-types';
 import { buildSegments, type SegmentState, type TickSegment } from './segments.js';
 import { applyZones, getZonesAtPosition, type IndexedZone } from './zones.js';
-import type { WeatherProvider } from '../weather/provider.js';
+import type { WeatherProvider } from './weather.js';
 import { aggregateEffects, type BoatLoadout } from './loadout.js';
 import { bandFor } from './bands.js';
-import { segmentCrossesCoast, coastRiskLevel, isCoastlineLoaded } from './coastline.js';
+
+export interface CoastlineProbe {
+  isLoaded(): boolean;
+  segmentCrossesCoast(from: Position, to: Position, intermediatePoints?: number): boolean;
+  coastRiskLevel(lat: number, lon: number): 0 | 1 | 2 | 3;
+}
 
 export interface BoatRuntime {
   boat: Boat;
@@ -50,6 +55,7 @@ export interface TickDeps {
   polar: Polar;
   weather: WeatherProvider;
   zones: IndexedZone[];
+  coastline: CoastlineProbe;
 }
 
 /**
@@ -194,10 +200,10 @@ export function runTick(
   // --- Coastline grounding detection ---
   let grounded = false;
   let groundedPosition: Position | null = null;
-  if (isCoastlineLoaded()) {
+  if (deps.coastline.isLoaded()) {
     const intermediatePoints = GameBalance.grounding.detectionIntermediatePoints;
     for (const seg of segments) {
-      if (segmentCrossesCoast(seg.startPosition, seg.endPosition, intermediatePoints)) {
+      if (deps.coastline.segmentCrossesCoast(seg.startPosition, seg.endPosition, intermediatePoints)) {
         grounded = true;
         groundedPosition = seg.startPosition; // boat stops at pre-crossing position
         break;
@@ -241,7 +247,7 @@ export function runTick(
   const lastSeg = segments[segments.length - 1];
   const displayBsp = grounded ? 0 : (lastSeg?.bsp ?? 0);
   const displayTwa = lastSeg?.twa ?? twaAtStart;
-  const risk = isCoastlineLoaded() ? coastRiskLevel(endPosition.lat, endPosition.lon) : 0 as const;
+  const risk = deps.coastline.isLoaded() ? deps.coastline.coastRiskLevel(endPosition.lat, endPosition.lon) : 0 as const;
 
   // Purge orders that fell within this tick's window (already processed).
   // Orders with effectiveTs before tickStartMs are "late" — process them once

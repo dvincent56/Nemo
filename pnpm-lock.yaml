@@ -32,6 +32,9 @@ importers:
       '@nemo/game-balance':
         specifier: workspace:*
         version: link:../../packages/game-balance
+      '@nemo/game-engine-core':
+        specifier: workspace:*
+        version: link:../../packages/game-engine-core
       '@nemo/polar-lib':
         specifier: workspace:*
         version: link:../../packages/polar-lib
@@ -201,6 +204,12 @@ importers:
       '@nemo/shared-types':
         specifier: workspace:*
         version: link:../shared-types
+      '@turf/bbox':
+        specifier: ^7.0.0
+        version: 7.3.4
+      '@turf/boolean-point-in-polygon':
+        specifier: ^7.0.0
+        version: 7.3.4
       '@turf/distance':
         specifier: ^7.0.0
         version: 7.3.4

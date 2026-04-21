@@ -5,7 +5,7 @@ import { encode, decode } from '@msgpack/msgpack';
 import pino from 'pino';
 import type { OrderEnvelope } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
-import type { BoatRuntime, TickOutcome } from './tick.js';
+import type { BoatRuntime, TickOutcome } from '@nemo/game-engine-core';
 import { buildFullUpdate } from '../broadcast/payload.js';
 import { CHANNELS, type RedisPair } from '../infra/redis.js';
 

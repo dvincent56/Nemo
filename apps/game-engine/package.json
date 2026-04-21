@@ -26,6 +26,7 @@
     "@fastify/cors": "^10.0.1",
     "@msgpack/msgpack": "^3.0.0",
     "@nemo/game-balance": "workspace:*",
+    "@nemo/game-engine-core": "workspace:*",
     "@nemo/polar-lib": "workspace:*",
     "@nemo/shared-types": "workspace:*",
     "@turf/bbox": "^7.1.0",
