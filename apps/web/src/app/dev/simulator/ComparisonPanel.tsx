@@ -1,0 +1,89 @@
+'use client';
+// apps/web/src/app/dev/simulator/ComparisonPanel.tsx
+// Right-side panel showing per-boat live metrics and the Δ projection
+// deviation for the primary boat.
+
+import styles from './ComparisonPanel.module.css';
+import type { SimBoatSetup, SimFleetState } from '@/lib/simulator/types';
+
+interface Props {
+  boats: SimBoatSetup[];
+  fleet: Record<string, SimFleetState>;
+  primaryId: string | null;
+  projectionDeviationNm: number | null;
+}
+
+const OTHER_COLORS = ['#6ba3c9', '#a57cc9', '#7cc9a5', '#c98c6b'];
+
+function colorFor(index: number, isPrimary: boolean): string {
+  if (isPrimary) return '#c9a557';
+  return OTHER_COLORS[index % OTHER_COLORS.length]!;
+}
+
+export function ComparisonPanel({
+  boats,
+  fleet,
+  primaryId,
+  projectionDeviationNm,
+}: Props) {
+  return (
+    <div className={styles.panel}>
+      <div className={styles.header}>Comparaison live</div>
+
+      {boats.length === 0 && (
+        <div className={styles.empty}>Aucun bateau configuré</div>
+      )}
+
+      {boats.map((boat, i) => {
+        const isPrimary = boat.id === primaryId;
+        const s: SimFleetState | undefined = fleet[boat.id];
+        const color = colorFor(i, isPrimary);
+
+        return (
+          <div
+            key={boat.id}
+            className={styles.card}
+            style={{ borderLeftColor: color }}
+          >
+            <div className={styles.cardTitle}>
+              <strong>{boat.name}</strong>
+              {isPrimary && (
+                <span className={styles.primaryBadge}>principal</span>
+              )}
+            </div>
+            <div className={styles.cardMeta}>
+              {boat.boatClass} · {s?.sail ?? boat.initialSail}
+            </div>
+
+            <table className={styles.metrics}>
+              <tbody>
+                <tr>
+                  <td>BSP</td>
+                  <td>{s ? `${s.bsp.toFixed(1)} kts` : '— kts'}</td>
+                </tr>
+                <tr>
+                  <td>TWA</td>
+                  <td>{s ? `${s.twa.toFixed(0)}°` : '—°'}</td>
+                </tr>
+                <tr>
+                  <td>Distance</td>
+                  <td>{s ? `${s.distanceNm.toFixed(1)} NM` : '0.0 NM'}</td>
+                </tr>
+                {isPrimary && (
+                  <tr className={styles.deviationRow}>
+                    <td>Δ projection</td>
+                    <td>
+                      {projectionDeviationNm !== null
+                        ? `${projectionDeviationNm >= 0 ? '+' : ''}${projectionDeviationNm.toFixed(2)} NM`
+                        : '— NM'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -1,0 +1,107 @@
+/* ComparisonPanel.module.css — Nautical Luxury palette */
+
+.panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: #0f2a3d;
+  border-left: 1px solid #1a3a52;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #d9c896;
+}
+
+.header {
+  padding: 14px 16px 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #c9a557;
+  border-bottom: 1px solid #1a3a52;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.empty {
+  padding: 24px 16px;
+  color: #5a7a8a;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.card {
+  margin: 10px 12px 0;
+  background: #15344a;
+  border-left: 3px solid #c9a557; /* overridden per-boat via inline style */
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.card:last-child {
+  margin-bottom: 10px;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8ddb0;
+}
+
+.primaryBadge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c9a557;
+  border: 1px solid #c9a557;
+  border-radius: 2px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: #5a7a8a;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.metrics {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.metrics td {
+  padding: 2px 0;
+  vertical-align: middle;
+}
+
+.metrics td:first-child {
+  color: #8aa4b0;
+  width: 70px;
+}
+
+.metrics td:last-child {
+  color: #d9c896;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.deviationRow td {
+  color: #c9a557 !important;
+  font-weight: 700;
+  padding-top: 6px;
+  border-top: 1px solid #1a3a52;
+}
+
+.deviationRow td:first-child {
+  color: #c9a557 !important;
+}

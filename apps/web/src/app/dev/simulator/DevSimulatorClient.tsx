@@ -1,16 +1,21 @@
 'use client';
 // apps/web/src/app/dev/simulator/DevSimulatorClient.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SetupPanel } from './SetupPanel';
 import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
+import { ProjectionLayer } from './ProjectionLayer';
+import { ComparisonPanel } from './ComparisonPanel';
 import MapCanvas from '@/components/play/MapCanvas';
 import { useSimulatorWorker } from '@/hooks/useSimulatorWorker';
 import type { SimBoatSetup, SimSpeedFactor } from '@/lib/simulator/types';
 import type { BoatClass, Polar } from '@nemo/shared-types';
 import { fetchLatestWindGrid } from '@/lib/projection/fetchWindGrid';
+import { freezeProjection, projectionAt } from '@/lib/simulator/projectionFreeze';
+import type { ProjectionResult } from '@/lib/projection/types';
+import type { WindGridConfig } from '@/lib/projection/windLookup';
 import type { Position } from '@nemo/shared-types';
 
 /** Approximate haversine distance in nautical miles between two positions. */
@@ -63,11 +68,17 @@ export function DevSimulatorClient() {
   const [speed, setSpeed] = useState<SimSpeedFactor>(1800);
   const [trails, setTrails] = useState<Map<string, Position[]>>(new Map());
   const [launchTimeMs, setLaunchTimeMs] = useState<number | undefined>(undefined);
+  const [projection, setProjection] = useState<ProjectionResult | null>(null);
+  const [projectionDeviationNm, setProjectionDeviationNm] = useState<number | null>(null);
+  // Keep a ref to the wind grid so the projection freeze can use it without
+  // neutering the buffer that the sim worker already owns.
+  const windGridRef = useRef<{ windGrid: WindGridConfig; windData: Float32Array } | null>(null);
 
   const { simTimeMs, fleet, status, post, setStatus, reinit } = useSimulatorWorker();
   const locked = status !== 'idle';
 
-  // Accumulate trail positions as fleet updates arrive
+  // Accumulate trail positions as fleet updates arrive.
+  // Also compute the Δ projection deviation for the primary boat.
   useEffect(() => {
     if (Object.keys(fleet).length === 0) return;
     setTrails(prev => {
@@ -81,6 +92,15 @@ export function DevSimulatorClient() {
       }
       return next;
     });
+    // Δ projection: compare real position against the frozen projection polyline.
+    if (projection !== null && primaryId && fleet[primaryId] && launchTimeMs !== undefined) {
+      const absMs = launchTimeMs + simTimeMs;
+      const projPos = projectionAt(projection, absMs);
+      const realPos = fleet[primaryId]!.position;
+      const deviation = haversineNM(realPos, projPos);
+      setProjectionDeviationNm(deviation);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fleet]);
 
   async function launch() {
@@ -89,6 +109,35 @@ export function DevSimulatorClient() {
     const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
     const { windGrid, windData } = await fetchLatestWindGrid();
     const now = Date.now();
+
+    // Keep a copy of the wind data so we can pass it to the freeze worker
+    // independently of what the sim worker will transfer/neuter.
+    windGridRef.current = { windGrid, windData: windData.slice() };
+
+    // Freeze the projection for the primary boat before launching the sim.
+    // If there is no primary boat, skip (no Δ to show).
+    const primaryBoat = boats.find(b => b.id === primaryId) ?? boats[0];
+    if (primaryBoat) {
+      const primaryPolar = polars[primaryBoat.boatClass];
+      if (primaryPolar) {
+        freezeProjection({
+          boat: primaryBoat,
+          startPos: START_POS,
+          startTimeMs: now,
+          windGrid,
+          windData: windGridRef.current.windData,
+          polar: primaryPolar,
+        })
+          .then(result => {
+            console.log('[DevSim] projection frozen:', result.points.length, 'pts');
+            setProjection(result);
+          })
+          .catch(err => {
+            console.warn('[DevSim] projection freeze failed:', err);
+          });
+      }
+    }
+
     setLaunchTimeMs(now);
     setTrails(new Map());
     post({
@@ -117,6 +166,8 @@ export function DevSimulatorClient() {
 
   function resetSoft() {
     setTrails(new Map());
+    setProjection(null);
+    setProjectionDeviationNm(null);
     post({ type: 'reset' });
     post({ type: 'setSpeed', factor: speed });
     post({ type: 'start' });
@@ -129,6 +180,9 @@ export function DevSimulatorClient() {
     setPrimaryId(null);
     setTrails(new Map());
     setLaunchTimeMs(undefined);
+    setProjection(null);
+    setProjectionDeviationNm(null);
+    windGridRef.current = null;
   }
 
   return (
@@ -150,7 +204,7 @@ export function DevSimulatorClient() {
           />
         </div>
 
-        {/* Right area — map + fleet overlay */}
+        {/* Centre — map + fleet overlay + projection line */}
         <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
           <MapCanvas
             enableProjection={false}
@@ -165,7 +219,16 @@ export function DevSimulatorClient() {
             trails={trails}
             simStatus={status}
           />
+          <ProjectionLayer projection={projection} />
         </div>
+
+        {/* Right panel — comparison metrics */}
+        <ComparisonPanel
+          boats={boats}
+          fleet={fleet}
+          primaryId={primaryId}
+          projectionDeviationNm={projectionDeviationNm}
+        />
       </div>
 
       {/* Controls bar — pinned to bottom of layout */}
