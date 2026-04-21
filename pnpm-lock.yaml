@@ -102,6 +102,9 @@ importers:
       '@nemo/game-balance':
         specifier: workspace:*
         version: link:../../packages/game-balance
+      '@nemo/game-engine-core':
+        specifier: workspace:*
+        version: link:../../packages/game-engine-core
       '@nemo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
