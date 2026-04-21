@@ -1,8 +1,5 @@
 import type { NextConfig } from 'next';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { resolve } from 'node:path';
 
 const config: NextConfig = {
   reactStrictMode: true,
@@ -12,9 +9,9 @@ const config: NextConfig = {
   typedRoutes: true,
   // Pin the workspace root so Turbopack doesn't walk up and pick a sibling
   // worktree's pnpm-workspace.yaml — keeps dev builds correct when running
-  // from .worktrees/*.
+  // from .worktrees/*. cwd is apps/web when invoked via pnpm --filter.
   turbopack: {
-    root: resolve(__dirname, '..', '..'),
+    root: resolve(process.cwd(), '..', '..'),
   },
   async headers() {
     return [
