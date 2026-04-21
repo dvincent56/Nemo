@@ -1,7 +1,7 @@
 'use client';
 // apps/web/src/app/dev/simulator/DevSimulatorClient.tsx
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { SetupPanel } from './SetupPanel';
 import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
@@ -10,8 +10,9 @@ import { ProjectionLayer } from './ProjectionLayer';
 import { ComparisonPanel } from './ComparisonPanel';
 import MapCanvas from '@/components/play/MapCanvas';
 import { useSimulatorWorker } from '@/hooks/useSimulatorWorker';
-import type { SimBoatSetup, SimSpeedFactor } from '@/lib/simulator/types';
-import type { BoatClass, Polar } from '@nemo/shared-types';
+import type { SimBoatSetup, SimSpeedFactor, SimOrder } from '@/lib/simulator/types';
+import type { BoatClass, Polar, SailId } from '@nemo/shared-types';
+import type { OrderHistoryEntry } from './OrderHistory';
 import { fetchLatestWindGrid } from '@/lib/projection/fetchWindGrid';
 import { freezeProjection, projectionAt } from '@/lib/simulator/projectionFreeze';
 import type { ProjectionResult } from '@/lib/projection/types';
@@ -70,12 +71,23 @@ export function DevSimulatorClient() {
   const [launchTimeMs, setLaunchTimeMs] = useState<number | undefined>(undefined);
   const [projection, setProjection] = useState<ProjectionResult | null>(null);
   const [projectionDeviationNm, setProjectionDeviationNm] = useState<number | null>(null);
+  const [orderHistory, setOrderHistory] = useState<OrderHistoryEntry[]>([]);
   // Keep a ref to the wind grid so the projection freeze can use it without
   // neutering the buffer that the sim worker already owns.
   const windGridRef = useRef<{ windGrid: WindGridConfig; windData: Float32Array } | null>(null);
 
   const { simTimeMs, fleet, status, post, setStatus, reinit } = useSimulatorWorker();
   const locked = status !== 'idle';
+
+  // Derive available sails from the primary boat's polar keys if present.
+  // The polar's `speeds` map has one entry per SailId — use those keys if possible,
+  // otherwise fall back to the canonical list from shared-types.
+  const availableSails = useMemo<SailId[]>(() => {
+    const primary = boats.find(b => b.id === primaryId) ?? boats[0];
+    if (!primary) return [];
+    // Conservative fallback — the full canonical SailId list from shared-types.
+    return ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as SailId[];
+  }, [boats, primaryId]);
 
   // Accumulate trail positions as fleet updates arrive.
   // Also compute the Δ projection deviation for the primary boat.
@@ -164,10 +176,16 @@ export function DevSimulatorClient() {
     post({ type: 'setSpeed', factor: s });
   }
 
+  const onSubmitOrder = (order: SimOrder) => {
+    post({ type: 'order', order, triggerSimMs: simTimeMs });
+    setOrderHistory(prev => [...prev, { simTimeMs, order }]);
+  };
+
   function resetSoft() {
     setTrails(new Map());
     setProjection(null);
     setProjectionDeviationNm(null);
+    setOrderHistory([]);
     post({ type: 'reset' });
     post({ type: 'setSpeed', factor: speed });
     post({ type: 'start' });
@@ -182,6 +200,7 @@ export function DevSimulatorClient() {
     setLaunchTimeMs(undefined);
     setProjection(null);
     setProjectionDeviationNm(null);
+    setOrderHistory([]);
     windGridRef.current = null;
   }
 
@@ -201,6 +220,10 @@ export function DevSimulatorClient() {
               if (primaryId === id) setPrimaryId(null);
             }}
             onSetPrimary={setPrimaryId}
+            orderHistory={orderHistory}
+            availableSails={availableSails}
+            onSubmitOrder={onSubmitOrder}
+            simStatus={status}
           />
         </div>
 

@@ -1,9 +1,13 @@
 'use client';
 // apps/web/src/app/dev/simulator/SetupPanel.tsx
 
-import type { SimBoatSetup } from '@/lib/simulator/types';
-import type { BoatClass } from '@nemo/shared-types';
+import type { SimBoatSetup, SimOrder } from '@/lib/simulator/types';
+import type { BoatClass, SailId } from '@nemo/shared-types';
+import type { SimStatus } from '@/hooks/useSimulatorWorker';
 import styles from './SetupPanel.module.css';
+import { OrderHistory } from './OrderHistory';
+import type { OrderHistoryEntry } from './OrderHistory';
+import { OrderInput } from './OrderInput';
 
 // ── Labels ──────────────────────────────────────────────────────────────────
 
@@ -44,6 +48,11 @@ interface SetupPanelProps {
   onEditBoat(id: string): void;
   onDeleteBoat(id: string): void;
   onSetPrimary(id: string): void;
+  // Task 15: order panel (only shown when locked)
+  orderHistory?: OrderHistoryEntry[];
+  availableSails?: SailId[];
+  onSubmitOrder?(order: SimOrder): void;
+  simStatus?: SimStatus;
 }
 
 // ── Loadout summary ──────────────────────────────────────────────────────────
@@ -72,6 +81,10 @@ export function SetupPanel({
   onEditBoat,
   onDeleteBoat,
   onSetPrimary,
+  orderHistory,
+  availableSails,
+  onSubmitOrder,
+  simStatus,
 }: SetupPanelProps) {
   // ── Locked mode ──────────────────────────────────────────────────────────
   if (locked) {
@@ -81,8 +94,12 @@ export function SetupPanel({
           <p className={styles.lockedTitle}>{boats.length} bateau{boats.length !== 1 ? 'x' : ''} en course</p>
           <p className={styles.lockedNote}>Setup verrouillé</p>
         </div>
-        {/* Task 15: mount <OrderHistory> + <OrderInput> into this region */}
-        <div className={styles.orderSlot}></div>
+        <OrderHistory entries={orderHistory ?? []} />
+        <OrderInput
+          availableSails={availableSails ?? []}
+          onSubmit={onSubmitOrder ?? (() => {})}
+          disabled={simStatus === 'done'}
+        />
       </div>
     );
   }
