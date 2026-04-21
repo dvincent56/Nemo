@@ -79,6 +79,7 @@
   "rewards": {
     "distanceRates": {
       "CRUISER_RACER": 0.5,
+      "MINI650": 0.6,
       "FIGARO": 0.8,
       "CLASS40": 1.0,
       "OCEAN_FIFTY": 1.6,
@@ -118,6 +119,9 @@
       "CRUISER_RACER": { "HULL": "absent", "MAST": "absent", "SAILS": "absent",
                          "FOILS": "absent", "KEEL": "absent",
                          "ELECTRONICS": "absent", "REINFORCEMENT": "absent" },
+      "MINI650":     { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
+                       "FOILS": "open", "KEEL": "monotype",
+                       "ELECTRONICS": "open", "REINFORCEMENT": "absent" },
       "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
                        "FOILS": "monotype", "KEEL": "monotype",
                        "ELECTRONICS": "open", "REINFORCEMENT": "open" },
@@ -991,6 +995,7 @@
       "transitionSpeedFactor": 0.70,
       "transitionTimeSec": {
         "CRUISER_RACER": 240,
+        "MINI650": 150,
         "FIGARO": 180,
         "CLASS40": 240,
         "OCEAN_FIFTY": 300,
@@ -1002,6 +1007,7 @@
       "speedFactor": 0.60,
       "durationSec": {
         "CRUISER_RACER": 75,
+        "MINI650": 45,
         "FIGARO": 60,
         "CLASS40": 90,
         "OCEAN_FIFTY": 150,
@@ -1013,6 +1019,7 @@
       "speedFactor": 0.55,
       "durationSec": {
         "CRUISER_RACER": 100,
+        "MINI650": 70,
         "FIGARO": 90,
         "CLASS40": 120,
         "OCEAN_FIFTY": 200,
@@ -1043,6 +1050,7 @@
     },
     "completionBonus": {
       "CRUISER_RACER": 200,
+      "MINI650": 300,
       "FIGARO": 400, "CLASS40": 600, "OCEAN_FIFTY": 1000,
       "IMOCA60": 900, "ULTIM": 1400
     }
