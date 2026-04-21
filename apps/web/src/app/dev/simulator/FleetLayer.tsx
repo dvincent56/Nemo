@@ -1,7 +1,7 @@
 'use client';
 // apps/web/src/app/dev/simulator/FleetLayer.tsx
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { mapInstance } from '@/components/play/MapCanvas';
 import type { SimFleetState } from '@/lib/simulator/types';
@@ -40,20 +40,28 @@ function emptyPoint(): GeoJSON.FeatureCollection<GeoJSON.Point> {
 export function FleetLayer({ fleet, primaryId, boatIds, trails }: FleetLayerProps) {
   // We track which boat ids have had sources/layers added so we can clean up
   const addedIds = useRef<Set<string>>(new Set());
+  // mapReady flips to true once the map instance reports its style is loaded
+  // — fleet/trails effects gate on this so they don't silently no-op when
+  // fleet updates arrive before the map is mounted.
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
-    // Poll until mapInstance is ready (it's a module-level variable set after map load)
-    let attempts = 0;
-    const MAX_ATTEMPTS = 50;
+    let cancelled = false;
+    const poll = () => {
+      if (cancelled) return;
+      const map = mapInstance;
+      if (map && map.isStyleLoaded()) setMapReady(true);
+      else setTimeout(poll, 200);
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, []);
 
+  useEffect(() => {
+    if (!mapReady) return;
     const tryInit = () => {
       const map = mapInstance;
-      if (!map || !map.isStyleLoaded()) {
-        if (++attempts < MAX_ATTEMPTS) {
-          setTimeout(tryInit, 200);
-        }
-        return;
-      }
+      if (!map || !map.isStyleLoaded()) return;
 
       // Add sources/layers for any new boat id
       for (const id of boatIds) {
@@ -145,12 +153,13 @@ export function FleetLayer({ fleet, primaryId, boatIds, trails }: FleetLayerProp
 
     tryInit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boatIds, primaryId]);
+  }, [boatIds, primaryId, mapReady]);
 
   // Update boat positions
   useEffect(() => {
+    if (!mapReady) return;
     const map = mapInstance;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
 
     for (const [id, state] of Object.entries(fleet)) {
       const dotSourceId = `sim-boat-${id}`;
@@ -166,12 +175,13 @@ export function FleetLayer({ fleet, primaryId, boatIds, trails }: FleetLayerProp
         }],
       });
     }
-  }, [fleet]);
+  }, [fleet, mapReady]);
 
   // Update trails
   useEffect(() => {
+    if (!mapReady) return;
     const map = mapInstance;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
 
     for (const [id, coords] of trails.entries()) {
       const trailSourceId = `sim-trail-${id}`;
@@ -187,7 +197,7 @@ export function FleetLayer({ fleet, primaryId, boatIds, trails }: FleetLayerProp
         properties: {},
       });
     }
-  }, [trails]);
+  }, [trails, mapReady]);
 
   // Cleanup on unmount
   useEffect(() => {

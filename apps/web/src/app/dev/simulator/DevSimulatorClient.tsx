@@ -12,6 +12,7 @@ import { ComparisonPanel } from './ComparisonPanel';
 import { SimTimeReadout } from './SimTimeReadout';
 import MapCanvas from '@/components/play/MapCanvas';
 import { useSimulatorWorker } from '@/hooks/useSimulatorWorker';
+import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import type { SimBoatSetup, SimSpeedFactor, SimOrder } from '@/lib/simulator/types';
 import type { BoatClass, Polar, SailId } from '@nemo/shared-types';
 import type { OrderHistoryEntry } from './OrderHistory';
@@ -66,6 +67,10 @@ async function fetchSimAssets(classes: BoatClass[]): Promise<{
 }
 
 export function DevSimulatorClient() {
+  // Populate the wind grid + decoded grid in the store so MapCanvas overlays
+  // can render + animate on simTimeMs like they do on /play.
+  useWeatherPrefetch({ phase2: true });
+
   const [gameBalanceReady, setGameBalanceReady] = useState(GameBalance.isLoaded);
   useEffect(() => {
     if (GameBalance.isLoaded) return;
