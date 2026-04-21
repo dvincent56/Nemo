@@ -188,9 +188,7 @@ export function getPublicProfile(username: string): PublicProfile | null {
   const all = getRanking('ALL');
   const overall = all.find((r) => r.username === username);
 
-  const classes: PublicProfile['classes'] = (
-    BOAT_CLASS_ORDER.filter((cls) => cls !== 'CRUISER_RACER')
-  ).flatMap((bc) => {
+  const classes: PublicProfile['classes'] = BOAT_CLASS_ORDER.flatMap((bc) => {
     const ranking = getRanking(bc);
     const entry = ranking.find((r) => r.username === username);
     if (!entry) return [];
