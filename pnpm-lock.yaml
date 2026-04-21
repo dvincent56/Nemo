@@ -32,6 +32,9 @@ importers:
       '@nemo/game-balance':
         specifier: workspace:*
         version: link:../../packages/game-balance
+      '@nemo/game-engine-core':
+        specifier: workspace:*
+        version: link:../../packages/game-engine-core
       '@nemo/polar-lib':
         specifier: workspace:*
         version: link:../../packages/polar-lib
@@ -99,6 +102,9 @@ importers:
       '@nemo/game-balance':
         specifier: workspace:*
         version: link:../../packages/game-balance
+      '@nemo/game-engine-core':
+        specifier: workspace:*
+        version: link:../../packages/game-engine-core
       '@nemo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -186,6 +192,43 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/game-engine-core:
+    dependencies:
+      '@nemo/game-balance':
+        specifier: workspace:*
+        version: link:../game-balance
+      '@nemo/polar-lib':
+        specifier: workspace:*
+        version: link:../polar-lib
+      '@nemo/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@turf/bbox':
+        specifier: ^7.1.0
+        version: 7.3.4
+      '@turf/boolean-point-in-polygon':
+        specifier: ^7.1.0
+        version: 7.3.4
+      '@turf/distance':
+        specifier: ^7.3.4
+        version: 7.3.4
+      '@turf/helpers':
+        specifier: ^7.1.0
+        version: 7.3.4
+      '@turf/line-intersect':
+        specifier: ^7.3.4
+        version: 7.3.4
+      '@turf/nearest-point-on-line':
+        specifier: ^7.3.4
+        version: 7.3.4
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

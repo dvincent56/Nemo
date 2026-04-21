@@ -1,9 +1,7 @@
 import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { runTick, type BoatRuntime } from '../engine/tick.js';
-import { resolveBoatLoadout } from '../engine/loadout.js';
-import { buildZoneIndex } from '../engine/zones.js';
+import { runTick, resolveBoatLoadout, buildZoneIndex, CoastlineIndex, type BoatRuntime } from '@nemo/game-engine-core';
 import { createFixtureProvider } from '../weather/provider.js';
 
 /**
@@ -59,7 +57,7 @@ function buildRuntime(i: number, raceId: string): BoatRuntime {
   };
 }
 
-async function benchN(boats: number, ticks: number, deps: Parameters<typeof runTick>[1], t0Ms: number): Promise<BenchRow> {
+async function benchN(boats: number, ticks: number, deps: { polar: any; weather: any; zones: any; coastline: any }, t0Ms: number): Promise<BenchRow> {
   const TICK_MS = 30_000;
   const runtimes: BoatRuntime[] = [];
   for (let i = 0; i < boats; i++) runtimes.push(buildRuntime(i, 'bench-race'));
@@ -92,7 +90,8 @@ async function main(): Promise<void> {
   const polar = await loadPolar('CLASS40');
   const weather = await createFixtureProvider();
   const zones = buildZoneIndex([]);
-  const deps = { polar, weather, zones };
+  const coastline = new CoastlineIndex();
+  const deps = { polar, weather, zones, coastline };
   const t0Ms = weather.runTs * 1000;
 
   const sizes = [1_000, 10_000, 100_000, 500_000];

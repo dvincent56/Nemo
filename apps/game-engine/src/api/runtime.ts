@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { SailId } from '@nemo/shared-types';
 import type { TickManager } from '../engine/manager.js';
-import { aggregateEffects, type AggregatedEffects } from '../engine/loadout.js';
+import { aggregateEffects, type AggregatedEffects } from '@nemo/game-engine-core';
 
 const SAIL_IDS: SailId[] = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'];
 

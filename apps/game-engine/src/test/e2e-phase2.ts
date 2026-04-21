@@ -3,9 +3,7 @@ import type { Boat, ExclusionZone, OrderEnvelope } from '@nemo/shared-types';
 import { randomUUID } from 'node:crypto';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { runTick, type BoatRuntime } from '../engine/tick.js';
-import { resolveBoatLoadout } from '../engine/loadout.js';
-import { buildZoneIndex } from '../engine/zones.js';
+import { runTick, resolveBoatLoadout, buildZoneIndex, CoastlineIndex, type BoatRuntime } from '@nemo/game-engine-core';
 import { createFixtureProvider } from '../weather/provider.js';
 
 /**
@@ -53,6 +51,7 @@ async function main(): Promise<void> {
     },
   };
   const zones = buildZoneIndex([penaltyZone]);
+  const coastline = new CoastlineIndex();
 
   const t0Ms = weather.runTs * 1000;
   const orderHistory: OrderEnvelope[] = [
@@ -90,7 +89,7 @@ async function main(): Promise<void> {
     // startedInZone = false (bateau arrive en zone à mi-tick), le BSP n'est
     // pas encore réduit — on ne veut pas le compter dans bspInsideZoneMax.
     const startedInZone = runtime.zonesAlerted.has('zone-1');
-    const out = runTick(runtime, { polar, weather, zones }, tickStart, tickEnd);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStart, tickEnd);
     runtime = out.runtime;
     maxTws = Math.max(maxTws, out.tws);
     if (runtime.boat.sail !== lastSail) {

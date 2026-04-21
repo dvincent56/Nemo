@@ -1,0 +1,77 @@
+/* OrderHistory.module.css */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid #1a3a52;
+}
+
+.header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(217, 200, 150, 0.55);
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.empty {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(217, 200, 150, 0.28);
+  letter-spacing: 0.04em;
+  padding: 8px 0;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column-reverse; /* newest at top */
+  gap: 4px;
+}
+
+.list::-webkit-scrollbar {
+  width: 3px;
+}
+.list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.list::-webkit-scrollbar-thumb {
+  background: #2f5a7a;
+  border-radius: 2px;
+}
+
+.list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(107, 163, 201, 0.7);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.order {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #d9c896;
+  letter-spacing: 0.04em;
+}

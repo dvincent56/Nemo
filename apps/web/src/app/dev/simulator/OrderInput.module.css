@@ -1,0 +1,161 @@
+/* OrderInput.module.css */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 16px;
+  border-top: 1px solid #1a3a52;
+  flex-shrink: 0;
+}
+
+.header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(217, 200, 150, 0.55);
+}
+
+/* Kind selector row */
+.kindRow {
+  display: flex;
+  gap: 4px;
+}
+
+.kindBtn,
+.kindActive {
+  flex: 1;
+  padding: 5px 0;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.kindBtn {
+  background: transparent;
+  border: 1px solid #2f5a7a;
+  color: rgba(107, 163, 201, 0.65);
+}
+
+.kindBtn:hover:not(:disabled) {
+  background: rgba(107, 163, 201, 0.08);
+  border-color: #6ba3c9;
+  color: #6ba3c9;
+}
+
+.kindActive {
+  background: rgba(201, 165, 87, 0.15);
+  border: 1px solid rgba(201, 165, 87, 0.6);
+  color: #c9a557;
+}
+
+.kindBtn:disabled,
+.kindActive:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Value input row */
+.valueRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.valueRow input[type="number"],
+.valueRow select {
+  flex: 1;
+  background: rgba(10, 31, 46, 0.8);
+  border: 1px solid #2f5a7a;
+  border-radius: 3px;
+  color: #d9c896;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 6px 8px;
+  min-width: 0;
+  outline: none;
+  transition: border-color 120ms;
+}
+
+.valueRow input[type="number"]:focus,
+.valueRow select:focus {
+  border-color: rgba(201, 165, 87, 0.6);
+}
+
+.valueRow input[type="number"]:disabled,
+.valueRow select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Remove number input arrows */
+.valueRow input[type="number"]::-webkit-outer-spin-button,
+.valueRow input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.valueRow input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.unit {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: rgba(217, 200, 150, 0.45);
+  flex-shrink: 0;
+}
+
+.modeLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #d9c896;
+  cursor: pointer;
+}
+
+.modeLabel input[type="checkbox"] {
+  accent-color: #c9a557;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.modeLabel input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+/* Submit button */
+.submitBtn {
+  width: 100%;
+  padding: 9px;
+  background: rgba(201, 165, 87, 0.12);
+  border: 1px solid rgba(201, 165, 87, 0.45);
+  border-radius: 4px;
+  color: #c9a557;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: rgba(201, 165, 87, 0.22);
+  border-color: rgba(201, 165, 87, 0.75);
+}
+
+.submitBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

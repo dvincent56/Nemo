@@ -1,0 +1,138 @@
+/* SimControlsBar.module.css — Nautical Luxury palette */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  height: 64px;
+  background: #0a1f2e;
+  border-top: 1px solid #1a3a52;
+  flex-shrink: 0;
+  font-family: var(--font-sans, sans-serif);
+}
+
+/* ── Primary action buttons (launch / resume) ── */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 18px;
+  height: 38px;
+  background: #c8a84b;
+  color: #0a1f2e;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.primary:hover:not(:disabled) {
+  background: #e8d9a6;
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Pause button (danger tint) ── */
+.primaryDanger {
+  composes: primary;
+  background: #7a3030;
+  color: #e8d9a6;
+}
+
+.primaryDanger:hover:not(:disabled) {
+  background: #9a4040;
+}
+
+/* ── Secondary buttons (reset / new) ── */
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 34px;
+  background: transparent;
+  color: #8ba8be;
+  border: 1px solid #1a3a52;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.secondary:hover:not(:disabled) {
+  color: #d9c896;
+  border-color: #2a5a7a;
+}
+
+.secondary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Speed group ── */
+.speedGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.speedLabel {
+  font-size: 11px;
+  color: rgba(217, 200, 150, 0.5);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.speedBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  color: #8ba8be;
+  border: 1px solid #1a3a52;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.speedBtn:hover {
+  color: #d9c896;
+  border-color: #2a5a7a;
+}
+
+.speedActive {
+  composes: speedBtn;
+  background: rgba(200, 168, 75, 0.15);
+  color: #c8a84b;
+  border-color: #c8a84b;
+}
+
+/* ── Done label ── */
+.doneLabel {
+  font-size: 12px;
+  color: rgba(217, 200, 150, 0.6);
+  letter-spacing: 0.05em;
+  font-style: italic;
+}
+
+/* ── Flexible spacer ── */
+.spacer {
+  flex: 1;
+}

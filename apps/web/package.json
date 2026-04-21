@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync-game-balance": "node ../../scripts/sync-game-balance.mjs",
+    "predev": "pnpm sync-game-balance",
+    "prebuild": "pnpm sync-game-balance",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -13,6 +16,7 @@
     "@etalab/decoupage-administratif": "^6.0.0",
     "@msgpack/msgpack": "^3.0.0",
     "@nemo/game-balance": "workspace:*",
+    "@nemo/game-engine-core": "workspace:*",
     "@nemo/shared-types": "workspace:*",
     "babel-plugin-react-compiler": "^19.0.0-beta-27714ef-20250124",
     "country-flag-icons": "^1.6.16",

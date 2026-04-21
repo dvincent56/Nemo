@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { TickManager } from '../engine/manager.js';
-import type { BoatRuntime } from '../engine/tick.js';
+import type { BoatRuntime } from '@nemo/game-engine-core';
 
 /**
  * Dev-only helpers. Exposed routes mutate engine state from HTTP, so they
