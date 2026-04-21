@@ -8,6 +8,8 @@ import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
 import { ProjectionLayer } from './ProjectionLayer';
+import WindOverlay from '@/components/play/WindOverlay';
+import SwellOverlay from '@/components/play/SwellOverlay';
 import { ComparisonPanel } from './ComparisonPanel';
 import { SimTimeReadout } from './SimTimeReadout';
 import MapCanvas from '@/components/play/MapCanvas';
@@ -252,6 +254,8 @@ export function DevSimulatorClient() {
             ? { simTimeMs: launchTimeMs + simTimeMs }
             : {})}
         />
+        <WindOverlay />
+        <SwellOverlay />
         <FleetLayer
           fleet={fleet}
           primaryId={primaryId}
