@@ -77,6 +77,13 @@ export function makeConstantWind(): { windGrid: WindGridConfig; windData: Float3
 }
 
 export function makeBoat(id: string, boatClass: BoatClass): SimBoatSetup {
+  // resolveBoatLoadout requires GameBalance to be loaded.
+  // Ensure it is loaded from disk before building the fixture boat.
+  const { GameBalance } = require('@nemo/game-balance') as { GameBalance: { isLoaded: boolean; load: (raw: unknown) => void } };
+  if (!GameBalance.isLoaded) {
+    const raw = loadFixtureGameBalance();
+    GameBalance.load(raw);
+  }
   return {
     id,
     name: id,
