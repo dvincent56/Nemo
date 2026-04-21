@@ -213,7 +213,7 @@ Mini = petit, léger, solo, manœuvres rapides. Plus rapide que Figaro :
   "effects": {
     "speedByTwa": [0.02, 0.02, 0.03, 0.02, 0.01],
     "speedByTws": [0.01, 0.02, 0.01],
-    "wearMul": { "sail": 1.20 },
+    "wearMul": { "sail": 1.30 },
     "maneuverMul": {}, "polarTargetsDeg": null,
     "activation": {}, "groundingLossMul": null
   } }
