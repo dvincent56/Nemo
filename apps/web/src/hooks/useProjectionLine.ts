@@ -3,7 +3,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { useGameStore } from '@/lib/store';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
-import type { ExclusionZone } from '@nemo/shared-types';
+import type { BoatClass, ExclusionZone } from '@nemo/shared-types';
 import type {
   ProjectionInput,
   ProjectionSegment,
@@ -104,8 +104,9 @@ function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
   };
 }
 
-const BOAT_CLASS_FILES: Record<string, string> = {
+const BOAT_CLASS_FILES: Record<BoatClass, string> = {
   CRUISER_RACER: 'cruiser-racer.json',
+  MINI650: 'mini650.json',
   FIGARO: 'figaro.json',
   CLASS40: 'class40.json',
   OCEAN_FIFTY: 'ocean-fifty.json',

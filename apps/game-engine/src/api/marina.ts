@@ -19,7 +19,7 @@ import {
   type UnlockCriteria,
 } from './marina.helpers.js';
 
-const VALID_CLASSES = new Set(['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM']);
+const VALID_CLASSES = new Set(['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM', 'MINI650']);
 const MAX_BOATS_PER_CLASS = 5;
 
 // ---------------------------------------------------------------------------
