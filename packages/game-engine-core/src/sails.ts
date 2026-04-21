@@ -1,7 +1,7 @@
 import type { BoatClass, SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import type { Polar } from '@nemo/shared-types';
-import { getPolarSpeed } from '@nemo/polar-lib';
+import { getPolarSpeed } from '@nemo/polar-lib/browser';
 import type { AggregatedEffects } from './loadout';
 
 export interface SailRuntimeState {

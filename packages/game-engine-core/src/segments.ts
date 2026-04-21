@@ -5,7 +5,7 @@ import type {
   SailId,
   WeatherPoint,
 } from '@nemo/shared-types';
-import { advancePosition, computeTWA, getPolarSpeed } from '@nemo/polar-lib';
+import { advancePosition, computeTWA, getPolarSpeed } from '@nemo/polar-lib/browser';
 
 /**
  * Modèle événementiel : chaque tick est découpé en segments par les ordres
