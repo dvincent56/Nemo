@@ -1,4 +1,4 @@
-export type BoatClass = 'CRUISER_RACER' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+export type BoatClass = 'CRUISER_RACER' | 'MINI650' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
 
 export type SailId = 'JIB' | 'LJ' | 'SS' | 'C0' | 'SPI' | 'HG' | 'LG';
 

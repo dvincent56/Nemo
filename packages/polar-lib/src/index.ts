@@ -11,6 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const POLAR_FILES: Record<BoatClass, string> = {
   CRUISER_RACER: 'cruiser-racer.json',
+  MINI650: 'mini650.json',
   FIGARO: 'figaro.json',
   CLASS40: 'class40.json',
   OCEAN_FIFTY: 'ocean-fifty.json',
