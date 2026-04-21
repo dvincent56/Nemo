@@ -3,6 +3,7 @@ import { Flag, NewsCard } from '@/components/ui';
 import type { RaceSummary } from '@/lib/api';
 import type { NewsItem } from './home-data';
 import type { SkipperRanking } from './ranking/data';
+import { CLASS_LABEL } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
 type LinkHref = Parameters<typeof Link>[0]['href'];
@@ -24,15 +25,6 @@ export interface HomeViewProps {
     totalRegistered: number;
   };
 }
-
-const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
-  CRUISER_RACER: 'Cruiser Racer',
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
 
 /** Normalise un code pays 2-lettres (notre modèle interne) en ISO alpha-2. */
 function toIsoCountry(code: string): string {

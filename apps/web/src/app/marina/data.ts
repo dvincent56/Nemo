@@ -5,13 +5,7 @@
 import type { BoatRecord, InstalledUpgrade, UpgradeSlot, UpgradeTier, BoatClass } from '@/lib/marina-api';
 export type { BoatRecord, InstalledUpgrade, UpgradeSlot, UpgradeTier, BoatClass };
 
-export const CLASS_LABEL: Record<string, string> = {
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
+export { CLASS_LABEL } from '@/lib/boat-classes';
 
 export const SLOT_LABEL: Record<UpgradeSlot, string> = {
   HULL: 'Coque',
@@ -31,7 +25,7 @@ export const TIER_LABEL: Record<UpgradeTier, string> = {
   PROTO: 'Proto',
 };
 
-export const ALL_CLASSES: BoatClass[] = ['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
+export { MARINA_BOAT_CLASSES as ALL_CLASSES } from '@/lib/boat-classes';
 export const MAX_BOATS_PER_CLASS = 5;
 
 /** Sous-ensemble de BoatRecord utilisé par la page /customize. */

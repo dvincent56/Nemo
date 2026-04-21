@@ -1,6 +1,6 @@
 import { API_BASE } from './api';
-
-export type BoatClass = 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+import type { BoatClass } from '@nemo/shared-types';
+export type { BoatClass };
 export type UpgradeSlot = 'HULL' | 'MAST' | 'SAILS' | 'FOILS' | 'KEEL' | 'ELECTRONICS' | 'REINFORCEMENT';
 export type UpgradeTier = 'SERIE' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PROTO';
 export type SlotAvailability = 'open' | 'monotype' | 'absent';

@@ -3,17 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button, Flag } from '@/components/ui';
-import type { PublicProfile, BoatClass } from '@/app/ranking/data';
+import type { PublicProfile } from '@/app/ranking/data';
+import { CLASS_LABEL } from '@/lib/boat-classes';
 import baseStyles from '../page.module.css';
 import styles from './page.module.css';
-
-const CLASS_LABEL: Record<BoatClass, string> = {
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
 
 function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };

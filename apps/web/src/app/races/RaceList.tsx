@@ -5,18 +5,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { RaceSummary } from '@/lib/api';
 import { Card, Chip } from '@/components/ui';
 import { courseLengthNM, formatDistance, type DistanceUnit } from '@/lib/geo';
+import { CLASS_LABEL, BOAT_CLASS_ORDER, MARINA_BOAT_CLASSES } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
-const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', 'CRUISER_RACER', 'FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
-
-const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
-  CRUISER_RACER: 'Cruiser Racer',
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
+const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', ...BOAT_CLASS_ORDER];
 
 const STATUSES: Array<RaceSummary['status'] | 'ALL'> = ['ALL', 'LIVE', 'PUBLISHED', 'FINISHED'];
 
@@ -68,7 +60,8 @@ function minify(points: [number, number][]): string {
     .join(' ');
 }
 
-const CLASS_VALUES: RaceSummary['boatClass'][] = ['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'];
+// Classes available for marina deep-links (excludes CRUISER_RACER which has no upgrades).
+const CLASS_VALUES = MARINA_BOAT_CLASSES;
 const STATUS_VALUES: RaceSummary['status'][] = ['DRAFT', 'PUBLISHED', 'BRIEFING', 'LIVE', 'FINISHED', 'ARCHIVED'];
 
 function readParam<T extends string>(value: string | null, allowed: readonly T[]): T | 'ALL' {

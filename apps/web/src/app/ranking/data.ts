@@ -16,8 +16,10 @@
  * pouvoir basculer mock → vraie API en remplaçant uniquement la source.
  */
 
+import type { BoatClass } from '@nemo/shared-types';
+export type { BoatClass };
+
 export type CountryCode = 'fr' | 'nl' | 'it' | 'uk' | 'no' | 'es' | 'ie' | 'pt' | 'cl';
-export type BoatClass = 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
 export type Trend = { dir: 'up' | 'down' | 'flat'; delta: number };
 
 /** Identité sociale d'un joueur, indépendante des courses qu'il dispute.

@@ -5,19 +5,11 @@ import Link from 'next/link';
 import { Eyebrow, Pagination } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import { profileHref } from '@/lib/routes';
-import type { BoatClass } from '@/app/ranking/data';
 import type { TeamMember, TeamProfile } from '../data';
+import { CLASS_LABEL } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
 const MEMBER_PAGE_SIZE = 12;
-
-const CLASS_LABEL: Record<BoatClass, string> = {
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
 
 function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };

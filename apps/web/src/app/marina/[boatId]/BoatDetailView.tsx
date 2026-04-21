@@ -84,7 +84,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
   const inRace = !!boat.activeRaceId;
   const stateLabel = inRace ? `En course · ${boat.activeRaceId}` : 'Au port';
   const stateCls = inRace ? styles.stateInRace : styles.stateIdle;
-  const classLabel = CLASS_LABEL[boat.boatClass] ?? boat.boatClass;
+  const classLabel = CLASS_LABEL[boat.boatClass as keyof typeof CLASS_LABEL] ?? boat.boatClass;
 
   // Stats
   const avgCondition = Math.round(

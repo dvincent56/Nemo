@@ -235,7 +235,7 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
           </div>
           <h1 className={styles.previewName}>{state.name || 'Sans nom'}</h1>
           <p className={styles.previewMeta}>
-            {CLASS_LABEL[boat.boatClass]} · <strong>{state.markings.mainsailCountryCode}-{boat.hullNumber}</strong>
+            {CLASS_LABEL[boat.boatClass as keyof typeof CLASS_LABEL] ?? boat.boatClass} · <strong>{state.markings.mainsailCountryCode}-{boat.hullNumber}</strong>
             {' · '}
             {dirty ? 'Aperçu non sauvegardé' : 'Configuration enregistrée'}
           </p>

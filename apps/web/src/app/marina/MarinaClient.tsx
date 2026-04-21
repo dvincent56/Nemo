@@ -57,7 +57,7 @@ function NewBoatButton({ boatClass, onCreated }: {
   onCreated: () => void;
 }): React.ReactElement {
   const router = useRouter();
-  const label = CLASS_LABEL[boatClass] ?? boatClass;
+  const label = CLASS_LABEL[boatClass as keyof typeof CLASS_LABEL] ?? boatClass;
   const [busy, setBusy] = useState(false);
 
   const handleCreate = async () => {
@@ -161,7 +161,7 @@ export default function MarinaClient(): React.ReactElement {
         {ALL_CLASSES.map((cls) => {
           const classBoats = byClass.get(cls) ?? [];
           const unlocked = classBoats.length > 0;
-          const label = CLASS_LABEL[cls] ?? cls;
+          const label = CLASS_LABEL[cls];
 
           return (
             <section key={cls} className={styles.classSection}>

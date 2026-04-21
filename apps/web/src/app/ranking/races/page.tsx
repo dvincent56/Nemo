@@ -2,18 +2,10 @@ import Link from 'next/link';
 import { Eyebrow } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
 import { fetchRaces, type RaceSummary } from '@/lib/api';
+import { CLASS_LABEL } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
-
-const CLASS_LABEL: Record<RaceSummary['boatClass'], string> = {
-  CRUISER_RACER: 'Cruiser Racer',
-  FIGARO: 'Figaro III',
-  CLASS40: 'Class40',
-  OCEAN_FIFTY: 'Ocean Fifty',
-  IMOCA60: 'IMOCA 60',
-  ULTIM: 'Ultim',
-};
 
 export default async function RankingRacesPage(): Promise<React.ReactElement> {
   const all = await fetchRaces().catch(() => []);
