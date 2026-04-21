@@ -8,6 +8,7 @@ import {
   findOceanPreset,
   DEFAULT_OCEAN_ID,
 } from '@/lib/mapAppearance';
+import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 
@@ -95,13 +96,26 @@ interface MapCanvasProps {
   /** Show the 7-day projection line for the player's own boat.
    *  Set to false in spectator mode (no own boat). */
   enableProjection?: boolean;
+  /** Override the wall-clock time used to sample weather overlays.
+   *  When undefined (default), overlays sample at Date.now() — zero regression.
+   *  When set (e.g. by the dev simulator), overlays show weather at that timestamp. */
+  simTimeMs?: number;
 }
 
-export default function MapCanvas({ enableProjection = true }: MapCanvasProps): React.ReactElement {
+export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCanvasProps): React.ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
   useProjectionLine(enableProjection ? readyMap : null);
+
+  /* ── simTimeMs: override weather grid time for dev simulator ── */
+  useEffect(() => {
+    if (simTimeMs === undefined) return;
+    const decoded = useGameStore.getState().weather.decodedGrid;
+    if (!decoded) return;
+    const grid = decodedGridToWeatherGridAtNow(decoded, simTimeMs);
+    useGameStore.getState().setWeatherGrid(grid, new Date(simTimeMs + 6 * 3600 * 1000));
+  }, [simTimeMs]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;

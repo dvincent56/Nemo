@@ -13,16 +13,17 @@ const RAD_TO_DEG = 180 / Math.PI;
 
 /**
  * Like decodedGridToWeatherGrid but interpolates TEMPORALLY between the two
- * forecast hours surrounding `Date.now()`. Use this when you need wind for
- * "right now" rather than at the GFS run time.
+ * forecast hours surrounding the given time (defaults to `Date.now()`).
+ * Pass an explicit `nowMs` to sample weather at a specific wall-clock time
+ * (e.g. when the dev simulator overrides the current time).
  */
-export function decodedGridToWeatherGridAtNow(decoded: DecodedWeatherGrid): WeatherGrid {
+export function decodedGridToWeatherGridAtNow(decoded: DecodedWeatherGrid, nowMs?: number): WeatherGrid {
   const { header, data } = decoded;
   const { numLat, numLon, latMin, latMax, lonMin, lonMax, gridStepLat, runTimestamp } = header;
   const hours = decoded.hours ?? Array.from({ length: header.numHours }, (_, i) => i);
 
-  // Pick the two layers bracketing current time.
-  const nowSec = Math.floor(Date.now() / 1000);
+  // Pick the two layers bracketing the requested time (defaults to wall clock).
+  const nowSec = Math.floor((nowMs ?? Date.now()) / 1000);
   const elapsedHours = (nowSec - runTimestamp) / 3600;
   let a = 0, b = 0, frac = 0;
   if (hours.length <= 1 || elapsedHours <= hours[0]!) {
@@ -81,7 +82,7 @@ export function decodedGridToWeatherGridAtNow(decoded: DecodedWeatherGrid): Weat
     cols: numLon,
     rows: numLat,
     bounds: { north: latMax, south: latMin, east: lonMax, west: lonMin },
-    timestamps: [Date.now()],
+    timestamps: [nowMs ?? Date.now()],
   };
 }
 
