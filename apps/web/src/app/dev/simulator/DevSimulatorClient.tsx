@@ -2,6 +2,7 @@
 // apps/web/src/app/dev/simulator/DevSimulatorClient.tsx
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { SetupPanel } from './SetupPanel';
 import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
@@ -65,6 +66,15 @@ async function fetchSimAssets(classes: BoatClass[]): Promise<{
 }
 
 export function DevSimulatorClient() {
+  const [gameBalanceReady, setGameBalanceReady] = useState(GameBalance.isLoaded);
+  useEffect(() => {
+    if (GameBalance.isLoaded) return;
+    fetch('/data/game-balance.json')
+      .then((r) => r.json())
+      .then((json) => { GameBalance.load(json); setGameBalanceReady(true); })
+      .catch((err) => console.error('[dev-simulator] game-balance load failed', err));
+  }, []);
+
   const [boats, setBoats] = useState<SimBoatSetup[]>([]);
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -215,7 +225,7 @@ export function DevSimulatorClient() {
           boats={boats}
           primaryId={primaryId}
           locked={locked}
-          onAddBoat={() => { setEditingId(null); setModalOpen(true); }}
+          onAddBoat={() => { if (!gameBalanceReady) return; setEditingId(null); setModalOpen(true); }}
           onEditBoat={(id) => { setEditingId(id); setModalOpen(true); }}
           onDeleteBoat={(id) => {
             setBoats(prev => prev.filter(b => b.id !== id));
