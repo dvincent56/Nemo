@@ -278,32 +278,22 @@ These are `Record<BoatClass, X>` — typecheck fails after step 3.1 until patche
 
 ## 9. UI Registries — Untyped (Manual Review)
 
-These are plain arrays with no typecheck enforcement — easy to miss.
+There is currently **no manually-maintained class array** that needs editing.
+Every UI list of boat classes is derived from `BOAT_CLASS_ORDER` (which is
+`= BOAT_CLASSES` from `shared-types`), so adding the new class to the
+`BOAT_CLASSES` tuple in §3.1 propagates everywhere automatically — including
+the marina, race filters, public profile per-class stats.
 
-### Step 9.1 — `MARINA_BOAT_CLASSES` in `apps/web/src/lib/boat-classes.ts`
+**Design rule:** every boat class is shown everywhere. Whether a class has
+upgradable slots is a game-balance concern (`upgrades.slotsByClass`); the UI
+does not exclude classes based on it. A class with all slots `"absent"` simply
+shows up in the marina with no upgrades available — that's a valid state.
 
-This static array lists classes that have at least one non-`"absent"` upgrade slot.
+### Sanity check — `apps/game-engine/src/api/marina.ts` → `VALID_CLASSES`
 
-- If `upgrades.slotsByClass.<CLASS>` has **all slots = `"absent"`**: **do not add** to `MARINA_BOAT_CLASSES`.
-- Otherwise: **add** `'<CLASS>'` to the array.
-
-```typescript
-export const MARINA_BOAT_CLASSES: readonly BoatClass[] = [
-  'MINI650',
-  // ...
-  '<CLASS>',  // ← add if any slot is open or monotype
-];
-```
-
-The `getMarinaBoatClasses()` function in the same file documents this invariant.
-
-### Step 9.2 — `apps/game-engine/src/api/marina.ts` → `VALID_CLASSES`
-
-> **Note:** As of branch `feature/mini650-boat-class`, `VALID_CLASSES` was
-> refactored to `new Set(BoatClassZ.options)` — it is now fully typed and
-> auto-updates. No manual edit needed unless a future refactor reverts this.
-
-If `VALID_CLASSES` is ever a hardcoded `Set<string>` again, add `'<CLASS>'` manually.
+> **Note:** `VALID_CLASSES` is `new Set(BoatClassZ.options)` — fully typed and
+> auto-updating. No manual edit needed unless a future refactor reverts this
+> to a hardcoded `Set<string>`. If you see that, add `'<CLASS>'` manually.
 
 ---
 

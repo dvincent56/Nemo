@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { RaceSummary } from '@/lib/api';
 import { Card, Chip } from '@/components/ui';
 import { courseLengthNM, formatDistance, type DistanceUnit } from '@/lib/geo';
-import { CLASS_LABEL, BOAT_CLASS_ORDER, MARINA_BOAT_CLASSES } from '@/lib/boat-classes';
+import { CLASS_LABEL, BOAT_CLASS_ORDER } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
 const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', ...BOAT_CLASS_ORDER];
@@ -60,8 +60,7 @@ function minify(points: [number, number][]): string {
     .join(' ');
 }
 
-// Classes available for marina deep-links (excludes CRUISER_RACER which has no upgrades).
-const CLASS_VALUES = MARINA_BOAT_CLASSES;
+const CLASS_VALUES = BOAT_CLASS_ORDER;
 const STATUS_VALUES: RaceSummary['status'][] = ['DRAFT', 'PUBLISHED', 'BRIEFING', 'LIVE', 'FINISHED', 'ARCHIVED'];
 
 function readParam<T extends string>(value: string | null, allowed: readonly T[]): T | 'ALL' {

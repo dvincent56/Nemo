@@ -25,7 +25,7 @@ export const TIER_LABEL: Record<UpgradeTier, string> = {
   PROTO: 'Proto',
 };
 
-export { MARINA_BOAT_CLASSES as ALL_CLASSES } from '@/lib/boat-classes';
+export { BOAT_CLASS_ORDER as ALL_CLASSES } from '@/lib/boat-classes';
 export const MAX_BOATS_PER_CLASS = 5;
 
 /** Sous-ensemble de BoatRecord utilisé par la page /customize. */
