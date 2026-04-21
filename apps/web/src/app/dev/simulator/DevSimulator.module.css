@@ -1,0 +1,74 @@
+.grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  grid-template-rows: 1fr 80px;
+  height: 100vh;
+  background: #0a1f2e;
+  color: #d9c896;
+  overflow: hidden;
+}
+
+.setup {
+  grid-column: 1;
+  grid-row: 1;
+  overflow-y: auto;
+  border-right: 1px solid #1a3a52;
+}
+
+.map {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.comparison {
+  grid-column: 3;
+  grid-row: 1;
+  overflow-y: auto;
+  border-left: 1px solid #1a3a52;
+}
+
+.controls {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.compassOverlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+  background: #0f2a3d;
+  border: 1px solid #2f5a7a;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #d9c896;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.compassOverlay .hdg {
+  font-size: 14px;
+  color: #e8d9a6;
+  font-weight: 600;
+}
+
+.timeReadout {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 5;
+  background: #0f2a3d;
+  border: 1px solid #2f5a7a;
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: #d9c896;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.timeReadout .accent {
+  color: #c9a557;
+  font-weight: 600;
+}

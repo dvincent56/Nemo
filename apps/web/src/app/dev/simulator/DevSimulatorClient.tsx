@@ -8,6 +8,7 @@ import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
 import { ProjectionLayer } from './ProjectionLayer';
 import { ComparisonPanel } from './ComparisonPanel';
+import { SimTimeReadout } from './SimTimeReadout';
 import MapCanvas from '@/components/play/MapCanvas';
 import { useSimulatorWorker } from '@/hooks/useSimulatorWorker';
 import type { SimBoatSetup, SimSpeedFactor, SimOrder } from '@/lib/simulator/types';
@@ -18,6 +19,7 @@ import { freezeProjection, projectionAt } from '@/lib/simulator/projectionFreeze
 import type { ProjectionResult } from '@/lib/projection/types';
 import type { WindGridConfig } from '@/lib/projection/windLookup';
 import type { Position } from '@nemo/shared-types';
+import styles from './DevSimulator.module.css';
 
 /** Approximate haversine distance in nautical miles between two positions. */
 function haversineNM(a: Position, b: Position): number {
@@ -205,47 +207,63 @@ export function DevSimulatorClient() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0a1f2e', color: '#d9c896' }}>
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
-        {/* Left panel — setup */}
-        <div style={{ width: 280, borderRight: '1px solid #1a3a52', flexShrink: 0 }}>
-          <SetupPanel
-            boats={boats}
-            primaryId={primaryId}
-            locked={locked}
-            onAddBoat={() => { setEditingId(null); setModalOpen(true); }}
-            onEditBoat={(id) => { setEditingId(id); setModalOpen(true); }}
-            onDeleteBoat={(id) => {
-              setBoats(prev => prev.filter(b => b.id !== id));
-              if (primaryId === id) setPrimaryId(null);
-            }}
-            onSetPrimary={setPrimaryId}
-            orderHistory={orderHistory}
-            availableSails={availableSails}
-            onSubmitOrder={onSubmitOrder}
-            simStatus={status}
-          />
-        </div>
+    <div className={styles.grid}>
+      {/* Left panel — setup */}
+      <div className={styles.setup}>
+        <SetupPanel
+          boats={boats}
+          primaryId={primaryId}
+          locked={locked}
+          onAddBoat={() => { setEditingId(null); setModalOpen(true); }}
+          onEditBoat={(id) => { setEditingId(id); setModalOpen(true); }}
+          onDeleteBoat={(id) => {
+            setBoats(prev => prev.filter(b => b.id !== id));
+            if (primaryId === id) setPrimaryId(null);
+          }}
+          onSetPrimary={setPrimaryId}
+          orderHistory={orderHistory}
+          availableSails={availableSails}
+          onSubmitOrder={onSubmitOrder}
+          simStatus={status}
+        />
+      </div>
 
-        {/* Centre — map + fleet overlay + projection line */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
-          <MapCanvas
-            enableProjection={false}
-            {...((status === 'running' || status === 'paused') && launchTimeMs !== undefined
-              ? { simTimeMs: launchTimeMs + simTimeMs }
-              : {})}
-          />
-          <FleetLayer
-            fleet={fleet}
-            primaryId={primaryId}
-            boatIds={boats.map(b => b.id)}
-            trails={trails}
-            simStatus={status}
-          />
-          <ProjectionLayer projection={projection} />
-        </div>
+      {/* Centre — map + fleet overlay + projection line + overlays */}
+      <div className={styles.map}>
+        <MapCanvas
+          enableProjection={false}
+          {...((status === 'running' || status === 'paused') && launchTimeMs !== undefined
+            ? { simTimeMs: launchTimeMs + simTimeMs }
+            : {})}
+        />
+        <FleetLayer
+          fleet={fleet}
+          primaryId={primaryId}
+          boatIds={boats.map(b => b.id)}
+          trails={trails}
+          simStatus={status}
+        />
+        <ProjectionLayer projection={projection} />
 
-        {/* Right panel — comparison metrics */}
+        {/* Compass overlay — top-right, shows primary boat nav data */}
+        {locked && primaryId && fleet[primaryId] && (
+          <div className={styles.compassOverlay}>
+            <div style={{ opacity: 0.7, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Principal</div>
+            <div className={styles.hdg}>HDG {Math.round(fleet[primaryId].heading)}° · TWA {Math.round(fleet[primaryId].twa)}°</div>
+            <div>BSP {fleet[primaryId].bsp.toFixed(1)} kts</div>
+          </div>
+        )}
+
+        {/* Sim time readout — bottom-left */}
+        <SimTimeReadout
+          simTimeMs={simTimeMs}
+          launchTimeMs={launchTimeMs ?? null}
+          locked={locked}
+        />
+      </div>
+
+      {/* Right panel — comparison metrics */}
+      <div className={styles.comparison}>
         <ComparisonPanel
           boats={boats}
           fleet={fleet}
@@ -255,17 +273,19 @@ export function DevSimulatorClient() {
       </div>
 
       {/* Controls bar — pinned to bottom of layout */}
-      <SimControlsBar
-        status={status}
-        speed={speed}
-        canLaunch={boats.length > 0}
-        onLaunch={launch}
-        onPause={pause}
-        onResume={resume}
-        onSetSpeed={setSimSpeed}
-        onResetSoft={resetSoft}
-        onResetHard={resetHard}
-      />
+      <div className={styles.controls}>
+        <SimControlsBar
+          status={status}
+          speed={speed}
+          canLaunch={boats.length > 0}
+          onLaunch={launch}
+          onPause={pause}
+          onResume={resume}
+          onSetSpeed={setSimSpeed}
+          onResetSoft={resetSoft}
+          onResetHard={resetHard}
+        />
+      </div>
 
       {/* Boat setup modal */}
       {modalOpen && (
