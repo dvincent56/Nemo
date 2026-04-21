@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useGameStore } from '@/lib/store';
-import { OCEAN_PRESETS, LAND_PRESETS } from '@/lib/mapAppearance';
+import { OCEAN_PRESETS } from '@/lib/mapAppearance';
 import styles from './MapAppearanceModal.module.css';
 
 interface MapAppearanceModalProps {
@@ -12,9 +12,7 @@ interface MapAppearanceModalProps {
 
 export default function MapAppearanceModal({ open, onClose }: MapAppearanceModalProps): React.ReactElement | null {
   const oceanPresetId = useGameStore((s) => s.mapAppearance.oceanPresetId);
-  const landPresetId = useGameStore((s) => s.mapAppearance.landPresetId);
   const setOceanPreset = useGameStore((s) => s.setOceanPreset);
-  const setLandPreset = useGameStore((s) => s.setLandPreset);
 
   useEffect(() => {
     if (!open) return;
@@ -54,22 +52,6 @@ export default function MapAppearanceModal({ open, onClose }: MapAppearanceModal
                 aria-label={p.label}
                 title={p.label}
               />
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <p className={styles.sectionTitle}>Terre</p>
-          <div className={styles.chips}>
-            {LAND_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`${styles.chip} ${p.id === landPresetId ? styles.chipActive : ''}`}
-                onClick={() => setLandPreset(p.id)}
-              >
-                {p.label}
-              </button>
             ))}
           </div>
         </section>

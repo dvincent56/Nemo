@@ -6,9 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useGameStore } from '@/lib/store';
 import {
   findOceanPreset,
-  findLandPreset,
   DEFAULT_OCEAN_ID,
-  DEFAULT_LAND_ID,
 } from '@/lib/mapAppearance';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
@@ -45,14 +43,14 @@ const COUNTRY_LABELS: GeoJSON.FeatureCollection = {
   ],
 };
 
-function buildStyle(oceanColor: string, landTileUrl: string): maplibregl.StyleSpecification {
+function buildStyle(oceanColor: string): maplibregl.StyleSpecification {
   return {
     version: 8,
     name: 'Nemo Ocean',
     sources: {
       'osm-tiles': {
         type: 'raster',
-        tiles: [landTileUrl],
+        tiles: ['https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png'],
         tileSize: 256,
       },
       'country-labels': {
@@ -111,12 +109,10 @@ export default function MapCanvas({ enableProjection = true }: MapCanvasProps): 
     const initAppearance = useGameStore.getState().mapAppearance;
     const initOcean = findOceanPreset(initAppearance.oceanPresetId)?.color
       ?? findOceanPreset(DEFAULT_OCEAN_ID)!.color;
-    const initLand = findLandPreset(initAppearance.landPresetId)?.tileUrl
-      ?? findLandPreset(DEFAULT_LAND_ID)!.tileUrl;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: buildStyle(initOcean, initLand),
+      style: buildStyle(initOcean),
       center: [-3.0, 47.0],
       zoom: 5,
       attributionControl: false,
@@ -535,39 +531,6 @@ export default function MapCanvas({ enableProjection = true }: MapCanvasProps): 
     return useGameStore.subscribe((s) => {
       if (s.mapAppearance.oceanPresetId !== prev) {
         prev = s.mapAppearance.oceanPresetId;
-        apply(prev);
-      }
-    });
-  }, []);
-
-  /* ── Apparence : style de terre (swap source raster) ── */
-  useEffect(() => {
-    const apply = (landPresetId: string): void => {
-      const map = mapRef.current;
-      if (!map || !map.getSource('osm-tiles')) return;
-      const preset = findLandPreset(landPresetId);
-      if (!preset) return;
-      map.removeLayer('dark-tiles');
-      map.removeSource('osm-tiles');
-      map.addSource('osm-tiles', {
-        type: 'raster',
-        tiles: [preset.tileUrl],
-        tileSize: 256,
-      });
-      map.addLayer(
-        {
-          id: 'dark-tiles',
-          type: 'raster',
-          source: 'osm-tiles',
-          paint: { 'raster-opacity': 0.6 },
-        },
-        'country-names',
-      );
-    };
-    let prev = useGameStore.getState().mapAppearance.landPresetId;
-    return useGameStore.subscribe((s) => {
-      if (s.mapAppearance.landPresetId !== prev) {
-        prev = s.mapAppearance.landPresetId;
         apply(prev);
       }
     });

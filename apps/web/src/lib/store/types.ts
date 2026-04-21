@@ -77,7 +77,6 @@ export interface LayersState {
 
 export interface MapAppearanceState {
   oceanPresetId: string;
-  landPresetId: string;
 }
 
 export type PanelName = 'ranking' | 'sails' | 'programming';
@@ -174,7 +173,6 @@ export interface GameStore {
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
   toggleLayer: (layer: LayerName) => void;
   setOceanPreset: (id: string) => void;
-  setLandPreset: (id: string) => void;
   openPanel: (p: PanelName) => void;
   closePanel: () => void;
   setWeatherGrid: (grid: WeatherGrid, expiresAt: Date) => void;
