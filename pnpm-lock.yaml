@@ -205,22 +205,22 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
       '@turf/bbox':
-        specifier: ^7.0.0
+        specifier: ^7.1.0
         version: 7.3.4
       '@turf/boolean-point-in-polygon':
-        specifier: ^7.0.0
+        specifier: ^7.1.0
         version: 7.3.4
       '@turf/distance':
-        specifier: ^7.0.0
+        specifier: ^7.3.4
         version: 7.3.4
       '@turf/helpers':
-        specifier: ^7.0.0
+        specifier: ^7.1.0
         version: 7.3.4
       '@turf/line-intersect':
-        specifier: ^7.0.0
+        specifier: ^7.3.4
         version: 7.3.4
       '@turf/nearest-point-on-line':
-        specifier: ^7.0.0
+        specifier: ^7.3.4
         version: 7.3.4
     devDependencies:
       tsx:
