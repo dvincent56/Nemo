@@ -57,3 +57,5 @@ export {
 export { bandFor } from './bands.js';
 
 export type { WeatherProvider, WeatherPoint } from './weather.js';
+
+export { CoastlineIndex, type CoastGeometry } from './coastline.js';
