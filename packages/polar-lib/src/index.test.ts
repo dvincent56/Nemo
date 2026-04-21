@@ -18,7 +18,7 @@ test('loadPolar(MINI650) returns a non-zero JIB speed at typical close-hauled po
   assert.ok(speed > 2 && speed < 10, `expected 2 < speed < 10, got ${speed}`);
 });
 
-test('loadPolar(MINI650) returns 0 in the dead zone (TWA=0)', async () => {
+test('loadPolar(MINI650) raw data has 0 speed at TWA=0 (head-to-wind source row)', async () => {
   const polar = await loadPolar('MINI650');
   const speed = polar.speeds.JIB?.[0]?.[10] ?? -1;
   assert.equal(speed, 0);
