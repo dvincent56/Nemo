@@ -2,11 +2,17 @@
 // Read polars and game-balance from disk (Node-only) so tests can build the
 // payloads the worker would normally receive from the main thread.
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { BoatClass, Polar } from '@nemo/shared-types';
 import { resolveBoatLoadout } from '@nemo/game-engine-core';
 import type { WindGridConfig } from '../projection/windLookup';
 import type { SimBoatSetup } from './types';
+
+// Resolve from this file's location so the path is stable regardless of the
+// process cwd (tests run from various package dirs via pnpm exec).
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(__dirname, '../../../../..');
 
 export function loadFixturePolars(classes: BoatClass[]): Record<BoatClass, Polar> {
   const out: Record<string, Polar> = {};
@@ -20,14 +26,14 @@ export function loadFixturePolars(classes: BoatClass[]): Record<BoatClass, Polar
   for (const c of classes) {
     const filename = map[c];
     if (!filename) throw new Error(`No polar file for boat class: ${c}`);
-    const p = resolve('packages/polar-lib/polars', filename);
+    const p = resolve(repoRoot, 'packages/polar-lib/polars', filename);
     out[c] = JSON.parse(readFileSync(p, 'utf-8')) as Polar;
   }
   return out as Record<BoatClass, Polar>;
 }
 
 export function loadFixtureGameBalance(): unknown {
-  return JSON.parse(readFileSync(resolve('packages/game-balance/game-balance.json'), 'utf-8'));
+  return JSON.parse(readFileSync(resolve(repoRoot, 'packages/game-balance/game-balance.json'), 'utf-8'));
 }
 
 /**
@@ -47,7 +53,7 @@ export function makeConstantWind(): { windGrid: WindGridConfig; windData: Float3
   // 2 cols × 2 rows grid covering 40°N–50°N, 10°W–0°W, 10° resolution
   const cols = 2;
   const rows = 2;
-  const timestamps = [0, 3600 * 48]; // two layers: t=0 and t=48h (ms)
+  const timestamps = [0, 3_600_000 * 48]; // two layers: t=0 and t=48h in Unix ms (matches WindGridConfig.timestamps)
 
   const windGrid: WindGridConfig = {
     bounds: { north: 50, south: 40, east: 0, west: -10 },

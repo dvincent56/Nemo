@@ -8,7 +8,6 @@ import {
   runTick,
   buildZoneIndex,
   CoastlineIndex,
-  resolveBoatLoadout,
   type BoatRuntime,
   type CoastlineProbe,
 } from '@nemo/game-engine-core';
@@ -56,10 +55,10 @@ export class SimulatorEngine {
 
   // Initialized during init()
   private runtimes: Map<string, RuntimeEntry> = new Map();
-  private polars: Map<string, Polar> = new Map();
+  private polars: Map<BoatClass, Polar> = new Map();
   private coastline: CoastlineIndex = new CoastlineIndex();
   private weatherLookup: ReturnType<typeof createWindLookup> | null = null;
-  private gribTimestamps: number[] = []; // seconds since epoch
+  private gribTimestamps: number[] = []; // milliseconds, matching WindGridConfig.timestamps
 
   // Simulation clock
   private simTimeMs: number = 0;
@@ -88,7 +87,7 @@ export class SimulatorEngine {
     // 2. Cache polars by boat class
     this.polars.clear();
     for (const [cls, polar] of Object.entries(payload.polars)) {
-      this.polars.set(cls, polar as Polar);
+      this.polars.set(cls as BoatClass, polar as Polar);
     }
 
     // 3. Load coastline
@@ -219,7 +218,7 @@ export class SimulatorEngine {
         },
         orderHistory: [],
         zonesAlerted: new Set(),
-        loadout: resolveBoatLoadout(`sim-${setup.id}`, [], setup.boatClass as BoatClass),
+        loadout: setup.loadout,
         prevTwa: null,
         maneuver: null,
       };
@@ -251,7 +250,7 @@ export class SimulatorEngine {
         const sample = lookup(lat, lon, timeUnix * 1000);
         if (!sample) {
           // Beyond GRIB coverage: return last valid sample (static fallback)
-          const fallback = lookup(lat, lon, this.gribTimestamps[this.gribTimestamps.length - 1]! * 1000);
+          const fallback = lookup(lat, lon, this.gribTimestamps[this.gribTimestamps.length - 1]!);
           if (fallback) {
             return {
               tws: fallback.tws,
@@ -276,20 +275,18 @@ export class SimulatorEngine {
     const tickStart = this.simTimeMs + this.startTimeMs;
     const tickEnd = tickStart + TICK_MS;
 
-    // GRIB exhaustion check: compare tickStart (ms → s) against last timestamp (s)
+    // GRIB exhaustion: tickStart is ms, timestamps are ms — compare directly
     const lastGribTs = this.gribTimestamps[this.gribTimestamps.length - 1];
-    if (lastGribTs !== undefined && tickStart / 1000 > lastGribTs) {
+    if (lastGribTs !== undefined && tickStart > lastGribTs) {
       this.listener({ type: 'done', reason: 'grib_exhausted' });
       this.stopped = true;
       return;
     }
 
     const zones = buildZoneIndex([]);
-    let allGrounded = true;
 
     for (const [id, entry] of this.runtimes) {
       if (entry.grounded) continue;
-      allGrounded = false;
 
       const polar = this.polars.get(entry.runtime.boat.boatClass);
       if (!polar) {
@@ -309,25 +306,16 @@ export class SimulatorEngine {
       entry.prevPos = { ...newPos };
       entry.runtime = outcome.runtime;
 
-      if (outcome.grounded) {
-        entry.grounded = true;
-      } else {
-        allGrounded = false;
-      }
-
+      if (outcome.grounded) entry.grounded = true;
       this.runtimes.set(id, entry);
     }
 
     this.simTimeMs += TICK_MS;
 
-    // Check if all boats are grounded (re-evaluate since some may have just grounded)
-    const allNowGrounded = [...this.runtimes.values()].every((e) => e.grounded);
-    if (allNowGrounded && this.runtimes.size > 0) {
+    if (this.runtimes.size > 0 && [...this.runtimes.values()].every((e) => e.grounded)) {
       this.listener({ type: 'done', reason: 'all_grounded' });
       this.stopped = true;
     }
-
-    void allGrounded; // suppress unused warning
   }
 
   private emitTick(): void {
