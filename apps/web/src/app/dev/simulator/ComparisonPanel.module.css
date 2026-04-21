@@ -105,3 +105,42 @@
 .deviationRow td:first-child {
   color: #c9a557 !important;
 }
+
+.wearBlock {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #1a3a52;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wearRow {
+  display: grid;
+  grid-template-columns: 60px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.wearLabel {
+  color: #8aa4b0;
+}
+
+.wearTrack {
+  height: 6px;
+  background: #0a1f2e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.wearFill {
+  height: 100%;
+  transition: width 120ms ease-out;
+}
+
+.wearValue {
+  color: #d9c896;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

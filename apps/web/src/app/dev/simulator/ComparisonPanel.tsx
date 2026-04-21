@@ -81,9 +81,30 @@ export function ComparisonPanel({
                 )}
               </tbody>
             </table>
+
+            <div className={styles.wearBlock}>
+              <WearBar label="Coque" value={s?.condition.hull ?? boat.initialCondition.hull} />
+              <WearBar label="Gréement" value={s?.condition.rig ?? boat.initialCondition.rig} />
+              <WearBar label="Voiles" value={s?.condition.sails ?? boat.initialCondition.sails} />
+              <WearBar label="Électro" value={s?.condition.electronics ?? boat.initialCondition.electronics} />
+            </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function WearBar({ label, value }: { label: string; value: number }) {
+  const v = Math.max(0, Math.min(100, value));
+  const barColor = v > 60 ? '#7cc9a5' : v > 30 ? '#c9a557' : '#d97070';
+  return (
+    <div className={styles.wearRow}>
+      <span className={styles.wearLabel}>{label}</span>
+      <div className={styles.wearTrack}>
+        <div className={styles.wearFill} style={{ width: `${v}%`, background: barColor }} />
+      </div>
+      <span className={styles.wearValue}>{v.toFixed(0)}</span>
     </div>
   );
 }

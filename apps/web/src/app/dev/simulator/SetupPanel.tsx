@@ -9,6 +9,7 @@ import styles from './SetupPanel.module.css';
 import { OrderHistory } from './OrderHistory';
 import type { OrderHistoryEntry } from './OrderHistory';
 import { OrderInput } from './OrderInput';
+import { PRESETS } from './presets';
 
 const SLOT_LABELS: Record<string, string> = {
   HULL: 'Coque',
@@ -38,6 +39,7 @@ interface SetupPanelProps {
   onEditBoat(id: string): void;
   onDeleteBoat(id: string): void;
   onSetPrimary(id: string): void;
+  onAddPreset?(presetId: string): void;
   // Task 15: order panel (only shown when locked)
   orderHistory?: OrderHistoryEntry[];
   availableSails?: SailId[];
@@ -68,6 +70,7 @@ export function SetupPanel({
   primaryId,
   locked,
   onAddBoat,
+  onAddPreset,
   onEditBoat,
   onDeleteBoat,
   onSetPrimary,
@@ -163,6 +166,23 @@ export function SetupPanel({
           + Ajouter un bateau
         </button>
       </div>
+
+      {onAddPreset && (
+        <div className={styles.presetsWrap}>
+          <div className={styles.presetsLabel}>Presets</div>
+          {PRESETS.map((p) => (
+            <button
+              key={p.id}
+              className={styles.btnPreset}
+              onClick={() => onAddPreset(p.id)}
+              disabled={boats.length >= 4}
+              title={p.description}
+            >
+              + {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.footer}>
         <p className={styles.footerLine}>

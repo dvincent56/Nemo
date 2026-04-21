@@ -249,6 +249,48 @@
   cursor: not-allowed;
 }
 
+.presetsWrap {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.presetsLabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(217, 200, 150, 0.45);
+  padding-bottom: 2px;
+}
+
+.btnPreset {
+  text-align: left;
+  background: transparent;
+  border: 1px solid #1a3a52;
+  color: #b6c4d0;
+  padding: 6px 10px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+
+.btnPreset:hover:not(:disabled) {
+  background: rgba(201, 165, 87, 0.08);
+  border-color: rgba(201, 165, 87, 0.5);
+  color: #c9a557;
+}
+
+.btnPreset:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ── Footer meta ── */
 .footer {
   padding: 10px 12px 14px;

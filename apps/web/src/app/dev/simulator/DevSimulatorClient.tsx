@@ -9,6 +9,7 @@ import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
 import { ProjectionLayer } from './ProjectionLayer';
 import { StartPointLayer } from './StartPointLayer';
+import { PRESETS, buildPresetBoat } from './presets';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import { ComparisonPanel } from './ComparisonPanel';
@@ -235,6 +236,15 @@ export function DevSimulatorClient() {
           primaryId={primaryId}
           locked={locked}
           onAddBoat={() => { if (!gameBalanceReady) return; setEditingId(null); setModalOpen(true); }}
+          onAddPreset={(presetId) => {
+            if (!gameBalanceReady) return;
+            const preset = PRESETS.find((p) => p.id === presetId);
+            if (!preset) return;
+            const boatId = `boat-${Date.now().toString(36)}`;
+            const setup = buildPresetBoat(preset, boatId);
+            setBoats((prev) => [...prev, setup].slice(0, 4));
+            if (!primaryId) setPrimaryId(setup.id);
+          }}
           onEditBoat={(id) => { setEditingId(id); setModalOpen(true); }}
           onDeleteBoat={(id) => {
             setBoats(prev => prev.filter(b => b.id !== id));

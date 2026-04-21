@@ -53,27 +53,60 @@
   "sails": {
     "transitionPenalty": 0.7,
     "definitions": {
-      "JIB": { "twaMin": 28, "twaMax": 130 },
-      "LJ":  { "twaMin": 28, "twaMax": 120 },
-      "SS":  { "twaMin": 28, "twaMax": 90 },
-      "C0":  { "twaMin": 55, "twaMax": 140 },
-      "SPI": { "twaMin": 95, "twaMax": 180 },
-      "HG":  { "twaMin": 75, "twaMax": 165 },
-      "LG":  { "twaMin": 70, "twaMax": 150 }
+      "JIB": {
+        "twaMin": 28,
+        "twaMax": 130
+      },
+      "LJ": {
+        "twaMin": 28,
+        "twaMax": 120
+      },
+      "SS": {
+        "twaMin": 28,
+        "twaMax": 90
+      },
+      "C0": {
+        "twaMin": 55,
+        "twaMax": 140
+      },
+      "SPI": {
+        "twaMin": 95,
+        "twaMax": 180
+      },
+      "HG": {
+        "twaMin": 75,
+        "twaMax": 165
+      },
+      "LG": {
+        "twaMin": 70,
+        "twaMax": 150
+      }
     },
     "transitionTimes": {
-      "JIB_LJ": 120, "LJ_JIB": 120,
-      "JIB_SS": 150, "SS_JIB": 150,
-      "JIB_C0": 180, "C0_JIB": 180,
-      "C0_SPI": 300, "SPI_C0": 300,
-      "C0_HG": 240, "HG_C0": 240,
-      "SPI_HG": 240, "HG_SPI": 240,
-      "SPI_LG": 180, "LG_SPI": 180,
-      "HG_LG": 180, "LG_HG": 180,
-      "SS_C0": 180, "C0_SS": 180,
-      "LJ_SS": 150, "SS_LJ": 150,
-      "JIB_SPI": 360, "SPI_JIB": 360,
-      "LJ_C0": 240, "C0_LJ": 240
+      "JIB_LJ": 120,
+      "LJ_JIB": 120,
+      "JIB_SS": 150,
+      "SS_JIB": 150,
+      "JIB_C0": 180,
+      "C0_JIB": 180,
+      "C0_SPI": 300,
+      "SPI_C0": 300,
+      "C0_HG": 240,
+      "HG_C0": 240,
+      "SPI_HG": 240,
+      "HG_SPI": 240,
+      "SPI_LG": 180,
+      "LG_SPI": 180,
+      "HG_LG": 180,
+      "LG_HG": 180,
+      "SS_C0": 180,
+      "C0_SS": 180,
+      "LJ_SS": 150,
+      "SS_LJ": 150,
+      "JIB_SPI": 360,
+      "SPI_JIB": 360,
+      "LJ_C0": 240,
+      "C0_LJ": 240
     }
   },
   "rewards": {
@@ -87,11 +120,26 @@
       "ULTIM": 2.0
     },
     "rankMultipliers": [
-      { "threshold": 0.10, "multiplier": 3.0 },
-      { "threshold": 0.25, "multiplier": 2.0 },
-      { "threshold": 0.50, "multiplier": 1.5 },
-      { "threshold": 0.75, "multiplier": 1.1 },
-      { "threshold": 1.00, "multiplier": 1.0 }
+      {
+        "threshold": 0.1,
+        "multiplier": 3.0
+      },
+      {
+        "threshold": 0.25,
+        "multiplier": 2.0
+      },
+      {
+        "threshold": 0.5,
+        "multiplier": 1.5
+      },
+      {
+        "threshold": 0.75,
+        "multiplier": 1.1
+      },
+      {
+        "threshold": 1.0,
+        "multiplier": 1.0
+      }
     ],
     "sponsorVisibilityRatio": 0.5,
     "leaderBonusRatio": 0.4,
@@ -99,46 +147,132 @@
     "streakMax": 2.0
   },
   "maintenance": {
-    "hull":        { "costPer10pts": 80,  "durationHours": 8 },
-    "rig":         { "costPer10pts": 50,  "durationHours": 4 },
-    "sails":       { "costPer10pts": 120, "durationHours": 12 },
-    "electronics": { "costPer10pts": 30,  "durationHours": 3 }
+    "hull": {
+      "costPer10pts": 80,
+      "durationHours": 8
+    },
+    "rig": {
+      "costPer10pts": 50,
+      "durationHours": 4
+    },
+    "sails": {
+      "costPer10pts": 120,
+      "durationHours": 12
+    },
+    "electronics": {
+      "costPer10pts": 30,
+      "durationHours": 3
+    }
   },
   "upgrades": {
-    "slots": ["HULL", "MAST", "SAILS", "FOILS", "KEEL", "ELECTRONICS", "REINFORCEMENT"],
-
+    "slots": [
+      "HULL",
+      "MAST",
+      "SAILS",
+      "FOILS",
+      "KEEL",
+      "ELECTRONICS",
+      "REINFORCEMENT"
+    ],
     "tiers": {
-      "SERIE":  { "priceRange": [0, 0],         "maintenanceMul": 1.0 },
-      "BRONZE": { "priceRange": [1500, 3500],   "maintenanceMul": 1.5 },
-      "SILVER": { "priceRange": [3500, 6500],   "maintenanceMul": 2.0 },
-      "GOLD":   { "priceRange": [7000, 11000],  "maintenanceMul": 3.0 },
-      "PROTO":  { "priceRange": null,           "maintenanceMul": 4.5 }
+      "SERIE": {
+        "priceRange": [
+          0,
+          0
+        ],
+        "maintenanceMul": 1.0
+      },
+      "BRONZE": {
+        "priceRange": [
+          1500,
+          3500
+        ],
+        "maintenanceMul": 1.5
+      },
+      "SILVER": {
+        "priceRange": [
+          3500,
+          6500
+        ],
+        "maintenanceMul": 2.0
+      },
+      "GOLD": {
+        "priceRange": [
+          7000,
+          11000
+        ],
+        "maintenanceMul": 3.0
+      },
+      "PROTO": {
+        "priceRange": null,
+        "maintenanceMul": 4.5
+      }
     },
-
     "slotsByClass": {
-      "CRUISER_RACER": { "HULL": "absent", "MAST": "absent", "SAILS": "absent",
-                         "FOILS": "absent", "KEEL": "absent",
-                         "ELECTRONICS": "absent", "REINFORCEMENT": "absent" },
-      "MINI650":     { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
-                       "FOILS": "open", "KEEL": "monotype",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "absent" },
-      "FIGARO":      { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
-                       "FOILS": "monotype", "KEEL": "monotype",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
-      "CLASS40":     { "HULL": "open", "MAST": "open", "SAILS": "open",
-                       "FOILS": "open", "KEEL": "open",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
-      "OCEAN_FIFTY": { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
-                       "FOILS": "monotype", "KEEL": "absent",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
-      "IMOCA60":     { "HULL": "open", "MAST": "open", "SAILS": "open",
-                       "FOILS": "open", "KEEL": "open",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "open" },
-      "ULTIM":       { "HULL": "monotype", "MAST": "monotype", "SAILS": "open",
-                       "FOILS": "open", "KEEL": "absent",
-                       "ELECTRONICS": "open", "REINFORCEMENT": "open" }
+      "CRUISER_RACER": {
+        "HULL": "absent",
+        "MAST": "absent",
+        "SAILS": "absent",
+        "FOILS": "absent",
+        "KEEL": "absent",
+        "ELECTRONICS": "absent",
+        "REINFORCEMENT": "absent"
+      },
+      "MINI650": {
+        "HULL": "monotype",
+        "MAST": "monotype",
+        "SAILS": "open",
+        "FOILS": "open",
+        "KEEL": "monotype",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "absent"
+      },
+      "FIGARO": {
+        "HULL": "monotype",
+        "MAST": "monotype",
+        "SAILS": "open",
+        "FOILS": "monotype",
+        "KEEL": "monotype",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "open"
+      },
+      "CLASS40": {
+        "HULL": "open",
+        "MAST": "open",
+        "SAILS": "open",
+        "FOILS": "open",
+        "KEEL": "open",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "open"
+      },
+      "OCEAN_FIFTY": {
+        "HULL": "monotype",
+        "MAST": "monotype",
+        "SAILS": "open",
+        "FOILS": "monotype",
+        "KEEL": "absent",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "open"
+      },
+      "IMOCA60": {
+        "HULL": "open",
+        "MAST": "open",
+        "SAILS": "open",
+        "FOILS": "open",
+        "KEEL": "open",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "open"
+      },
+      "ULTIM": {
+        "HULL": "monotype",
+        "MAST": "monotype",
+        "SAILS": "open",
+        "FOILS": "open",
+        "KEEL": "absent",
+        "ELECTRONICS": "open",
+        "REINFORCEMENT": "open"
+      }
     },
-
     "items": [
       {
         "id": "hull-class40-standard",
@@ -147,11 +281,23 @@
         "name": "Coque Class40 Standard",
         "profile": "polyvalent",
         "description": "Coque de série, polyvalente et fiable sur tous les allures.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -166,12 +312,26 @@
         "name": "Coque Class40 Optimisée Près",
         "profile": "près incisif",
         "description": "Carène affinée au près, légère pénalité au portant.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 4200,
         "effects": {
-          "speedByTwa": [0.04, 0.03, 0.01, 0, 0],
-          "speedByTws": [0, 0, 0],
-          "wearMul": { "hull": 1.15 },
+          "speedByTwa": [
+            0.04,
+            0.03,
+            0.01,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
+          "wearMul": {
+            "hull": 1.15
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -185,12 +345,26 @@
         "name": "Coque Class40 Scow",
         "profile": "portant débridé",
         "description": "Nez en scow, explosif au portant au détriment des allures serrées.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 6000,
         "effects": {
-          "speedByTwa": [-0.03, -0.02, 0.04, 0.08, 0.04],
-          "speedByTws": [0, 0.02, 0.03],
-          "wearMul": { "hull": 1.20 },
+          "speedByTwa": [
+            -0.03,
+            -0.02,
+            0.04,
+            0.08,
+            0.04
+          ],
+          "speedByTws": [
+            0,
+            0.02,
+            0.03
+          ],
+          "wearMul": {
+            "hull": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -204,13 +378,29 @@
         "name": "Coque Class40 Proto",
         "profile": "extrême fragile",
         "description": "Carène proto au rendement maximal, mais extrêmement fragile.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 30 },
+        "unlockCriteria": {
+          "racesFinished": 30
+        },
         "effects": {
-          "speedByTwa": [0.06, 0.06, 0.06, 0.06, 0.06],
-          "speedByTws": [0.02, 0.02, 0.02],
-          "wearMul": { "hull": 1.80 },
+          "speedByTwa": [
+            0.06,
+            0.06,
+            0.06,
+            0.06,
+            0.06
+          ],
+          "speedByTws": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "wearMul": {
+            "hull": 1.8
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -224,11 +414,23 @@
         "name": "Mât Aluminium Class40",
         "profile": "fiable",
         "description": "Mât aluminium de série, robuste et éprouvé.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -243,12 +445,27 @@
         "name": "Mât Carbone Class40",
         "profile": "vif raidi",
         "description": "Mât carbone standard, plus rigide et plus réactif.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": 3200,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.02, 0.02, 0.02],
-          "speedByTws": [0, 0.01, 0.01],
-          "wearMul": { "rig": 1.20 },
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.02
+          ],
+          "speedByTws": [
+            0,
+            0.01,
+            0.01
+          ],
+          "wearMul": {
+            "rig": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -262,15 +479,36 @@
         "name": "Mât Carbone Haut Module Class40",
         "profile": "stable musclé",
         "description": "Carbone haut module, manœuvres accélérées et puissance accrue.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": 5800,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.03, 0.03, 0.02],
-          "speedByTws": [0, 0.01, 0.02],
-          "wearMul": { "rig": 1.30 },
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.03,
+            0.03,
+            0.02
+          ],
+          "speedByTws": [
+            0,
+            0.01,
+            0.02
+          ],
+          "wearMul": {
+            "rig": 1.3
+          },
           "maneuverMul": {
-            "tack": { "dur": 0.85, "speed": 1.10 },
-            "gybe": { "dur": 0.90, "speed": 1.05 }
+            "tack": {
+              "dur": 0.85,
+              "speed": 1.1
+            },
+            "gybe": {
+              "dur": 0.9,
+              "speed": 1.05
+            }
           },
           "polarTargetsDeg": null,
           "activation": {},
@@ -284,11 +522,23 @@
         "name": "Voiles Dacron Class40",
         "profile": "polyvalent",
         "description": "Jeu de voiles dacron de série, polyvalent et durable.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -303,12 +553,28 @@
         "name": "Voiles Mylar Class40",
         "profile": "polyvalent stable",
         "description": "Mylar laminé, bon équilibre rendement/durabilité.",
-        "compat": ["CLASS40", "IMOCA60", "MINI650"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60",
+          "MINI650"
+        ],
         "cost": 5800,
         "effects": {
-          "speedByTwa": [0, 0.02, 0.03, 0.02, 0],
-          "speedByTws": [0.01, 0.02, 0],
-          "wearMul": { "sail": 1.20 },
+          "speedByTwa": [
+            0,
+            0.02,
+            0.03,
+            0.02,
+            0
+          ],
+          "speedByTws": [
+            0.01,
+            0.02,
+            0
+          ],
+          "wearMul": {
+            "sail": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -322,12 +588,27 @@
         "name": "Voiles 3Di Class40",
         "profile": "rendement haut",
         "description": "Technologie 3Di North Sails, rendement exceptionnel sur tous les allures.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": 10000,
         "effects": {
-          "speedByTwa": [0.04, 0.05, 0.06, 0.05, 0.04],
-          "speedByTws": [0.02, 0.03, 0.02],
-          "wearMul": { "sail": 1.45 },
+          "speedByTwa": [
+            0.04,
+            0.05,
+            0.06,
+            0.05,
+            0.04
+          ],
+          "speedByTws": [
+            0.02,
+            0.03,
+            0.02
+          ],
+          "wearMul": {
+            "sail": 1.45
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -341,13 +622,30 @@
         "name": "Voiles North Sur-Mesure Class40",
         "profile": "sur-mesure expert",
         "description": "Voiles taillées spécifiquement pour le bateau, réservées aux experts.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 25 },
+        "unlockCriteria": {
+          "racesFinished": 25
+        },
         "effects": {
-          "speedByTwa": [0.06, 0.07, 0.08, 0.07, 0.06],
-          "speedByTws": [0.03, 0.04, 0.03],
-          "wearMul": { "sail": 1.60 },
+          "speedByTwa": [
+            0.06,
+            0.07,
+            0.08,
+            0.07,
+            0.06
+          ],
+          "speedByTws": [
+            0.03,
+            0.04,
+            0.03
+          ],
+          "wearMul": {
+            "sail": 1.6
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -361,11 +659,23 @@
         "name": "Sans Foils Class40",
         "profile": "coque seule",
         "description": "Configuration sans foils, coque pure en mode déplacement.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -380,18 +690,39 @@
         "name": "Foils en C Class40",
         "profile": "reaching nerveux",
         "description": "Foils en C pour soulager la carène au reaching.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 3500,
         "effects": {
-          "speedByTwa": [-0.02, 0, 0.06, 0.04, 0],
-          "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "hull": 1.40, "rig": 1.20 },
+          "speedByTwa": [
+            -0.02,
+            0,
+            0.06,
+            0.04,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.02,
+            0.04
+          ],
+          "wearMul": {
+            "hull": 1.4,
+            "rig": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 12 },
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.03, 0, 0]
+            "speedByTws": [
+              -0.03,
+              0,
+              0
+            ]
           }
         }
       },
@@ -402,18 +733,39 @@
         "name": "Foils en S Class40",
         "profile": "vol agressif",
         "description": "Foils en S, vol partiel agressif au grand largue.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 6500,
         "effects": {
-          "speedByTwa": [-0.04, -0.02, 0.08, 0.14, 0.05],
-          "speedByTws": [-0.02, 0.04, 0.10],
-          "wearMul": { "hull": 1.80, "rig": 1.30 },
+          "speedByTwa": [
+            -0.04,
+            -0.02,
+            0.08,
+            0.14,
+            0.05
+          ],
+          "speedByTws": [
+            -0.02,
+            0.04,
+            0.1
+          ],
+          "wearMul": {
+            "hull": 1.8,
+            "rig": 1.3
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 14 },
+          "activation": {
+            "minTws": 14
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.05, -0.02, 0]
+            "speedByTws": [
+              -0.05,
+              -0.02,
+              0
+            ]
           }
         }
       },
@@ -424,19 +776,42 @@
         "name": "Foils Proto Class40",
         "profile": "vol total",
         "description": "Foils proto à vol total, gains spectaculaires mais usure extrême.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": null,
-        "unlockCriteria": { "racesFinished": 40 },
+        "unlockCriteria": {
+          "racesFinished": 40
+        },
         "effects": {
-          "speedByTwa": [-0.06, -0.03, 0.12, 0.22, 0.10],
-          "speedByTws": [-0.03, 0.06, 0.14],
-          "wearMul": { "hull": 2.20, "rig": 1.60 },
+          "speedByTwa": [
+            -0.06,
+            -0.03,
+            0.12,
+            0.22,
+            0.1
+          ],
+          "speedByTws": [
+            -0.03,
+            0.06,
+            0.14
+          ],
+          "wearMul": {
+            "hull": 2.2,
+            "rig": 1.6
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 14 },
+          "activation": {
+            "minTws": 14
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.08, -0.04, 0]
+            "speedByTws": [
+              -0.08,
+              -0.04,
+              0
+            ]
           }
         }
       },
@@ -447,11 +822,23 @@
         "name": "Quille Fixe Class40",
         "profile": "robuste lente",
         "description": "Quille fixe de série, robuste et sans surprise.",
-        "compat": ["CLASS40"],
+        "compat": [
+          "CLASS40"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -466,12 +853,27 @@
         "name": "Quille Pendulaire Class40",
         "profile": "puissance redresseur",
         "description": "Quille pendulaire améliorant le couple de redressement au près.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": 2800,
         "effects": {
-          "speedByTwa": [0.04, 0.04, 0.02, 0.01, 0],
-          "speedByTws": [0, 0.02, 0.03],
-          "wearMul": { "hull": 1.10 },
+          "speedByTwa": [
+            0.04,
+            0.04,
+            0.02,
+            0.01,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.02,
+            0.03
+          ],
+          "wearMul": {
+            "hull": 1.1
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -485,12 +887,27 @@
         "name": "Quille Basculante Class40",
         "profile": "couple max",
         "description": "Quille basculante pour un couple de redressement maximal.",
-        "compat": ["CLASS40", "IMOCA60"],
+        "compat": [
+          "CLASS40",
+          "IMOCA60"
+        ],
         "cost": 5600,
         "effects": {
-          "speedByTwa": [0.06, 0.06, 0.04, 0.02, 0.01],
-          "speedByTws": [0, 0.03, 0.05],
-          "wearMul": { "hull": 1.20 },
+          "speedByTwa": [
+            0.06,
+            0.06,
+            0.04,
+            0.02,
+            0.01
+          ],
+          "speedByTws": [
+            0,
+            0.03,
+            0.05
+          ],
+          "wearMul": {
+            "hull": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -504,11 +921,28 @@
         "name": "Pack Électronique Base",
         "profile": "lisible sans analyse",
         "description": "Instrumentation de base, données claires sans analyse avancée.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM",
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -523,14 +957,36 @@
         "name": "Pack Électronique Course",
         "profile": "cibles polaires",
         "description": "Calculateur de polaires embarqué, optimisation des angles cibles.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM",
+          "MINI650"
+        ],
         "cost": 2200,
         "effects": {
-          "speedByTwa": [0.01, 0.01, 0.01, 0.01, 0.01],
-          "speedByTws": [0.01, 0.01, 0],
-          "wearMul": { "elec": 1.20 },
+          "speedByTwa": [
+            0.01,
+            0.01,
+            0.01,
+            0.01,
+            0.01
+          ],
+          "speedByTws": [
+            0.01,
+            0.01,
+            0
+          ],
+          "wearMul": {
+            "elec": 1.2
+          },
           "maneuverMul": {
-            "sailChange": { "dur": 0.85, "speed": 1.05 }
+            "sailChange": {
+              "dur": 0.85,
+              "speed": 1.05
+            }
           },
           "polarTargetsDeg": 2,
           "activation": {},
@@ -544,14 +1000,36 @@
         "name": "Pack Électronique Offshore",
         "profile": "routage embarqué",
         "description": "Routage météo embarqué avec optimisation des angles au degré près.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM", "MINI650"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM",
+          "MINI650"
+        ],
         "cost": 4800,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.02, 0.02, 0.02],
-          "speedByTws": [0.01, 0.02, 0.01],
-          "wearMul": { "elec": 1.40 },
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.02
+          ],
+          "speedByTws": [
+            0.01,
+            0.02,
+            0.01
+          ],
+          "wearMul": {
+            "elec": 1.4
+          },
           "maneuverMul": {
-            "sailChange": { "dur": 0.75, "speed": 1.10 }
+            "sailChange": {
+              "dur": 0.75,
+              "speed": 1.1
+            }
           },
           "polarTargetsDeg": 1,
           "activation": {},
@@ -565,11 +1043,27 @@
         "name": "Sans Renforcement",
         "profile": "configuration légère",
         "description": "Configuration légère sans renforcement structurel.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -584,15 +1078,36 @@
         "name": "Renforcement Gros Temps",
         "profile": "tenue gros temps",
         "description": "Renforts structurels activés dès 25 nœuds, réduisant l'usure en conditions sévères.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
         "cost": 1800,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [-0.02, 0, 0.03],
-          "wearMul": { "rig": 0.55, "sail": 0.55 },
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            -0.02,
+            0,
+            0.03
+          ],
+          "wearMul": {
+            "rig": 0.55,
+            "sail": 0.55
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 25 },
+          "activation": {
+            "minTws": 25
+          },
           "groundingLossMul": null
         }
       },
@@ -603,12 +1118,30 @@
         "name": "Blindage Compétition Pro",
         "profile": "blindage compétition",
         "description": "Protection renforcée de la carène, réduit les pertes en cas d'échouage.",
-        "compat": ["FIGARO", "CLASS40", "OCEAN_FIFTY", "IMOCA60", "ULTIM"],
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
         "cost": 4500,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [-0.02, 0, 0],
-          "wearMul": { "hull": 0.45 },
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            -0.02,
+            0,
+            0
+          ],
+          "wearMul": {
+            "hull": 0.45
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -622,11 +1155,23 @@
         "name": "Coque Figaro III Monotype",
         "profile": "réglementaire",
         "description": "Coque monotype réglementaire de la classe Figaro III.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -641,11 +1186,23 @@
         "name": "Mât Figaro III Monotype",
         "profile": "réglementaire",
         "description": "Mât monotype réglementaire de la classe Figaro III.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -660,11 +1217,23 @@
         "name": "Voiles Figaro III Monotype",
         "profile": "certifié classe",
         "description": "Jeu de voiles certifié classe Figaro III.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -679,12 +1248,26 @@
         "name": "Voiles North Certifiées Figaro",
         "profile": "rendement classe",
         "description": "Voiles North certifiées classe, meilleur rendement dans les limites du règlement.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 2800,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.03, 0.02, 0.01],
-          "speedByTws": [0.01, 0.02, 0.01],
-          "wearMul": { "sail": 1.30 },
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.03,
+            0.02,
+            0.01
+          ],
+          "speedByTws": [
+            0.01,
+            0.02,
+            0.01
+          ],
+          "wearMul": {
+            "sail": 1.3
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -698,18 +1281,39 @@
         "name": "Foils Figaro III Monotype",
         "profile": "foils intégrés",
         "description": "Foils intégrés monotype du Figaro III, actifs dès 12 nœuds.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [-0.01, 0, 0.03, 0.06, 0.02],
-          "speedByTws": [0, 0.01, 0.02],
-          "wearMul": { "hull": 1.20, "rig": 1.10 },
+          "speedByTwa": [
+            -0.01,
+            0,
+            0.03,
+            0.06,
+            0.02
+          ],
+          "speedByTws": [
+            0,
+            0.01,
+            0.02
+          ],
+          "wearMul": {
+            "hull": 1.2,
+            "rig": 1.1
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 12 },
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.02, 0, 0]
+            "speedByTws": [
+              -0.02,
+              0,
+              0
+            ]
           }
         }
       },
@@ -720,11 +1324,23 @@
         "name": "Quille Figaro III Monotype",
         "profile": "réglementaire",
         "description": "Quille monotype réglementaire de la classe Figaro III.",
-        "compat": ["FIGARO"],
+        "compat": [
+          "FIGARO"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -739,11 +1355,23 @@
         "name": "Coque Ocean Fifty Monotype",
         "profile": "monotype trimaran",
         "description": "Coque monotype du trimaran Ocean Fifty.",
-        "compat": ["OCEAN_FIFTY"],
+        "compat": [
+          "OCEAN_FIFTY"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -758,11 +1386,23 @@
         "name": "Mât Ocean Fifty Monotype",
         "profile": "monotype",
         "description": "Mât monotype du trimaran Ocean Fifty.",
-        "compat": ["OCEAN_FIFTY"],
+        "compat": [
+          "OCEAN_FIFTY"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -777,11 +1417,23 @@
         "name": "Voiles Ocean Fifty Standard",
         "profile": "série",
         "description": "Jeu de voiles de série du trimaran Ocean Fifty.",
-        "compat": ["OCEAN_FIFTY"],
+        "compat": [
+          "OCEAN_FIFTY"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -796,18 +1448,39 @@
         "name": "Foils Intégrés Ocean Fifty",
         "profile": "vol dès 12 nds",
         "description": "Foils intégrés de série du trimaran Ocean Fifty, vol actif dès 12 nœuds.",
-        "compat": ["OCEAN_FIFTY"],
+        "compat": [
+          "OCEAN_FIFTY"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [-0.02, 0, 0.04, 0.10, 0.04],
-          "speedByTws": [0, 0.02, 0.04],
-          "wearMul": { "hull": 1.30, "rig": 1.10 },
+          "speedByTwa": [
+            -0.02,
+            0,
+            0.04,
+            0.1,
+            0.04
+          ],
+          "speedByTws": [
+            0,
+            0.02,
+            0.04
+          ],
+          "wearMul": {
+            "hull": 1.3,
+            "rig": 1.1
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 12 },
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.04, 0, 0]
+            "speedByTws": [
+              -0.04,
+              0,
+              0
+            ]
           }
         }
       },
@@ -818,11 +1491,23 @@
         "name": "Coque IMOCA 60 Standard",
         "profile": "compétition large",
         "description": "Coque de compétition IMOCA 60, conçue pour les courses au large.",
-        "compat": ["IMOCA60"],
+        "compat": [
+          "IMOCA60"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -837,11 +1522,23 @@
         "name": "Mât IMOCA 60 Standard",
         "profile": "compétition",
         "description": "Mât de compétition de série pour l'IMOCA 60.",
-        "compat": ["IMOCA60"],
+        "compat": [
+          "IMOCA60"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -856,11 +1553,23 @@
         "name": "Voiles IMOCA 60 Standard",
         "profile": "compétition",
         "description": "Jeu de voiles de compétition de série pour l'IMOCA 60.",
-        "compat": ["IMOCA60"],
+        "compat": [
+          "IMOCA60"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -875,18 +1584,39 @@
         "name": "Foils IMOCA 60 Standard",
         "profile": "vol dès 14 nds",
         "description": "Foils de compétition de série de l'IMOCA 60, vol actif dès 14 nœuds.",
-        "compat": ["IMOCA60"],
+        "compat": [
+          "IMOCA60"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [-0.02, 0, 0.05, 0.12, 0.04],
-          "speedByTws": [0, 0.03, 0.05],
-          "wearMul": { "hull": 1.50, "rig": 1.20 },
+          "speedByTwa": [
+            -0.02,
+            0,
+            0.05,
+            0.12,
+            0.04
+          ],
+          "speedByTws": [
+            0,
+            0.03,
+            0.05
+          ],
+          "wearMul": {
+            "hull": 1.5,
+            "rig": 1.2
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 14 },
+          "activation": {
+            "minTws": 14
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.05, -0.02, 0]
+            "speedByTws": [
+              -0.05,
+              -0.02,
+              0
+            ]
           }
         }
       },
@@ -897,11 +1627,23 @@
         "name": "Quille Basculante IMOCA 60 Standard",
         "profile": "couple série",
         "description": "Quille basculante de série de l'IMOCA 60, couple de redressement intégré.",
-        "compat": ["IMOCA60"],
+        "compat": [
+          "IMOCA60"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.01, 0, 0],
-          "speedByTws": [0, 0.01, 0.02],
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.01,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.01,
+            0.02
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -916,11 +1658,23 @@
         "name": "Coque Ultim Monotype",
         "profile": "monotype trimaran maxi",
         "description": "Coque monotype du maxi-trimaran Ultim.",
-        "compat": ["ULTIM"],
+        "compat": [
+          "ULTIM"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -935,11 +1689,23 @@
         "name": "Mât Ultim Monotype",
         "profile": "monotype",
         "description": "Mât monotype du maxi-trimaran Ultim.",
-        "compat": ["ULTIM"],
+        "compat": [
+          "ULTIM"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -954,11 +1720,23 @@
         "name": "Voiles Ultim Standard",
         "profile": "série",
         "description": "Jeu de voiles de série du maxi-trimaran Ultim.",
-        "compat": ["ULTIM"],
+        "compat": [
+          "ULTIM"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -973,18 +1751,39 @@
         "name": "Foils Ultim Standard",
         "profile": "vol total dès 12 nds",
         "description": "Foils de vol total de série du maxi-trimaran Ultim, actifs dès 12 nœuds.",
-        "compat": ["ULTIM"],
+        "compat": [
+          "ULTIM"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [-0.04, 0, 0.10, 0.20, 0.10],
-          "speedByTws": [0, 0.05, 0.10],
-          "wearMul": { "hull": 1.80, "rig": 1.40 },
+          "speedByTwa": [
+            -0.04,
+            0,
+            0.1,
+            0.2,
+            0.1
+          ],
+          "speedByTws": [
+            0,
+            0.05,
+            0.1
+          ],
+          "wearMul": {
+            "hull": 1.8,
+            "rig": 1.4
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 12 },
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.06, -0.02, 0]
+            "speedByTws": [
+              -0.06,
+              -0.02,
+              0
+            ]
           }
         }
       },
@@ -995,11 +1794,23 @@
         "name": "Coque Mini 6.50 Série",
         "profile": "réglementaire",
         "description": "Coque de série Mini 6.50, conforme aux règles de jauge Série.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -1014,11 +1825,23 @@
         "name": "Mât Mini 6.50 Série",
         "profile": "réglementaire",
         "description": "Mât aluminium de série Mini 6.50.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -1033,11 +1856,23 @@
         "name": "Quille Mini 6.50 Série",
         "profile": "fixe à bulbe",
         "description": "Quille fixe à bulbe, conforme à la jauge Mini Série.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -1052,11 +1887,23 @@
         "name": "Sans Foils Mini 6.50",
         "profile": "coque seule",
         "description": "Configuration sans foils, coque pure en mode déplacement.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -1071,18 +1918,39 @@
         "name": "Foils Latéraux Mini 6.50",
         "profile": "reaching modeste",
         "description": "Petits foils latéraux Mini Proto, gain léger au reaching dès 14 nds.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 3000,
         "effects": {
-          "speedByTwa": [-0.01, 0, 0.04, 0.03, 0],
-          "speedByTws": [0, 0.01, 0.02],
-          "wearMul": { "hull": 1.30, "rig": 1.15 },
+          "speedByTwa": [
+            -0.01,
+            0,
+            0.04,
+            0.03,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.01,
+            0.02
+          ],
+          "wearMul": {
+            "hull": 1.3,
+            "rig": 1.15
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": { "minTws": 14 },
+          "activation": {
+            "minTws": 14
+          },
           "groundingLossMul": null,
           "passiveEffects": {
-            "speedByTws": [-0.02, 0, 0]
+            "speedByTws": [
+              -0.02,
+              0,
+              0
+            ]
           }
         }
       },
@@ -1093,11 +1961,23 @@
         "name": "Voiles Dacron Mini 6.50",
         "profile": "polyvalent",
         "description": "Jeu Dacron de série, polyvalent et durable.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 0,
         "effects": {
-          "speedByTwa": [0, 0, 0, 0, 0],
-          "speedByTws": [0, 0, 0],
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0,
+            0
+          ],
           "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
@@ -1112,12 +1992,154 @@
         "name": "Voiles Certifiées Classe Mini",
         "profile": "rendement classe",
         "description": "Voiles certifiées classe Mini, meilleur rendement dans les limites du règlement.",
-        "compat": ["MINI650"],
+        "compat": [
+          "MINI650"
+        ],
         "cost": 2200,
         "effects": {
-          "speedByTwa": [0.02, 0.02, 0.03, 0.02, 0.01],
-          "speedByTws": [0.01, 0.02, 0.01],
-          "wearMul": { "sail": 1.30 },
+          "speedByTwa": [
+            0.02,
+            0.02,
+            0.03,
+            0.02,
+            0.01
+          ],
+          "speedByTws": [
+            0.01,
+            0.02,
+            0.01
+          ],
+          "wearMul": {
+            "sail": 1.3
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-class40-light-air",
+        "slot": "SAILS",
+        "tier": "SILVER",
+        "name": "Voiles Class40 Petit Temps",
+        "profile": "petit temps",
+        "description": "Jeu de voiles grosses têtes allégées — excelle en vent faible, neutre au-delà.",
+        "compat": [
+          "CLASS40"
+        ],
+        "cost": 6800,
+        "effects": {
+          "speedByTwa": [
+            0.04,
+            0.03,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.06,
+            0.02,
+            0
+          ],
+          "wearMul": {
+            "sails": 1.1
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "hull-class40-displacement",
+        "slot": "HULL",
+        "tier": "SILVER",
+        "name": "Coque Class40 Déplacement",
+        "profile": "déplacement petit temps",
+        "description": "Carène à déplacement, rapide au près et dans le petit temps, pénalisée dès que ça pousse.",
+        "compat": [
+          "CLASS40"
+        ],
+        "cost": 5200,
+        "effects": {
+          "speedByTwa": [
+            0.04,
+            0.03,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.05,
+            0,
+            -0.03
+          ],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-imoca60-light-air",
+        "slot": "SAILS",
+        "tier": "SILVER",
+        "name": "Voiles IMOCA Petit Temps",
+        "profile": "petit temps",
+        "description": "Garde-robe grand-voile full-batten + gennaker léger, spécialisée vents faibles et près.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [
+            0.05,
+            0.04,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.07,
+            0.02,
+            0
+          ],
+          "wearMul": {
+            "sails": 1.12
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "hull-imoca60-non-foiler",
+        "slot": "HULL",
+        "tier": "SILVER",
+        "name": "Coque IMOCA non-foiler",
+        "profile": "archimédienne petit temps",
+        "description": "Carène plus fine sans dérives profondes, performante au près et par petit temps, handicapée en glisse forte.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 15000,
+        "effects": {
+          "speedByTwa": [
+            0.05,
+            0.04,
+            0.01,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.04,
+            0,
+            -0.04
+          ],
+          "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -1128,7 +2150,7 @@
   },
   "maneuvers": {
     "sailChange": {
-      "transitionSpeedFactor": 0.70,
+      "transitionSpeedFactor": 0.7,
       "transitionTimeSec": {
         "CRUISER_RACER": 240,
         "MINI650": 150,
@@ -1140,7 +2162,7 @@
       }
     },
     "tack": {
-      "speedFactor": 0.60,
+      "speedFactor": 0.6,
       "durationSec": {
         "CRUISER_RACER": 75,
         "MINI650": 45,
@@ -1187,8 +2209,11 @@
     "completionBonus": {
       "CRUISER_RACER": 200,
       "MINI650": 300,
-      "FIGARO": 400, "CLASS40": 600, "OCEAN_FIFTY": 1000,
-      "IMOCA60": 900, "ULTIM": 1400
+      "FIGARO": 400,
+      "CLASS40": 600,
+      "OCEAN_FIFTY": 1000,
+      "IMOCA60": 900,
+      "ULTIM": 1400
     }
   },
   "tick": {
