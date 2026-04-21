@@ -1,5 +1,5 @@
 import type { Boat, OrderEnvelope, Polar, Position } from '@nemo/shared-types';
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { computeTWA } from '@nemo/polar-lib';
 import { applyWear, computeWearDelta, conditionSpeedPenalty, swellSpeedFactor, type ConditionState } from './wear';
 import {

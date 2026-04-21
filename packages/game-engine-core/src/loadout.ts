@@ -1,4 +1,4 @@
-import { GameBalance, type UpgradeItem, type UpgradeSlot } from '@nemo/game-balance';
+import { GameBalance, type UpgradeItem, type UpgradeSlot } from '@nemo/game-balance/browser';
 import type { BoatClass } from '@nemo/shared-types';
 
 // ---------------------------------------------------------------------------

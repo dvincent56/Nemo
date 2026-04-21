@@ -77,7 +77,7 @@ export interface ZoneApplication {
   clearedAlerts: string[];
 }
 
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 
 function resolveMultiplier(z: ExclusionZone): number {
   if (z.speedMultiplier !== undefined) return z.speedMultiplier;

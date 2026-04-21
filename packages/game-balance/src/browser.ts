@@ -4,10 +4,11 @@
  * Use GameBalance.load(json) to initialize from fetched JSON.
  */
 import {
-  UpgradesBlockZ, CompletionBonusZ, type UpgradesBlock, type UpgradeItem,
+  UpgradesBlockZ, CompletionBonusZ, BoatClassZ, type UpgradesBlock, type UpgradeItem,
   type UpgradeSlot, type UpgradeTier, type SlotAvailability,
 } from './upgrade-catalog.schema';
 export type { UpgradesBlock, UpgradeItem, UpgradeSlot, UpgradeTier, SlotAvailability };
+export { BoatClassZ };
 export type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
   RewardsConfig, MaintenanceEntry, ManeuversConfig,

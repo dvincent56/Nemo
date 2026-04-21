@@ -1,5 +1,5 @@
 import type { WeatherPoint } from '@nemo/shared-types';
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 import type { AggregatedEffects } from './loadout';
 
 export interface ConditionState {

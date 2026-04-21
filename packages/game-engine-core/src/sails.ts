@@ -1,5 +1,5 @@
 import type { BoatClass, SailId } from '@nemo/shared-types';
-import { GameBalance } from '@nemo/game-balance';
+import { GameBalance } from '@nemo/game-balance/browser';
 import type { Polar } from '@nemo/shared-types';
 import { getPolarSpeed } from '@nemo/polar-lib';
 import type { AggregatedEffects } from './loadout';
