@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Eyebrow, BoatSvg } from '@/components/ui';
 import {
   fetchMyBoats, createBoat,
-  type BoatRecord,
+  type BoatRecord, type BoatClass,
 } from '@/lib/marina-api';
 import {
   CLASS_LABEL, ALL_CLASSES, MAX_BOATS_PER_CLASS,
@@ -53,11 +53,11 @@ function BoatCard({ boat }: { boat: BoatRecord }): React.ReactElement {
 }
 
 function NewBoatButton({ boatClass, onCreated }: {
-  boatClass: string;
+  boatClass: BoatClass;
   onCreated: () => void;
 }): React.ReactElement {
   const router = useRouter();
-  const label = CLASS_LABEL[boatClass as keyof typeof CLASS_LABEL] ?? boatClass;
+  const label = CLASS_LABEL[boatClass];
   const [busy, setBusy] = useState(false);
 
   const handleCreate = async () => {

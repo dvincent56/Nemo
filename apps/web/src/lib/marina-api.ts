@@ -8,7 +8,7 @@ export type SlotAvailability = 'open' | 'monotype' | 'absent';
 export interface BoatRecord {
   id: string;
   name: string;
-  boatClass: string;
+  boatClass: BoatClass;
   hullColor: string | null;
   deckColor?: string | null;
   generation: number;

@@ -31,7 +31,7 @@ export const MAX_BOATS_PER_CLASS = 5;
 /** Sous-ensemble de BoatRecord utilisé par la page /customize. */
 export interface BoatDetail {
   id: string;
-  boatClass: string;
+  boatClass: BoatClass;
   name: string;
   hullNumber: string;
   hullColor: string;

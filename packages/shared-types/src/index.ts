@@ -1,4 +1,14 @@
-export type BoatClass = 'CRUISER_RACER' | 'MINI650' | 'FIGARO' | 'CLASS40' | 'OCEAN_FIFTY' | 'IMOCA60' | 'ULTIM';
+export const BOAT_CLASSES = [
+  'CRUISER_RACER',
+  'MINI650',
+  'FIGARO',
+  'CLASS40',
+  'OCEAN_FIFTY',
+  'IMOCA60',
+  'ULTIM',
+] as const;
+
+export type BoatClass = typeof BOAT_CLASSES[number];
 
 export type SailId = 'JIB' | 'LJ' | 'SS' | 'C0' | 'SPI' | 'HG' | 'LG';
 

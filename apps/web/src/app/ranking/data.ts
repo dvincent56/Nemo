@@ -18,6 +18,7 @@
 
 import type { BoatClass } from '@nemo/shared-types';
 export type { BoatClass };
+import { BOAT_CLASS_ORDER } from '@/lib/boat-classes';
 
 export type CountryCode = 'fr' | 'nl' | 'it' | 'uk' | 'no' | 'es' | 'ie' | 'pt' | 'cl';
 export type Trend = { dir: 'up' | 'down' | 'flat'; delta: number };
@@ -188,7 +189,7 @@ export function getPublicProfile(username: string): PublicProfile | null {
   const overall = all.find((r) => r.username === username);
 
   const classes: PublicProfile['classes'] = (
-    ['FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM'] as const
+    BOAT_CLASS_ORDER.filter((cls) => cls !== 'CRUISER_RACER')
   ).flatMap((bc) => {
     const ranking = getRanking(bc);
     const entry = ranking.find((r) => r.username === username);

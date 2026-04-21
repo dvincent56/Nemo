@@ -63,7 +63,7 @@ interface SlotDrawerProps {
   open: boolean;
   slot: UpgradeSlot;
   boatId: string;
-  boatClass: string;
+  boatClass: BoatClass;
   /** Catalog id currently installed in this slot on this boat (to show badge + Retirer action). */
   installedCatalogId?: string | undefined;
   /** Player credits, shown in the Buy tab as a budget reminder. */
@@ -90,11 +90,11 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
       setInventory(inv.inventory.filter((i) => {
         if (i.slot !== slot) return false;
         const compat = compatByCatalogId.get(i.upgradeCatalogId);
-        return compat?.includes(boatClass as BoatClass) ?? false;
+        return compat?.includes(boatClass) ?? false;
       }));
       setCatalog(cat.items.filter((i) =>
         i.slot === slot
-        && i.compat.includes(boatClass as BoatClass)
+        && i.compat.includes(boatClass)
         && i.tier !== 'SERIE',
       ));
     } finally {

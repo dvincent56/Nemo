@@ -53,7 +53,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       setBoat(detail.boat);
       setInstalled(detail.installedUpgrades);
       setCredits(detail.credits);
-      const cls = detail.boat.boatClass as string;
+      const cls = detail.boat.boatClass;
       if (catalog.slotsByClass[cls]) {
         setSlotsByClass(catalog.slotsByClass[cls] as Record<UpgradeSlot, SlotAvailability>);
       }
@@ -84,7 +84,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
   const inRace = !!boat.activeRaceId;
   const stateLabel = inRace ? `En course · ${boat.activeRaceId}` : 'Au port';
   const stateCls = inRace ? styles.stateInRace : styles.stateIdle;
-  const classLabel = CLASS_LABEL[boat.boatClass as keyof typeof CLASS_LABEL] ?? boat.boatClass;
+  const classLabel = CLASS_LABEL[boat.boatClass];
 
   // Stats
   const avgCondition = Math.round(

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BOAT_CLASSES } from '@nemo/shared-types';
 
 export const UpgradeSlotZ = z.enum([
   'HULL', 'MAST', 'SAILS', 'FOILS', 'KEEL', 'ELECTRONICS', 'REINFORCEMENT',
@@ -6,7 +7,7 @@ export const UpgradeSlotZ = z.enum([
 
 export const UpgradeTierZ = z.enum(['SERIE', 'BRONZE', 'SILVER', 'GOLD', 'PROTO']);
 
-export const BoatClassZ = z.enum(['CRUISER_RACER', 'MINI650', 'FIGARO', 'CLASS40', 'OCEAN_FIFTY', 'IMOCA60', 'ULTIM']);
+export const BoatClassZ = z.enum(BOAT_CLASSES);
 
 export const SlotAvailabilityZ = z.enum(['open', 'monotype', 'absent']);
 
