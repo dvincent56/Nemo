@@ -7,7 +7,7 @@ import {
   PREFETCH_HOURS_PHASE2,
   DEFAULT_BOUNDS,
 } from '@/lib/weather/prefetch';
-import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
+import { decodedGridToWeatherGrid, decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 
 export function useWeatherPrefetch(options?: { phase2?: boolean }) {
   const setDecodedWeatherGrid = useGameStore((s) => s.setDecodedWeatherGrid);

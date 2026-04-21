@@ -85,6 +85,7 @@ export function generateMockWeatherGrid(): WeatherGrid {
       const latFactor = (lat - BOUNDS.south) / (BOUNDS.north - BOUNDS.south);
       const swellHeight = 0.5 + latFactor * 2.0 + tws * 0.05;
       const swellDir = 310 + Math.sin(lat * 0.15) * 20;
+      const swellPeriod = 8 + latFactor * 4;
 
       points.push({
         lat, lon,
@@ -92,6 +93,7 @@ export function generateMockWeatherGrid(): WeatherGrid {
         twd,
         swellHeight: Math.max(0.3, swellHeight),
         swellDir: ((swellDir % 360) + 360) % 360,
+        swellPeriod,
       });
     }
   }
