@@ -5,6 +5,7 @@
 import {
   fetchWeatherGrid,
   PREFETCH_HOURS_PHASE1,
+  PREFETCH_HOURS_PHASE2,
   DEFAULT_BOUNDS,
 } from '@/lib/weather/prefetch';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
@@ -84,9 +85,12 @@ export async function fetchLatestWindGrid(): Promise<{
   windGrid: WindGridConfig;
   windData: Float32Array;
 }> {
+  // Include phase 2 so the sim covers the full 10-day horizon instead of
+  // stopping at 48 h. Dev simulator runs offline (no rolling hour ticks),
+  // so we pay the extra fetch time once at launch.
   const decoded = await fetchWeatherGrid({
     bounds: DEFAULT_BOUNDS,
-    hours: PREFETCH_HOURS_PHASE1,
+    hours: [...PREFETCH_HOURS_PHASE1, ...PREFETCH_HOURS_PHASE2],
   });
   return packWindData(decoded);
 }

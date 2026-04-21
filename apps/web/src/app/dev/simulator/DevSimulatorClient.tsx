@@ -8,6 +8,7 @@ import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
 import { ProjectionLayer } from './ProjectionLayer';
+import { StartPointLayer } from './StartPointLayer';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import { ComparisonPanel } from './ComparisonPanel';
@@ -37,7 +38,7 @@ function haversineNM(a: Position, b: Position): number {
   return R * 2 * Math.asin(Math.sqrt(h));
 }
 
-const START_POS: Position = { lat: 47.0, lon: -3.0 };
+const DEFAULT_START_POS: Position = { lat: 47.0, lon: -3.0 };
 
 const POLAR_FILE: Record<BoatClass, string> = {
   CRUISER_RACER: 'cruiser-racer.json',
@@ -83,6 +84,7 @@ export function DevSimulatorClient() {
   }, []);
 
   const [boats, setBoats] = useState<SimBoatSetup[]>([]);
+  const [startPos, setStartPos] = useState<Position>(DEFAULT_START_POS);
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -154,7 +156,7 @@ export function DevSimulatorClient() {
       if (primaryPolar) {
         freezeProjection({
           boat: primaryBoat,
-          startPos: START_POS,
+          startPos,
           startTimeMs: now,
           windGrid,
           windData: windGridRef.current.windData,
@@ -175,7 +177,7 @@ export function DevSimulatorClient() {
     post({
       type: 'init',
       boats,
-      startPos: START_POS,
+      startPos,
       startTimeMs: now,
       windGrid,
       windData,
@@ -256,6 +258,7 @@ export function DevSimulatorClient() {
         />
         <WindOverlay />
         <SwellOverlay />
+        <StartPointLayer startPos={startPos} status={status} onChange={setStartPos} />
         <FleetLayer
           fleet={fleet}
           primaryId={primaryId}
