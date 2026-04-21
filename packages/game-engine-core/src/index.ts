@@ -4,7 +4,7 @@ export {
   type TickDeps,
   type TickOutcome,
   type CoastlineProbe,
-} from './tick.js';
+} from './tick';
 
 export {
   resolveBoatLoadout,
@@ -13,14 +13,14 @@ export {
   type AggregatedEffects,
   type AggregateContext,
   type ResolvedItem,
-} from './loadout.js';
+} from './loadout';
 
 export {
   buildSegments,
   type SegmentState,
   type TickSegment,
   type BuildSegmentsInput,
-} from './segments.js';
+} from './segments';
 
 export {
   buildZoneIndex,
@@ -29,7 +29,7 @@ export {
   type IndexedZone,
   type ZoneBBox,
   type ZoneApplication,
-} from './zones.js';
+} from './zones';
 
 export {
   advanceSailState,
@@ -44,7 +44,7 @@ export {
   type ManeuverPenaltyState,
   type SailRuntimeState,
   type ManeuverKind,
-} from './sails.js';
+} from './sails';
 
 export {
   applyWear,
@@ -52,10 +52,10 @@ export {
   conditionSpeedPenalty,
   swellSpeedFactor,
   type ConditionState,
-} from './wear.js';
+} from './wear';
 
-export { bandFor } from './bands.js';
+export { bandFor } from './bands';
 
-export type { WeatherProvider, WeatherPoint } from './weather.js';
+export type { WeatherProvider, WeatherPoint } from './weather';
 
-export { CoastlineIndex, type CoastGeometry } from './coastline.js';
+export { CoastlineIndex, type CoastGeometry } from './coastline';

@@ -1,7 +1,7 @@
 import type { Boat, OrderEnvelope, Polar, Position } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { computeTWA } from '@nemo/polar-lib';
-import { applyWear, computeWearDelta, conditionSpeedPenalty, swellSpeedFactor, type ConditionState } from './wear.js';
+import { applyWear, computeWearDelta, conditionSpeedPenalty, swellSpeedFactor, type ConditionState } from './wear';
 import {
   advanceSailState,
   computeOverlapFactor,
@@ -11,13 +11,13 @@ import {
   transitionSpeedFactor,
   type ManeuverPenaltyState,
   type SailRuntimeState,
-} from './sails.js';
+} from './sails';
 import type { SailId } from '@nemo/shared-types';
-import { buildSegments, type SegmentState, type TickSegment } from './segments.js';
-import { applyZones, getZonesAtPosition, type IndexedZone } from './zones.js';
-import type { WeatherProvider } from './weather.js';
-import { aggregateEffects, type BoatLoadout } from './loadout.js';
-import { bandFor } from './bands.js';
+import { buildSegments, type SegmentState, type TickSegment } from './segments';
+import { applyZones, getZonesAtPosition, type IndexedZone } from './zones';
+import type { WeatherProvider } from './weather';
+import { aggregateEffects, type BoatLoadout } from './loadout';
+import { bandFor } from './bands';
 
 export interface CoastlineProbe {
   isLoaded(): boolean;

@@ -1,6 +1,6 @@
 import type { WeatherPoint } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
-import type { AggregatedEffects } from './loadout.js';
+import type { AggregatedEffects } from './loadout';
 
 export interface ConditionState {
   hull: number;
