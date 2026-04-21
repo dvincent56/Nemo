@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   const totalNm = haversineNM(startPos, runtime.boat.position);
   const eastDelta = runtime.boat.position.lon - startPos.lon;
   assert.ok(eastDelta > 0, 'no east progress');
-  assert.ok(totalNm >= 0.25 && totalNm <= 0.75, `distance ${totalNm.toFixed(3)} NM out of [0.25, 0.75]`);
+  assert.ok(totalNm >= 0.25 && totalNm <= 0.55, `distance ${totalNm.toFixed(3)} NM out of [0.25, 0.55]`);
   console.log(`\n✓ Phase 1 e2e OK — ${totalNm.toFixed(3)} NM est.`);
 }
 
