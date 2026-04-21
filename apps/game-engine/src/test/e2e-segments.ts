@@ -3,9 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Boat, OrderEnvelope, Position } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { advancePosition, getPolarSpeed, haversineNM, loadPolar } from '@nemo/polar-lib';
-import { runTick, type BoatRuntime } from '../engine/tick.js';
-import { resolveBoatLoadout } from '../engine/loadout.js';
-import { buildZoneIndex } from '../engine/zones.js';
+import { runTick, resolveBoatLoadout, buildZoneIndex, CoastlineIndex, type BoatRuntime } from '@nemo/game-engine-core';
 import { createFixtureProvider } from '../weather/provider.js';
 
 /**
@@ -44,6 +42,7 @@ async function main(): Promise<void> {
   const polar = await loadPolar('CLASS40');
   const weather = await createFixtureProvider();
   const zones = buildZoneIndex([]);
+  const coastline = new CoastlineIndex();
 
   const t0Ms = weather.runTs * 1000;
   const tickStart = t0Ms;
@@ -75,7 +74,7 @@ async function main(): Promise<void> {
     maneuver: null,
   };
 
-  const out = runTick(runtime, { polar, weather, zones }, tickStart, tickEnd);
+  const out = runTick(runtime, { polar, weather, zones, coastline }, tickStart, tickEnd);
   runtime = out.runtime;
 
   // --- Position attendue : rejouer localement la même logique ---

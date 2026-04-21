@@ -1,9 +1,7 @@
 import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { runTick, type BoatRuntime, type TickOutcome } from '../engine/tick.js';
-import { resolveBoatLoadout } from '../engine/loadout.js';
-import { buildZoneIndex } from '../engine/zones.js';
+import { runTick, resolveBoatLoadout, buildZoneIndex, CoastlineIndex, type BoatRuntime, type TickOutcome } from '@nemo/game-engine-core';
 import { createFixtureProvider } from '../weather/provider.js';
 import { buildFullUpdate } from '../broadcast/payload.js';
 import { encode } from '@msgpack/msgpack';
@@ -56,7 +54,8 @@ async function main(): Promise<void> {
   const polar = await loadPolar('CLASS40');
   const weather = await createFixtureProvider();
   const zones = buildZoneIndex([]);
-  const deps = { polar, weather, zones };
+  const coastline = new CoastlineIndex();
+  const deps = { polar, weather, zones, coastline };
   const t0Ms = weather.runTs * 1000;
 
   const redis = connectRedis();
