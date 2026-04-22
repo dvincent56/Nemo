@@ -8,7 +8,7 @@ import {
   type ConditionState,
 } from '@nemo/game-engine-core/browser';
 import { advancePosition, computeTWA, getPolarSpeed, haversineNM } from '@nemo/polar-lib/browser';
-import { pruneBySector } from './pruning';
+import { pruneBySector, bearingDeg } from './pruning';
 import { backtrackPolyline, extractInflectionPoints } from './polyline';
 import { buildCapSchedule } from './schedule';
 import { sampleWind } from './weatherSampler';
@@ -86,6 +86,18 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   let arrivalStep = -1;
   let arrivalPoint: IsochronePoint | null = null;
 
+  // Heading cone toward destination: only explore headings within
+  // CONE_HALF_DEG of the great-circle bearing from start to target. A full
+  // 360° search wastes ~50 % of the work on headings pointing away from
+  // the goal (what zezo/qtVlm do too). 90° half-angle = 180° arc, wide
+  // enough for hard-upwind tacks.
+  const CONE_HALF_DEG = 90;
+  const targetBearing = bearingDeg(input.from, input.to);
+  const inCone = (h: number): boolean => {
+    const d = (((h - targetBearing) % 360) + 540) % 360 - 180;
+    return Math.abs(d) <= CONE_HALF_DEG;
+  };
+
   for (let step = 1; step <= maxSteps; step++) {
     const prev = isochrones[step - 1]!;
     const candidates: IsochronePoint[] = [];
@@ -96,6 +108,7 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       if (!weather) continue;
 
       for (let h = 0; h < 360; h += stepHeading) {
+        if (!inCone(h)) continue;
         const twa = computeTWA(h, weather.twd);
         const twaAbs = Math.min(Math.abs(twa), 180);
         if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) continue;

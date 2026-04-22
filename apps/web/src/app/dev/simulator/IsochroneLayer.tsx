@@ -58,7 +58,61 @@ function chaikin(coords: [number, number][], iterations: number): [number, numbe
   return pts;
 }
 
-function isoToFeatures(iso: IsochronePoint[], step: number): GeoJSON.Feature<GeoJSON.LineString>[] {
+// Median-filter the radial distances of iso points to kill sector-winner
+// spikes (one lucky heading producing a far-out point next to an unlucky
+// heading close in). The angle from origin is preserved; only the radial
+// distance is smoothed. Window of 5 neighbours works well without losing
+// the overall expanding-front shape.
+function smoothRadially(
+  points: [number, number][],
+  origin: { lat: number; lon: number },
+  window: number,
+): [number, number][] {
+  if (points.length < window) return points;
+  const DEG = Math.PI / 180;
+  const R = 3440.065;
+
+  // Great-circle distance + bearing from origin to each point.
+  const radii: number[] = [];
+  const bearings: number[] = [];
+  for (const [lon, lat] of points) {
+    const dLat = (lat - origin.lat) * DEG;
+    const dLon = (lon - origin.lon) * DEG;
+    const lat1 = origin.lat * DEG;
+    const lat2 = lat * DEG;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    radii.push(2 * R * Math.asin(Math.sqrt(h)));
+    const y = Math.sin(dLon) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+    bearings.push((Math.atan2(y, x) / DEG + 360) % 360);
+  }
+
+  const half = Math.floor(window / 2);
+  const smoothed: [number, number][] = [];
+  for (let i = 0; i < points.length; i++) {
+    const from = Math.max(0, i - half);
+    const to = Math.min(points.length, i + half + 1);
+    const slice = radii.slice(from, to).sort((a, b) => a - b);
+    const median = slice[Math.floor(slice.length / 2)]!;
+    // Reproject the point at `median` distance along its original bearing.
+    const brg = bearings[i]! * DEG;
+    const lat1 = origin.lat * DEG;
+    const d = median / R;
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brg));
+    const lon2 = origin.lon * DEG + Math.atan2(
+      Math.sin(brg) * Math.sin(d) * Math.cos(lat1),
+      Math.cos(d) - Math.sin(lat1) * Math.sin(lat2),
+    );
+    smoothed.push([lon2 / DEG, lat2 / DEG]);
+  }
+  return smoothed;
+}
+
+function isoToFeatures(
+  iso: IsochronePoint[],
+  step: number,
+  origin: { lat: number; lon: number },
+): GeoJSON.Feature<GeoJSON.LineString>[] {
   const out: GeoJSON.Feature<GeoJSON.LineString>[] = [];
   if (iso.length < 2) return out;
 
@@ -77,12 +131,14 @@ function isoToFeatures(iso: IsochronePoint[], step: number): GeoJSON.Feature<Geo
   if (current.length >= 2) segments.push(current);
 
   for (const seg of segments) {
-    // More passes when the segment has few points — the early isochrones
-    // (close to origin) usually have only 24-48 survivors and look jagged
-    // with the default 2 passes. More passes = smoother curve without
-    // distorting the shape (Chaikin stays close to the original corners).
-    const passes = seg.length < 30 ? 4 : seg.length < 80 ? 3 : 2;
-    const smooth = chaikin(seg, passes);
+    // 1) Radial median-filter: kill sector-winner spikes (one heading
+    //    catches a puff and jumps 30 NM further than its neighbours).
+    // 2) Chaikin: smooth the remaining corners. More passes when the
+    //    segment has few points (early isos have 24-48 survivors and
+    //    stay jagged with only 2 passes).
+    const denoised = smoothRadially(seg, origin, 5);
+    const passes = denoised.length < 30 ? 4 : denoised.length < 80 ? 3 : 2;
+    const smooth = chaikin(denoised, passes);
     out.push({
       type: 'Feature', properties: { step },
       geometry: { type: 'LineString', coordinates: smooth },
@@ -99,10 +155,11 @@ export function IsochroneLayer({ plan, color }: Props) {
       if (!map.isStyleLoaded()) { setTimeout(install, 200); return; }
       const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
       if (plan) {
+        const origin = { lat: plan.polyline[0]!.lat, lon: plan.polyline[0]!.lon };
         for (let i = 1; i < plan.isochrones.length; i++) {  // skip step 0 (start)
           const iso = plan.isochrones[i];
           if (!iso) continue;
-          features.push(...isoToFeatures(iso, i));
+          features.push(...isoToFeatures(iso, i, origin));
         }
       }
       const data: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
