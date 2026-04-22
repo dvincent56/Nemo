@@ -4,9 +4,11 @@
 
 import {
   fetchWeatherGrid,
+  PREFETCH_HOURS_TTFW,
   PREFETCH_HOURS_PHASE1,
   PREFETCH_HOURS_PHASE2,
   DEFAULT_BOUNDS,
+  DEFAULT_RESOLUTION,
 } from '@/lib/weather/prefetch';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { WindGridConfig } from './windLookup';
@@ -78,19 +80,19 @@ function packWindData(decoded: DecodedWeatherGrid): {
 }
 
 /**
- * Fetch the latest GFS wind grid (phase-1 hours) and return a packed
+ * Fetch the latest GFS wind grid and return a packed
  * { windGrid, windData } pair ready to pass to SimulatorEngine.init.
  */
 export async function fetchLatestWindGrid(): Promise<{
   windGrid: WindGridConfig;
   windData: Float32Array;
 }> {
-  // Include phase 2 so the sim covers the full 10-day horizon instead of
-  // stopping at 48 h. Dev simulator runs offline (no rolling hour ticks),
-  // so we pay the extra fetch time once at launch.
+  // 7-day horizon, global 1° int16: ~7-9 MB gzip.
   const decoded = await fetchWeatherGrid({
     bounds: DEFAULT_BOUNDS,
-    hours: [...PREFETCH_HOURS_PHASE1, ...PREFETCH_HOURS_PHASE2],
+    hours: [...PREFETCH_HOURS_TTFW, ...PREFETCH_HOURS_PHASE1, ...PREFETCH_HOURS_PHASE2],
+    resolution: DEFAULT_RESOLUTION,
+    encoding: 'int16',
   });
   return packWindData(decoded);
 }

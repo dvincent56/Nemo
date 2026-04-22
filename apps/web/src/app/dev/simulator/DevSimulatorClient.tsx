@@ -7,8 +7,14 @@ import { SetupPanel } from './SetupPanel';
 import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
-import { ProjectionLayer } from './ProjectionLayer';
+// Projection layer removed — the frozen projection dashed line added
+// visual noise without providing actionable signal once the routing
+// engine became the canonical "planned path" reference.
 import { StartPointLayer } from './StartPointLayer';
+import { EndPointLayer } from './EndPointLayer';
+import { RouteLayer } from './RouteLayer';
+import { IsochroneLayer } from './IsochroneLayer';
+import { RoutingControls } from './RoutingControls';
 import { PRESETS, buildPresetBoat } from './presets';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
@@ -25,6 +31,7 @@ import { freezeProjection, projectionAt } from '@/lib/simulator/projectionFreeze
 import type { ProjectionResult } from '@/lib/projection/types';
 import type { WindGridConfig } from '@/lib/projection/windLookup';
 import type { Position } from '@nemo/shared-types';
+import type { Preset, RoutePlan, RouteInput } from '@nemo/routing';
 import styles from './DevSimulator.module.css';
 
 /** Approximate haversine distance in nautical miles between two positions. */
@@ -95,6 +102,11 @@ export function DevSimulatorClient() {
   const [projection, setProjection] = useState<ProjectionResult | null>(null);
   const [projectionDeviationNm, setProjectionDeviationNm] = useState<number | null>(null);
   const [orderHistory, setOrderHistory] = useState<OrderHistoryEntry[]>([]);
+  const [endPos, setEndPos] = useState<Position | null>(null);
+  const [routes, setRoutes] = useState<Map<string, RoutePlan>>(new Map());
+  const [preset, setPreset] = useState<Preset>('BALANCED');
+  const [routing, setRouting] = useState<{ status: 'idle' | 'computing' | 'done'; error?: string }>({ status: 'idle' });
+  const [isoVisibleBoatId, setIsoVisibleBoatId] = useState<string | null>(null);
   // Keep a ref to the wind grid so the projection freeze can use it without
   // neutering the buffer that the sim worker already owns.
   const windGridRef = useRef<{ windGrid: WindGridConfig; windData: Float32Array } | null>(null);
@@ -187,6 +199,9 @@ export function DevSimulatorClient() {
       gameBalanceJson,
     });
     post({ type: 'setSpeed', factor: speed });
+    for (const [id, plan] of routes) {
+      post({ type: 'schedule', boatId: id, entries: plan.capSchedule });
+    }
     post({ type: 'start' });
     setStatus('running');
   }
@@ -227,6 +242,107 @@ export function DevSimulatorClient() {
     windGridRef.current = null;
   }
 
+  const ROUTE_PALETTE = ['#c9a557', '#6ba3c9', '#a57cc9', '#7cc9a5', '#c98c6b'];
+  function colorFor(boatId: string): string {
+    if (boatId === primaryId) return ROUTE_PALETTE[0]!;
+    const others = boats.filter((b) => b.id !== primaryId);
+    const idx = others.findIndex((b) => b.id === boatId);
+    return ROUTE_PALETTE[(idx + 1) % ROUTE_PALETTE.length]!;
+  }
+
+  function routeOne(payload: { input: RouteInput; gameBalanceJson: unknown }): Promise<RoutePlan> {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(new URL('../../../workers/routing.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => {
+        const msg = e.data as { type: 'result'; plan: RoutePlan } | { type: 'error'; message: string };
+        if (msg.type === 'result') { resolve(msg.plan); worker.terminate(); }
+        else { reject(new Error(msg.message)); worker.terminate(); }
+      };
+      worker.onerror = (err) => { reject(err); worker.terminate(); };
+      worker.postMessage({ type: 'compute', input: payload.input, gameBalanceJson: payload.gameBalanceJson });
+    });
+  }
+
+  async function routeAllBoats() {
+    if (!endPos || boats.length === 0 || !gameBalanceReady) return;
+    setRouting({ status: 'computing' });
+    setRoutes(new Map());
+
+    try {
+      const classes = Array.from(new Set(boats.map((b) => b.boatClass)));
+      const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
+      const { windGrid, windData } = await fetchLatestWindGrid();
+
+      const startTimeMs = Date.now();
+      // Skip coastline: cloning 10 MB of GeoJSON into each routing worker
+      // was the main cause of the first-version hang. Routes may cross land —
+      // acceptable for the dev simulator for now, reintroduce when the
+      // coastline is cached or compressed.
+      void coastlineGeoJson;
+      const plans = await Promise.all(boats.map((boat) => routeOne({
+        input: {
+          from: startPos,
+          to: endPos,
+          startTimeMs,
+          boatClass: boat.boatClass,
+          polar: polars[boat.boatClass]!,
+          loadout: boat.loadout,
+          condition: boat.initialCondition,
+          windGrid,
+          windData: new Float32Array(windData),  // per-worker copy
+          preset,
+        },
+        gameBalanceJson,
+      }).then((plan) => [boat.id, plan] as const)));
+
+      setRoutes(new Map(plans));
+      setIsoVisibleBoatId(primaryId ?? boats[0]?.id ?? null);
+      setRouting({ status: 'done' });
+    } catch (err) {
+      console.error('[dev-simulator] routing failed', err);
+      setRouting({ status: 'idle', error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  async function rerouteFromCurrent() {
+    if (!endPos || boats.length === 0 || Object.keys(fleet).length === 0) return;
+    setRouting({ status: 'computing' });
+
+    try {
+      const classes = Array.from(new Set(boats.map((b) => b.boatClass)));
+      const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
+      const { windGrid, windData } = await fetchLatestWindGrid();
+      const simAbsMs = (launchTimeMs ?? Date.now()) + simTimeMs;
+      void coastlineGeoJson;  // skipped — see routeAllBoats for rationale
+
+      const plans = await Promise.all(boats.map((boat) => {
+        const live = fleet[boat.id];
+        const from = live ? live.position : startPos;
+        const condition = live ? live.condition : boat.initialCondition;
+        return routeOne({
+          input: {
+            from, to: endPos!, startTimeMs: simAbsMs,
+            boatClass: boat.boatClass,
+            polar: polars[boat.boatClass]!, loadout: boat.loadout, condition,
+            windGrid, windData: new Float32Array(windData),
+            preset,
+          },
+          gameBalanceJson,
+        }).then((plan) => [boat.id, plan] as const);
+      }));
+
+      const updated = new Map(plans);
+      setRoutes(updated);
+      for (const [id, plan] of updated) {
+        post({ type: 'schedule', boatId: id, entries: plan.capSchedule });
+      }
+      setRouting({ status: 'done' });
+    } catch (err) {
+      console.error('[dev-simulator] reroute failed', err);
+      setRouting({ status: 'idle', error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   return (
     <div className={styles.grid}>
       {/* Left panel — setup */}
@@ -238,10 +354,10 @@ export function DevSimulatorClient() {
           onAddBoat={() => { if (!gameBalanceReady) return; setEditingId(null); setModalOpen(true); }}
           onAddPreset={(presetId) => {
             if (!gameBalanceReady) return;
-            const preset = PRESETS.find((p) => p.id === presetId);
-            if (!preset) return;
+            const boatPreset = PRESETS.find((p) => p.id === presetId);
+            if (!boatPreset) return;
             const boatId = `boat-${Date.now().toString(36)}`;
-            const setup = buildPresetBoat(preset, boatId);
+            const setup = buildPresetBoat(boatPreset, boatId);
             setBoats((prev) => [...prev, setup].slice(0, 4));
             if (!primaryId) setPrimaryId(setup.id);
           }}
@@ -276,7 +392,27 @@ export function DevSimulatorClient() {
           trails={trails}
           simStatus={status}
         />
-        <ProjectionLayer projection={projection} />
+        <EndPointLayer endPos={endPos} status={status} onChange={setEndPos} />
+        <RouteLayer routes={routes} primaryId={primaryId} colorFor={colorFor} />
+        <IsochroneLayer
+          plan={isoVisibleBoatId ? (routes.get(isoVisibleBoatId) ?? null) : null}
+          color={isoVisibleBoatId ? colorFor(isoVisibleBoatId) : '#c9a557'}
+        />
+
+        {/* Re-router button — top-left, visible only while paused */}
+        {status === 'paused' && endPos && (
+          <button
+            onClick={rerouteFromCurrent}
+            disabled={routing.status === 'computing'}
+            style={{
+              position: 'absolute', top: 16, left: 16, zIndex: 6,
+              background: '#0f2a3d', border: '1px solid #c9a557', color: '#c9a557',
+              padding: '6px 12px', borderRadius: 4, fontFamily: 'var(--font-mono)',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >⟲ Re-router depuis ici</button>
+        )}
 
         {/* Compass overlay — top-right, shows primary boat nav data */}
         {locked && primaryId && fleet[primaryId] && (
@@ -307,6 +443,17 @@ export function DevSimulatorClient() {
 
       {/* Controls bar — pinned to bottom of layout */}
       <div className={styles.controls}>
+        <RoutingControls
+          preset={preset}
+          onSetPreset={setPreset}
+          canRoute={status === 'idle' && endPos !== null && boats.length > 0 && gameBalanceReady}
+          isComputing={routing.status === 'computing'}
+          onRoute={routeAllBoats}
+          boatIds={boats.map((b) => b.id)}
+          isoVisibleBoatId={isoVisibleBoatId}
+          onSetIsoBoat={setIsoVisibleBoatId}
+          primaryColorFor={colorFor}
+        />
         <SimControlsBar
           status={status}
           speed={speed}

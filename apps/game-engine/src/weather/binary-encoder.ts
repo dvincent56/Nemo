@@ -2,6 +2,22 @@ import type { WeatherGridUV } from './grid.js';
 
 export const HEADER_SIZE = 48;
 
+export const GRID_VERSION = 2; // bumped from implicit v1 (float32) to v2 (adds encoding byte)
+/**
+ * Int16 scale for U/V (m/s), SWH (m), MWP (s).
+ * 0.01 precision; max representable ~±327 (fits ±32767).
+ */
+export const SCALE_UV_SWH_MWP = 100;
+
+/**
+ * Int16 scale for mwdSin/mwdCos (bounded [-1, 1]).
+ * ~3.3e-5 angular precision, ~2767 units of headroom before clamp.
+ */
+export const SCALE_SIN_COS = 30000;
+export const INT16_NAN = -32768;
+
+export type GridEncoding = 'float32' | 'int16';
+
 export interface EncodeOptions {
   bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number };
   hours: number[];
@@ -9,6 +25,14 @@ export interface EncodeOptions {
   nextRunExpectedUtc: number;
   weatherStatus: number;
   blendAlpha: number;
+  /**
+   * Target grid step in degrees. If > source resolution, the encoder decimates by stride.
+   * If ≤ source resolution, the source resolution is used as-is (stride clamps to 1);
+   * in that case `gridStepLat`/`gridStepLon` in the header reflect the actual resolution emitted.
+   */
+  resolution?: number;
+  /** Wire body encoding. Defaults to 'float32' for backwards compatibility. */
+  encoding?: GridEncoding;
 }
 
 export interface GridHeader {
@@ -34,20 +58,30 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   const colStart = Math.max(0, Math.floor((opts.bounds.lonMin - grid.bbox.lonMin) / res));
   const colEnd = Math.min(grid.shape.cols - 1, Math.ceil((opts.bounds.lonMax - grid.bbox.lonMin) / res));
 
-  const numLat = rowEnd - rowStart + 1;
-  const numLon = colEnd - colStart + 1;
+  const targetRes = opts.resolution && opts.resolution > 0 ? opts.resolution : res;
+  // Use round to tolerate floating-point (e.g. 1 / 0.25 === 3.9999 on some JITs)
+  const stride = Math.max(1, Math.round(targetRes / res));
+  const outRes = res * stride;
+
+  const rawNumLat = rowEnd - rowStart + 1;
+  const rawNumLon = colEnd - colStart + 1;
+  const numLat = Math.ceil(rawNumLat / stride);
+  const numLon = Math.ceil(rawNumLon / stride);
   const numHours = opts.hours.length;
   const plane = grid.shape.rows * grid.shape.cols;
 
   // Actual geographic extent of the clipped subset — must match the body,
   // NOT the requested bounds (which may extend beyond the source grid).
   const actualLatMin = grid.bbox.latMin + rowStart * res;
-  const actualLatMax = grid.bbox.latMin + rowEnd * res;
+  const actualLatMax = grid.bbox.latMin + (rowStart + (numLat - 1) * stride) * res;
   const actualLonMin = grid.bbox.lonMin + colStart * res;
-  const actualLonMax = grid.bbox.lonMin + colEnd * res;
+  const actualLonMax = grid.bbox.lonMin + (colStart + (numLon - 1) * stride) * res;
 
-  const bodyFloats = numHours * numLat * numLon * 6;
-  const totalBytes = HEADER_SIZE + bodyFloats * 4;
+  const encoding: GridEncoding = opts.encoding ?? 'float32';
+
+  const bodyBytesPerValue = encoding === 'int16' ? 2 : 4;
+  const bodyValueCount = numHours * numLat * numLon * 6;
+  const totalBytes = HEADER_SIZE + bodyValueCount * bodyBytesPerValue;
   const buf = new ArrayBuffer(totalBytes);
   const dv = new DataView(buf);
 
@@ -61,29 +95,56 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   dv.setFloat32(off, actualLatMax, true); off += 4;
   dv.setFloat32(off, actualLonMin, true); off += 4;
   dv.setFloat32(off, actualLonMax, true); off += 4;
-  dv.setFloat32(off, res, true); off += 4;
-  dv.setFloat32(off, res, true); off += 4;
+  dv.setFloat32(off, outRes, true); off += 4;
+  dv.setFloat32(off, outRes, true); off += 4;
   dv.setUint16(off, numLat, true); off += 2;
   dv.setUint16(off, numLon, true); off += 2;
   dv.setUint16(off, numHours, true); off += 2;
-  off += 2; // padding to 48
+  dv.setUint8(off, GRID_VERSION); off += 1;
+  dv.setUint8(off, encoding === 'int16' ? 1 : 0); off += 1;
 
   // Body
-  const body = new Float32Array(buf, HEADER_SIZE);
-  let fi = 0;
+  const quant = (value: number, scale: number): number => {
+    if (!Number.isFinite(value)) return INT16_NAN;
+    const q = Math.round(value * scale);
+    if (q >= 32767) return 32767;
+    if (q <= -32767) return -32767; // reserve -32768 for NaN
+    return q;
+  };
+
+  // Hoist the encoding branch out of the hot loop (loop-invariant).
+  const bytesPerCell = encoding === 'int16' ? 12 : 24;
+  const writeCell = encoding === 'int16'
+    ? (pos: number, u: number, v: number, swh: number, ms: number, mc: number, mwp: number) => {
+        dv.setInt16(pos,      quant(u,   SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 2,  quant(v,   SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 4,  quant(swh, SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 6,  quant(ms,  SCALE_SIN_COS), true);
+        dv.setInt16(pos + 8,  quant(mc,  SCALE_SIN_COS), true);
+        dv.setInt16(pos + 10, quant(mwp, SCALE_UV_SWH_MWP), true);
+      }
+    : (pos: number, u: number, v: number, swh: number, ms: number, mc: number, mwp: number) => {
+        dv.setFloat32(pos,      u,   true);
+        dv.setFloat32(pos + 4,  v,   true);
+        dv.setFloat32(pos + 8,  swh, true);
+        dv.setFloat32(pos + 12, ms,  true);
+        dv.setFloat32(pos + 16, mc,  true);
+        dv.setFloat32(pos + 20, mwp, true);
+      };
+
+  let ci = 0;
   for (const fh of opts.hours) {
     const slotIdx = grid.forecastHours.indexOf(fh);
     if (slotIdx === -1) continue;
     const slotOff = slotIdx * plane;
-    for (let r = rowStart; r <= rowEnd; r++) {
-      for (let c = colStart; c <= colEnd; c++) {
+    // e.g. rawNumLat=21, stride=4 → r ∈ {0,4,8,12,16,20} = 6 iterations = ceil(21/4)
+    for (let r = rowStart; r <= rowEnd; r += stride) {
+      for (let c = colStart; c <= colEnd; c += stride) {
         const i = slotOff + r * grid.shape.cols + c;
-        body[fi++] = grid.u[i]!;
-        body[fi++] = grid.v[i]!;
-        body[fi++] = grid.swh[i]!;
-        body[fi++] = grid.mwdSin[i]!;
-        body[fi++] = grid.mwdCos[i]!;
-        body[fi++] = grid.mwp[i]!;
+        const u = grid.u[i]!, v = grid.v[i]!, swh = grid.swh[i]!;
+        const ms = grid.mwdSin[i]!, mc = grid.mwdCos[i]!, mwp = grid.mwp[i]!;
+        writeCell(HEADER_SIZE + ci * bytesPerCell, u, v, swh, ms, mc, mwp);
+        ci++;
       }
     }
   }

@@ -118,6 +118,11 @@ export interface WeatherState {
   isLoading: boolean;
   decodedGrid: DecodedWeatherGrid | null;
   gfsStatus: GfsStatus | null;
+  /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional. */
+  tacticalTile: {
+    grid: WeatherGrid;
+    bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number };
+  } | null;
 }
 
 export type ConnState = 'idle' | 'connecting' | 'open' | 'closed' | 'error';
@@ -184,6 +189,7 @@ export interface GameStore {
   setWeatherLoading: (loading: boolean) => void;
   setDecodedWeatherGrid: (grid: DecodedWeatherGrid) => void;
   setGfsStatus: (status: GfsStatus) => void;
+  setTacticalTile: (grid: WeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
   setConnection: (s: ConnState) => void;
   addOrder: (order: OrderEntry) => void;
   removeOrder: (id: string) => void;

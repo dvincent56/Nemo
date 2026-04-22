@@ -10,13 +10,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@etalab/decoupage-administratif": "^6.0.0",
     "@msgpack/msgpack": "^3.0.0",
     "@nemo/game-balance": "workspace:*",
     "@nemo/game-engine-core": "workspace:*",
+    "@nemo/routing": "workspace:*",
     "@nemo/shared-types": "workspace:*",
     "babel-plugin-react-compiler": "^19.0.0-beta-27714ef-20250124",
     "country-flag-icons": "^1.6.16",
@@ -32,6 +34,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.5"
   }
 }

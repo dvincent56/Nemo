@@ -6,14 +6,19 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:3001';
 export interface PrefetchOptions {
   bounds: { latMin: number; lonMin: number; latMax: number; lonMax: number };
   hours: number[];
+  /** Grid resolution in degrees. Server decimates if > source. Defaults to source (0.25°). */
+  resolution?: number;
+  /** Wire encoding. 'int16' halves payload with 0.01 m/s precision. */
+  encoding?: 'float32' | 'int16';
 }
 
 export async function fetchWeatherGrid(opts: PrefetchOptions): Promise<DecodedWeatherGrid> {
   const boundsStr = `${opts.bounds.latMin},${opts.bounds.lonMin},${opts.bounds.latMax},${opts.bounds.lonMax}`;
   const hoursStr = opts.hours.join(',');
-  const url = `${API_BASE}/api/v1/weather/grid?bounds=${boundsStr}&hours=${hoursStr}`;
-  // cache: 'no-store' bypasses the Workbox SW so a server restart / bbox
-  // change is picked up on the next page load without a manual purge.
+  const params = new URLSearchParams({ bounds: boundsStr, hours: hoursStr });
+  if (opts.resolution !== undefined) params.set('resolution', String(opts.resolution));
+  if (opts.encoding === 'int16') params.set('q', 'int16');
+  const url = `${API_BASE}/api/v1/weather/grid?${params.toString()}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`weather grid fetch failed: ${res.status}`);
   const buf = await res.arrayBuffer();
@@ -25,6 +30,15 @@ export async function fetchWeatherGrid(opts: PrefetchOptions): Promise<DecodedWe
   return decoded;
 }
 
-export const PREFETCH_HOURS_PHASE1 = [0, 3, 6, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48];
-export const PREFETCH_HOURS_PHASE2 = [54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 132, 144, 156, 168, 180, 192, 204, 216, 228, 240];
-export const DEFAULT_BOUNDS = { latMin: -60, lonMin: -80, latMax: 60, lonMax: 30 };
+// === Prefetch plan (global 1°, cap 7 days) ===
+//
+// TTFW (Time To First Wind): t=0 only — visible overlay in <1 s.
+// PHASE1: t=3..48h — short-term overlay + projection (~2-4 s).
+// PHASE2: t=54..168h — long-term overlay, capped at J+7 (~4-7 s).
+// Server keeps 10 days; we display 7 (GFS reliability drops sharply past J+7).
+export const PREFETCH_HOURS_TTFW = [0];
+export const PREFETCH_HOURS_PHASE1 = [3, 6, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48];
+export const PREFETCH_HOURS_PHASE2 = [54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 126, 132, 138, 144, 150, 156, 162, 168];
+
+export const DEFAULT_BOUNDS = { latMin: -80, lonMin: -180, latMax: 80, lonMax: 180 };
+export const DEFAULT_RESOLUTION = 1;

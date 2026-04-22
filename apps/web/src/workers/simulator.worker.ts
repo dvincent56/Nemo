@@ -34,6 +34,9 @@ self.onmessage = async (e: MessageEvent<SimInMessage>) => {
       case 'order':
         engine.order(msg.order, msg.triggerSimMs);
         break;
+      case 'schedule':
+        engine.setSchedule(msg.boatId, msg.entries);
+        break;
     }
   } catch (err) {
     self.postMessage({ type: 'error', message: err instanceof Error ? err.message : String(err) } satisfies SimOutMessage);

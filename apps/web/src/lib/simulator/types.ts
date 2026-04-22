@@ -38,7 +38,8 @@ export type SimInMessage =
   | { type: 'pause' }
   | { type: 'reset' }
   | { type: 'setSpeed'; factor: SimSpeedFactor }
-  | { type: 'order'; order: SimOrder; triggerSimMs: number };
+  | { type: 'order'; order: SimOrder; triggerSimMs: number }
+  | { type: 'schedule'; boatId: string; entries: Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }> };
 
 export type SimOutMessage =
   | { type: 'tick'; simTimeMs: number; fleet: Record<string, SimFleetState> }
