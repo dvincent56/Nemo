@@ -140,22 +140,48 @@ export interface ConditionState {
   electronics: number;
 }
 
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+
+function lerp(x: number, x0: number, x1: number, y0: number, y1: number): number {
+  if (x1 === x0) return y0;
+  const t = clamp01((x - x0) / (x1 - x0));
+  return y0 + t * (y1 - y0);
+}
+
 function windWearMultiplier(tws: number): number {
-  const { thresholdKnots, maxFactor, scaleKnots } = GameBalance.wear.windMultipliers;
-  if (tws <= thresholdKnots) return 1.0;
-  const excess = (tws - thresholdKnots) / scaleKnots;
-  return Math.min(maxFactor, 1 + excess * (maxFactor - 1));
+  const cfg = GameBalance.wear.windMultipliers;
+  if (tws <= cfg.zeroBelowKnots) return 0;
+  if (tws <= cfg.rampEndKnots) return lerp(tws, cfg.zeroBelowKnots, cfg.rampEndKnots, 0, cfg.midFactor);
+  if (tws <= cfg.midEndKnots) return lerp(tws, cfg.rampEndKnots, cfg.midEndKnots, cfg.midFactor, cfg.highFactor);
+  if (tws <= cfg.stormEndKnots) return lerp(tws, cfg.midEndKnots, cfg.stormEndKnots, cfg.highFactor, cfg.stormFactor);
+  return cfg.stormFactor;
 }
 
 function swellWearMultiplier(swh: number, swellDir: number, heading: number, swellPeriod: number): number {
   const cfg = GameBalance.wear.swellMultipliers;
-  if (swh <= cfg.thresholdMeters) return 1.0;
-  const encounterAngle = Math.abs(((heading - swellDir + 540) % 360) - 180);
-  const faceBlend = encounterAngle / 180;
-  const dirFactor = cfg.dirBackMin + (cfg.dirFaceMax - cfg.dirBackMin) * faceBlend;
-  const heightFactor = Math.min(swh / cfg.maxHeightMeters, 1);
-  const periodFactor = swellPeriod > 0 && swellPeriod < cfg.shortPeriodThreshold ? cfg.shortPeriodFactor : 1.0;
-  return 1 + dirFactor * heightFactor * periodFactor;
+  if (swh <= cfg.zeroBelowMeters) return 0;
+
+  let heightMul: number;
+  if (swh <= cfg.rampEndMeters) {
+    heightMul = lerp(swh, cfg.zeroBelowMeters, cfg.rampEndMeters, 0, cfg.midFactor);
+  } else if (swh <= cfg.midEndMeters) {
+    heightMul = lerp(swh, cfg.rampEndMeters, cfg.midEndMeters, cfg.midFactor, cfg.highFactor);
+  } else {
+    heightMul = cfg.highFactor;
+  }
+
+  const encounter = Math.abs(((heading - swellDir + 540) % 360) - 180);
+  // encounter 0 = waves astern, 180 = waves at bow
+  let dirFactor: number;
+  if (encounter <= 60) dirFactor = cfg.dirBackFactor;
+  else if (encounter >= 120) dirFactor = cfg.dirFaceFactor;
+  else dirFactor = cfg.dirBeamFactor;
+
+  const periodFactor = swellPeriod > 0 && swellPeriod < cfg.shortPeriodThresholdSec
+    ? (1 + cfg.shortPeriodBonus)
+    : 1.0;
+
+  return heightMul * dirFactor * periodFactor;
 }
 
 /**
@@ -195,11 +221,12 @@ export function computeWearDelta(
   const hoursFraction = dtSec / 3600;
   const windMul = windWearMultiplier(weather.tws);
   const swellMul = swellWearMultiplier(weather.swh, weather.swellDir, heading, weather.swellPeriod);
+  const weatherMul = windMul + swellMul;
 
   return {
-    hull: wear.baseRatesPerHour.hull * hoursFraction * windMul * swellMul * effects.wearMul.hull,
-    rig: wear.baseRatesPerHour.rig * hoursFraction * windMul * effects.wearMul.rig,
-    sails: wear.baseRatesPerHour.sails * hoursFraction * windMul * effects.wearMul.sail,
+    hull:        wear.baseRatesPerHour.hull        * hoursFraction * weatherMul * effects.wearMul.hull,
+    rig:         wear.baseRatesPerHour.rig         * hoursFraction * weatherMul * effects.wearMul.rig,
+    sails:       wear.baseRatesPerHour.sails       * hoursFraction * weatherMul * effects.wearMul.sail,
     electronics: wear.baseRatesPerHour.electronics * hoursFraction * effects.wearMul.elec,
   };
 }
@@ -216,11 +243,12 @@ export function applyWear(current: ConditionState, delta: ConditionState): Condi
 
 export function conditionSpeedPenalty(c: ConditionState): number {
   const { thresholdNone, thresholdMax, slopePerPoint } = GameBalance.wear.penaltyCurve;
-  const worst = Math.min(c.hull, c.rig, c.sails);
-  if (worst >= thresholdNone) return 1.0;
-  const pointsLost = thresholdNone - worst;
+  const w = GameBalance.wear.componentWeights;
+  const avg = w.sails * c.sails + w.rig * c.rig + w.hull * c.hull;
+  if (avg >= thresholdNone) return 1.0;
+  const pointsLost = thresholdNone - avg;
   const pct = Math.min(GameBalance.wear.maxSpeedPenalty, pointsLost * slopePerPoint);
-  const clampedPct = worst <= thresholdMax ? GameBalance.wear.maxSpeedPenalty : pct;
+  const clampedPct = avg <= thresholdMax ? GameBalance.wear.maxSpeedPenalty : pct;
   return 1 - clampedPct / 100;
 }
 
