@@ -105,6 +105,10 @@ function HudBarInner(): React.ReactElement {
           delay={200}
           content={
             <div className={styles.wearBreakdown}>
+              <p className={styles.wearExplain}>
+                Un bateau usé navigue plus lentement. Évitez les conditions extrêmes
+                pour préserver vos performances.
+              </p>
               {(['hull', 'rig', 'sails', 'electronics'] as const).map((part) => (
                 <div key={part} className={styles.wearRow}>
                   <span>{part === 'hull' ? 'Coque' : part === 'rig' ? 'Gréement' : part === 'sails' ? 'Voiles' : 'Électronique'}</span>
@@ -119,6 +123,9 @@ function HudBarInner(): React.ReactElement {
                   </div>
                 </div>
               ))}
+              <p className={styles.wearPenalty}>
+                Pénalité de vitesse : <strong>−{hud.speedPenaltyPct.toFixed(1)}%</strong>
+              </p>
             </div>
           }
         >

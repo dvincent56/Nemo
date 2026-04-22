@@ -239,3 +239,17 @@
 @media (max-width: 400px) {
   .rankHero { display: none; }
 }
+
+.wearExplain {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.wearPenalty {
+  margin: 0.5rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.8125rem;
+}
