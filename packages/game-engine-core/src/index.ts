@@ -56,6 +56,6 @@ export {
 
 export { bandFor } from './bands';
 
-export type { WeatherProvider, WeatherPoint } from './weather';
+export type { WeatherProvider, WeatherPoint, WindGridConfig } from './weather';
 
 export { CoastlineIndex, type CoastGeometry } from './coastline';

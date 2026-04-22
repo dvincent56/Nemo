@@ -14,3 +14,15 @@ export interface WeatherProvider {
   readonly runTs: number;
   getForecastAt(lat: number, lon: number, timeUnix: number): WeatherPoint;
 }
+
+/**
+ * Shape of a packed wind grid consumed by downstream weather samplers.
+ * Timestamps are in Unix milliseconds, matching production flows.
+ */
+export interface WindGridConfig {
+  bounds: { north: number; south: number; east: number; west: number };
+  resolution: number;   // degrees per cell step (assumed square)
+  cols: number;
+  rows: number;
+  timestamps: number[]; // one per forecast hour, in ms since epoch
+}

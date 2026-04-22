@@ -1,12 +1,7 @@
 // apps/web/src/lib/projection/windLookup.ts
 
-export interface WindGridConfig {
-  bounds: { north: number; south: number; east: number; west: number };
-  resolution: number;
-  cols: number;
-  rows: number;
-  timestamps: number[];
-}
+import type { WindGridConfig } from '@nemo/game-engine-core/browser';
+export type { WindGridConfig };
 
 export interface WeatherAtPoint {
   tws: number;
