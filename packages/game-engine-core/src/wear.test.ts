@@ -1,14 +1,26 @@
-import { describe, it } from 'node:test';
+import { before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { GameBalance } from '@nemo/game-balance';
 import { conditionSpeedPenalty, computeWearDelta, INITIAL_CONDITIONS } from './wear.js';
 import type { ConditionState } from './wear.js';
 import type { WeatherPoint } from '@nemo/shared-types';
 import type { AggregatedEffects } from './loadout.js';
 
+before(async () => {
+  await GameBalance.loadFromDisk();
+});
+
 const neutralLoadout: AggregatedEffects = {
   speedByTwa: [1, 1, 1, 1, 1],
   speedByTws: [1, 1, 1],
   wearMul: { hull: 1, rig: 1, sail: 1, elec: 1 },
+  maneuverMul: {
+    tack: { dur: 1, speed: 1 },
+    gybe: { dur: 1, speed: 1 },
+    sailChange: { dur: 1, speed: 1 },
+  },
+  polarTargetsDeg: 0,
+  groundingLossMul: 1,
 };
 
 function mkCondition(partial: Partial<ConditionState>): ConditionState {
