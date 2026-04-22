@@ -18,7 +18,8 @@
   "dependencies": {
     "@nemo/shared-types": "workspace:*",
     "@nemo/polar-lib": "workspace:*",
-    "@nemo/game-engine-core": "workspace:*"
+    "@nemo/game-engine-core": "workspace:*",
+    "@nemo/game-balance": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

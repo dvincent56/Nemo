@@ -248,6 +248,9 @@ importers:
 
   packages/routing:
     dependencies:
+      '@nemo/game-balance':
+        specifier: workspace:*
+        version: link:../game-balance
       '@nemo/game-engine-core':
         specifier: workspace:*
         version: link:../game-engine-core
