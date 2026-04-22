@@ -87,7 +87,7 @@ export async function fetchLatestWindGrid(): Promise<{
   windGrid: WindGridConfig;
   windData: Float32Array;
 }> {
-  // 5-day horizon, global 1° int16: ~5 MB gzip.
+  // 7-day horizon, global 1° int16: ~7-9 MB gzip.
   const decoded = await fetchWeatherGrid({
     bounds: DEFAULT_BOUNDS,
     hours: [...PREFETCH_HOURS_TTFW, ...PREFETCH_HOURS_PHASE1, ...PREFETCH_HOURS_PHASE2],

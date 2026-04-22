@@ -30,15 +30,15 @@ export async function fetchWeatherGrid(opts: PrefetchOptions): Promise<DecodedWe
   return decoded;
 }
 
-// === Prefetch plan (global 1°, cap 5 days) ===
+// === Prefetch plan (global 1°, cap 7 days) ===
 //
 // TTFW (Time To First Wind): t=0 only — visible overlay in <1 s.
 // PHASE1: t=3..48h — short-term overlay + projection (~2-4 s).
-// PHASE2: t=54..120h — long-term overlay, capped at J+5 (~3-5 s).
-// Server keeps 10 days; we only display 5.
+// PHASE2: t=54..168h — long-term overlay, capped at J+7 (~4-7 s).
+// Server keeps 10 days; we display 7 (GFS reliability drops sharply past J+7).
 export const PREFETCH_HOURS_TTFW = [0];
 export const PREFETCH_HOURS_PHASE1 = [3, 6, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48];
-export const PREFETCH_HOURS_PHASE2 = [54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120];
+export const PREFETCH_HOURS_PHASE2 = [54, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120, 126, 132, 138, 144, 150, 156, 162, 168];
 
 export const DEFAULT_BOUNDS = { latMin: -80, lonMin: -180, latMax: 80, lonMax: 180 };
 export const DEFAULT_RESOLUTION = 1;

@@ -23,8 +23,8 @@ describe('prefetch constants', () => {
     expect(PREFETCH_HOURS_PHASE1[PREFETCH_HOURS_PHASE1.length - 1]).toBe(48);
   });
 
-  it('PHASE2 covers 54..120h and never exceeds 120h', () => {
+  it('PHASE2 covers 54..168h and never exceeds 168h', () => {
     expect(PREFETCH_HOURS_PHASE2[0]).toBe(54);
-    expect(Math.max(...PREFETCH_HOURS_PHASE2)).toBe(120);
+    expect(Math.max(...PREFETCH_HOURS_PHASE2)).toBe(168);
   });
 });

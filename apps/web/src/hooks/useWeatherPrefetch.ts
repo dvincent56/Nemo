@@ -20,8 +20,8 @@ import {
  * temporal horizon available, and downstream consumers (overlay, projection, HUD)
  * always read the most complete grid.
  *
- * Phase cap is J+5 (120h). The server still holds J+10 — upgrade here when the UI
- * needs it.
+ * Phase cap is J+7 (168h). The server still holds J+10 — upgrade here when the UI
+ * needs it (and when GFS reliability at that horizon is acceptable).
  */
 export function useWeatherPrefetch(options?: { phase2?: boolean }) {
   const setDecodedWeatherGrid = useGameStore((s) => s.setDecodedWeatherGrid);
@@ -57,7 +57,7 @@ export function useWeatherPrefetch(options?: { phase2?: boolean }) {
         setWeatherGrid(decodedGridToWeatherGridAtNow(phase1), new Date(Date.now() + 6 * 3600 * 1000));
 
         if (options?.phase2) {
-          // Phase 2 — cumulative t=0..120h.
+          // Phase 2 — cumulative t=0..168h.
           const phase2Hours = [...phase1Hours, ...PREFETCH_HOURS_PHASE2];
           const phase2 = await fetchWeatherGrid({ ...common, hours: phase2Hours });
           if (cancelled) return;
