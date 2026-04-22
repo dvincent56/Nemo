@@ -174,19 +174,44 @@ export default function SettingsView(): React.ReactElement {
     }
   }, []);
 
-  // Scroll spy : active la section visible dans le sidenav
+  // Scroll spy : active la section visible dans le sidenav. Même pattern
+  // que LegalLayout (IntersectionObserver) : se déclenche dès le montage
+  // et gère les cas limites (haut/bas de page, arrivée via #hash).
   useEffect(() => {
-    const onScroll = (): void => {
-      for (const s of [...SECTIONS].reverse()) {
-        const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top < 120) {
-          setActiveSection(s.id);
+    const visible = new Set<string>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) visible.add(e.target.id);
+          else visible.delete(e.target.id);
+        }
+        if (visible.size > 0) {
+          let bestId: SectionId | null = null;
+          let bestTop = Infinity;
+          visible.forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const top = el.getBoundingClientRect().top;
+            if (top < bestTop) { bestTop = top; bestId = id as SectionId; }
+          });
+          if (bestId !== null) setActiveSection(bestId);
           return;
         }
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+        // Aucune section dans la bande : haut de page → première, bas → dernière.
+        const firstEl = document.getElementById(SECTIONS[0]!.id);
+        if (firstEl && firstEl.getBoundingClientRect().top > 0) {
+          setActiveSection(SECTIONS[0]!.id);
+        } else {
+          setActiveSection(SECTIONS[SECTIONS.length - 1]!.id);
+        }
+      },
+      { rootMargin: '-120px 0px -55% 0px', threshold: 0 },
+    );
+    for (const s of SECTIONS) {
+      const el = document.getElementById(s.id);
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
   }, []);
 
   // ── Cascade Pays → Subdivision → Ville ──

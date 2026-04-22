@@ -1,5 +1,7 @@
 .subhead {
-  padding: 1.5rem var(--page-px, 1.5rem) 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem clamp(20px, 4vw, 64px) 0;
 }
 .breadcrumb {
   font-family: var(--font-mono);
@@ -13,10 +15,12 @@
 .breadcrumbSep { margin: 0 0.375rem; color: var(--navy-line); }
 
 .hero {
+  max-width: 1400px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: clamp(1.5rem, 4vw, 3rem);
-  padding: 2rem var(--page-px, 1.5rem);
+  padding: 2rem clamp(20px, 4vw, 64px);
   border-bottom: 1px solid var(--navy-line);
 }
 @media (max-width: 720px) {
@@ -63,8 +67,9 @@
 }
 
 .errorBanner {
-  margin: 0 var(--page-px, 1.5rem) 1.5rem;
-  padding: 1rem 1.25rem;
+  max-width: 1400px;
+  margin: 0 auto 1.5rem;
+  padding: 1rem clamp(20px, 4vw, 64px);
   border: 1px solid rgba(158, 42, 42, 0.35);
   background: rgba(158, 42, 42, 0.06);
   border-radius: var(--r-md);
@@ -74,7 +79,9 @@
 }
 
 .section {
-  padding: 2rem var(--page-px, 1.5rem);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem clamp(20px, 4vw, 64px);
 }
 .sectionHead {
   display: flex;
