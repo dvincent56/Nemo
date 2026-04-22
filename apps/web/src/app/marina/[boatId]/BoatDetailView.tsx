@@ -14,7 +14,6 @@ import {
 } from '../data';
 import { SlotCard } from './SlotCard';
 import { SlotDrawer } from './SlotDrawer';
-import { RepairModal } from './RepairModal';
 import { SellModal } from './SellModal';
 import { EffectsSummary, aggregateInstalledEffects } from './EffectsSummary';
 import styles from './page.module.css';
@@ -40,7 +39,6 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
 
   // UI state
   const [drawerSlot, setDrawerSlot] = useState<UpgradeSlot | null>(null);
-  const [showRepair, setShowRepair] = useState(false);
   const [showSell, setShowSell] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -90,7 +88,6 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
   const avgCondition = Math.round(
     (boat.hullCondition + boat.rigCondition + boat.sailCondition + boat.elecCondition) / 4,
   );
-  const needsRepair = avgCondition < 100;
 
   // History pagination
   const totalPages = Math.max(1, Math.ceil(history.length / HISTORY_PAGE_SIZE));
@@ -150,19 +147,6 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
               </Link>
             )}
             <Tooltip
-              text={inRace ? 'Impossible pendant la course' : !needsRepair ? 'Bateau en parfait état' : 'Réparer'}
-              position="bottom"
-            >
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.btnSecondary}`}
-                onClick={() => setShowRepair(true)}
-                disabled={inRace || !needsRepair}
-              >
-                Réparer
-              </button>
-            </Tooltip>
-            <Tooltip
               text={inRace ? 'Impossible pendant la course' : 'Vendre ce bateau'}
               position="bottom"
             >
@@ -219,6 +203,15 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
           <EffectsSummary effects={aggregateInstalledEffects(installed)} variant="bars" />
         </div>
       </section>
+
+      <aside className={styles.autoRepairNotice} aria-label="Réparation automatique">
+        <span className={styles.autoRepairIcon} aria-hidden>✦</span>
+        <p className={styles.autoRepairText}>
+          Votre bateau est <strong>automatiquement remis en état</strong> au départ de
+          chaque course. L&apos;usure accumulée en mer est effacée à l&apos;arrivée — concentrez-vous
+          sur votre stratégie, pas sur la maintenance.
+        </p>
+      </aside>
 
       {/* Slot section */}
       <section className={styles.section}>
@@ -320,13 +313,6 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       )}
 
       {/* Modals */}
-      <RepairModal
-        open={showRepair}
-        boat={boat}
-        credits={credits}
-        onClose={() => setShowRepair(false)}
-        onRepaired={load}
-      />
       <SellModal
         open={showSell}
         boat={boat}
