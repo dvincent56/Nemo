@@ -71,7 +71,7 @@ export class SimulatorEngine {
 
   private initialized: boolean = false;
   private stopped: boolean = false;
-  private schedules: Map<string, Array<{ triggerMs: number; cap: number; sail?: SailId }>> = new Map();
+  private schedules: Map<string, Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>> = new Map();
 
   constructor(listener: Listener) {
     this.listener = listener;
@@ -164,7 +164,7 @@ export class SimulatorEngine {
     }
   }
 
-  setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; sail?: SailId }>): void {
+  setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>): void {
     const sorted = [...entries].sort((a, b) => a.triggerMs - b.triggerMs);
     this.schedules.set(boatId, sorted);
     console.log(
@@ -290,13 +290,29 @@ export class SimulatorEngine {
       const pbr = this.runtimes.get(id);
       if (!pbr) continue;
       while (entries.length > 0 && entries[0]!.triggerMs <= tickEnd) {
-        const entry = entries.shift()!;
+        const entry = entries.shift() as {
+          triggerMs: number; cap: number; sail?: SailId;
+          plannedLat?: number; plannedLon?: number;
+        };
         const prevHdg = pbr.runtime.segmentState.heading;
         pbr.runtime.segmentState.heading = entry.cap;
         pbr.runtime.segmentState.twaLock = null;
         if (entry.sail) pbr.runtime.segmentState.sail = entry.sail;
+        const pos = pbr.runtime.boat.position;
+        let deltaInfo = '';
+        if (entry.plannedLat !== undefined && entry.plannedLon !== undefined) {
+          const R = 3440.065;
+          const toRad = Math.PI / 180;
+          const dLat = (pos.lat - entry.plannedLat) * toRad;
+          const dLon = (pos.lon - entry.plannedLon) * toRad;
+          const lat1 = entry.plannedLat * toRad;
+          const lat2 = pos.lat * toRad;
+          const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+          const deltaNm = 2 * R * Math.asin(Math.sqrt(h));
+          deltaInfo = ` · planned=(${entry.plannedLat.toFixed(3)}, ${entry.plannedLon.toFixed(3)}) · actual=(${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}) · ΔNm=${deltaNm.toFixed(2)}`;
+        }
         console.log(
-          `[sim-schedule] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · ${prevHdg.toFixed(0)}° → ${entry.cap.toFixed(0)}°${entry.sail ? ' · sail=' + entry.sail : ''} · remaining=${entries.length}`,
+          `[sim-schedule] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · ${prevHdg.toFixed(0)}° → ${entry.cap.toFixed(0)}°${entry.sail ? ' · sail=' + entry.sail : ''} · remaining=${entries.length}${deltaInfo}`,
         );
       }
     }

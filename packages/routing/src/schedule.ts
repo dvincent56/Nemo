@@ -30,7 +30,13 @@ export function buildCapSchedule(
   const entries: CapScheduleEntry[] = [];
 
   const firstCap = bearingBetween(polyline[0]!, polyline[1]!);
-  entries.push({ triggerMs: polyline[0]!.timeMs, cap: firstCap, sail: polyline[1]!.sail });
+  entries.push({
+    triggerMs: polyline[0]!.timeMs,
+    cap: firstCap,
+    sail: polyline[1]!.sail,
+    plannedLat: polyline[0]!.lat,
+    plannedLon: polyline[0]!.lon,
+  });
 
   let lastCap = firstCap;
   let lastSail = polyline[1]!.sail;
@@ -40,7 +46,12 @@ export function buildCapSchedule(
     const headingChanged = angleDiffDeg(cap, lastCap) >= minDegChange;
     const sailChanged = sail !== lastSail;
     if (headingChanged || sailChanged) {
-      const entry: CapScheduleEntry = { triggerMs: polyline[i]!.timeMs, cap };
+      const entry: CapScheduleEntry = {
+        triggerMs: polyline[i]!.timeMs,
+        cap,
+        plannedLat: polyline[i]!.lat,
+        plannedLon: polyline[i]!.lon,
+      };
       if (sailChanged) entry.sail = sail;
       entries.push(entry);
       lastCap = cap;

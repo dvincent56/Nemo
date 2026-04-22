@@ -217,6 +217,14 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   console.log(
     `[routing] done · reachedGoal=${reachedGoal} · totalDist=${totalDistanceNm.toFixed(1)} NM · polyline=${polyline.length} pts · cap=${capSchedule.length} entries · totalTime=${Date.now() - t0} ms`,
   );
+  // Plan details — compare with [sim-schedule] logs when the sim runs.
+  for (let i = 0; i < capSchedule.length; i++) {
+    const e = capSchedule[i]!;
+    const simT = (e.triggerMs - input.startTimeMs) / 3_600_000;
+    console.log(
+      `[routing-plan] #${i} simT=${simT.toFixed(2)}h · cap=${e.cap.toFixed(0)}°${e.sail ? ' · sail=' + e.sail : ''} · pos=(${e.plannedLat?.toFixed(3)}, ${e.plannedLon?.toFixed(3)})`,
+    );
+  }
 
   return {
     reachedGoal, polyline, waypoints, capSchedule, isochrones,

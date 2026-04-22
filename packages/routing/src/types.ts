@@ -63,6 +63,10 @@ export interface CapScheduleEntry {
   triggerMs: number;
   cap: number;
   sail?: SailId;
+  /** Planned position at triggerMs — routing's own prediction. Optional,
+   * used for logging/debug to compare against the actual sim position. */
+  plannedLat?: number;
+  plannedLon?: number;
 }
 
 export interface RoutePlan {
