@@ -7,6 +7,7 @@ import { mapInstance } from '@/components/play/MapCanvas';
 import type { SimFleetState } from '@/lib/simulator/types';
 import type { SimStatus } from '@/hooks/useSimulatorWorker';
 import type { Position } from '@nemo/shared-types';
+import { boatColor, PRIMARY_COLOR } from './colors';
 
 interface FleetLayerProps {
   fleet: Record<string, SimFleetState>;
@@ -14,15 +15,6 @@ interface FleetLayerProps {
   boatIds: string[];   // stable ordering for color assignment
   trails: Map<string, Position[]>;
   simStatus: SimStatus;
-}
-
-const PALETTE = ['#6ba3c9', '#a57cc9', '#7cc9a5', '#c98c6b'];
-const PRIMARY_COLOR = '#c9a557';
-
-function boatColor(id: string, primaryId: string | null, boatIds: string[]): string {
-  if (id === primaryId) return PRIMARY_COLOR;
-  const idx = boatIds.indexOf(id);
-  return PALETTE[idx % PALETTE.length] ?? PALETTE[0]!;
 }
 
 function emptyLineString(): GeoJSON.Feature<GeoJSON.LineString> {

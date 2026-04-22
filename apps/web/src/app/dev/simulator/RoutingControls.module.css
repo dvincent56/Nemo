@@ -21,3 +21,18 @@
 .btnRoute { background: #c9a557; color: #0a1f2e; border-color: #c9a557; letter-spacing: 0.08em; text-transform: uppercase; }
 .btnRoute:disabled { opacity: 0.35; cursor: not-allowed; }
 .spacer { flex: 1; }
+.expert {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px 8px; border-left: 1px solid #1a3a52;
+}
+.toggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  user-select: none;
+}
+.toggle input { accent-color: #c9a557; }
+.coneInput {
+  background: transparent; border: 1px solid #2f5a7a; color: #d9c896;
+  padding: 3px 6px; border-radius: 3px; width: 52px; text-align: right;
+  font-family: var(--font-mono); font-size: 11px;
+}
+.coneInput:focus { outline: none; border-color: #c9a557; }

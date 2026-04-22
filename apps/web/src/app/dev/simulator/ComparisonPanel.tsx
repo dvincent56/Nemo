@@ -5,19 +5,13 @@
 
 import styles from './ComparisonPanel.module.css';
 import type { SimBoatSetup, SimFleetState } from '@/lib/simulator/types';
+import { boatColor } from './colors';
 
 interface Props {
   boats: SimBoatSetup[];
   fleet: Record<string, SimFleetState>;
   primaryId: string | null;
   projectionDeviationNm: number | null;
-}
-
-const OTHER_COLORS = ['#6ba3c9', '#a57cc9', '#7cc9a5', '#c98c6b'];
-
-function colorFor(index: number, isPrimary: boolean): string {
-  if (isPrimary) return '#c9a557';
-  return OTHER_COLORS[index % OTHER_COLORS.length]!;
 }
 
 export function ComparisonPanel({
@@ -34,10 +28,10 @@ export function ComparisonPanel({
         <div className={styles.empty}>Aucun bateau configuré</div>
       )}
 
-      {boats.map((boat, i) => {
+      {boats.map((boat) => {
         const isPrimary = boat.id === primaryId;
         const s: SimFleetState | undefined = fleet[boat.id];
-        const color = colorFor(i, isPrimary);
+        const color = boatColor(boat.id, primaryId, boats.map((b) => b.id));
 
         return (
           <div

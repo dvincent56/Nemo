@@ -16,6 +16,7 @@ import { RouteLayer } from './RouteLayer';
 import { IsochroneLayer } from './IsochroneLayer';
 import { RoutingControls } from './RoutingControls';
 import { PRESETS, buildPresetBoat } from './presets';
+import { boatColor } from './colors';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import { ComparisonPanel } from './ComparisonPanel';
@@ -26,7 +27,8 @@ import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import type { SimBoatSetup, SimSpeedFactor, SimOrder } from '@/lib/simulator/types';
 import type { BoatClass, Polar, SailId } from '@nemo/shared-types';
 import type { OrderHistoryEntry } from './OrderHistory';
-import { fetchLatestWindGrid } from '@/lib/projection/fetchWindGrid';
+import { fetchLatestWindGrid, packWindData } from '@/lib/projection/fetchWindGrid';
+import { useGameStore } from '@/lib/store';
 import { freezeProjection, projectionAt } from '@/lib/simulator/projectionFreeze';
 import type { ProjectionResult } from '@/lib/projection/types';
 import type { WindGridConfig } from '@/lib/projection/windLookup';
@@ -77,6 +79,22 @@ async function fetchSimAssets(classes: BoatClass[]): Promise<{
   };
 }
 
+// For routing we only need polars + game balance. Coastline is fetched by the
+// routing worker itself (once per worker lifetime) so the main thread doesn't
+// waste bandwidth + JSON parsing re-fetching it here.
+async function fetchRoutingAssets(classes: BoatClass[]): Promise<{
+  polars: Record<BoatClass, Polar>;
+  gameBalanceJson: unknown;
+}> {
+  const [gameBalanceJson, ...polarResults] = await Promise.all([
+    fetch('/data/game-balance.json').then(r => r.json()),
+    ...classes.map(c => fetch(`/data/polars/${POLAR_FILE[c]}`).then(r => r.json())),
+  ]);
+  const polars: Record<string, Polar> = {};
+  classes.forEach((c, i) => { polars[c] = polarResults[i] as Polar; });
+  return { polars: polars as Record<BoatClass, Polar>, gameBalanceJson };
+}
+
 export function DevSimulatorClient() {
   // Populate the wind grid + decoded grid in the store so MapCanvas overlays
   // can render + animate on simTimeMs like they do on /play.
@@ -104,15 +122,97 @@ export function DevSimulatorClient() {
   const [orderHistory, setOrderHistory] = useState<OrderHistoryEntry[]>([]);
   const [endPos, setEndPos] = useState<Position | null>(null);
   const [routes, setRoutes] = useState<Map<string, RoutePlan>>(new Map());
-  const [preset, setPreset] = useState<Preset>('BALANCED');
+  // Fast-by-default: the in-game panel mirrors this — expert mode flips
+  // these on for tighter but slower results.
+  const [preset, setPreset] = useState<Preset>('FAST');
+  const [coastDetection, setCoastDetection] = useState(false);
+  const [coneHalfDeg, setConeHalfDeg] = useState(60);
   const [routing, setRouting] = useState<{ status: 'idle' | 'computing' | 'done'; error?: string }>({ status: 'idle' });
   const [isoVisibleBoatId, setIsoVisibleBoatId] = useState<string | null>(null);
   // Keep a ref to the wind grid so the projection freeze can use it without
   // neutering the buffer that the sim worker already owns.
   const windGridRef = useRef<{ windGrid: WindGridConfig; windData: Float32Array } | null>(null);
 
+  // Persistent routing worker — loads the coastline once at module scope and
+  // reuses the built index for every `compute` call. Dramatically faster than
+  // the previous "spawn + terminate per route" approach, and re-enables
+  // coastline avoidance (routes no longer cross land).
+  const routingWorkerRef = useRef<Worker | null>(null);
+  const routingNextReqIdRef = useRef(0);
+  const routingPendingRef = useRef<Map<number, { resolve: (plan: RoutePlan) => void; reject: (err: Error) => void }>>(new Map());
+
+  function getRoutingWorker(): Worker {
+    if (!routingWorkerRef.current) {
+      const worker = new Worker(new URL('../../../workers/routing.worker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => {
+        const msg = e.data as
+          | { type: 'result'; requestId: number; plan: RoutePlan }
+          | { type: 'error'; requestId: number; message: string };
+        const pending = routingPendingRef.current.get(msg.requestId);
+        if (!pending) return;
+        routingPendingRef.current.delete(msg.requestId);
+        if (msg.type === 'result') pending.resolve(msg.plan);
+        else pending.reject(new Error(msg.message));
+      };
+      worker.onerror = (err) => {
+        // A worker-level error fails every in-flight request rather than
+        // leaving them hung (we can't tell which request faulted).
+        for (const { reject } of routingPendingRef.current.values()) {
+          reject(err instanceof ErrorEvent ? new Error(err.message) : new Error('routing worker error'));
+        }
+        routingPendingRef.current.clear();
+      };
+      routingWorkerRef.current = worker;
+    }
+    return routingWorkerRef.current;
+  }
+
+  useEffect(() => {
+    return () => {
+      routingWorkerRef.current?.terminate();
+      routingWorkerRef.current = null;
+      routingPendingRef.current.clear();
+    };
+  }, []);
+
   const { simTimeMs, fleet, status, post, setStatus, reinit } = useSimulatorWorker();
   const locked = status !== 'idle';
+
+  // Subscribe to the decoded GFS grid pair (current + prev). When the store
+  // rotates a new run in, push an `updateWindGrid` to the sim worker so the
+  // in-flight simulation doesn't exhaust the old grid. Also feeds the router
+  // call sites so recomputed routes use the freshest data with a fallback.
+  const decodedGrid = useGameStore((s) => s.weather.decodedGrid);
+  const prevDecodedGrid = useGameStore((s) => s.weather.prevDecodedGrid);
+
+  // The moment the next GFS run is expected. Everything on the routed line
+  // up to this point is computed from data that is *guaranteed* to still
+  // be authoritative; beyond it, a new run will arrive and may reshape the
+  // forecast. Displayed via the dashed-line style split in RouteLayer.
+  // Falls back to the nearest upcoming 6 h boundary when no grid is loaded.
+  const nextGfsRunMs = useMemo(() => {
+    if (decodedGrid?.header.nextRunExpectedUtc) {
+      return decodedGrid.header.nextRunExpectedUtc * 1000;
+    }
+    const sixH = 6 * 3_600_000;
+    return Math.ceil(Date.now() / sixH) * sixH;
+  }, [decodedGrid]);
+  useEffect(() => {
+    if (!decodedGrid) return;
+    if (status === 'idle') return; // nothing to update until a sim is running
+    const current = packWindData(decodedGrid);
+    const prev = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
+    post({
+      type: 'updateWindGrid',
+      windGrid: current.windGrid,
+      windData: current.windData,
+      ...(prev ? { prevWindGrid: prev.windGrid, prevWindData: prev.windData } : {}),
+    });
+    console.log('[dev-sim] pushed updateWindGrid to sim worker', {
+      currentTimestamps: current.windGrid.timestamps.length,
+      prevTimestamps: prev?.windGrid.timestamps.length ?? 0,
+    });
+  }, [decodedGrid, prevDecodedGrid, status, post]);
 
   // Derive available sails from the primary boat's polar keys if present.
   // The polar's `speeds` map has one entry per SailId — use those keys if possible,
@@ -198,6 +298,19 @@ export function DevSimulatorClient() {
       polars,
       gameBalanceJson,
     });
+    // If a previous GFS run is already in the store at launch time, push it
+    // immediately so the sim has a fallback from tick 1 instead of waiting
+    // for the next store rotation.
+    if (prevDecodedGrid) {
+      const prevPack = packWindData(prevDecodedGrid);
+      post({
+        type: 'updateWindGrid',
+        windGrid,
+        windData,
+        prevWindGrid: prevPack.windGrid,
+        prevWindData: prevPack.windData,
+      });
+    }
     post({ type: 'setSpeed', factor: speed });
     for (const [id, plan] of routes) {
       post({ type: 'schedule', boatId: id, entries: plan.capSchedule });
@@ -242,24 +355,20 @@ export function DevSimulatorClient() {
     windGridRef.current = null;
   }
 
-  const ROUTE_PALETTE = ['#c9a557', '#6ba3c9', '#a57cc9', '#7cc9a5', '#c98c6b'];
-  function colorFor(boatId: string): string {
-    if (boatId === primaryId) return ROUTE_PALETTE[0]!;
-    const others = boats.filter((b) => b.id !== primaryId);
-    const idx = others.findIndex((b) => b.id === boatId);
-    return ROUTE_PALETTE[(idx + 1) % ROUTE_PALETTE.length]!;
-  }
+  const colorFor = (boatId: string): string =>
+    boatColor(boatId, primaryId, boats.map((b) => b.id));
 
   function routeOne(payload: { input: RouteInput; gameBalanceJson: unknown }): Promise<RoutePlan> {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(new URL('../../../workers/routing.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = (e) => {
-        const msg = e.data as { type: 'result'; plan: RoutePlan } | { type: 'error'; message: string };
-        if (msg.type === 'result') { resolve(msg.plan); worker.terminate(); }
-        else { reject(new Error(msg.message)); worker.terminate(); }
-      };
-      worker.onerror = (err) => { reject(err); worker.terminate(); };
-      worker.postMessage({ type: 'compute', input: payload.input, gameBalanceJson: payload.gameBalanceJson });
+      const worker = getRoutingWorker();
+      const requestId = ++routingNextReqIdRef.current;
+      routingPendingRef.current.set(requestId, { resolve, reject });
+      worker.postMessage({
+        type: 'compute',
+        requestId,
+        input: payload.input,
+        gameBalanceJson: payload.gameBalanceJson,
+      });
     });
   }
 
@@ -270,15 +379,11 @@ export function DevSimulatorClient() {
 
     try {
       const classes = Array.from(new Set(boats.map((b) => b.boatClass)));
-      const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
+      const { polars, gameBalanceJson } = await fetchRoutingAssets(classes);
       const { windGrid, windData } = await fetchLatestWindGrid();
+      const prevPack = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
 
       const startTimeMs = Date.now();
-      // Skip coastline: cloning 10 MB of GeoJSON into each routing worker
-      // was the main cause of the first-version hang. Routes may cross land —
-      // acceptable for the dev simulator for now, reintroduce when the
-      // coastline is cached or compressed.
-      void coastlineGeoJson;
       const plans = await Promise.all(boats.map((boat) => routeOne({
         input: {
           from: startPos,
@@ -291,6 +396,11 @@ export function DevSimulatorClient() {
           windGrid,
           windData: new Float32Array(windData),  // per-worker copy
           preset,
+          coastDetection,
+          coneHalfDeg,
+          ...(prevPack
+            ? { prevWindGrid: prevPack.windGrid, prevWindData: new Float32Array(prevPack.windData) }
+            : {}),
         },
         gameBalanceJson,
       }).then((plan) => [boat.id, plan] as const)));
@@ -310,10 +420,10 @@ export function DevSimulatorClient() {
 
     try {
       const classes = Array.from(new Set(boats.map((b) => b.boatClass)));
-      const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
+      const { polars, gameBalanceJson } = await fetchRoutingAssets(classes);
       const { windGrid, windData } = await fetchLatestWindGrid();
+      const prevPack = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
       const simAbsMs = (launchTimeMs ?? Date.now()) + simTimeMs;
-      void coastlineGeoJson;  // skipped — see routeAllBoats for rationale
 
       const plans = await Promise.all(boats.map((boat) => {
         const live = fleet[boat.id];
@@ -326,6 +436,11 @@ export function DevSimulatorClient() {
             polar: polars[boat.boatClass]!, loadout: boat.loadout, condition,
             windGrid, windData: new Float32Array(windData),
             preset,
+            coastDetection,
+            coneHalfDeg,
+            ...(prevPack
+              ? { prevWindGrid: prevPack.windGrid, prevWindData: new Float32Array(prevPack.windData) }
+              : {}),
           },
           gameBalanceJson,
         }).then((plan) => [boat.id, plan] as const);
@@ -393,7 +508,7 @@ export function DevSimulatorClient() {
           simStatus={status}
         />
         <EndPointLayer endPos={endPos} status={status} onChange={setEndPos} />
-        <RouteLayer routes={routes} primaryId={primaryId} colorFor={colorFor} />
+        <RouteLayer routes={routes} primaryId={primaryId} colorFor={colorFor} nextGfsRunMs={nextGfsRunMs} />
         <IsochroneLayer
           plan={isoVisibleBoatId ? (routes.get(isoVisibleBoatId) ?? null) : null}
           color={isoVisibleBoatId ? colorFor(isoVisibleBoatId) : '#c9a557'}
@@ -446,6 +561,10 @@ export function DevSimulatorClient() {
         <RoutingControls
           preset={preset}
           onSetPreset={setPreset}
+          coastDetection={coastDetection}
+          onSetCoastDetection={setCoastDetection}
+          coneHalfDeg={coneHalfDeg}
+          onSetConeHalfDeg={setConeHalfDeg}
           canRoute={status === 'idle' && endPos !== null && boats.length > 0 && gameBalanceReady}
           isComputing={routing.status === 'computing'}
           onRoute={routeAllBoats}
