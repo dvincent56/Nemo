@@ -4,9 +4,11 @@ import {
   CoastlineIndex,
   aggregateEffects,
   computeBsp,
+  detectManeuver,
   swellSpeedFactor,
   type BoatLoadout,
   type ConditionState,
+  type ManeuverPenaltyState,
 } from '@nemo/game-engine-core/browser';
 import { advancePosition, computeTWA, getPolarSpeed, haversineNM } from '@nemo/polar-lib/browser';
 import { pruneBySector, bearingDeg } from './pruning';
@@ -119,10 +121,22 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         const twaAbs = Math.min(Math.abs(twa), 180);
         if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) continue;
         const sail = pickOptimalSailForRouting(input.polar, twaAbs, weather.tws);
-        // Mirror runTick exactly: core speed × swell factor.
+        // Mirror runTick: core × swell × maneuver (step-averaged).
         const coreBsp = computeBsp(input.polar, sail, twa, weather.tws, localEffects, input.condition);
         const swellMul = swellSpeedFactor(weather.swh, weather.swellDir, h);
-        const bsp = coreBsp * swellMul;
+        // Maneuver penalty from parent.twa → this twa (tack/gybe). Upgrades
+        // that reduce tack/gybe duration or penalty come in via localEffects.
+        let maneuverMul = 1;
+        if (p.parentIdx >= 0) {
+          const penalty: ManeuverPenaltyState | null = detectManeuver(
+            p.twa, twa, input.boatClass, p.timeMs, localEffects,
+          );
+          if (penalty) {
+            const durSec = Math.min((penalty.endMs - penalty.startMs) / 1000, timeStepSec);
+            maneuverMul = (durSec * penalty.speedFactor + (timeStepSec - durSec)) / timeStepSec;
+          }
+        }
+        const bsp = coreBsp * swellMul * maneuverMul;
         if (bsp < 0.1) continue;
 
         const distNm = bsp * (timeStepSec / 3600);

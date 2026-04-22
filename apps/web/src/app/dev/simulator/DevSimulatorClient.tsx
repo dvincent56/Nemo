@@ -284,6 +284,7 @@ export function DevSimulatorClient() {
           from: startPos,
           to: endPos,
           startTimeMs,
+          boatClass: boat.boatClass,
           polar: polars[boat.boatClass]!,
           loadout: boat.loadout,
           condition: boat.initialCondition,
@@ -321,6 +322,7 @@ export function DevSimulatorClient() {
         return routeOne({
           input: {
             from, to: endPos!, startTimeMs: simAbsMs,
+            boatClass: boat.boatClass,
             polar: polars[boat.boatClass]!, loadout: boat.loadout, condition,
             windGrid, windData: new Float32Array(windData),
             preset,

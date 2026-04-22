@@ -1,5 +1,5 @@
 // packages/routing/src/types.ts
-import type { Position, Polar, SailId } from '@nemo/shared-types';
+import type { Position, Polar, SailId, BoatClass } from '@nemo/shared-types';
 import type {
   BoatLoadout,
   ConditionState,
@@ -19,6 +19,7 @@ export interface RouteInput {
   from: Position;
   to: Position;
   startTimeMs: number;
+  boatClass: BoatClass;
   polar: Polar;
   loadout: BoatLoadout;
   condition: ConditionState;

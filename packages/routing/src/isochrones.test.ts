@@ -61,6 +61,7 @@ test('computeRoute reaches a target with constant wind', async () => {
   const plan = await computeRoute({
     from, to,
     startTimeMs: windGrid.timestamps[0]!,
+    boatClass: 'CLASS40',
     polar, loadout,
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     windGrid, windData,
@@ -85,6 +86,7 @@ test('computeRoute is deterministic', async () => {
     from: { lat: 47, lon: -3 },
     to:   { lat: 47, lon: -2.5 },
     startTimeMs: windGrid.timestamps[0]!,
+    boatClass: 'CLASS40' as const,
     polar, loadout,
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     windGrid, windData,
