@@ -8,6 +8,7 @@ export const INITIAL_WEATHER: WeatherState = {
   isLoading: false,
   decodedGrid: null,
   gfsStatus: null,
+  tacticalTile: null,
 };
 
 export function createWeatherSlice(set: (fn: (s: GameStore) => Partial<GameStore>) => void) {
@@ -21,5 +22,12 @@ export function createWeatherSlice(set: (fn: (s: GameStore) => Partial<GameStore
       set((s) => ({ weather: { ...s.weather, decodedGrid: grid } })),
     setGfsStatus: (status: GfsStatus) =>
       set((s) => ({ weather: { ...s.weather, gfsStatus: status } })),
+    setTacticalTile: (grid: WeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) =>
+      set((s) => ({
+        weather: {
+          ...s.weather,
+          tacticalTile: (grid && bounds) ? { grid, bounds } : null,
+        },
+      })),
   };
 }

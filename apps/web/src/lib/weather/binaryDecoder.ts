@@ -1,6 +1,9 @@
 // apps/web/src/lib/weather/binaryDecoder.ts
 
 export const HEADER_SIZE = 48;
+const SCALE_UV_SWH_MWP = 100;
+const SCALE_SIN_COS = 30000;
+const INT16_NAN = -32768;
 
 export interface WeatherGridHeader {
   runTimestamp: number;
@@ -16,6 +19,8 @@ export interface WeatherGridHeader {
   numLat: number;
   numLon: number;
   numHours: number;
+  gridVersion: number;
+  encoding: 'float32' | 'int16';
 }
 
 export interface DecodedWeatherGrid {
@@ -30,6 +35,10 @@ export interface DecodedWeatherGrid {
 
 export function decodeWeatherGrid(buf: ArrayBuffer): DecodedWeatherGrid {
   const dv = new DataView(buf);
+  const gridVersion = dv.getUint8(46);
+  const encodingByte = gridVersion >= 2 ? dv.getUint8(47) : 0;
+  const encoding: 'float32' | 'int16' = encodingByte === 1 ? 'int16' : 'float32';
+
   const header: WeatherGridHeader = {
     runTimestamp: dv.getUint32(0, true),
     nextRunExpectedUtc: dv.getUint32(4, true),
@@ -44,8 +53,26 @@ export function decodeWeatherGrid(buf: ArrayBuffer): DecodedWeatherGrid {
     numLat: dv.getUint16(40, true),
     numLon: dv.getUint16(42, true),
     numHours: dv.getUint16(44, true),
+    gridVersion,
+    encoding,
   };
-  const data = new Float32Array(buf, HEADER_SIZE);
+
+  const bodyLen = header.numHours * header.numLat * header.numLon * 6;
+  let data: Float32Array;
+  if (encoding === 'float32') {
+    data = new Float32Array(buf, HEADER_SIZE, bodyLen);
+  } else {
+    // Dequantize int16 → float32. Field order per cell: u, v, swh, sin, cos, mwp
+    const i16 = new Int16Array(buf, HEADER_SIZE, bodyLen);
+    data = new Float32Array(bodyLen);
+    for (let i = 0; i < bodyLen; i++) {
+      const raw = i16[i]!;
+      if (raw === INT16_NAN) { data[i] = NaN; continue; }
+      const mod = i % 6;
+      const scale = (mod === 3 || mod === 4) ? SCALE_SIN_COS : SCALE_UV_SWH_MWP;
+      data[i] = raw / scale;
+    }
+  }
   return { header, data };
 }
 

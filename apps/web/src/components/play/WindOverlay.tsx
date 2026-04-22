@@ -45,12 +45,14 @@ function getCachedWind(grid: WeatherGrid, lat: number, lon: number, frame: numbe
   if (cached) return cached;
 
   const { cols, rows, points } = grid;
+  if (ix < 0 || ix >= cols - 1 || iy < 0 || iy >= rows - 1) {
+    const zero: CachedWind = { u: 0, v: 0, tws: 0 };
+    windCache.set(key, zero);
+    return zero;
+  }
   const dx = fx - ix;
   const dy = fy - iy;
-  const x0 = Math.max(0, Math.min(ix, cols - 1));
-  const x1 = Math.min(x0 + 1, cols - 1);
-  const y0 = Math.max(0, Math.min(iy, rows - 1));
-  const y1 = Math.min(y0 + 1, rows - 1);
+  const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
   const p00 = points[y0 * cols + x0];
   const p10 = points[y0 * cols + x1];
@@ -194,6 +196,7 @@ export default function WindOverlay(): React.ReactElement {
   const animRef = useRef<number>(0);
   const gridRef = useRef<WeatherGrid | null>(null);
   const frameRef = useRef(0);
+  const tileRef = useRef<{ grid: WeatherGrid; bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } } | null>(null);
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
@@ -214,6 +217,20 @@ export default function WindOverlay(): React.ReactElement {
         useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
       })
       .catch((e) => console.warn('Wind data load failed:', e));
+  }, [gridData]);
+
+  // Tactical tile: higher-res grid for the area around the boat.
+  // Clear the wind cache whenever the tile (or global grid) changes so
+  // stale (iy,ix) keyed values from the old grid don't bleed through.
+  const tacticalTile = useGameStore((s) => s.weather.tacticalTile);
+  useEffect(() => {
+    tileRef.current = tacticalTile;
+    windCache = new Map();
+    windCacheFrame = -1;
+  }, [tacticalTile]);
+  useEffect(() => {
+    windCache = new Map();
+    windCacheFrame = -1;
   }, [gridData]);
 
   useEffect(() => {
@@ -300,11 +317,24 @@ export default function WindOverlay(): React.ReactElement {
 
       let vi = 0, ai = 0, ci = 0;
 
+      // Pick wind: prefer the tactical tile when the particle falls inside it,
+      // fall back to the global grid otherwise.
+      const pickWind = (lat: number, lon: number): CachedWind => {
+        const tile = tileRef.current;
+        if (tile) {
+          const b = tile.bounds;
+          if (lat >= b.latMin && lat <= b.latMax && lon >= b.lonMin && lon <= b.lonMax) {
+            return getCachedWind(tile.grid, lat, lon, frame);
+          }
+        }
+        return getCachedWind(grid, lat, lon, frame);
+      };
+
       for (let i = 0; i < pa.count; i++) {
         const lon = pa.lon[i]!;
         const lat = pa.lat[i]!;
 
-        const wind = getCachedWind(grid, lat, lon, frame);
+        const wind = pickWind(lat, lon);
         pa.speed[i] = wind.tws;
 
         const dir = Math.atan2(wind.u, wind.v);

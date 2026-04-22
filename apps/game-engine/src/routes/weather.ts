@@ -14,7 +14,7 @@ export function registerWeatherRoutes(app: FastifyInstance, getProvider: () => W
     });
   });
 
-  app.get<{ Querystring: { bounds?: string; hours?: string } }>(
+  app.get<{ Querystring: { bounds?: string; hours?: string; resolution?: string; q?: string } }>(
     '/api/v1/weather/grid',
     async (req, reply) => {
       const provider = getProvider();
@@ -33,6 +33,13 @@ export function registerWeatherRoutes(app: FastifyInstance, getProvider: () => W
         return reply.status(400).send({ error: 'no valid forecast hours' });
       }
 
+      const resolution = req.query.resolution ? Number(req.query.resolution) : undefined;
+      if (resolution !== undefined && (!Number.isFinite(resolution) || resolution <= 0 || resolution > 10)) {
+        return reply.status(400).send({ error: 'invalid resolution (must be >0 and ≤10)' });
+      }
+
+      const encoding = req.query.q === 'int16' ? 'int16' : 'float32';
+
       const statusMap = { stable: 0, blending: 1, delayed: 2 } as const;
       const maxAge = provider.blendStatus === 'blending' ? 60 : 300;
 
@@ -43,6 +50,8 @@ export function registerWeatherRoutes(app: FastifyInstance, getProvider: () => W
         nextRunExpectedUtc: provider.nextRunExpectedUtc,
         weatherStatus: statusMap[provider.blendStatus],
         blendAlpha: provider.blendAlpha,
+        ...(resolution !== undefined ? { resolution } : {}),
+        encoding,
       });
 
       return reply

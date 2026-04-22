@@ -12,6 +12,7 @@ import {
 } from '@/lib/access';
 import { useHotkeys } from '@/lib/useHotkeys';
 import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
+import { useTacticalTile } from '@/hooks/useTacticalTile';
 import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
@@ -128,6 +129,8 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   useHotkeys(canInteract);
   // Prefetch multi-hour GRIB so the projection sees wind evolution over time.
   useWeatherPrefetch({ phase2: true });
+  // Lazily fetch a high-res 0.25° tactical tile around the boat position.
+  useTacticalTile();
 
   // Sync HUD wind values from GFS grid at boat position.
   // Only updates TWS (wind speed) locally — TWD/TWA come from the server tick
