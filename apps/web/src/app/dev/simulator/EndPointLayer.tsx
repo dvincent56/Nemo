@@ -70,23 +70,26 @@ export function EndPointLayer({ endPos, status, onChange }: Props) {
     });
   }, [endPos]);
 
-  // Shift+click places the end-point — plain click is used by StartPointLayer.
+  // Right-click (contextmenu) places the end-point — plain click is used by
+  // StartPointLayer. Also suppress the browser's native context menu on the map
+  // while idle so the custom behaviour isn't interrupted.
   useEffect(() => {
     const map = mapInstance;
     if (!map) return;
     if (clickHandlerRef.current) {
-      map.off('click', clickHandlerRef.current);
+      map.off('contextmenu', clickHandlerRef.current);
       clickHandlerRef.current = null;
     }
     if (status !== 'idle') return;
     const handler = (e: maplibregl.MapMouseEvent) => {
-      if (!e.originalEvent.shiftKey) return;
+      e.preventDefault?.();
+      e.originalEvent.preventDefault();
       onChange({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     };
-    map.on('click', handler);
+    map.on('contextmenu', handler);
     clickHandlerRef.current = handler;
     return () => {
-      map.off('click', handler);
+      map.off('contextmenu', handler);
       clickHandlerRef.current = null;
     };
   }, [status, onChange]);
