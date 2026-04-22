@@ -7,7 +7,7 @@ import {
   type BoatLoadout,
   type ConditionState,
 } from '@nemo/game-engine-core/browser';
-import { advancePosition, computeTWA, haversineNM } from '@nemo/polar-lib/browser';
+import { advancePosition, computeTWA, getPolarSpeed, haversineNM } from '@nemo/polar-lib/browser';
 import { pruneBySector } from './pruning';
 import { backtrackPolyline, extractInflectionPoints } from './polyline';
 import { buildCapSchedule } from './schedule';
@@ -19,26 +19,15 @@ import type {
 
 const INFLECTION_DEG = 5;
 
-function nearestIdx(arr: readonly number[], v: number): number {
-  let best = 0, bestDiff = Infinity;
-  for (let i = 0; i < arr.length; i++) {
-    const d = Math.abs(arr[i]! - v);
-    if (d < bestDiff) { bestDiff = d; best = i; }
-  }
-  return best;
-}
-
+// Use getPolarSpeed (bilinear) — same lookup the tick engine uses via
+// computeBsp. The previous nearest-neighbor version caused the routed
+// trail to offset from the simulated trail by a constant ~5-10%.
 function pickOptimalSailForRouting(polar: Polar, twaAbs: number, tws: number): SailId {
   let best: SailId | null = null;
   let bestBsp = -1;
   for (const sail of Object.keys(polar.speeds) as SailId[]) {
-    const table = polar.speeds[sail as SailId];
-    if (!table) continue;
-    const twaIdx = nearestIdx(polar.twa, twaAbs);
-    const twsIdx = nearestIdx(polar.tws, tws);
-    const row = table[twaIdx];
-    if (!row) continue;
-    const v = row[twsIdx] ?? 0;
+    if (!polar.speeds[sail]) continue;
+    const v = getPolarSpeed(polar, sail, twaAbs, tws);
     if (v > bestBsp) { bestBsp = v; best = sail; }
   }
   return best ?? ('JIB' as SailId);

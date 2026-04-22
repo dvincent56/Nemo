@@ -77,7 +77,12 @@ function isoToFeatures(iso: IsochronePoint[], step: number): GeoJSON.Feature<Geo
   if (current.length >= 2) segments.push(current);
 
   for (const seg of segments) {
-    const smooth = chaikin(seg, 2);
+    // More passes when the segment has few points — the early isochrones
+    // (close to origin) usually have only 24-48 survivors and look jagged
+    // with the default 2 passes. More passes = smoother curve without
+    // distorting the shape (Chaikin stays close to the original corners).
+    const passes = seg.length < 30 ? 4 : seg.length < 80 ? 3 : 2;
+    const smooth = chaikin(seg, passes);
     out.push({
       type: 'Feature', properties: { step },
       geometry: { type: 'LineString', coordinates: smooth },
