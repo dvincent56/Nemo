@@ -106,13 +106,16 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
 
     for (let idx = 0; idx < prev.length; idx++) {
       const p = prev[idx]!;
-      const weather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, p.timeMs);
+      // Sample wind at the STEP MIDPOINT in time, not at step start — the
+      // sim integrates wind over 30 s ticks across the whole step, so its
+      // effective wind is closer to the midpoint than to the start. Using
+      // step-start here was biasing the router's BSP toward whichever wind
+      // snapshot happened at the boundary and producing a steady ~0.5
+      // NM/step drift even with perfectly-aligned sail and physics.
+      const midTimeMs = p.timeMs + (timeStepSec * 500);
+      const weather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, midTimeMs);
       if (!weather) continue;
 
-      // Re-aggregate effects WITH the local TWS so activation gates fire
-      // the same way runTick evaluates them. Upgrades like foils with
-      // activation.minTws get disabled below flying speed → router must
-      // see the same "inactive" effects or it over-estimates BSP.
       const localEffects = aggregateEffects(input.loadout.items, { tws: weather.tws });
 
       for (let h = 0; h < 360; h += stepHeading) {
