@@ -45,11 +45,11 @@ export const PRESETS: Preset[] = [
   },
   {
     id: 'imoca60-foiler',
-    name: 'IMOCA60 Foiler',
+    name: 'IMOCA60 Foiler Proto',
     boatClass: 'IMOCA60',
-    description: 'Foils série IMOCA — redoutable dans la plage 15–30 kts.',
+    description: 'Foils proto grande envergure — traînée marquée sous 12 kts, fusée au-delà.',
     initialSail: 'JIB',
-    upgradeIds: ['foils-imoca60-standard'],
+    upgradeIds: ['foils-imoca60-proto'],
   },
 ];
 

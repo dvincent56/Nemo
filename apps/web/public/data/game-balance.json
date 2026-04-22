@@ -1571,30 +1571,27 @@
         "id": "foils-imoca60-standard",
         "slot": "FOILS",
         "tier": "SERIE",
-        "name": "Foils IMOCA 60 Standard",
+        "name": "Foils IMOCA Série (non-foiler)",
         "profile": "vol dès 14 nds",
-        "description": "Foils de compétition de série de l'IMOCA 60, vol actif dès 14 nœuds.",
+        "description": "Configuration sans foils actifs (IMOCA archimédien) — sert de référence neutre.",
         "compat": [
           "IMOCA60"
         ],
         "cost": 0,
         "effects": {
           "speedByTwa": [
-            -0.02,
             0,
-            0.05,
-            0.12,
-            0.04
+            0,
+            0,
+            0,
+            0
           ],
           "speedByTws": [
-            -0.04,
-            0.03,
-            0.05
+            0,
+            0,
+            0
           ],
-          "wearMul": {
-            "hull": 1.5,
-            "rig": 1.2
-          },
+          "wearMul": {},
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -2124,6 +2121,72 @@
             -0.06
           ],
           "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-imoca60-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils IMOCA Mk2",
+        "profile": "foiler polyvalent",
+        "description": "Foils modestes, traînée légère sous le seuil de vol, gain notable au-dessus.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 45000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            -0.03,
+            0.03,
+            0.07
+          ],
+          "wearMul": {
+            "hull": 1.05
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-imoca60-proto",
+        "slot": "FOILS",
+        "tier": "SILVER",
+        "name": "Foils IMOCA Proto",
+        "profile": "foiler agressif",
+        "description": "Foils grande envergure — traînée marquée sous 12 kts, fusée au-delà.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 80000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            -0.06,
+            0.05,
+            0.12
+          ],
+          "wearMul": {
+            "hull": 1.15
+          },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
