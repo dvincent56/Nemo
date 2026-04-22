@@ -45,12 +45,14 @@ function getCachedWind(grid: WeatherGrid, lat: number, lon: number, frame: numbe
   if (cached) return cached;
 
   const { cols, rows, points } = grid;
+  if (ix < 0 || ix >= cols - 1 || iy < 0 || iy >= rows - 1) {
+    const zero: CachedWind = { u: 0, v: 0, tws: 0 };
+    windCache.set(key, zero);
+    return zero;
+  }
   const dx = fx - ix;
   const dy = fy - iy;
-  const x0 = Math.max(0, Math.min(ix, cols - 1));
-  const x1 = Math.min(x0 + 1, cols - 1);
-  const y0 = Math.max(0, Math.min(iy, rows - 1));
-  const y1 = Math.min(y0 + 1, rows - 1);
+  const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
   const p00 = points[y0 * cols + x0];
   const p10 = points[y0 * cols + x1];

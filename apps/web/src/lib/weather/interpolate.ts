@@ -30,13 +30,12 @@ export function interpolateWind(
   const dx = fx - ix;
   const dy = fy - iy;
 
-  // Clamp
   const maxX = cols - 1;
   const maxY = Math.floor((BOUNDS.north - BOUNDS.south) / RESOLUTION);
-  const x0 = Math.max(0, Math.min(ix, maxX));
-  const x1 = Math.min(x0 + 1, maxX);
-  const y0 = Math.max(0, Math.min(iy, maxY));
-  const y1 = Math.min(y0 + 1, maxY);
+  if (ix < 0 || ix >= maxX || iy < 0 || iy >= maxY) {
+    return { tws: 0, twd: 0, u: 0, v: 0 };
+  }
+  const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
   const idx = (r: number, c: number) => r * cols + c;
   const p00 = points[idx(y0, x0)];
@@ -90,10 +89,10 @@ export function interpolateSwell(
 
   const maxX = cols - 1;
   const maxY = Math.floor((BOUNDS.north - BOUNDS.south) / RESOLUTION);
-  const x0 = Math.max(0, Math.min(ix, maxX));
-  const x1 = Math.min(x0 + 1, maxX);
-  const y0 = Math.max(0, Math.min(iy, maxY));
-  const y1 = Math.min(y0 + 1, maxY);
+  if (ix < 0 || ix >= maxX || iy < 0 || iy >= maxY) {
+    return { height: 0, dir: 0 };
+  }
+  const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
   const idx = (r: number, c: number) => r * cols + c;
   const p00 = points[idx(y0, x0)];
