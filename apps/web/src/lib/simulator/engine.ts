@@ -71,6 +71,7 @@ export class SimulatorEngine {
 
   private initialized: boolean = false;
   private stopped: boolean = false;
+  private schedules: Map<string, Array<{ triggerMs: number; cap: number; sail?: SailId }>> = new Map();
 
   constructor(listener: Listener) {
     this.listener = listener;
@@ -132,6 +133,7 @@ export class SimulatorEngine {
   reset(): void {
     this.simTimeMs = 0;
     this.stopped = false;
+    this.schedules.clear();
     this.buildRuntimes();
     this.emitTick();
   }
@@ -160,6 +162,10 @@ export class SimulatorEngine {
           break;
       }
     }
+  }
+
+  setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; sail?: SailId }>): void {
+    this.schedules.set(boatId, [...entries].sort((a, b) => a.triggerMs - b.triggerMs));
   }
 
   /**
@@ -274,6 +280,18 @@ export class SimulatorEngine {
 
     const tickStart = this.simTimeMs + this.startTimeMs;
     const tickEnd = tickStart + TICK_MS;
+
+    // Apply any scheduled orders whose trigger lies in [0, tickEnd)
+    for (const [id, entries] of this.schedules) {
+      const pbr = this.runtimes.get(id);
+      if (!pbr) continue;
+      while (entries.length > 0 && entries[0]!.triggerMs <= tickEnd) {
+        const entry = entries.shift()!;
+        pbr.runtime.segmentState.heading = entry.cap;
+        pbr.runtime.segmentState.twaLock = null;
+        if (entry.sail) pbr.runtime.segmentState.sail = entry.sail;
+      }
+    }
 
     // GRIB exhaustion: tickStart is ms, timestamps are ms — compare directly
     const lastGribTs = this.gribTimestamps[this.gribTimestamps.length - 1];

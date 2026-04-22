@@ -197,6 +197,9 @@ export function DevSimulatorClient() {
       gameBalanceJson,
     });
     post({ type: 'setSpeed', factor: speed });
+    for (const [id, plan] of routes) {
+      post({ type: 'schedule', boatId: id, entries: plan.capSchedule });
+    }
     post({ type: 'start' });
     setStatus('running');
   }
