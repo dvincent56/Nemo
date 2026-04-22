@@ -51,6 +51,7 @@ export {
   computeWearDelta,
   conditionSpeedPenalty,
   swellSpeedFactor,
+  INITIAL_CONDITIONS,
   type ConditionState,
 } from './wear';
 

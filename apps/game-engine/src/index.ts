@@ -6,7 +6,7 @@ import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { TickManager } from './engine/manager.js';
 import type { BoatRuntime } from '@nemo/game-engine-core';
-import { resolveBoatLoadout } from '@nemo/game-engine-core';
+import { resolveBoatLoadout, INITIAL_CONDITIONS } from '@nemo/game-engine-core';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { registerMarinaRoutes } from './api/marina.js';
@@ -38,12 +38,15 @@ export function createDemoRuntime(): BoatRuntime {
     bsp: 0,
     sail: 'JIB',
     sailState: 'STABLE',
-    hullCondition: 100, rigCondition: 100, sailCondition: 100, elecCondition: 100,
+    hullCondition: INITIAL_CONDITIONS.hull,
+    rigCondition: INITIAL_CONDITIONS.rig,
+    sailCondition: INITIAL_CONDITIONS.sails,
+    elecCondition: INITIAL_CONDITIONS.electronics,
   };
   return {
     boat,
     raceId: 'r-vendee-2026',
-    condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
+    condition: { ...INITIAL_CONDITIONS },
     sailState: { active: 'JIB', pending: null, transitionStartMs: 0, transitionEndMs: 0, autoMode: false, timeOutOfRangeSec: 0 },
     segmentState: { position: START_POS, heading: 216, twaLock: null, sail: 'JIB', sailAuto: false },
     orderHistory: [],
