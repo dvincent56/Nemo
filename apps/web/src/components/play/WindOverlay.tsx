@@ -324,8 +324,7 @@ export default function WindOverlay(): React.ReactElement {
         if (tile) {
           const b = tile.bounds;
           if (lat >= b.latMin && lat <= b.latMax && lon >= b.lonMin && lon <= b.lonMax) {
-            const w = getCachedWind(tile.grid, lat, lon, frame);
-            if (w.tws > 0) return w;
+            return getCachedWind(tile.grid, lat, lon, frame);
           }
         }
         return getCachedWind(grid, lat, lon, frame);

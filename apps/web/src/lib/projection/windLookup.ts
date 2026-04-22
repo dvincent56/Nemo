@@ -43,12 +43,10 @@ export function createWindLookup(
     const dx = fx - ix;
     const dy = fy - iy;
 
-    const maxX = cols - 1;
-    const maxY = rows - 1;
-    const x0 = Math.max(0, Math.min(ix, maxX));
-    const x1 = Math.min(x0 + 1, maxX);
-    const y0 = Math.max(0, Math.min(iy, maxY));
-    const y1 = Math.min(y0 + 1, maxY);
+    if (ix < 0 || ix >= cols - 1 || iy < 0 || iy >= rows - 1) {
+      return { tws: 0, twd: 0, swh: 0, swellDir: 0, swellPeriod: 0 };
+    }
+    const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
     const idx = (r: number, c: number) => offset + (r * cols + c) * FIELDS_PER_POINT;
     const i00 = idx(y0, x0);
