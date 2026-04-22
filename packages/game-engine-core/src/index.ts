@@ -1,5 +1,6 @@
 export {
   runTick,
+  computeBsp,
   type BoatRuntime,
   type TickDeps,
   type TickOutcome,

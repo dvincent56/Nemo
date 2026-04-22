@@ -1,6 +1,6 @@
 import type { Boat, OrderEnvelope, Polar, Position } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { computeTWA } from '@nemo/polar-lib/browser';
+import { computeTWA, getPolarSpeed } from '@nemo/polar-lib/browser';
 import { applyWear, computeWearDelta, conditionSpeedPenalty, swellSpeedFactor, type ConditionState } from './wear';
 import {
   advanceSailState,
@@ -16,8 +16,35 @@ import type { SailId } from '@nemo/shared-types';
 import { buildSegments, type SegmentState, type TickSegment } from './segments';
 import { applyZones, getZonesAtPosition, type IndexedZone } from './zones';
 import type { WeatherProvider } from './weather';
-import { aggregateEffects, type BoatLoadout } from './loadout';
+import { aggregateEffects, type AggregatedEffects, type BoatLoadout } from './loadout';
 import { bandFor } from './bands';
+
+/**
+ * Speed model shared between tick engine and routing engine.
+ *
+ * Returns the boat speed in knots for a given heading/conditions after applying
+ * polar interpolation, condition wear penalty, and loadout upgrade effects.
+ * Tick-specific transient factors (transition, overlap, manoeuvre, swell) are
+ * intentionally excluded so the routing engine can evaluate candidate headings
+ * without simulating tick state.
+ */
+export function computeBsp(
+  polar: Polar,
+  sail: SailId,
+  twa: number,
+  tws: number,
+  effects: AggregatedEffects,
+  condition: ConditionState,
+): number {
+  const twaAbs = Math.min(Math.abs(twa), 180);
+  const base = getPolarSpeed(polar, sail, twaAbs, tws);
+  const condMul = conditionSpeedPenalty(condition);
+  const twaBand = bandFor(twaAbs, [60, 90, 120, 150]);
+  const twsBand = bandFor(tws, [10, 20]);
+  const twaMul = effects.speedByTwa[twaBand]!;
+  const twsMul = effects.speedByTws[twsBand]!;
+  return base * condMul * twaMul * twsMul;
+}
 
 export interface CoastlineProbe {
   isLoaded(): boolean;
@@ -131,19 +158,21 @@ export function runTick(
     deps.polar,
     newSailState.autoMode,
   );
-  const conditionFactor = conditionSpeedPenalty(runtime.condition);
   const swellFactor = swellSpeedFactor(weather.swh, weather.mwd, runtime.segmentState.heading);
 
-  const twaBand = bandFor(Math.abs(twaAtStart), [60, 90, 120, 150]);
-  const twsBand = bandFor(weather.tws, [10, 20]);
+  // Core speed (polar × condition × loadout effects) — shared with routing engine.
+  const coreBsp = computeBsp(deps.polar, newSailState.active, twaAtStart, weather.tws, aggEffects, runtime.condition);
+  const polarBase = getPolarSpeed(deps.polar, newSailState.active, Math.abs(twaAtStart), weather.tws);
+  // Derive the core multiplier without re-expanding the formula: coreBsp / polarBase
+  // gives (condition × twaFactor × twsFactor), which is then combined with the
+  // remaining tick-specific transients.
+  const coreMultiplier = polarBase > 0 ? coreBsp / polarBase : 1;
 
   const bspMultiplier = transitionFactor
     * overlapFactor
-    * conditionFactor
+    * coreMultiplier
     * manEval.factor
-    * swellFactor
-    * aggEffects.speedByTwa[twaBand]!
-    * aggEffects.speedByTws[twsBand]!;
+    * swellFactor;
 
   // --- Modulateur zone par segment : calcule le speedMultiplier cumulé ---
   //     des zones WARN + PENALTY qui couvrent la position de DÉPART du segment.
