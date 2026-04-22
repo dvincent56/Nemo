@@ -24,19 +24,13 @@ L'usure n'est PAS un sink économique.
 
 ### 1. Formule de pénalité de vitesse
 
-Remplacer le `min(hull, rig, sails)` par une **moyenne pondérée**.
-
-**Pour les boats non-foilers** :
+Remplacer le `min(hull, rig, sails)` par une **moyenne pondérée unique** :
 
 ```
 conditionAvg = (0.5 × sails) + (0.3 × rig) + (0.2 × hull)
 ```
 
-**Pour les boats foilers (IMOCA foiler, Ultim, Figaro 3 si foils présents)** :
-
-```
-conditionAvg = (0.4 × sails) + (0.3 × foils) + (0.2 × rig) + (0.1 × hull)
-```
+Les foils ne sont **pas** un axe de condition distinct dans l'état actuel (pas de colonne `foilsCondition` en DB). Ils sont modélisés comme multiplicateurs d'usure sur rig et hull (`foils_rig: 1.8`, `foils_hull: 1.3`) : un bateau équipé de foils voit son rig et sa hull s'user plus vite, ce qui se répercute naturellement dans la moyenne pondérée. Cohérent physiquement (les foils font vibrer le mât et tapent dans la coque) et évite une migration DB hors scope.
 
 Les électroniques ne sont pas prises en compte dans la formule vitesse (elles restent utiles pour routage/visibilité et continuent à s'user pour cohérence).
 
@@ -65,8 +59,9 @@ Les multiplicateurs vent et houle peuvent valoir **0** en conditions calmes → 
 | Voiles | 0.06 | **0.010** | ÷6 |
 | Mât | 0.04 | **0.006** | ÷6.7 |
 | Coque | 0.02 | **0.003** | ÷6.7 |
-| Foils | variable (hériter des voiles) | **0.008** | — |
 | Électroniques | 0.01 | **0.002** | ÷5 |
+
+Les foils ne sont pas un axe distinct : leur effet passe par les multiplicateurs d'upgrade `foils_rig` et `foils_hull` qui amplifient l'usure de rig et hull quand des foils sont installés.
 
 **Multiplicateur vent** (TWS = True Wind Speed en nœuds) :
 
@@ -131,17 +126,18 @@ L'écart prudent/agressif en fin de course atteint **~5-6% de vitesse**, soit pl
 
 **Reset automatique au départ de course**
 
-Au moment où un joueur s'inscrit à une course ET franchit le coup d'envoi (à préciser dans le plan selon le flow d'inscription actuel), réinitialiser :
+Au moment où le `BoatRuntime` est hydraté/initialisé pour une course (le flux d'inscription complet étant prévu Phase 4), réinitialiser :
 
 ```
 boat.conditions = {
   hull: 100,
   rig: 100,
   sails: 100,
-  foils: 100,         // si applicable
   electronics: 100
 }
 ```
+
+Dans le plan : identifier le point d'entrée actuel où un `BoatRuntime` commence à ticker pour une course (création de runtime ou premier tick) et y insérer le reset. Si le flux est encore à l'état stub (Phase 4 pas encore implémentée), exposer une fonction pure `resetConditionsForRaceStart()` réutilisable et l'appeler depuis les points actuels (dev simulator, e2e tests, hydratation runtime).
 
 Pas de coût, pas de temps d'indispo, pas de dépendance aux crédits.
 
