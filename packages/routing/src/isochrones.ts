@@ -4,6 +4,7 @@ import {
   CoastlineIndex,
   aggregateEffects,
   computeBsp,
+  swellSpeedFactor,
   type BoatLoadout,
   type ConditionState,
 } from '@nemo/game-engine-core/browser';
@@ -113,7 +114,12 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         const twaAbs = Math.min(Math.abs(twa), 180);
         if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) continue;
         const sail = pickOptimalSailForRouting(input.polar, twaAbs, weather.tws);
-        const bsp = computeBsp(input.polar, sail, twa, weather.tws, effects, input.condition);
+        // Mirror runTick exactly: core speed × swell factor. Router was
+        // ignoring swell, which made it 10-20 % too optimistic in any
+        // swelly wind → the sim then lagged the plan by ~2 NM/h.
+        const coreBsp = computeBsp(input.polar, sail, twa, weather.tws, effects, input.condition);
+        const swellMul = swellSpeedFactor(weather.swh, weather.swellDir, h);
+        const bsp = coreBsp * swellMul;
         if (bsp < 0.1) continue;
 
         const distNm = bsp * (timeStepSec / 3600);
