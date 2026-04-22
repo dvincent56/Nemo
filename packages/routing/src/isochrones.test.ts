@@ -64,7 +64,7 @@ test('computeRoute reaches a target with constant wind', async () => {
     polar, loadout,
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     windGrid, windData,
-    coastlineGeoJson: { type: 'FeatureCollection', features: [] },
+    coastlineGeoJson: { type: 'FeatureCollection' as const, features: [] },
     preset: 'BALANCED',
   });
 
@@ -88,7 +88,7 @@ test('computeRoute is deterministic', async () => {
     polar, loadout,
     condition: { hull: 100, rig: 100, sails: 100, electronics: 100 },
     windGrid, windData,
-    coastlineGeoJson: { type: 'FeatureCollection', features: [] },
+    coastlineGeoJson: { type: 'FeatureCollection' as const, features: [] },
     preset: 'FAST' as const,
   };
   const a = await computeRoute(input);
