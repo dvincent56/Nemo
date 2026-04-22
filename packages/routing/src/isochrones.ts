@@ -94,7 +94,21 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
 
         const distNm = bsp * (timeStepSec / 3600);
         const newPos = advancePosition({ lat: p.lat, lon: p.lon }, h, bsp, timeStepSec);
-        if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos)) continue;
+        // Cheap pre-filter: if the segment midpoint is well offshore, skip the
+        // expensive polyline intersection. distanceToCoastNm uses the same
+        // grid spatial index but without the turf line-intersect pass, so it's
+        // O(candidate-cells) rather than O(candidate-cells × 20 intermediate
+        // points × segment-intersect). Threshold = distance we can sail in one
+        // tick at max speed + 5 NM safety margin.
+        const offshoreSafetyNm = distNm + 5;
+        const midLat = (p.lat + newPos.lat) / 2;
+        const midLon = (p.lon + newPos.lon) / 2;
+        const dCoast = coastline.distanceToCoastNm(midLat, midLon);
+        if (dCoast < offshoreSafetyNm) {
+          // Close enough to coast that we need the real intersection test.
+          if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos, 3)) continue;
+        }
+        // else: well offshore, no coast anywhere near — skip the check.
 
         candidates.push({
           lat: newPos.lat, lon: newPos.lon, hdg: h, bsp,
