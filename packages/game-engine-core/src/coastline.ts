@@ -138,6 +138,62 @@ export class CoastlineIndex {
   }
 
   /**
+   * Fast distance-to-nearest-coast with early exit.
+   *
+   * Unlike `distanceToCoastNm` which uses turf's `nearestPointOnLine` (slow:
+   * iterates every vertex of every candidate segment through generic geometry
+   * dispatch), this walks each segment's edges with a hand-rolled flat-earth
+   * point-to-segment distance and bails the moment it finds any edge within
+   * `maxNm`. Returns `Infinity` if nothing is closer than `maxNm`.
+   *
+   * Intended for the router's hot path where we only care about *"is the
+   * endpoint < X NM from shore?"* — the exact distance isn't needed.
+   */
+  distanceToCoastNmFast(lat: number, lon: number, maxNm: number): number {
+    if (!this.loaded) return Infinity;
+    // Search radius in degrees: maxNm / 60 gives lat; pad a bit for longitude
+    // scaling at mid-latitudes.
+    const radiusDeg = Math.max(0.05, maxNm / 60 + 0.02);
+    const candidates = this.getCandidateSegments(lat, lon, radiusDeg);
+    if (candidates.length === 0) return Infinity;
+
+    const latRad = (lat * Math.PI) / 180;
+    const cosLat = Math.cos(latRad);
+    // Convert maxNm² to degrees² for cheap comparison inside the loop.
+    // 1° lat ≈ 60 NM; 1° lon ≈ 60*cos(lat) NM. We check in the (lon*cosLat, lat)
+    // metric so distances are homogeneous in degrees-lat-equivalent.
+    const maxDegLat = maxNm / 60;
+    const maxDegLat2 = maxDegLat * maxDegLat;
+    let bestDegLat2 = Infinity;
+
+    for (const seg of candidates) {
+      const coords = seg.coords;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const ax = (coords[i]![0] - lon) * cosLat;
+        const ay = coords[i]![1] - lat;
+        const bx = (coords[i + 1]![0] - lon) * cosLat;
+        const by = coords[i + 1]![1] - lat;
+        // Point-to-segment distance² in the local flat-earth metric.
+        const dx = bx - ax;
+        const dy = by - ay;
+        const segLen2 = dx * dx + dy * dy;
+        let t = segLen2 > 0 ? -(ax * dx + ay * dy) / segLen2 : 0;
+        if (t < 0) t = 0; else if (t > 1) t = 1;
+        const px = ax + t * dx;
+        const py = ay + t * dy;
+        const d2 = px * px + py * py;
+        if (d2 < bestDegLat2) {
+          bestDegLat2 = d2;
+          if (d2 < maxDegLat2) {
+            return Math.sqrt(d2) * 60;  // early exit: within budget
+          }
+        }
+      }
+    }
+    return bestDegLat2 === Infinity ? Infinity : Math.sqrt(bestDegLat2) * 60;
+  }
+
+  /**
    * Distance to the nearest coastline in nautical miles.
    * Returns Infinity if no coast segment is found within ~60 nm.
    */

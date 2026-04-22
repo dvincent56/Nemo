@@ -42,6 +42,8 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   const { timeStepSec, headingCount, horizonSec, sectorCount } = params;
   const stepHeading = 360 / headingCount;
 
+  const coastDetection = input.coastDetection === true;
+
   console.log('[routing] start', {
     preset: input.preset,
     from: input.from,
@@ -49,16 +51,27 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
     horizonSec,
     headingCount,
     sectorCount,
-    hasCoastline: Boolean(input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0),
+    coastDetection,
+    coneHalfDeg: input.coneHalfDeg ?? 90,
   });
 
-  const coastline = new CoastlineIndex();
-  if (input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0) {
+  // Only build / reuse the coastline index when detection is on. Skipping
+  // the index when off avoids its ~10 MB memory footprint and (for callers
+  // that pass raw GeoJSON) its ~500 ms build time.
+  let coastline: CoastlineIndex;
+  if (!coastDetection) {
+    coastline = new CoastlineIndex();
+  } else if (input.coastlineIndex && input.coastlineIndex.isLoaded()) {
+    coastline = input.coastlineIndex;
+    console.log('[routing] coastline reused from prebuilt index');
+  } else if (input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0) {
+    coastline = new CoastlineIndex();
     const tc = Date.now();
     coastline.loadFromGeoJson(input.coastlineGeoJson);
     console.log(`[routing] coastline loaded in ${Date.now() - tc} ms`);
   } else {
-    console.log('[routing] coastline skipped (no geojson provided) — routes may cross land');
+    coastline = new CoastlineIndex();
+    console.log('[routing] coastline requested but no geojson/index provided — ignoring');
   }
 
   // Arrival radius: half the max distance the boat can cover in one step.
@@ -74,7 +87,7 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   const arrivalRadiusNm = Math.max(3, (bspMax * timeStepSec) / 3600 / 2);
 
   // Initial sample for iso[0] metadata
-  const initSample = sampleWind(input.windGrid, input.windData, input.from.lat, input.from.lon, input.startTimeMs);
+  const initSample = sampleWind(input.windGrid, input.windData, input.from.lat, input.from.lon, input.startTimeMs, input.prevWindGrid, input.prevWindData);
   const initTws = initSample?.tws ?? 0;
   const initTwd = initSample?.twd ?? 0;
 
@@ -89,16 +102,24 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   let arrivalPoint: IsochronePoint | null = null;
 
   // Heading cone toward destination: only explore headings within
-  // CONE_HALF_DEG of the great-circle bearing from start to target. A full
-  // 360° search wastes ~50 % of the work on headings pointing away from
-  // the goal (what zezo/qtVlm do too). 90° half-angle = 180° arc, wide
-  // enough for hard-upwind tacks.
-  const CONE_HALF_DEG = 90;
-  const targetBearing = bearingDeg(input.from, input.to);
-  const inCone = (h: number): boolean => {
-    const d = (((h - targetBearing) % 360) + 540) % 360 - 180;
+  // CONE_HALF_DEG of the great-circle bearing *from the current candidate*
+  // to the target (recomputed per candidate, not once from start). Fixing
+  // it to start→target like before meant that once the boat drifted past
+  // the target latitude, the cone still pointed south and rejected the
+  // north-bound headings needed to loop back — the boat would sail past
+  // the destination and keep going. 90° half-angle = 180° arc.
+  const CONE_HALF_DEG = input.coneHalfDeg ?? 90;
+  const inConeFrom = (h: number, bearing: number): boolean => {
+    const d = (((h - bearing) % 360) + 540) % 360 - 180;
     return Math.abs(d) <= CONE_HALF_DEG;
   };
+
+  // Hard distance-from-coast floor. Any candidate endpoint closer than this
+  // to a shoreline is rejected outright. Prevents the classic "hugs the
+  // coast in zigzags" failure mode: the angular-sector pruning rewards the
+  // point furthest from origin in each sector, which along a shore is the
+  // one grazing every inlet.
+  const MIN_COAST_DISTANCE_NM = 2;
 
   for (let step = 1; step <= maxSteps; step++) {
     const prev = isochrones[step - 1]!;
@@ -118,12 +139,16 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       // sail (held across the step — matches sim behaviour where sail
       // only changes via explicit schedule entry at step boundaries).
       const midTimeMs = p.timeMs + (timeStepSec * 500);
-      const sailWeather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, midTimeMs);
+      const sailWeather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, midTimeMs, input.prevWindGrid, input.prevWindData);
       if (!sailWeather) continue;
       const localEffects = aggregateEffects(input.loadout.items, { tws: sailWeather.tws });
 
+      // Per-candidate cone toward the target — recomputed from this parent's
+      // position so a candidate that has overshot can turn back.
+      const localBearing = bearingDeg({ lat: p.lat, lon: p.lon }, input.to);
+
       for (let h = 0; h < 360; h += stepHeading) {
-        if (!inCone(h)) continue;
+        if (!inConeFrom(h, localBearing)) continue;
 
         // Pick the sail once per step from the midpoint wind (this sail
         // is what the schedule will emit; the sim will use it the whole
@@ -162,7 +187,7 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         let deadZone = false;
         for (let k = 0; k < SUB_STEPS; k++) {
           const subMidMs = subTimeMs + (subStepSec * 500);
-          const w = sampleWind(input.windGrid, input.windData, subLat, subLon, subMidMs);
+          const w = sampleWind(input.windGrid, input.windData, subLat, subLon, subMidMs, input.prevWindGrid, input.prevWindData);
           if (!w) { deadZone = true; break; }
           const twa = computeTWA(h, w.twd);
           const twaAbs = Math.min(Math.abs(twa), 180);
@@ -191,22 +216,19 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         const distNm = totalDistNm;
         const newPos = { lat: subLat, lon: subLon };
         const weather = { tws: lastTws, twd: lastTwd }; // for the candidate record
-        // Cheap pre-filter: if the segment midpoint is well offshore, skip the
-        // expensive polyline intersection. distanceToCoastNm uses the same
-        // grid spatial index but without the turf line-intersect pass, so it's
-        // O(candidate-cells) rather than O(candidate-cells × 20 intermediate
-        // points × segment-intersect). Threshold = distance we can sail in one
-        // tick at max speed + 5 NM safety margin.
-        if (coastline.isLoaded()) {
-          const offshoreSafetyNm = distNm + 5;
-          const midLat = (p.lat + newPos.lat) / 2;
-          const midLon = (p.lon + newPos.lon) / 2;
-          const dCoast = coastline.distanceToCoastNm(midLat, midLon);
-          if (dCoast < offshoreSafetyNm) {
-            if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos, 3)) continue;
-          }
+        // `segmentCrossesCoast` has its own cheap bbox short-circuit via
+        // `cellsForBBox`: if the path's bounding box doesn't intersect any
+        // grid cell containing a coast segment, the inner loop is skipped
+        // and we return false in a few µs. The earlier `distanceToCoastNm`
+        // pre-gate was redundant *and* slow — turf's `nearestPointOnLine`
+        // iterates every vertex of every candidate segment, which dominated
+        // routing time. intermediatePoints=1 (just endpoints) is enough at
+        // a 2h step: the great-circle is near-straight at those distances.
+        if (coastDetection && coastline.isLoaded()) {
+          if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos, 1)) continue;
+          if (coastline.distanceToCoastNmFast(newPos.lat, newPos.lon, MIN_COAST_DISTANCE_NM) < MIN_COAST_DISTANCE_NM) continue;
         }
-        // else: coastline disabled — accept any path.
+        // else: coastline detection disabled — accept any path.
 
         candidates.push({
           lat: newPos.lat, lon: newPos.lon, hdg: h, bsp,
@@ -218,17 +240,25 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       }
     }
 
-    const pruned = pruneBySector(candidates, input.from, sectorCount);
-    isochrones.push(pruned);
-
-    // Among all pruned candidates within arrival radius, pick the one
-    // closest to the target rather than the first match in array order.
+    // Arrival check is done on the *unpruned* candidate set. The sector
+    // pruner rewards the candidate furthest from origin in each sector,
+    // which near the target can be the one that has overshot and ended up
+    // on the far side — the direct-to-target candidate gets dropped and
+    // the route orbits the destination forever. Checking arrival before
+    // pruning guarantees we catch it the moment any heading lands us in
+    // the arrival radius.
     let hit: IsochronePoint | null = null;
     let hitDist = Infinity;
-    for (const q of pruned) {
+    for (const q of candidates) {
       const d = haversineNM({ lat: q.lat, lon: q.lon }, input.to);
       if (d <= arrivalRadiusNm && d < hitDist) { hitDist = d; hit = q; }
     }
+
+    const pruned = pruneBySector(candidates, input.from, sectorCount);
+    // If the winning arrival candidate got pruned out, re-insert it so the
+    // backtrack can chain back through this step.
+    if (hit && !pruned.includes(hit)) pruned.push(hit);
+    isochrones.push(pruned);
 
     // Log each step: how many candidates, how many survived pruning,
     // distance to target from best candidate so far. Every ~4 steps to

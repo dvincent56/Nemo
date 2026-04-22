@@ -75,7 +75,37 @@ function sampleLayer(
   return { tws: Math.max(0, tws), twd, swh: Math.max(0, swh), swellDir };
 }
 
+/**
+ * Sample wind at (lat, lon, tMs), preferring `grid` when the time is inside
+ * its temporal coverage. If `tMs` is outside `grid`'s first..last timestamps
+ * AND a `prevGrid`/`prevData` is provided whose bounds cover `tMs`, the
+ * previous GFS run is used instead of stale extrapolation. This is the
+ * routing-side mirror of `createFallbackWindLookup` on the sim side.
+ */
 export function sampleWind(
+  grid: WindGridConfig,
+  data: Float32Array,
+  lat: number,
+  lon: number,
+  tMs: number,
+  prevGrid?: WindGridConfig | null,
+  prevData?: Float32Array | null,
+): WindSample | null {
+  if (prevGrid && prevData && grid.timestamps.length > 0) {
+    const first = grid.timestamps[0]!;
+    const last = grid.timestamps[grid.timestamps.length - 1]!;
+    if (tMs < first || tMs > last) {
+      const pFirst = prevGrid.timestamps[0];
+      const pLast = prevGrid.timestamps[prevGrid.timestamps.length - 1];
+      if (pFirst !== undefined && pLast !== undefined && tMs >= pFirst && tMs <= pLast) {
+        return sampleGrid(prevGrid, prevData, lat, lon, tMs);
+      }
+    }
+  }
+  return sampleGrid(grid, data, lat, lon, tMs);
+}
+
+function sampleGrid(
   grid: WindGridConfig,
   data: Float32Array,
   lat: number,
