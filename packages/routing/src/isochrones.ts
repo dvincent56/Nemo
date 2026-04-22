@@ -50,8 +50,24 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   const { timeStepSec, headingCount, horizonSec, sectorCount } = params;
   const stepHeading = 360 / headingCount;
 
+  console.log('[routing] start', {
+    preset: input.preset,
+    from: input.from,
+    to: input.to,
+    horizonSec,
+    headingCount,
+    sectorCount,
+    hasCoastline: Boolean(input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0),
+  });
+
   const coastline = new CoastlineIndex();
-  coastline.loadFromGeoJson(input.coastlineGeoJson);
+  if (input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0) {
+    const tc = Date.now();
+    coastline.loadFromGeoJson(input.coastlineGeoJson);
+    console.log(`[routing] coastline loaded in ${Date.now() - tc} ms`);
+  } else {
+    console.log('[routing] coastline skipped (no geojson provided) — routes may cross land');
+  }
 
   const effects = aggregateEffects(input.loadout.items);
   // Arrival radius: the distance within which a candidate is considered to
@@ -100,15 +116,16 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         // O(candidate-cells) rather than O(candidate-cells × 20 intermediate
         // points × segment-intersect). Threshold = distance we can sail in one
         // tick at max speed + 5 NM safety margin.
-        const offshoreSafetyNm = distNm + 5;
-        const midLat = (p.lat + newPos.lat) / 2;
-        const midLon = (p.lon + newPos.lon) / 2;
-        const dCoast = coastline.distanceToCoastNm(midLat, midLon);
-        if (dCoast < offshoreSafetyNm) {
-          // Close enough to coast that we need the real intersection test.
-          if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos, 3)) continue;
+        if (coastline.isLoaded()) {
+          const offshoreSafetyNm = distNm + 5;
+          const midLat = (p.lat + newPos.lat) / 2;
+          const midLon = (p.lon + newPos.lon) / 2;
+          const dCoast = coastline.distanceToCoastNm(midLat, midLon);
+          if (dCoast < offshoreSafetyNm) {
+            if (coastline.segmentCrossesCoast({ lat: p.lat, lon: p.lon }, newPos, 3)) continue;
+          }
         }
-        // else: well offshore, no coast anywhere near — skip the check.
+        // else: coastline disabled — accept any path.
 
         candidates.push({
           lat: newPos.lat, lon: newPos.lon, hdg: h, bsp,
@@ -131,6 +148,21 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       const d = haversineNM({ lat: q.lat, lon: q.lon }, input.to);
       if (d <= arrivalRadiusNm && d < hitDist) { hitDist = d; hit = q; }
     }
+
+    // Log each step: how many candidates, how many survived pruning,
+    // distance to target from best candidate so far. Every ~4 steps to
+    // keep the console readable.
+    if (step % 4 === 0 || hit) {
+      let bestD = Infinity;
+      for (const q of pruned) {
+        const d = haversineNM({ lat: q.lat, lon: q.lon }, input.to);
+        if (d < bestD) bestD = d;
+      }
+      console.log(
+        `[routing] step ${step}/${maxSteps} · candidates=${candidates.length} · pruned=${pruned.length} · bestDist=${bestD.toFixed(1)} NM · elapsed=${Date.now() - t0} ms`,
+      );
+    }
+
     if (hit) {
       arrivalStep = step;
       arrivalPoint = hit;
@@ -173,6 +205,10 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   const capSchedule = buildCapSchedule(polyline, INFLECTION_DEG);
   const eta = reachedGoal ? arrivalPoint.timeMs : Number.POSITIVE_INFINITY;
   const totalDistanceNm = arrivalPoint.distFromStartNm;
+
+  console.log(
+    `[routing] done · reachedGoal=${reachedGoal} · totalDist=${totalDistanceNm.toFixed(1)} NM · polyline=${polyline.length} pts · cap=${capSchedule.length} entries · totalTime=${Date.now() - t0} ms`,
+  );
 
   return {
     reachedGoal, polyline, waypoints, capSchedule, isochrones,

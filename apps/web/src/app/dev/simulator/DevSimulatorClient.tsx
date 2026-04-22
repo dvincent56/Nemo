@@ -272,6 +272,11 @@ export function DevSimulatorClient() {
       const { windGrid, windData } = await fetchLatestWindGrid();
 
       const startTimeMs = Date.now();
+      // Skip coastline: cloning 10 MB of GeoJSON into each routing worker
+      // was the main cause of the first-version hang. Routes may cross land —
+      // acceptable for the dev simulator for now, reintroduce when the
+      // coastline is cached or compressed.
+      void coastlineGeoJson;
       const plans = await Promise.all(boats.map((boat) => routeOne({
         input: {
           from: startPos,
@@ -282,7 +287,6 @@ export function DevSimulatorClient() {
           condition: boat.initialCondition,
           windGrid,
           windData: new Float32Array(windData),  // per-worker copy
-          coastlineGeoJson: coastlineGeoJson as GeoJSON.FeatureCollection,
           preset,
         },
         gameBalanceJson,
@@ -306,6 +310,7 @@ export function DevSimulatorClient() {
       const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
       const { windGrid, windData } = await fetchLatestWindGrid();
       const simAbsMs = (launchTimeMs ?? Date.now()) + simTimeMs;
+      void coastlineGeoJson;  // skipped — see routeAllBoats for rationale
 
       const plans = await Promise.all(boats.map((boat) => {
         const live = fleet[boat.id];
@@ -316,7 +321,6 @@ export function DevSimulatorClient() {
             from, to: endPos!, startTimeMs: simAbsMs,
             polar: polars[boat.boatClass]!, loadout: boat.loadout, condition,
             windGrid, windData: new Float32Array(windData),
-            coastlineGeoJson: coastlineGeoJson as GeoJSON.FeatureCollection,
             preset,
           },
           gameBalanceJson,
