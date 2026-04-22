@@ -38,30 +38,49 @@ function haversineNm(a: IsochronePoint, b: IsochronePoint): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// One Chaikin corner-cutting pass: for each segment (p, q) generate two new
+// points at 1/4 and 3/4 along it. Two iterations produce a visibly smooth
+// curve while keeping cost low.
+function chaikin(coords: [number, number][], iterations: number): [number, number][] {
+  let pts = coords;
+  for (let it = 0; it < iterations; it++) {
+    if (pts.length < 3) break;
+    const next: [number, number][] = [pts[0]!];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i]!;
+      const [x1, y1] = pts[i + 1]!;
+      next.push([x0 * 0.75 + x1 * 0.25, y0 * 0.75 + y1 * 0.25]);
+      next.push([x0 * 0.25 + x1 * 0.75, y0 * 0.25 + y1 * 0.75]);
+    }
+    next.push(pts[pts.length - 1]!);
+    pts = next;
+  }
+  return pts;
+}
+
 function isoToFeatures(iso: IsochronePoint[], step: number): GeoJSON.Feature<GeoJSON.LineString>[] {
   const out: GeoJSON.Feature<GeoJSON.LineString>[] = [];
   if (iso.length < 2) return out;
 
+  const segments: [number, number][][] = [];
   let current: [number, number][] = [[iso[0]!.lon, iso[0]!.lat]];
   for (let i = 1; i < iso.length; i++) {
     const prev = iso[i - 1]!;
     const p = iso[i]!;
     if (haversineNm(prev, p) > MAX_SEGMENT_NM) {
-      if (current.length >= 2) {
-        out.push({
-          type: 'Feature', properties: { step },
-          geometry: { type: 'LineString', coordinates: current },
-        });
-      }
+      if (current.length >= 2) segments.push(current);
       current = [[p.lon, p.lat]];
     } else {
       current.push([p.lon, p.lat]);
     }
   }
-  if (current.length >= 2) {
+  if (current.length >= 2) segments.push(current);
+
+  for (const seg of segments) {
+    const smooth = chaikin(seg, 2);
     out.push({
       type: 'Feature', properties: { step },
-      geometry: { type: 'LineString', coordinates: current },
+      geometry: { type: 'LineString', coordinates: smooth },
     });
   }
   return out;

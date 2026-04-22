@@ -165,7 +165,11 @@ export class SimulatorEngine {
   }
 
   setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; sail?: SailId }>): void {
-    this.schedules.set(boatId, [...entries].sort((a, b) => a.triggerMs - b.triggerMs));
+    const sorted = [...entries].sort((a, b) => a.triggerMs - b.triggerMs);
+    this.schedules.set(boatId, sorted);
+    console.log(
+      `[sim-schedule] set boat=${boatId} · ${sorted.length} entries · first trigger=${sorted[0]?.triggerMs} · startTime=${this.startTimeMs} · delta=${sorted[0] ? ((sorted[0].triggerMs - this.startTimeMs) / 1000).toFixed(0) + 's' : 'n/a'}`,
+    );
   }
 
   /**
@@ -287,9 +291,13 @@ export class SimulatorEngine {
       if (!pbr) continue;
       while (entries.length > 0 && entries[0]!.triggerMs <= tickEnd) {
         const entry = entries.shift()!;
+        const prevHdg = pbr.runtime.segmentState.heading;
         pbr.runtime.segmentState.heading = entry.cap;
         pbr.runtime.segmentState.twaLock = null;
         if (entry.sail) pbr.runtime.segmentState.sail = entry.sail;
+        console.log(
+          `[sim-schedule] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · ${prevHdg.toFixed(0)}° → ${entry.cap.toFixed(0)}°${entry.sail ? ' · sail=' + entry.sail : ''} · remaining=${entries.length}`,
+        );
       }
     }
 
