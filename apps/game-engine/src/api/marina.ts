@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray } from 'drizzle-orm';
-import { GameBalance, BoatClassZ, type UpgradeItem, type UpgradeSlot, type UpgradeTier } from '@nemo/game-balance';
+import { GameBalance, BoatClassZ, type UpgradeSlot } from '@nemo/game-balance';
 import type { BoatClass } from '@nemo/shared-types';
 import { enforceAuth } from '../auth/cognito.js';
 import { getDb, type DbClient } from '../db/client.js';
@@ -13,7 +13,6 @@ import {
 } from '../db/schema.js';
 import {
   computeSellPrice,
-  computeRepairCost,
   meetsUnlockCriteria,
   isValidUuid,
   type UnlockCriteria,
@@ -36,15 +35,6 @@ async function findOwnedBoat(db: DbClient, boatId: string, ownerId: string) {
     and(eq(boats.id, boatId), eq(boats.ownerId, ownerId), eq(boats.status, 'ACTIVE')),
   );
   return rows[0] ?? null;
-}
-
-/** Returns the tier of the upgrade installed in a given slot, or 'SERIE' if none. */
-function tierForSlot(
-  slot: UpgradeSlot,
-  installedItems: { slot: string; catalogItem: UpgradeItem | undefined }[],
-): UpgradeTier {
-  const found = installedItems.find((i) => i.slot === slot);
-  return found?.catalogItem?.tier ?? 'SERIE';
 }
 
 /** Loads installed upgrades for a boat, resolved against playerUpgrades + catalog. */
@@ -572,92 +562,6 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
         },
         installedOn: { boatId, slot: item.slot },
         creditsRemaining: player.credits - item.cost,
-      };
-    },
-  );
-
-  // =========================================================================
-  // POST /api/v1/boats/:id/repair — repair all axes, debit credits
-  // =========================================================================
-
-  app.post<{ Params: { id: string } }>(
-    '/api/v1/boats/:id/repair',
-    { preHandler: [enforceAuth] },
-    async (req, reply) => {
-      const auth = req.auth!;
-      const db = getDb();
-      if (!db) { reply.code(503); return { error: 'database unavailable' }; }
-
-      const boatId = req.params.id;
-      if (!isValidUuid(boatId)) { reply.code(400); return { error: 'invalid boat id' }; }
-
-      const player = await findPlayerBySub(db, auth.sub);
-      if (!player) { reply.code(404); return { error: 'player not found' }; }
-
-      const boat = await findOwnedBoat(db, boatId, player.id);
-      if (!boat) { reply.code(404); return { error: 'boat not found' }; }
-      if (boat.activeRaceId) {
-        reply.code(409); return { error: 'boat is in a race', raceId: boat.activeRaceId };
-      }
-
-      // Already at 100% on all axes?
-      if (boat.hullCondition >= 100 && boat.rigCondition >= 100 &&
-          boat.sailCondition >= 100 && boat.elecCondition >= 100) {
-        reply.code(400); return { error: 'boat already at full condition' };
-      }
-
-      // Resolve installed upgrade tiers for maintenance multiplier
-      const installedWithCatalog = await loadInstalledWithCatalog(db, boatId);
-
-      const slotTiers = {
-        hull: tierForSlot('HULL', installedWithCatalog),
-        mast: tierForSlot('MAST', installedWithCatalog),
-        sails: tierForSlot('SAILS', installedWithCatalog),
-        electronics: tierForSlot('ELECTRONICS', installedWithCatalog),
-      };
-
-      const repairCost = computeRepairCost(
-        {
-          hull: boat.hullCondition,
-          rig: boat.rigCondition,
-          sail: boat.sailCondition,
-          elec: boat.elecCondition,
-        },
-        slotTiers,
-        GameBalance.maintenance,
-        GameBalance.upgrades.tiers,
-      );
-
-      if (player.credits < repairCost.total) {
-        reply.code(400);
-        return {
-          error: 'insufficient credits',
-          required: repairCost.total,
-          available: player.credits,
-          breakdown: repairCost,
-        };
-      }
-
-      // Transaction: debit credits + set conditions to 100
-      await db.transaction(async (tx) => {
-        await tx.update(players)
-          .set({ credits: sql`${players.credits} - ${repairCost.total}` })
-          .where(eq(players.id, player.id));
-
-        await tx.update(boats)
-          .set({
-            hullCondition: 100,
-            rigCondition: 100,
-            sailCondition: 100,
-            elecCondition: 100,
-          })
-          .where(eq(boats.id, boatId));
-      });
-
-      return {
-        repaired: true,
-        cost: repairCost,
-        creditsRemaining: player.credits - repairCost.total,
       };
     },
   );
