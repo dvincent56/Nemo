@@ -3,6 +3,24 @@ import assert from 'node:assert/strict';
 import { encodeGridSubset, decodeHeader, HEADER_SIZE, GRID_VERSION, SCALE_UV_SWH_MWP, SCALE_SIN_COS, INT16_NAN } from '../binary-encoder.js';
 import type { WeatherGridUV } from '../grid.js';
 
+function makeGridWithRes(resolution: number, rows: number, cols: number): WeatherGridUV {
+  const len = rows * cols;
+  const u = new Float32Array(len), v = new Float32Array(len);
+  const swh = new Float32Array(len), ms = new Float32Array(len);
+  const mc = new Float32Array(len), mwp = new Float32Array(len);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c; u[i] = r; v[i] = c;
+  }
+  return {
+    runTs: 1000,
+    bbox: { latMin: 0, latMax: (rows - 1) * resolution, lonMin: 0, lonMax: (cols - 1) * resolution },
+    resolution,
+    shape: { rows, cols },
+    forecastHours: [0],
+    u, v, swh, mwdSin: ms, mwdCos: mc, mwp,
+  };
+}
+
 function makeSimpleGrid(): WeatherGridUV {
   const points = 2 * 2;
   const total = points * 2;
@@ -134,5 +152,38 @@ describe('encodeGridSubset — int16 encoding', () => {
     const f32Body = f32.byteLength - HEADER_SIZE;
     const i16Body = i16.byteLength - HEADER_SIZE;
     assert.equal(i16Body, f32Body / 2);
+  });
+});
+
+describe('encodeGridSubset — resolution downsampling', () => {
+  it('decimates a 0.25° grid to 1° via stride=4', () => {
+    const grid = makeGridWithRes(0.25, 21, 21); // 5° × 5° at 0.25°
+    const buf = encodeGridSubset(grid, {
+      bounds: { latMin: grid.bbox.latMin, latMax: grid.bbox.latMax,
+                lonMin: grid.bbox.lonMin, lonMax: grid.bbox.lonMax },
+      hours: [0],
+      runTimestamp: 1000, nextRunExpectedUtc: 1360, weatherStatus: 0, blendAlpha: 0,
+      resolution: 1,
+    });
+    const header = decodeHeader(buf);
+    // outRes = 0.25 * 4 = 1.0
+    assert.ok(Math.abs(header.gridStepLat - 1) < 1e-4, `gridStepLat=${header.gridStepLat} expected ~1`);
+    assert.ok(Math.abs(header.gridStepLon - 1) < 1e-4, `gridStepLon=${header.gridStepLon} expected ~1`);
+    // 21 source rows at 0.25°, stride=4 → ceil(21/4)=6 output rows
+    assert.equal(header.numLat, 6);
+    assert.equal(header.numLon, 6);
+  });
+
+  it('returns source resolution when resolution omitted', () => {
+    const grid = makeGridWithRes(0.25, 9, 9);
+    const buf = encodeGridSubset(grid, {
+      bounds: { latMin: grid.bbox.latMin, latMax: grid.bbox.latMax,
+                lonMin: grid.bbox.lonMin, lonMax: grid.bbox.lonMax },
+      hours: [0],
+      runTimestamp: 1000, nextRunExpectedUtc: 1360, weatherStatus: 0, blendAlpha: 0,
+    });
+    const header = decodeHeader(buf);
+    assert.ok(Math.abs(header.gridStepLat - 0.25) < 1e-4, `gridStepLat=${header.gridStepLat} expected ~0.25`);
+    assert.equal(header.numLat, 9);
   });
 });

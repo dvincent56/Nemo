@@ -25,7 +25,7 @@ export interface EncodeOptions {
   nextRunExpectedUtc: number;
   weatherStatus: number;
   blendAlpha: number;
-  /** Target grid step in degrees. Used by downsampling (implemented in Task 2); currently a no-op. */
+  /** Target grid step in degrees. If > source resolution, the encoder decimates by stride. */
   resolution?: number;
   /** Wire body encoding. Defaults to 'float32' for backwards compatibility. */
   encoding?: GridEncoding;
@@ -54,17 +54,24 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   const colStart = Math.max(0, Math.floor((opts.bounds.lonMin - grid.bbox.lonMin) / res));
   const colEnd = Math.min(grid.shape.cols - 1, Math.ceil((opts.bounds.lonMax - grid.bbox.lonMin) / res));
 
-  const numLat = rowEnd - rowStart + 1;
-  const numLon = colEnd - colStart + 1;
+  const targetRes = opts.resolution && opts.resolution > 0 ? opts.resolution : res;
+  // Use round to tolerate floating-point (e.g. 1 / 0.25 === 3.9999 on some JITs)
+  const stride = Math.max(1, Math.round(targetRes / res));
+  const outRes = res * stride;
+
+  const rawNumLat = rowEnd - rowStart + 1;
+  const rawNumLon = colEnd - colStart + 1;
+  const numLat = Math.ceil(rawNumLat / stride);
+  const numLon = Math.ceil(rawNumLon / stride);
   const numHours = opts.hours.length;
   const plane = grid.shape.rows * grid.shape.cols;
 
   // Actual geographic extent of the clipped subset — must match the body,
   // NOT the requested bounds (which may extend beyond the source grid).
   const actualLatMin = grid.bbox.latMin + rowStart * res;
-  const actualLatMax = grid.bbox.latMin + rowEnd * res;
+  const actualLatMax = grid.bbox.latMin + (rowStart + (numLat - 1) * stride) * res;
   const actualLonMin = grid.bbox.lonMin + colStart * res;
-  const actualLonMax = grid.bbox.lonMin + colEnd * res;
+  const actualLonMax = grid.bbox.lonMin + (colStart + (numLon - 1) * stride) * res;
 
   const encoding: GridEncoding = opts.encoding ?? 'float32';
 
@@ -84,8 +91,8 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   dv.setFloat32(off, actualLatMax, true); off += 4;
   dv.setFloat32(off, actualLonMin, true); off += 4;
   dv.setFloat32(off, actualLonMax, true); off += 4;
-  dv.setFloat32(off, res, true); off += 4;
-  dv.setFloat32(off, res, true); off += 4;
+  dv.setFloat32(off, outRes, true); off += 4;
+  dv.setFloat32(off, outRes, true); off += 4;
   dv.setUint16(off, numLat, true); off += 2;
   dv.setUint16(off, numLon, true); off += 2;
   dv.setUint16(off, numHours, true); off += 2;
@@ -126,8 +133,8 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
     const slotIdx = grid.forecastHours.indexOf(fh);
     if (slotIdx === -1) continue;
     const slotOff = slotIdx * plane;
-    for (let r = rowStart; r <= rowEnd; r++) {
-      for (let c = colStart; c <= colEnd; c++) {
+    for (let r = rowStart; r <= rowEnd; r += stride) {
+      for (let c = colStart; c <= colEnd; c += stride) {
         const i = slotOff + r * grid.shape.cols + c;
         const u = grid.u[i]!, v = grid.v[i]!, swh = grid.swh[i]!;
         const ms = grid.mwdSin[i]!, mc = grid.mwdCos[i]!, mwp = grid.mwp[i]!;
