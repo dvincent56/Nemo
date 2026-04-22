@@ -2,6 +2,13 @@ import type { WeatherGridUV } from './grid.js';
 
 export const HEADER_SIZE = 48;
 
+export const GRID_VERSION = 2; // bumped from implicit v1 (float32) to v2 (adds encoding byte)
+export const SCALE_UV_SWH_MWP = 100;
+export const SCALE_SIN_COS = 30000;
+export const INT16_NAN = -32768;
+
+export type GridEncoding = 'float32' | 'int16';
+
 export interface EncodeOptions {
   bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number };
   hours: number[];
@@ -9,6 +16,10 @@ export interface EncodeOptions {
   nextRunExpectedUtc: number;
   weatherStatus: number;
   blendAlpha: number;
+  /** Target grid step in degrees. If > source resolution, the encoder decimates. */
+  resolution?: number;
+  /** Wire body encoding. Defaults to 'float32' for backwards compatibility. */
+  encoding?: GridEncoding;
 }
 
 export interface GridHeader {
@@ -46,8 +57,11 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   const actualLonMin = grid.bbox.lonMin + colStart * res;
   const actualLonMax = grid.bbox.lonMin + colEnd * res;
 
+  const encoding: GridEncoding = opts.encoding ?? 'float32';
+
+  const bodyBytesPerFloat = encoding === 'int16' ? 2 : 4;
   const bodyFloats = numHours * numLat * numLon * 6;
-  const totalBytes = HEADER_SIZE + bodyFloats * 4;
+  const totalBytes = HEADER_SIZE + bodyFloats * bodyBytesPerFloat;
   const buf = new ArrayBuffer(totalBytes);
   const dv = new DataView(buf);
 
@@ -66,11 +80,19 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
   dv.setUint16(off, numLat, true); off += 2;
   dv.setUint16(off, numLon, true); off += 2;
   dv.setUint16(off, numHours, true); off += 2;
-  off += 2; // padding to 48
+  dv.setUint8(off, GRID_VERSION); off += 1;
+  dv.setUint8(off, encoding === 'int16' ? 1 : 0); off += 1;
 
   // Body
-  const body = new Float32Array(buf, HEADER_SIZE);
-  let fi = 0;
+  const quant = (value: number, scale: number): number => {
+    if (!Number.isFinite(value)) return INT16_NAN;
+    const q = Math.round(value * scale);
+    if (q >= 32767) return 32767;
+    if (q <= -32767) return -32767; // reserve -32768 for NaN
+    return q;
+  };
+
+  let bi = 0;
   for (const fh of opts.hours) {
     const slotIdx = grid.forecastHours.indexOf(fh);
     if (slotIdx === -1) continue;
@@ -78,12 +100,23 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
     for (let r = rowStart; r <= rowEnd; r++) {
       for (let c = colStart; c <= colEnd; c++) {
         const i = slotOff + r * grid.shape.cols + c;
-        body[fi++] = grid.u[i]!;
-        body[fi++] = grid.v[i]!;
-        body[fi++] = grid.swh[i]!;
-        body[fi++] = grid.mwdSin[i]!;
-        body[fi++] = grid.mwdCos[i]!;
-        body[fi++] = grid.mwp[i]!;
+        const u = grid.u[i]!, v = grid.v[i]!, swh = grid.swh[i]!;
+        const ms = grid.mwdSin[i]!, mc = grid.mwdCos[i]!, mwp = grid.mwp[i]!;
+        if (encoding === 'int16') {
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(u, SCALE_UV_SWH_MWP), true); bi++;
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(v, SCALE_UV_SWH_MWP), true); bi++;
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(swh, SCALE_UV_SWH_MWP), true); bi++;
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(ms, SCALE_SIN_COS), true); bi++;
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(mc, SCALE_SIN_COS), true); bi++;
+          dv.setInt16(HEADER_SIZE + bi * 2, quant(mwp, SCALE_UV_SWH_MWP), true); bi++;
+        } else {
+          dv.setFloat32(HEADER_SIZE + bi * 4, u, true); bi++;
+          dv.setFloat32(HEADER_SIZE + bi * 4, v, true); bi++;
+          dv.setFloat32(HEADER_SIZE + bi * 4, swh, true); bi++;
+          dv.setFloat32(HEADER_SIZE + bi * 4, ms, true); bi++;
+          dv.setFloat32(HEADER_SIZE + bi * 4, mc, true); bi++;
+          dv.setFloat32(HEADER_SIZE + bi * 4, mwp, true); bi++;
+        }
       }
     }
   }
