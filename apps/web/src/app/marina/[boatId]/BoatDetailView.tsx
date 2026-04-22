@@ -204,14 +204,16 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
         </div>
       </section>
 
-      <aside className={styles.autoRepairNotice} aria-label="Réparation automatique">
-        <span className={styles.autoRepairIcon} aria-hidden>✦</span>
-        <p className={styles.autoRepairText}>
-          Votre bateau est <strong>automatiquement remis en état</strong> au départ de
-          chaque course. L&apos;usure accumulée en mer est effacée à l&apos;arrivée — concentrez-vous
-          sur votre stratégie, pas sur la maintenance.
-        </p>
-      </aside>
+      <div className={styles.autoRepairWrap}>
+        <aside className={styles.autoRepairNotice} aria-label="Réparation automatique">
+          <span className={styles.autoRepairIcon} aria-hidden>✦</span>
+          <p className={styles.autoRepairText}>
+            Votre bateau est <strong>automatiquement remis en état</strong> au départ de
+            chaque course. L&apos;usure accumulée en mer est effacée à l&apos;arrivée — concentrez-vous
+            sur votre stratégie, pas sur la maintenance.
+          </p>
+        </aside>
+      </div>
 
       {/* Slot section */}
       <section className={styles.section}>

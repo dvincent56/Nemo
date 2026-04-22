@@ -719,10 +719,12 @@
 }
 
 /* --- Auto-repair notice (info card) --- */
-.autoRepairNotice {
+.autoRepairWrap {
   max-width: 1400px;
   margin: 1.5rem auto;
-  margin-inline: clamp(20px, 4vw, 64px);
+  padding: 0 clamp(20px, 4vw, 64px);
+}
+.autoRepairNotice {
   display: flex;
   align-items: center;
   gap: 0.75rem;
