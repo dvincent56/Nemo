@@ -59,7 +59,6 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
     console.log('[routing] coastline skipped (no geojson provided) — routes may cross land');
   }
 
-  const effects = aggregateEffects(input.loadout.items);
   // Arrival radius: half the max distance the boat can cover in one step.
   // At coarse steps (FAST = 3 h), the boat may leap 40+ NM per step, so a
   // too-tight radius causes the candidate to "jump over" the target and
@@ -108,16 +107,20 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       const weather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, p.timeMs);
       if (!weather) continue;
 
+      // Re-aggregate effects WITH the local TWS so activation gates fire
+      // the same way runTick evaluates them. Upgrades like foils with
+      // activation.minTws get disabled below flying speed → router must
+      // see the same "inactive" effects or it over-estimates BSP.
+      const localEffects = aggregateEffects(input.loadout.items, { tws: weather.tws });
+
       for (let h = 0; h < 360; h += stepHeading) {
         if (!inCone(h)) continue;
         const twa = computeTWA(h, weather.twd);
         const twaAbs = Math.min(Math.abs(twa), 180);
         if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) continue;
         const sail = pickOptimalSailForRouting(input.polar, twaAbs, weather.tws);
-        // Mirror runTick exactly: core speed × swell factor. Router was
-        // ignoring swell, which made it 10-20 % too optimistic in any
-        // swelly wind → the sim then lagged the plan by ~2 NM/h.
-        const coreBsp = computeBsp(input.polar, sail, twa, weather.tws, effects, input.condition);
+        // Mirror runTick exactly: core speed × swell factor.
+        const coreBsp = computeBsp(input.polar, sail, twa, weather.tws, localEffects, input.condition);
         const swellMul = swellSpeedFactor(weather.swh, weather.swellDir, h);
         const bsp = coreBsp * swellMul;
         if (bsp < 0.1) continue;
