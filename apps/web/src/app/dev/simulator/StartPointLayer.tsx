@@ -85,6 +85,8 @@ export function StartPointLayer({ startPos, status, onChange }: Props) {
     if (status !== 'idle') return;
 
     const handler = (e: maplibregl.MapMouseEvent) => {
+      // Shift+click is reserved for the end-point marker (see EndPointLayer).
+      if (e.originalEvent.shiftKey) return;
       onChange({ lat: e.lngLat.lat, lon: e.lngLat.lng });
     };
     map.on('click', handler);
