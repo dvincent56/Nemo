@@ -345,6 +345,16 @@ export class SimulatorEngine {
 
       const newPos = outcome.runtime.boat.position;
       entry.accumulatedNm += haversineNM(entry.prevPos, newPos);
+
+      // Sample the sim's BSP every 60 ticks (= 30 min of sim time) so we
+      // can compare to the router's expected BSP. Log shape mirrors
+      // [routing-plan] lines for easy pairing in the console.
+      if (this.simTimeMs % (30 * 60_000) === 0) {
+        console.log(
+          `[sim-tick] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · hdg=${outcome.runtime.segmentState.heading.toFixed(0)}° · sail=${outcome.runtime.segmentState.sail} · bsp=${outcome.bsp.toFixed(2)} · tws=${outcome.tws.toFixed(1)} · twa=${outcome.twa.toFixed(0)}° · pos=(${newPos.lat.toFixed(3)}, ${newPos.lon.toFixed(3)})`,
+        );
+      }
+
       entry.prevPos = { ...newPos };
       entry.runtime = outcome.runtime;
 

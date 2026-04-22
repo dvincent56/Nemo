@@ -234,6 +234,19 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
       `[routing-plan] #${i} simT=${simT.toFixed(2)}h · cap=${e.cap.toFixed(0)}°${e.sail ? ' · sail=' + e.sail : ''} · pos=(${e.plannedLat?.toFixed(3)}, ${e.plannedLon?.toFixed(3)})`,
     );
   }
+  // Router's expected BSP trace — pair with [sim-tick] lines. Log every
+  // 30 sim-minutes (every ~step/4) from the polyline to match the sim's
+  // sampling cadence.
+  const logEveryMs = 30 * 60_000;
+  let nextLogMs = input.startTimeMs;
+  for (const p of polyline) {
+    if (p.timeMs < nextLogMs) continue;
+    const simT = (p.timeMs - input.startTimeMs) / 3_600_000;
+    console.log(
+      `[routing-tick] simT=${simT.toFixed(2)}h · bsp=${p.bsp.toFixed(2)} · tws=${p.tws.toFixed(1)} · twa=${p.twa.toFixed(0)}° · sail=${p.sail} · pos=(${p.lat.toFixed(3)}, ${p.lon.toFixed(3)})`,
+    );
+    nextLogMs = p.timeMs + logEveryMs;
+  }
 
   return {
     reachedGoal, polyline, waypoints, capSchedule, isochrones,
