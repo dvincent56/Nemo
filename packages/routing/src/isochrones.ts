@@ -70,11 +70,17 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   }
 
   const effects = aggregateEffects(input.loadout.items);
-  // Arrival radius: the distance within which a candidate is considered to
-  // have "reached" the target. Use a conservative 5 NM/h × step size so
-  // the radius scales with resolution without admitting far-off candidates.
-  // bspMax-based radii (bspMax * step / 2) are too generous at coarse steps.
-  const arrivalRadiusNm = Math.max(1, (timeStepSec / 3600) * 5);
+  // Arrival radius: half the max distance the boat can cover in one step.
+  // At coarse steps (FAST = 3 h), the boat may leap 40+ NM per step, so a
+  // too-tight radius causes the candidate to "jump over" the target and
+  // never register a hit. Half-step at peak speed is the classical choice.
+  let bspMax = 0;
+  for (const sail of Object.keys(input.polar.speeds) as SailId[]) {
+    const table = input.polar.speeds[sail];
+    if (!table) continue;
+    for (const row of table) for (const v of row) if (v > bspMax) bspMax = v;
+  }
+  const arrivalRadiusNm = Math.max(3, (bspMax * timeStepSec) / 3600 / 2);
 
   // Initial sample for iso[0] metadata
   const initSample = sampleWind(input.windGrid, input.windData, input.from.lat, input.from.lon, input.startTimeMs);
