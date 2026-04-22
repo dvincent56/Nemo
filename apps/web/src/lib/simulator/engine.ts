@@ -13,7 +13,7 @@ import {
 } from '@nemo/game-engine-core/browser';
 import type { WeatherProvider } from '@nemo/game-engine-core/browser';
 import type { WeatherPoint } from '@nemo/shared-types';
-import { createWindLookup, type WindGridConfig } from '../projection/windLookup';
+import { createFallbackWindLookup, type WindGridConfig } from '../projection/windLookup';
 import type {
   SimBoatSetup,
   SimFleetState,
@@ -57,8 +57,10 @@ export class SimulatorEngine {
   private runtimes: Map<string, RuntimeEntry> = new Map();
   private polars: Map<BoatClass, Polar> = new Map();
   private coastline: CoastlineIndex = new CoastlineIndex();
-  private weatherLookup: ReturnType<typeof createWindLookup> | null = null;
-  private gribTimestamps: number[] = []; // milliseconds, matching WindGridConfig.timestamps
+  private weatherLookup: ReturnType<typeof createFallbackWindLookup> | null = null;
+  // Combined timestamps (union of current + prev grids) for grib_exhausted
+  // check — as long as either grid covers the sim time we keep ticking.
+  private gribTimestamps: number[] = [];
 
   // Simulation clock
   private simTimeMs: number = 0;
@@ -71,7 +73,7 @@ export class SimulatorEngine {
 
   private initialized: boolean = false;
   private stopped: boolean = false;
-  private schedules: Map<string, Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>> = new Map();
+  private schedules: Map<string, Array<{ triggerMs: number; cap: number; twaLock?: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>> = new Map();
 
   constructor(listener: Listener) {
     this.listener = listener;
@@ -79,6 +81,33 @@ export class SimulatorEngine {
 
   setListener(l: Listener): void {
     this.listener = l;
+  }
+
+  /**
+   * Hot-swap the wind grid used by subsequent ticks — called by the worker
+   * when a new GFS run arrives mid-simulation. The previous grid is kept in
+   * the fallback slot so a tick at a time not yet covered by the new run can
+   * still sample a meaningful value instead of stale extrapolation.
+   */
+  updateWindGrid(payload: {
+    windGrid: WindGridConfig;
+    windData: Float32Array;
+    prevWindGrid?: WindGridConfig;
+    prevWindData?: Float32Array;
+  }): void {
+    this.weatherLookup = createFallbackWindLookup(
+      payload.windGrid,
+      payload.windData,
+      payload.prevWindGrid ?? null,
+      payload.prevWindData ?? null,
+    );
+    // Union of both grids' timestamps so grib_exhausted fires only when
+    // *both* fail to cover the sim clock.
+    const merged = new Set<number>(payload.windGrid.timestamps);
+    if (payload.prevWindGrid) {
+      for (const t of payload.prevWindGrid.timestamps) merged.add(t);
+    }
+    this.gribTimestamps = [...merged].sort((a, b) => a - b);
   }
 
   async init(payload: Extract<SimInMessage, { type: 'init' }>): Promise<void> {
@@ -95,12 +124,16 @@ export class SimulatorEngine {
     this.coastline = new CoastlineIndex();
     this.coastline.loadFromGeoJson(payload.coastlineGeoJson as GeoJSON.FeatureCollection);
 
-    // 4. Build weather lookup
+    // 4. Build weather lookup (current grid only — an `updateWindGrid`
+    //    message may later rotate a previous grid into the fallback slot).
     const windGrid = payload.windGrid as WindGridConfig;
-    this.weatherLookup = createWindLookup(windGrid, payload.windData as Float32Array);
+    this.weatherLookup = createFallbackWindLookup(
+      windGrid,
+      payload.windData as Float32Array,
+    );
 
-    // 5. Capture GRIB timestamps (in seconds) for exhaustion checks
-    this.gribTimestamps = windGrid.timestamps;
+    // 5. Capture GRIB timestamps (in ms) for exhaustion checks
+    this.gribTimestamps = [...windGrid.timestamps];
 
     // 6. Save init params
     this.startPos = { ...payload.startPos };
@@ -164,7 +197,7 @@ export class SimulatorEngine {
     }
   }
 
-  setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>): void {
+  setSchedule(boatId: string, entries: Array<{ triggerMs: number; cap: number; twaLock?: number; sail?: SailId; plannedLat?: number; plannedLon?: number }>): void {
     const sorted = [...entries].sort((a, b) => a.triggerMs - b.triggerMs);
     this.schedules.set(boatId, sorted);
     console.log(
@@ -291,12 +324,21 @@ export class SimulatorEngine {
       if (!pbr) continue;
       while (entries.length > 0 && entries[0]!.triggerMs <= tickEnd) {
         const entry = entries.shift() as {
-          triggerMs: number; cap: number; sail?: SailId;
+          triggerMs: number; cap: number; twaLock?: number; sail?: SailId;
           plannedLat?: number; plannedLon?: number;
         };
         const prevHdg = pbr.runtime.segmentState.heading;
-        pbr.runtime.segmentState.heading = entry.cap;
-        pbr.runtime.segmentState.twaLock = null;
+        if (entry.twaLock !== undefined) {
+          // TWA-lock: the sim will recompute heading each tick from
+          // (twd + twaLock). We still set heading to the planned value
+          // for the *current* tick so the first tick of the lock uses a
+          // sensible direction, but from tick 2 onwards the lock drives.
+          pbr.runtime.segmentState.heading = entry.cap;
+          pbr.runtime.segmentState.twaLock = entry.twaLock;
+        } else {
+          pbr.runtime.segmentState.heading = entry.cap;
+          pbr.runtime.segmentState.twaLock = null;
+        }
         if (entry.sail) {
           pbr.runtime.segmentState.sail = entry.sail;
           // Also update sailState.active so runTick doesn't reset
@@ -327,7 +369,7 @@ export class SimulatorEngine {
           deltaInfo = ` · planned=(${entry.plannedLat.toFixed(3)}, ${entry.plannedLon.toFixed(3)}) · actual=(${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}) · ΔNm=${deltaNm.toFixed(2)}`;
         }
         console.log(
-          `[sim-schedule] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · ${prevHdg.toFixed(0)}° → ${entry.cap.toFixed(0)}°${entry.sail ? ' · sail=' + entry.sail : ''} · remaining=${entries.length}${deltaInfo}`,
+          `[sim-schedule] boat=${id} simT=${(this.simTimeMs / 3_600_000).toFixed(2)}h · ${prevHdg.toFixed(0)}° → ${entry.cap.toFixed(0)}°${entry.twaLock !== undefined ? ' · TWA-lock=' + entry.twaLock.toFixed(0) + '°' : ''}${entry.sail ? ' · sail=' + entry.sail : ''} · remaining=${entries.length}${deltaInfo}`,
         );
       }
     }

@@ -138,3 +138,52 @@ function temporalInterpAngle(a: number, b: number, t: number): number {
   if (diff < -180) diff += 360;
   return ((a + diff * t) + 360) % 360;
 }
+
+/**
+ * Compose a "current + previous GRIB" lookup with fallback semantics.
+ *
+ * Intent: during a GFS refresh, the current grid only has the forecast hours
+ * that the progressive cumulative fetch has pulled so far (TTFW, then phase 1,
+ * then phase 2). Sampling at a time *beyond* the current coverage would fall
+ * back to the last-layer extrapolation inside `createWindLookup`, which is
+ * stale. If the previous run's grid is available and covers that time, using
+ * it is strictly better than extrapolation.
+ *
+ * Returns a function with the same signature as `createWindLookup`'s return.
+ * Policy per (lat, lon, timeMs):
+ *   1. If timeMs is within the *current* grid's temporal bounds, use current.
+ *   2. Else if a previous lookup exists and its bounds cover timeMs, use prev.
+ *   3. Else fall back to current (so extrapolation still happens — never null).
+ */
+export function createFallbackWindLookup(
+  currentConfig: WindGridConfig,
+  currentData: Float32Array,
+  prevConfig?: WindGridConfig | null,
+  prevData?: Float32Array | null,
+) {
+  const currentLookup = createWindLookup(currentConfig, currentData);
+  const prevLookup =
+    prevConfig && prevData ? createWindLookup(prevConfig, prevData) : null;
+  const currentFirstTs = currentConfig.timestamps[0] ?? 0;
+  const currentLastTs =
+    currentConfig.timestamps[currentConfig.timestamps.length - 1] ?? 0;
+  const prevFirstTs = prevConfig?.timestamps[0] ?? 0;
+  const prevLastTs =
+    prevConfig?.timestamps[prevConfig.timestamps.length - 1] ?? 0;
+
+  return function getWeatherAtWithFallback(
+    lat: number,
+    lon: number,
+    timeMs: number,
+  ): WeatherAtPoint | null {
+    const inCurrent =
+      currentConfig.timestamps.length > 0 &&
+      timeMs >= currentFirstTs &&
+      timeMs <= currentLastTs;
+    if (inCurrent) return currentLookup(lat, lon, timeMs);
+    if (prevLookup && timeMs >= prevFirstTs && timeMs <= prevLastTs) {
+      return prevLookup(lat, lon, timeMs);
+    }
+    return currentLookup(lat, lon, timeMs);
+  };
+}

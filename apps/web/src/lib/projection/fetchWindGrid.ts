@@ -24,7 +24,7 @@ const MS_TO_KTS = 1.94384;
  * Extracted from useProjectionLine so it can be reused by the dev simulator
  * without pulling in React hooks or game-store dependencies.
  */
-function packWindData(decoded: DecodedWeatherGrid): {
+export function packWindData(decoded: DecodedWeatherGrid): {
   windGrid: WindGridConfig;
   windData: Float32Array;
 } {

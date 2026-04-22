@@ -3,6 +3,7 @@
 // Web Worker adapter — drives SimulatorEngine with a 100ms real-time loop.
 
 import { SimulatorEngine } from '../lib/simulator/engine';
+import type { WindGridConfig } from '../lib/projection/windLookup';
 import type { SimInMessage, SimOutMessage } from '../lib/simulator/types';
 
 const engine = new SimulatorEngine((msg: SimOutMessage) => self.postMessage(msg));
@@ -14,6 +15,18 @@ self.onmessage = async (e: MessageEvent<SimInMessage>) => {
     switch (msg.type) {
       case 'init':
         await engine.init(msg);
+        break;
+      case 'updateWindGrid':
+        engine.updateWindGrid({
+          windGrid: msg.windGrid as WindGridConfig,
+          windData: msg.windData as Float32Array,
+          ...(msg.prevWindGrid
+            ? { prevWindGrid: msg.prevWindGrid as WindGridConfig }
+            : {}),
+          ...(msg.prevWindData
+            ? { prevWindData: msg.prevWindData as Float32Array }
+            : {}),
+        });
         break;
       case 'start':
         engine.start();

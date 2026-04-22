@@ -117,6 +117,15 @@ export interface WeatherState {
   gridExpiresAt: Date | null;
   isLoading: boolean;
   decodedGrid: DecodedWeatherGrid | null;
+  /**
+   * Previous GFS run's grid, retained during the refresh window so the sim
+   * and router can fall back to it when the new run's temporal coverage is
+   * not yet complete (cumulative fetch phases progressively extend the
+   * current grid; in the meantime `prevDecodedGrid` has the older full-
+   * horizon coverage). Rotated in by `setDecodedWeatherGrid` whenever the
+   * incoming grid's `runTimestamp` differs from the current one.
+   */
+  prevDecodedGrid: DecodedWeatherGrid | null;
   gfsStatus: GfsStatus | null;
   /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional. */
   tacticalTile: {

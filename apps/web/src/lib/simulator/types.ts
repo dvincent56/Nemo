@@ -34,12 +34,14 @@ export type SimInMessage =
       windGrid: unknown; windData: unknown; coastlineGeoJson: unknown;
       polars: Record<BoatClass, Polar>;
       gameBalanceJson: unknown }
+  | { type: 'updateWindGrid'; windGrid: unknown; windData: unknown;
+      prevWindGrid?: unknown; prevWindData?: unknown }
   | { type: 'start' }
   | { type: 'pause' }
   | { type: 'reset' }
   | { type: 'setSpeed'; factor: SimSpeedFactor }
   | { type: 'order'; order: SimOrder; triggerSimMs: number }
-  | { type: 'schedule'; boatId: string; entries: Array<{ triggerMs: number; cap: number; sail?: SailId; plannedLat?: number; plannedLon?: number }> };
+  | { type: 'schedule'; boatId: string; entries: Array<{ triggerMs: number; cap: number; twaLock?: number; sail?: SailId; plannedLat?: number; plannedLon?: number }> };
 
 export type SimOutMessage =
   | { type: 'tick'; simTimeMs: number; fleet: Record<string, SimFleetState> }
