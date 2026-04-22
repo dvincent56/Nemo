@@ -7,7 +7,9 @@ import { SetupPanel } from './SetupPanel';
 import { BoatSetupModal } from './BoatSetupModal';
 import { SimControlsBar } from './SimControlsBar';
 import { FleetLayer } from './FleetLayer';
-import { ProjectionLayer } from './ProjectionLayer';
+// Projection layer removed — the frozen projection dashed line added
+// visual noise without providing actionable signal once the routing
+// engine became the canonical "planned path" reference.
 import { StartPointLayer } from './StartPointLayer';
 import { EndPointLayer } from './EndPointLayer';
 import { RouteLayer } from './RouteLayer';
@@ -388,9 +390,8 @@ export function DevSimulatorClient() {
           trails={trails}
           simStatus={status}
         />
-        <ProjectionLayer projection={projection} />
         <EndPointLayer endPos={endPos} status={status} onChange={setEndPos} />
-        <RouteLayer routes={routes} colorFor={colorFor} />
+        <RouteLayer routes={routes} primaryId={primaryId} colorFor={colorFor} />
         <IsochroneLayer
           plan={isoVisibleBoatId ? (routes.get(isoVisibleBoatId) ?? null) : null}
           color={isoVisibleBoatId ? colorFor(isoVisibleBoatId) : '#c9a557'}
