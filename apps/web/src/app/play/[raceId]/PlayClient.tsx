@@ -66,6 +66,7 @@ function useBoatInit(raceId: string): void {
         rank: boat.rank, totalParticipants: boat.totalParticipants,
         rankTrend: boat.rankTrend, wearGlobal: boat.wearGlobal,
         wearDetail: boat.wearDetail,
+        speedPenaltyPct: boat.speedPenaltyPct,
         ...(boat.effects ? { effects: boat.effects } : {}),
       });
       store.setSail({

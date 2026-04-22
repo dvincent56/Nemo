@@ -58,6 +58,7 @@ export interface BoatState {
   rankTrend: number;
   wearGlobal: number;
   wearDetail: { hull: number; rig: number; sails: number; electronics: number };
+  speedPenaltyPct: number;
   currentSail: 'JIB' | 'LJ' | 'SS' | 'C0' | 'SPI' | 'HG' | 'LG';
   sailAuto: boolean;
   transitionStartMs: number;

@@ -10,6 +10,7 @@ export const INITIAL_HUD: HudState = {
   overlapFactor: 1.0, twaColor: 'neutral',
   rank: 0, totalParticipants: 0, rankTrend: 0,
   wearGlobal: 100, wearDetail: INITIAL_WEAR,
+  speedPenaltyPct: 0,
   lat: 0, lon: 0,
   twaLock: null,
   effects: NEUTRAL_BOAT_EFFECTS,

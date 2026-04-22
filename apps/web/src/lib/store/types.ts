@@ -20,6 +20,7 @@ export interface HudState {
   twaColor: TwaColor;
   rank: number; totalParticipants: number; rankTrend: number;
   wearGlobal: number; wearDetail: WearDetail;
+  speedPenaltyPct: number;
   lat: number; lon: number;
   /** Server lock state — the angle if locked, null if in heading mode. */
   twaLock: number | null;

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { SailId } from '@nemo/shared-types';
 import type { TickManager } from '../engine/manager.js';
-import { aggregateEffects, type AggregatedEffects } from '@nemo/game-engine-core';
+import { aggregateEffects, conditionSpeedPenalty, type AggregatedEffects } from '@nemo/game-engine-core';
 
 const SAIL_IDS: SailId[] = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'];
 
@@ -25,6 +25,8 @@ interface BoatSnapshotDTO {
   rankTrend: number;
   wearGlobal: number;
   wearDetail: { hull: number; rig: number; sails: number; electronics: number };
+  /** Pénalité de vitesse courante en % (0 = pas de pénalité, 8 = max). */
+  speedPenaltyPct: number;
   currentSail: SailId;
   sailAuto: boolean;
   transitionStartMs: number;
@@ -56,6 +58,8 @@ export function registerRuntimeRoutes(app: FastifyInstance, tick: TickManager): 
       const wearGlobal = Math.round(
         (condition.hull + condition.rig + condition.sails + condition.electronics) / 4,
       );
+      const speedFactor = conditionSpeedPenalty(condition);
+      const speedPenaltyPct = Math.round((1 - speedFactor) * 1000) / 10; // 1 décimale
       const twd = ((boat.heading - outcome.twa) % 360 + 360) % 360;
       const dto: BoatSnapshotDTO = {
         boatClass: boat.boatClass,
@@ -79,6 +83,7 @@ export function registerRuntimeRoutes(app: FastifyInstance, tick: TickManager): 
           sails: Math.round(condition.sails),
           electronics: Math.round(condition.electronics),
         },
+        speedPenaltyPct,
         currentSail: sail,
         sailAuto: sailState.autoMode,
         transitionStartMs: sailState.transitionStartMs,
