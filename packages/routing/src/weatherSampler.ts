@@ -1,21 +1,79 @@
 // packages/routing/src/weatherSampler.ts
-// Bilinear lookup in the packed Float32Array. Returns null if the time is
-// outside the grid timestamps range. Fields are 5 per cell: tws, twd, swh,
-// swellDir, swellPeriod (matches apps/web/src/lib/projection/windLookup.ts).
-//
-// Now also returns swh + swellDir so the router can apply swellSpeedFactor
-// the same way runTick does — without that, router speed is ~10-20 %
-// higher than sim speed in swelly conditions (head sea penalty ignored).
+// Weather lookup. Math is intentionally byte-identical to
+// apps/web/src/lib/projection/windLookup.ts so the routing engine and
+// the simulator engine see the same TWS/TWD at the same (lat, lon, t).
+// The two had diverged: windLookup interpolates TWD via U/V components
+// weighted by TWS (proper vector interp), while the old sampleWind used
+// unweighted sin/cos of TWD alone. In varying wind fields the mismatch
+// produced a ~2 NM/h drift between router plan and simulated trail.
 import type { WindGridConfig } from '@nemo/game-engine-core/browser';
 
 export interface WindSample {
   tws: number;
   twd: number;
-  swh: number;      // significant wave height, m
-  swellDir: number; // degrees, 0 = north, coming FROM
+  swh: number;
+  swellDir: number;
 }
 
 const FIELDS = 5;
+const DEG_TO_RAD = Math.PI / 180;
+
+function sampleLayer(
+  grid: WindGridConfig,
+  data: Float32Array,
+  layerIdx: number,
+  lat: number,
+  lon: number,
+): WindSample {
+  const { bounds, resolution, cols, rows } = grid;
+  const pointsPerLayer = rows * cols;
+  const floatsPerLayer = pointsPerLayer * FIELDS;
+  const offset = layerIdx * floatsPerLayer;
+
+  const fx = (lon - bounds.west) / resolution;
+  const fy = (lat - bounds.south) / resolution;
+  const ix = Math.floor(fx);
+  const iy = Math.floor(fy);
+  const dx = fx - ix;
+  const dy = fy - iy;
+
+  if (ix < 0 || ix >= cols - 1 || iy < 0 || iy >= rows - 1) {
+    return { tws: 0, twd: 0, swh: 0, swellDir: 0 };
+  }
+
+  const idx = (r: number, c: number) => offset + (r * cols + c) * FIELDS;
+  const i00 = idx(iy, ix);
+  const i10 = idx(iy, ix + 1);
+  const i01 = idx(iy + 1, ix);
+  const i11 = idx(iy + 1, ix + 1);
+
+  const w00 = (1 - dx) * (1 - dy);
+  const w10 = dx * (1 - dy);
+  const w01 = (1 - dx) * dy;
+  const w11 = dx * dy;
+
+  const tws = data[i00]! * w00 + data[i10]! * w10 + data[i01]! * w01 + data[i11]! * w11;
+
+  // TWD via u/v weighted by TWS — matches createWindLookup exactly.
+  const u = -(
+    Math.sin(data[i00 + 1]! * DEG_TO_RAD) * data[i00]! * w00 +
+    Math.sin(data[i10 + 1]! * DEG_TO_RAD) * data[i10]! * w10 +
+    Math.sin(data[i01 + 1]! * DEG_TO_RAD) * data[i01]! * w01 +
+    Math.sin(data[i11 + 1]! * DEG_TO_RAD) * data[i11]! * w11
+  );
+  const v = -(
+    Math.cos(data[i00 + 1]! * DEG_TO_RAD) * data[i00]! * w00 +
+    Math.cos(data[i10 + 1]! * DEG_TO_RAD) * data[i10]! * w10 +
+    Math.cos(data[i01 + 1]! * DEG_TO_RAD) * data[i01]! * w01 +
+    Math.cos(data[i11 + 1]! * DEG_TO_RAD) * data[i11]! * w11
+  );
+  const twd = ((Math.atan2(-u, -v) / DEG_TO_RAD) + 360) % 360;
+
+  const swh = data[i00 + 2]! * w00 + data[i10 + 2]! * w10 + data[i01 + 2]! * w01 + data[i11 + 2]! * w11;
+  const swellDir = data[i00 + 3]! * w00 + data[i10 + 3]! * w10 + data[i01 + 3]! * w01 + data[i11 + 3]! * w11;
+
+  return { tws: Math.max(0, tws), twd, swh: Math.max(0, swh), swellDir };
+}
 
 export function sampleWind(
   grid: WindGridConfig,
@@ -26,8 +84,14 @@ export function sampleWind(
 ): WindSample | null {
   const ts = grid.timestamps;
   if (ts.length === 0) return null;
-  if (tMs < ts[0]! || tMs > ts[ts.length - 1]!) return null;
+  if (ts.length === 1) return sampleLayer(grid, data, 0, lat, lon);
 
+  const lastTs = ts[ts.length - 1]!;
+  if (tMs >= lastTs) return sampleLayer(grid, data, ts.length - 1, lat, lon);
+  const firstTs = ts[0]!;
+  if (tMs <= firstTs) return sampleLayer(grid, data, 0, lat, lon);
+
+  // Find bracketing layers
   let t0 = 0;
   for (let i = 1; i < ts.length; i++) {
     if (ts[i]! >= tMs) { t0 = i - 1; break; }
@@ -36,55 +100,23 @@ export function sampleWind(
   const t1 = Math.min(t0 + 1, ts.length - 1);
   const tFrac = t1 === t0 ? 0 : (tMs - ts[t0]!) / (ts[t1]! - ts[t0]!);
 
-  const { bounds, resolution, cols, rows } = grid;
-  if (lat < bounds.south || lat > bounds.north) return null;
-  if (lon < bounds.west || lon > bounds.east) return null;
-  const fy = (lat - bounds.south) / resolution;
-  const fx = (lon - bounds.west) / resolution;
-  const iy0 = Math.min(Math.floor(fy), rows - 2);
-  const ix0 = Math.min(Math.floor(fx), cols - 2);
-  const dy = fy - iy0;
-  const dx = fx - ix0;
+  const a = sampleLayer(grid, data, t0, lat, lon);
+  const b = sampleLayer(grid, data, t1, lat, lon);
 
-  const pointsPerLayer = rows * cols;
-  // at() returns [tws, twd, swh, swellDir] for one cell
-  const at = (tIdx: number, iy: number, ix: number): [number, number, number, number] => {
-    const base = (tIdx * pointsPerLayer + iy * cols + ix) * FIELDS;
-    return [data[base]!, data[base + 1]!, data[base + 2]!, data[base + 3]!];
-  };
+  const tws = a.tws * (1 - tFrac) + b.tws * tFrac;
+  const swh = a.swh * (1 - tFrac) + b.swh * tFrac;
 
-  const toRad = Math.PI / 180;
+  // Angle temporal interpolation via u/v weighted by TWS (again same as
+  // createWindLookup — this is what keeps temporal interpolation coherent
+  // when wind direction shifts hard between frames).
+  const u = -(Math.sin(a.twd * DEG_TO_RAD) * a.tws * (1 - tFrac) + Math.sin(b.twd * DEG_TO_RAD) * b.tws * tFrac);
+  const v = -(Math.cos(a.twd * DEG_TO_RAD) * a.tws * (1 - tFrac) + Math.cos(b.twd * DEG_TO_RAD) * b.tws * tFrac);
+  const twd = ((Math.atan2(-u, -v) / DEG_TO_RAD) + 360) % 360;
 
-  const interp = (tIdx: number): [number, number, number, number] => {
-    const [t00, d00, h00, s00] = at(tIdx, iy0, ix0);
-    const [t10, d10, h10, s10] = at(tIdx, iy0, ix0 + 1);
-    const [t01, d01, h01, s01] = at(tIdx, iy0 + 1, ix0);
-    const [t11, d11, h11, s11] = at(tIdx, iy0 + 1, ix0 + 1);
-    const tws = (t00 * (1 - dx) + t10 * dx) * (1 - dy) + (t01 * (1 - dx) + t11 * dx) * dy;
-    const swh = (h00 * (1 - dx) + h10 * dx) * (1 - dy) + (h01 * (1 - dx) + h11 * dx) * dy;
-    // Angle interpolation via sin/cos for both twd and swellDir
-    const interpAngle = (a: number, b: number, c: number, d: number): number => {
-      const sx = (Math.sin(a * toRad) * (1 - dx) + Math.sin(b * toRad) * dx) * (1 - dy) +
-                 (Math.sin(c * toRad) * (1 - dx) + Math.sin(d * toRad) * dx) * dy;
-      const cx = (Math.cos(a * toRad) * (1 - dx) + Math.cos(b * toRad) * dx) * (1 - dy) +
-                 (Math.cos(c * toRad) * (1 - dx) + Math.cos(d * toRad) * dx) * dy;
-      return ((Math.atan2(sx, cx) / toRad) + 360) % 360;
-    };
-    const twd = interpAngle(d00, d10, d01, d11);
-    const swellDir = interpAngle(s00, s10, s01, s11);
-    return [tws, twd, swh, swellDir];
-  };
-
-  const [tws0, twd0, swh0, sd0] = interp(t0);
-  const [tws1, twd1, swh1, sd1] = interp(t1);
-  const tws = tws0 * (1 - tFrac) + tws1 * tFrac;
-  const swh = swh0 * (1 - tFrac) + swh1 * tFrac;
-  const sxT = Math.sin(twd0 * toRad) * (1 - tFrac) + Math.sin(twd1 * toRad) * tFrac;
-  const cxT = Math.cos(twd0 * toRad) * (1 - tFrac) + Math.cos(twd1 * toRad) * tFrac;
-  const twd = ((Math.atan2(sxT, cxT) / toRad) + 360) % 360;
-  const sxS = Math.sin(sd0 * toRad) * (1 - tFrac) + Math.sin(sd1 * toRad) * tFrac;
-  const cxS = Math.cos(sd0 * toRad) * (1 - tFrac) + Math.cos(sd1 * toRad) * tFrac;
-  const swellDir = ((Math.atan2(sxS, cxS) / toRad) + 360) % 360;
+  // Swell dir: sin/cos average (simpler, swell is low-magnitude effect).
+  const sx = Math.sin(a.swellDir * DEG_TO_RAD) * (1 - tFrac) + Math.sin(b.swellDir * DEG_TO_RAD) * tFrac;
+  const cx = Math.cos(a.swellDir * DEG_TO_RAD) * (1 - tFrac) + Math.cos(b.swellDir * DEG_TO_RAD) * tFrac;
+  const swellDir = ((Math.atan2(sx, cx) / DEG_TO_RAD) + 360) % 360;
 
   return { tws, twd, swh, swellDir };
 }
