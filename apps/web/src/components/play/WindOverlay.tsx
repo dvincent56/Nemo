@@ -196,6 +196,7 @@ export default function WindOverlay(): React.ReactElement {
   const animRef = useRef<number>(0);
   const gridRef = useRef<WeatherGrid | null>(null);
   const frameRef = useRef(0);
+  const tileRef = useRef<{ grid: WeatherGrid; bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } } | null>(null);
 
   const windVisible = useGameStore((s) => s.layers.wind);
 
@@ -216,6 +217,20 @@ export default function WindOverlay(): React.ReactElement {
         useGameStore.getState().setWeatherGrid(grid, new Date(Date.now() + 6 * 3600 * 1000));
       })
       .catch((e) => console.warn('Wind data load failed:', e));
+  }, [gridData]);
+
+  // Tactical tile: higher-res grid for the area around the boat.
+  // Clear the wind cache whenever the tile (or global grid) changes so
+  // stale (iy,ix) keyed values from the old grid don't bleed through.
+  const tacticalTile = useGameStore((s) => s.weather.tacticalTile);
+  useEffect(() => {
+    tileRef.current = tacticalTile;
+    windCache = new Map();
+    windCacheFrame = -1;
+  }, [tacticalTile]);
+  useEffect(() => {
+    windCache = new Map();
+    windCacheFrame = -1;
   }, [gridData]);
 
   useEffect(() => {
@@ -302,11 +317,25 @@ export default function WindOverlay(): React.ReactElement {
 
       let vi = 0, ai = 0, ci = 0;
 
+      // Pick wind: prefer the tactical tile when the particle falls inside it,
+      // fall back to the global grid otherwise.
+      const pickWind = (lat: number, lon: number): CachedWind => {
+        const tile = tileRef.current;
+        if (tile) {
+          const b = tile.bounds;
+          if (lat >= b.latMin && lat <= b.latMax && lon >= b.lonMin && lon <= b.lonMax) {
+            const w = getCachedWind(tile.grid, lat, lon, frame);
+            if (w.tws > 0) return w;
+          }
+        }
+        return getCachedWind(grid, lat, lon, frame);
+      };
+
       for (let i = 0; i < pa.count; i++) {
         const lon = pa.lon[i]!;
         const lat = pa.lat[i]!;
 
-        const wind = getCachedWind(grid, lat, lon, frame);
+        const wind = pickWind(lat, lon);
         pa.speed[i] = wind.tws;
 
         const dir = Math.atan2(wind.u, wind.v);
