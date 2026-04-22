@@ -6,7 +6,6 @@ import {
   computeBsp,
   type BoatLoadout,
   type ConditionState,
-  type WindGridConfig,
 } from '@nemo/game-engine-core/browser';
 import { advancePosition, computeTWA, haversineNM } from '@nemo/polar-lib/browser';
 import { pruneBySector } from './pruning';
@@ -19,16 +18,6 @@ import type {
 } from './types';
 
 const INFLECTION_DEG = 5;
-
-function precomputeBspMax(polar: Polar): number {
-  let max = 0;
-  for (const sail of Object.keys(polar.speeds)) {
-    const table = polar.speeds[sail];
-    if (!table) continue;
-    for (const row of table) for (const v of row) if (v > max) max = v;
-  }
-  return max;
-}
 
 function nearestIdx(arr: readonly number[], v: number): number {
   let best = 0, bestDiff = Infinity;
@@ -43,7 +32,7 @@ function pickOptimalSailForRouting(polar: Polar, twaAbs: number, tws: number): S
   let best: SailId | null = null;
   let bestBsp = -1;
   for (const sail of Object.keys(polar.speeds) as SailId[]) {
-    const table = polar.speeds[sail];
+    const table = polar.speeds[sail as SailId];
     if (!table) continue;
     const twaIdx = nearestIdx(polar.twa, twaAbs);
     const twsIdx = nearestIdx(polar.tws, tws);

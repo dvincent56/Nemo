@@ -105,6 +105,9 @@ importers:
       '@nemo/game-engine-core':
         specifier: workspace:*
         version: link:../../packages/game-engine-core
+      '@nemo/routing':
+        specifier: workspace:*
+        version: link:../../packages/routing
       '@nemo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
