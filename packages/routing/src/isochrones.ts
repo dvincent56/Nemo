@@ -104,46 +104,93 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
     const prev = isochrones[step - 1]!;
     const candidates: IsochronePoint[] = [];
 
+    // SUB-SAMPLING constant: how many chunks each step is split into for
+    // wind+physics integration. The sim runs 30 s ticks (so a 2 h step is
+    // 240 ticks); 8 sub-steps gives us 15 min granularity — fine enough
+    // to catch typical wind gradients while staying ~10× cheaper than
+    // actual 30 s ticks (which would push BALANCED over 10 s of compute).
+    const SUB_STEPS = 8;
+    const subStepSec = timeStepSec / SUB_STEPS;
+
     for (let idx = 0; idx < prev.length; idx++) {
       const p = prev[idx]!;
-      // Sample wind at the STEP MIDPOINT in time, not at step start — the
-      // sim integrates wind over 30 s ticks across the whole step, so its
-      // effective wind is closer to the midpoint than to the start. Using
-      // step-start here was biasing the router's BSP toward whichever wind
-      // snapshot happened at the boundary and producing a steady ~0.5
-      // NM/step drift even with perfectly-aligned sail and physics.
+      // Sample wind at step midpoint at the parent position to pick the
+      // sail (held across the step — matches sim behaviour where sail
+      // only changes via explicit schedule entry at step boundaries).
       const midTimeMs = p.timeMs + (timeStepSec * 500);
-      const weather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, midTimeMs);
-      if (!weather) continue;
-
-      const localEffects = aggregateEffects(input.loadout.items, { tws: weather.tws });
+      const sailWeather = sampleWind(input.windGrid, input.windData, p.lat, p.lon, midTimeMs);
+      if (!sailWeather) continue;
+      const localEffects = aggregateEffects(input.loadout.items, { tws: sailWeather.tws });
 
       for (let h = 0; h < 360; h += stepHeading) {
         if (!inCone(h)) continue;
-        const twa = computeTWA(h, weather.twd);
-        const twaAbs = Math.min(Math.abs(twa), 180);
-        if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) continue;
-        const sail = pickOptimalSailForRouting(input.polar, twaAbs, weather.tws);
-        // Mirror runTick: core × swell × maneuver (step-averaged).
-        const coreBsp = computeBsp(input.polar, sail, twa, weather.tws, localEffects, input.condition);
-        const swellMul = swellSpeedFactor(weather.swh, weather.swellDir, h);
-        // Maneuver penalty from parent.twa → this twa (tack/gybe). Upgrades
-        // that reduce tack/gybe duration or penalty come in via localEffects.
+
+        // Pick the sail once per step from the midpoint wind (this sail
+        // is what the schedule will emit; the sim will use it the whole
+        // step too).
+        const midTwa = computeTWA(h, sailWeather.twd);
+        const midTwaAbs = Math.min(Math.abs(midTwa), 180);
+        if (input.polar.twa[0] !== undefined && midTwaAbs < input.polar.twa[0]) continue;
+        const sail = pickOptimalSailForRouting(input.polar, midTwaAbs, sailWeather.tws);
+
+        // One-shot maneuver penalty (fires on the first sub-step if this
+        // heading crosses the wind from parent's TWA).
         let maneuverMul = 1;
         if (p.parentIdx >= 0) {
           const penalty: ManeuverPenaltyState | null = detectManeuver(
-            p.twa, twa, input.boatClass, p.timeMs, localEffects,
+            p.twa, midTwa, input.boatClass, p.timeMs, localEffects,
           );
           if (penalty) {
             const durSec = Math.min((penalty.endMs - penalty.startMs) / 1000, timeStepSec);
             maneuverMul = (durSec * penalty.speedFactor + (timeStepSec - durSec)) / timeStepSec;
           }
         }
-        const bsp = coreBsp * swellMul * maneuverMul;
-        if (bsp < 0.1) continue;
 
-        const distNm = bsp * (timeStepSec / 3600);
-        const newPos = advancePosition({ lat: p.lat, lon: p.lon }, h, bsp, timeStepSec);
+        // Sub-simulate: walk the boat forward in SUB_STEPS chunks, each
+        // resampling wind at the sub-position + sub-time. Accumulate
+        // distance so we can compare against the cumulative distances of
+        // other candidates. Heading is held constant across sub-steps
+        // (what a real boat does between schedule entries).
+        let subLat = p.lat;
+        let subLon = p.lon;
+        let subTimeMs = p.timeMs;
+        let totalDistNm = 0;
+        let lastBsp = 0;
+        let lastTws = sailWeather.tws;
+        let lastTwd = sailWeather.twd;
+        let lastTwa = midTwa;
+        let deadZone = false;
+        for (let k = 0; k < SUB_STEPS; k++) {
+          const subMidMs = subTimeMs + (subStepSec * 500);
+          const w = sampleWind(input.windGrid, input.windData, subLat, subLon, subMidMs);
+          if (!w) { deadZone = true; break; }
+          const twa = computeTWA(h, w.twd);
+          const twaAbs = Math.min(Math.abs(twa), 180);
+          if (input.polar.twa[0] !== undefined && twaAbs < input.polar.twa[0]) {
+            deadZone = true; break;
+          }
+          const effects = aggregateEffects(input.loadout.items, { tws: w.tws });
+          const coreBsp = computeBsp(input.polar, sail, twa, w.tws, effects, input.condition);
+          const swellMul = swellSpeedFactor(w.swh, w.swellDir, h);
+          const bsp = coreBsp * swellMul * maneuverMul;
+          if (bsp < 0.1) { deadZone = true; break; }
+          const distSub = bsp * (subStepSec / 3600);
+          totalDistNm += distSub;
+          const newSub = advancePosition({ lat: subLat, lon: subLon }, h, bsp, subStepSec);
+          subLat = newSub.lat;
+          subLon = newSub.lon;
+          subTimeMs += subStepSec * 1000;
+          lastBsp = bsp;
+          lastTws = w.tws;
+          lastTwd = w.twd;
+          lastTwa = twa;
+        }
+        if (deadZone) continue;
+
+        const bsp = lastBsp;
+        const distNm = totalDistNm;
+        const newPos = { lat: subLat, lon: subLon };
+        const weather = { tws: lastTws, twd: lastTwd }; // for the candidate record
         // Cheap pre-filter: if the segment midpoint is well offshore, skip the
         // expensive polyline intersection. distanceToCoastNm uses the same
         // grid spatial index but without the turf line-intersect pass, so it's
@@ -163,7 +210,7 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
 
         candidates.push({
           lat: newPos.lat, lon: newPos.lon, hdg: h, bsp,
-          tws: weather.tws, twd: weather.twd, twa, sail,
+          tws: weather.tws, twd: weather.twd, twa: lastTwa, sail,
           timeMs: p.timeMs + timeStepSec * 1000,
           distFromStartNm: p.distFromStartNm + distNm,
           parentIdx: idx,
