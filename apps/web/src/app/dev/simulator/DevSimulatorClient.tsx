@@ -297,6 +297,44 @@ export function DevSimulatorClient() {
     }
   }
 
+  async function rerouteFromCurrent() {
+    if (!endPos || boats.length === 0 || Object.keys(fleet).length === 0) return;
+    setRouting({ status: 'computing' });
+
+    try {
+      const classes = Array.from(new Set(boats.map((b) => b.boatClass)));
+      const { polars, gameBalanceJson, coastlineGeoJson } = await fetchSimAssets(classes);
+      const { windGrid, windData } = await fetchLatestWindGrid();
+      const simAbsMs = (launchTimeMs ?? Date.now()) + simTimeMs;
+
+      const plans = await Promise.all(boats.map((boat) => {
+        const live = fleet[boat.id];
+        const from = live ? live.position : startPos;
+        const condition = live ? live.condition : boat.initialCondition;
+        return routeOne({
+          input: {
+            from, to: endPos!, startTimeMs: simAbsMs,
+            polar: polars[boat.boatClass]!, loadout: boat.loadout, condition,
+            windGrid, windData: new Float32Array(windData),
+            coastlineGeoJson: coastlineGeoJson as GeoJSON.FeatureCollection,
+            preset,
+          },
+          gameBalanceJson,
+        }).then((plan) => [boat.id, plan] as const);
+      }));
+
+      const updated = new Map(plans);
+      setRoutes(updated);
+      for (const [id, plan] of updated) {
+        post({ type: 'schedule', boatId: id, entries: plan.capSchedule });
+      }
+      setRouting({ status: 'done' });
+    } catch (err) {
+      console.error('[dev-simulator] reroute failed', err);
+      setRouting({ status: 'idle', error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   return (
     <div className={styles.grid}>
       {/* Left panel — setup */}
@@ -353,6 +391,21 @@ export function DevSimulatorClient() {
           plan={isoVisibleBoatId ? (routes.get(isoVisibleBoatId) ?? null) : null}
           color={isoVisibleBoatId ? colorFor(isoVisibleBoatId) : '#c9a557'}
         />
+
+        {/* Re-router button — top-left, visible only while paused */}
+        {status === 'paused' && endPos && (
+          <button
+            onClick={rerouteFromCurrent}
+            disabled={routing.status === 'computing'}
+            style={{
+              position: 'absolute', top: 16, left: 16, zIndex: 6,
+              background: '#0f2a3d', border: '1px solid #c9a557', color: '#c9a557',
+              padding: '6px 12px', borderRadius: 4, fontFamily: 'var(--font-mono)',
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >⟲ Re-router depuis ici</button>
+        )}
 
         {/* Compass overlay — top-right, shows primary boat nav data */}
         {locked && primaryId && fleet[primaryId] && (
