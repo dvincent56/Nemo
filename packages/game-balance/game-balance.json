@@ -4,30 +4,43 @@
   "updatedBy": "bootstrap",
   "wear": {
     "minCondition": 35,
-    "maxSpeedPenalty": 15,
+    "maxSpeedPenalty": 8,
     "penaltyCurve": {
-      "thresholdNone": 60,
-      "thresholdMax": 35,
-      "slopePerPoint": 0.6
+      "thresholdNone": 85,
+      "thresholdMax": 50,
+      "slopePerPoint": 0.2286
+    },
+    "componentWeights": {
+      "hull": 0.2,
+      "rig": 0.3,
+      "sails": 0.5
     },
     "baseRatesPerHour": {
-      "hull": 0.02,
-      "rig": 0.04,
-      "sails": 0.06,
-      "electronics": 0.01
+      "hull": 0.003,
+      "rig": 0.006,
+      "sails": 0.010,
+      "electronics": 0.002
     },
     "windMultipliers": {
-      "thresholdKnots": 20,
-      "maxFactor": 3.0,
-      "scaleKnots": 20
+      "zeroBelowKnots": 15,
+      "rampEndKnots": 25,
+      "midFactor": 1.0,
+      "midEndKnots": 35,
+      "highFactor": 2.5,
+      "stormEndKnots": 45,
+      "stormFactor": 5.0
     },
     "swellMultipliers": {
-      "thresholdMeters": 2.0,
-      "maxHeightMeters": 8.0,
-      "dirFaceMax": 1.0,
-      "dirBackMin": 0.3,
-      "shortPeriodFactor": 1.2,
-      "shortPeriodThreshold": 8
+      "zeroBelowMeters": 1.5,
+      "rampEndMeters": 4.0,
+      "midFactor": 1.0,
+      "midEndMeters": 7.0,
+      "highFactor": 2.5,
+      "shortPeriodThresholdSec": 8,
+      "shortPeriodBonus": 0.3,
+      "dirFaceFactor": 1.5,
+      "dirBeamFactor": 1.0,
+      "dirBackFactor": 0.5
     },
     "upgradeMultipliers": {
       "foils_rig": 1.8,
@@ -145,24 +158,6 @@
     "leaderBonusRatio": 0.4,
     "streakBonus": 0.1,
     "streakMax": 2.0
-  },
-  "maintenance": {
-    "hull": {
-      "costPer10pts": 80,
-      "durationHours": 8
-    },
-    "rig": {
-      "costPer10pts": 50,
-      "durationHours": 4
-    },
-    "sails": {
-      "costPer10pts": 120,
-      "durationHours": 12
-    },
-    "electronics": {
-      "costPer10pts": 30,
-      "durationHours": 3
-    }
   },
   "upgrades": {
     "slots": [
