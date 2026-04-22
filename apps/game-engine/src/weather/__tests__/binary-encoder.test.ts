@@ -172,6 +172,23 @@ describe('encodeGridSubset — resolution downsampling', () => {
     // 21 source rows at 0.25°, stride=4 → ceil(21/4)=6 output rows
     assert.equal(header.numLat, 6);
     assert.equal(header.numLon, 6);
+
+    // Verify decimation picked the correct source cells (float32 body, numLon=6).
+    // makeGridWithRes fills u[i]=r, v[i]=c for source cell (r,c).
+    const dv = new DataView(buf);
+    const pos = (cellIdx: number, field: number) => HEADER_SIZE + (cellIdx * 6 + field) * 4;
+    // Cell (0,0): source (r=0, c=0) → u=0, v=0
+    assert.strictEqual(dv.getFloat32(pos(0, 0), true), 0);
+    assert.strictEqual(dv.getFloat32(pos(0, 1), true), 0);
+    // Cell (1,0): row-major index 1*6+0, source (r=4, c=0) → u=4, v=0
+    assert.strictEqual(dv.getFloat32(pos(1 * 6 + 0, 0), true), 4);
+    assert.strictEqual(dv.getFloat32(pos(1 * 6 + 0, 1), true), 0);
+    // Cell (0,1): row-major index 0*6+1, source (r=0, c=4) → u=0, v=4
+    assert.strictEqual(dv.getFloat32(pos(0 * 6 + 1, 0), true), 0);
+    assert.strictEqual(dv.getFloat32(pos(0 * 6 + 1, 1), true), 4);
+    // Cell (5,5): row-major index 5*6+5, source (r=20, c=20) → u=20, v=20
+    assert.strictEqual(dv.getFloat32(pos(5 * 6 + 5, 0), true), 20);
+    assert.strictEqual(dv.getFloat32(pos(5 * 6 + 5, 1), true), 20);
   });
 
   it('returns source resolution when resolution omitted', () => {
@@ -185,5 +202,6 @@ describe('encodeGridSubset — resolution downsampling', () => {
     const header = decodeHeader(buf);
     assert.ok(Math.abs(header.gridStepLat - 0.25) < 1e-4, `gridStepLat=${header.gridStepLat} expected ~0.25`);
     assert.equal(header.numLat, 9);
+    assert.equal(header.numLon, 9);
   });
 });

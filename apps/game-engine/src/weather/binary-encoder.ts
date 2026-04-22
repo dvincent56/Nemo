@@ -25,7 +25,11 @@ export interface EncodeOptions {
   nextRunExpectedUtc: number;
   weatherStatus: number;
   blendAlpha: number;
-  /** Target grid step in degrees. If > source resolution, the encoder decimates by stride. */
+  /**
+   * Target grid step in degrees. If > source resolution, the encoder decimates by stride.
+   * If ≤ source resolution, the source resolution is used as-is (stride clamps to 1);
+   * in that case `gridStepLat`/`gridStepLon` in the header reflect the actual resolution emitted.
+   */
   resolution?: number;
   /** Wire body encoding. Defaults to 'float32' for backwards compatibility. */
   encoding?: GridEncoding;
@@ -133,6 +137,7 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
     const slotIdx = grid.forecastHours.indexOf(fh);
     if (slotIdx === -1) continue;
     const slotOff = slotIdx * plane;
+    // e.g. rawNumLat=21, stride=4 → r ∈ {0,4,8,12,16,20} = 6 iterations = ceil(21/4)
     for (let r = rowStart; r <= rowEnd; r += stride) {
       for (let c = colStart; c <= colEnd; c += stride) {
         const i = slotOff + r * grid.shape.cols + c;
