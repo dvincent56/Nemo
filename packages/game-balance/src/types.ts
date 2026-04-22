@@ -12,7 +12,6 @@ export interface GameBalanceConfig {
   swell: SwellConfig;
   sails: SailsConfig;
   rewards: RewardsConfig;
-  maintenance: Record<'hull' | 'rig' | 'sails' | 'electronics', MaintenanceEntry>;
   upgrades: import('./upgrade-catalog.schema.js').UpgradesBlock;
   maneuvers: ManeuversConfig;
   grounding: GroundingConfig;
@@ -25,15 +24,28 @@ export interface WearConfig {
   minCondition: number;
   maxSpeedPenalty: number;
   penaltyCurve: { thresholdNone: number; thresholdMax: number; slopePerPoint: number };
+  componentWeights: { hull: number; rig: number; sails: number };
   baseRatesPerHour: Record<'hull' | 'rig' | 'sails' | 'electronics', number>;
-  windMultipliers: { thresholdKnots: number; maxFactor: number; scaleKnots: number };
+  windMultipliers: {
+    zeroBelowKnots: number;
+    rampEndKnots: number;
+    midFactor: number;
+    midEndKnots: number;
+    highFactor: number;
+    stormEndKnots: number;
+    stormFactor: number;
+  };
   swellMultipliers: {
-    thresholdMeters: number;
-    maxHeightMeters: number;
-    dirFaceMax: number;
-    dirBackMin: number;
-    shortPeriodFactor: number;
-    shortPeriodThreshold: number;
+    zeroBelowMeters: number;
+    rampEndMeters: number;
+    midFactor: number;
+    midEndMeters: number;
+    highFactor: number;
+    shortPeriodThresholdSec: number;
+    shortPeriodBonus: number;
+    dirFaceFactor: number;
+    dirBeamFactor: number;
+    dirBackFactor: number;
   };
   upgradeMultipliers: Record<string, number>;
 }
@@ -67,11 +79,6 @@ export interface RewardsConfig {
   leaderBonusRatio: number;
   streakBonus: number;
   streakMax: number;
-}
-
-export interface MaintenanceEntry {
-  costPer10pts: number;
-  durationHours: number;
 }
 
 export interface ManeuversConfig {

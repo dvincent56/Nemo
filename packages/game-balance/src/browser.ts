@@ -11,7 +11,7 @@ export type { UpgradesBlock, UpgradeItem, UpgradeSlot, UpgradeTier, SlotAvailabi
 export { BoatClassZ };
 export type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
-  RewardsConfig, MaintenanceEntry, ManeuversConfig,
+  RewardsConfig, ManeuversConfig,
   GroundingConfig, EconomyConfig,
 } from './types';
 
@@ -47,7 +47,6 @@ class GameBalanceClass {
   get swell(): SwellConfig { return this.ensure().swell; }
   get sails(): SailsConfig { return this.ensure().sails; }
   get rewards(): RewardsConfig { return this.ensure().rewards; }
-  get maintenance() { return this.ensure().maintenance; }
   get upgrades(): UpgradesBlock { return this.ensure().upgrades; }
   get maneuvers(): ManeuversConfig { return this.ensure().maneuvers; }
   get grounding(): GroundingConfig { return this.ensure().grounding; }

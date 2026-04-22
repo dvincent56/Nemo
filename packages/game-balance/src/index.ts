@@ -26,7 +26,6 @@ class GameBalanceNode {
   get swell() { return BrowserGameBalance.swell; }
   get sails() { return BrowserGameBalance.sails; }
   get rewards() { return BrowserGameBalance.rewards; }
-  get maintenance() { return BrowserGameBalance.maintenance; }
   get upgrades() { return BrowserGameBalance.upgrades; }
   get maneuvers() { return BrowserGameBalance.maneuvers; }
   get grounding() { return BrowserGameBalance.grounding; }
