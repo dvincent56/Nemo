@@ -297,7 +297,22 @@ export class SimulatorEngine {
         const prevHdg = pbr.runtime.segmentState.heading;
         pbr.runtime.segmentState.heading = entry.cap;
         pbr.runtime.segmentState.twaLock = null;
-        if (entry.sail) pbr.runtime.segmentState.sail = entry.sail;
+        if (entry.sail) {
+          pbr.runtime.segmentState.sail = entry.sail;
+          // Also update sailState.active so runTick doesn't reset
+          // segmentState.sail back to the previous sail at end-of-tick
+          // (runTick writes segmentState.sail = newSailState.active). Treat
+          // the routed sail change as already-completed — no transition
+          // penalty, because the router didn't model it and the whole point
+          // of the schedule is to reproduce the routed plan exactly.
+          pbr.runtime.sailState = {
+            ...pbr.runtime.sailState,
+            active: entry.sail,
+            pending: null,
+            transitionStartMs: 0,
+            transitionEndMs: 0,
+          };
+        }
         const pos = pbr.runtime.boat.position;
         let deltaInfo = '';
         if (entry.plannedLat !== undefined && entry.plannedLon !== undefined) {
