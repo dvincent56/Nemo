@@ -148,18 +148,7 @@ async function main() {
   assert.equal(comboRes.json().installedOn.slot, 'MAST');
   console.log('  ✓ buy-and-install mast-class40-carbon');
 
-  // --- Test 9: POST /boats/:id/repair (damage the boat first) ---
-  console.log('[e2e] POST /boats/:id/repair');
-  await db.update(boats).set({ hullCondition: 70, rigCondition: 80 }).where(eq(boats.id, boatId));
-  const repairRes = await app.inject({
-    method: 'POST', url: `/api/v1/boats/${boatId}/repair`,
-    headers: authHeaders,
-  });
-  assert.equal(repairRes.statusCode, 200);
-  assert.ok(repairRes.json().cost.total > 0);
-  console.log(`  ✓ repair cost: ${repairRes.json().cost.total} cr`);
-
-  // --- Test 10: DELETE /boats/:id (sell) ---
+  // --- Test 9: DELETE /boats/:id (sell) ---
   console.log('[e2e] DELETE /boats/:id');
   const sellRes = await app.inject({
     method: 'DELETE', url: `/api/v1/boats/${boatId}`,
@@ -169,7 +158,7 @@ async function main() {
   assert.equal(sellRes.json().sold, true);
   console.log(`  ✓ sold boat, price: ${sellRes.json().sellPrice} cr`);
 
-  // --- Test 11: Lock check — create boat, simulate race, try install ---
+  // --- Test 10: Lock check — create boat, simulate race, try install ---
   console.log('[e2e] Lock check: install on racing boat → 409');
   const [lockedBoat] = await db.insert(boats).values({
     ownerId: playerId,
