@@ -71,12 +71,18 @@ describe('encodeGridSubset — int16 encoding', () => {
     assert.ok(header.numLat * header.numLon > 0);
 
     const dv = new DataView(buf);
-    // Read first U/V pair as int16 from body
-    const u0 = dv.getInt16(HEADER_SIZE, true) / SCALE_UV_SWH_MWP;
-    const v0 = dv.getInt16(HEADER_SIZE + 2, true) / SCALE_UV_SWH_MWP;
+    // Read first cell as int16 from body: u, v, swh, mwdSin, mwdCos, mwp
+    const u0   = dv.getInt16(HEADER_SIZE,      true) / SCALE_UV_SWH_MWP;
+    const v0   = dv.getInt16(HEADER_SIZE + 2,  true) / SCALE_UV_SWH_MWP;
+    const swh0 = dv.getInt16(HEADER_SIZE + 4,  true) / SCALE_UV_SWH_MWP;
+    const ms0  = dv.getInt16(HEADER_SIZE + 6,  true) / SCALE_SIN_COS;
     // grid.u[0] = -5, grid.v[0] = -8.66 — tolerance 0.01
     assert.ok(Math.abs(u0 - grid.u[0]!) < 0.01, `u0=${u0} expected ~${grid.u[0]}`);
     assert.ok(Math.abs(v0 - grid.v[0]!) < 0.01, `v0=${v0} expected ~${grid.v[0]}`);
+    // grid.swh[0] = 2.5 — same scale 100, tolerance 0.01
+    assert.ok(Math.abs(swh0 - grid.swh[0]!) < 0.01, `swh0=${swh0} expected ~${grid.swh[0]}`);
+    // grid.mwdSin[0] = 0.5 — scale 30000, tolerance 1e-4
+    assert.ok(Math.abs(ms0 - grid.mwdSin[0]!) < 1e-4, `ms0=${ms0} expected ~${grid.mwdSin[0]}`);
   });
 
   it('encodes NaN as INT16_NAN sentinel', () => {

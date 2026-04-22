@@ -3,7 +3,16 @@ import type { WeatherGridUV } from './grid.js';
 export const HEADER_SIZE = 48;
 
 export const GRID_VERSION = 2; // bumped from implicit v1 (float32) to v2 (adds encoding byte)
+/**
+ * Int16 scale for U/V (m/s), SWH (m), MWP (s).
+ * 0.01 precision; max representable ~±327 (fits ±32767).
+ */
 export const SCALE_UV_SWH_MWP = 100;
+
+/**
+ * Int16 scale for mwdSin/mwdCos (bounded [-1, 1]).
+ * ~3.3e-5 angular precision, ~2767 units of headroom before clamp.
+ */
 export const SCALE_SIN_COS = 30000;
 export const INT16_NAN = -32768;
 
@@ -16,7 +25,7 @@ export interface EncodeOptions {
   nextRunExpectedUtc: number;
   weatherStatus: number;
   blendAlpha: number;
-  /** Target grid step in degrees. If > source resolution, the encoder decimates. */
+  /** Target grid step in degrees. Used by downsampling (implemented in Task 2); currently a no-op. */
   resolution?: number;
   /** Wire body encoding. Defaults to 'float32' for backwards compatibility. */
   encoding?: GridEncoding;
@@ -59,9 +68,9 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
 
   const encoding: GridEncoding = opts.encoding ?? 'float32';
 
-  const bodyBytesPerFloat = encoding === 'int16' ? 2 : 4;
-  const bodyFloats = numHours * numLat * numLon * 6;
-  const totalBytes = HEADER_SIZE + bodyFloats * bodyBytesPerFloat;
+  const bodyBytesPerValue = encoding === 'int16' ? 2 : 4;
+  const bodyValueCount = numHours * numLat * numLon * 6;
+  const totalBytes = HEADER_SIZE + bodyValueCount * bodyBytesPerValue;
   const buf = new ArrayBuffer(totalBytes);
   const dv = new DataView(buf);
 
@@ -92,7 +101,27 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
     return q;
   };
 
-  let bi = 0;
+  // Hoist the encoding branch out of the hot loop (loop-invariant).
+  const bytesPerCell = encoding === 'int16' ? 12 : 24;
+  const writeCell = encoding === 'int16'
+    ? (pos: number, u: number, v: number, swh: number, ms: number, mc: number, mwp: number) => {
+        dv.setInt16(pos,      quant(u,   SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 2,  quant(v,   SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 4,  quant(swh, SCALE_UV_SWH_MWP), true);
+        dv.setInt16(pos + 6,  quant(ms,  SCALE_SIN_COS), true);
+        dv.setInt16(pos + 8,  quant(mc,  SCALE_SIN_COS), true);
+        dv.setInt16(pos + 10, quant(mwp, SCALE_UV_SWH_MWP), true);
+      }
+    : (pos: number, u: number, v: number, swh: number, ms: number, mc: number, mwp: number) => {
+        dv.setFloat32(pos,      u,   true);
+        dv.setFloat32(pos + 4,  v,   true);
+        dv.setFloat32(pos + 8,  swh, true);
+        dv.setFloat32(pos + 12, ms,  true);
+        dv.setFloat32(pos + 16, mc,  true);
+        dv.setFloat32(pos + 20, mwp, true);
+      };
+
+  let ci = 0;
   for (const fh of opts.hours) {
     const slotIdx = grid.forecastHours.indexOf(fh);
     if (slotIdx === -1) continue;
@@ -102,21 +131,8 @@ export function encodeGridSubset(grid: WeatherGridUV, opts: EncodeOptions): Arra
         const i = slotOff + r * grid.shape.cols + c;
         const u = grid.u[i]!, v = grid.v[i]!, swh = grid.swh[i]!;
         const ms = grid.mwdSin[i]!, mc = grid.mwdCos[i]!, mwp = grid.mwp[i]!;
-        if (encoding === 'int16') {
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(u, SCALE_UV_SWH_MWP), true); bi++;
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(v, SCALE_UV_SWH_MWP), true); bi++;
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(swh, SCALE_UV_SWH_MWP), true); bi++;
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(ms, SCALE_SIN_COS), true); bi++;
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(mc, SCALE_SIN_COS), true); bi++;
-          dv.setInt16(HEADER_SIZE + bi * 2, quant(mwp, SCALE_UV_SWH_MWP), true); bi++;
-        } else {
-          dv.setFloat32(HEADER_SIZE + bi * 4, u, true); bi++;
-          dv.setFloat32(HEADER_SIZE + bi * 4, v, true); bi++;
-          dv.setFloat32(HEADER_SIZE + bi * 4, swh, true); bi++;
-          dv.setFloat32(HEADER_SIZE + bi * 4, ms, true); bi++;
-          dv.setFloat32(HEADER_SIZE + bi * 4, mc, true); bi++;
-          dv.setFloat32(HEADER_SIZE + bi * 4, mwp, true); bi++;
-        }
+        writeCell(HEADER_SIZE + ci * bytesPerCell, u, v, swh, ms, mc, mwp);
+        ci++;
       }
     }
   }
