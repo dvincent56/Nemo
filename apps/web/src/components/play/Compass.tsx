@@ -293,13 +293,13 @@ export default function Compass(): React.ReactElement {
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
       setCommittedTwaLock(newTwa);
       useGameStore.getState().setPreview({ hdg: null, twaLocked: true, lockedTwa: newTwa });
-      if (targetHdg !== null) useGameStore.getState().setHud({ hdg: targetHdg });
+      if (targetHdg !== null) useGameStore.getState().setHudOptimistic('hdg', Math.round(targetHdg));
     } else {
       const heading = Math.round(targetHdg ?? hdg);
       sendOrder({ type: 'CAP', value: { heading } });
       setCommittedTwaLock(null);
       useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
-      if (targetHdg !== null) useGameStore.getState().setHud({ hdg: targetHdg });
+      if (targetHdg !== null) useGameStore.getState().setHudOptimistic('hdg', Math.round(targetHdg));
     }
     setTargetHdg(null);
   };
