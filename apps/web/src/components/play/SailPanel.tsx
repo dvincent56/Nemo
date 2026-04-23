@@ -138,20 +138,20 @@ export default function SailPanel(): React.ReactElement {
 
   const confirmSail = () => {
     if (!candidateSail) return;
-    if (wasAuto) {
-      sendOrder({ type: 'MODE', value: { auto: false } });
-      useGameStore.getState().setSail({ sailAuto: false });
-    }
-    sendOrder({ type: 'SAIL', value: { sail: candidateSail } });
     const duration = getTransitionDuration(currentSail, candidateSail);
     const startMs = Date.now();
-    useGameStore.getState().setSail({
+
+    if (wasAuto) {
+      sendOrder({ type: 'MODE', value: { auto: false } });
+      useGameStore.getState().setSailOptimistic('sailAuto', false);
+    }
+    sendOrder({ type: 'SAIL', value: { sail: candidateSail } });
+    useGameStore.getState().setOptimisticSailChange({
       currentSail: candidateSail,
-      sailPending: null,
-      sailAuto: false,
       transitionStartMs: startMs,
       transitionEndMs: startMs + duration * 1000,
     });
+
     setNow(startMs);
     setCandidateSail(null);
     useGameStore.getState().setPreview({ sail: null });
