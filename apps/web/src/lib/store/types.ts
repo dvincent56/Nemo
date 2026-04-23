@@ -193,6 +193,7 @@ export interface GameStore {
   setHud: (patch: Partial<HudState>) => void;
   setSail: (patch: Partial<SailSliceState>) => void;
   toggleSailAuto: () => void;
+  setSailOptimistic: (field: 'sailAuto', value: boolean) => void;
   setMapView: (center: [number, number], zoom: number) => void;
   setMapBounds: (bounds: MapBounds) => void;
   setFollowBoat: (follow: boolean) => void;
