@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '@/lib/store';
 import styles from './ProgPanel.module.css';
 
@@ -13,12 +13,6 @@ export default function ProgPanel(): React.ReactElement {
   const orderQueue = useGameStore((s) => s.prog.orderQueue);
   const addOrder = useGameStore((s) => s.addOrder);
   const removeOrder = useGameStore((s) => s.removeOrder);
-
-  // Enable edit mode when panel is open
-  useEffect(() => {
-    useGameStore.getState().setEditMode(true);
-    return () => { useGameStore.getState().setEditMode(false); };
-  }, []);
 
   const handleAddOrder = () => {
     const id = `order-${Date.now()}`;

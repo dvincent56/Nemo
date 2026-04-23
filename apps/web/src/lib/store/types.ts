@@ -71,7 +71,6 @@ export interface MapState {
 
 export interface SelectionState {
   selectedBoatIds: Set<string>;
-  editMode: boolean;
 }
 
 export type PlaybackSpeed = 1 | 6 | 24;
@@ -205,7 +204,6 @@ export interface GameStore {
   setFollowBoat: (follow: boolean) => void;
   toggleBoat: (id: string) => void;
   clearSelection: () => void;
-  setEditMode: (active: boolean) => void;
   setTime: (t: Date) => void;
   goLive: () => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;

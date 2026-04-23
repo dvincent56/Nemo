@@ -216,7 +216,6 @@ export default function Compass(): React.ReactElement {
       if (h !== null) {
         setTargetHdg(h);
         writeSvg(h);
-        useGameStore.getState().setEditMode(true);
         useGameStore.getState().setPreview({ hdg: h });
       }
     };
@@ -240,7 +239,6 @@ export default function Compass(): React.ReactElement {
         const base = prev ?? hdg;
         const h = (base + delta + 360) % 360;
         writeSvg(h);
-        if (h !== hdg) useGameStore.getState().setEditMode(true);
         useGameStore.getState().setPreview({ hdg: h });
         return h;
       });
@@ -304,13 +302,11 @@ export default function Compass(): React.ReactElement {
       if (targetHdg !== null) useGameStore.getState().setHud({ hdg: targetHdg });
     }
     setTargetHdg(null);
-    useGameStore.getState().setEditMode(false);
   };
 
   // ── Cancel editing ──
   const cancelEdit = () => {
     setTargetHdg(null);
-    useGameStore.getState().setEditMode(false);
     useGameStore.getState().setPreview({ hdg: null });
     writeSvg(hdg);
     const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
