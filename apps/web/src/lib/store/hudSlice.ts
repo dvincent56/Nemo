@@ -14,6 +14,7 @@ export const INITIAL_HUD: HudState = {
   lat: 0, lon: 0,
   twaLock: null,
   effects: NEUTRAL_BOAT_EFFECTS,
+  pending: {},
 };
 
 export function createHudSlice(set: (fn: (s: GameStore) => Partial<GameStore>) => void) {

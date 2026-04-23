@@ -3,6 +3,7 @@
 import type { SailId, OrderTrigger, BoatClass, ExclusionZone } from '@nemo/shared-types';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { BoatEffects } from '@/lib/api';
+import type { PendingField } from './pending';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
 
@@ -27,6 +28,9 @@ export interface HudState {
   /** Aggregated loadout effects from the engine — used by the projection
    *  worker so upgrade bonuses/penalties shape the predicted trajectory. */
   effects: BoatEffects;
+  pending: {
+    hdg?: PendingField<number>;
+  };
 }
 
 export type SailAvailability = 'active' | 'available' | 'disabled';
@@ -41,6 +45,14 @@ export interface SailSliceState {
   maneuverKind: 0 | 1 | 2;    // 0 = none, 1 = tack, 2 = gybe
   maneuverStartMs: number;
   maneuverEndMs: number;
+  pending: {
+    sailAuto?: PendingField<boolean>;
+    sailChange?: PendingField<{
+      currentSail: SailId;
+      transitionStartMs: number;
+      transitionEndMs: number;
+    }>;
+  };
 }
 
 export interface MapBounds {
