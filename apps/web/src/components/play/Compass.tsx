@@ -462,28 +462,10 @@ export default function Compass(): React.ReactElement {
 
             {/* Center dot */}
             <circle cx={CX} cy={CY} r={3} fill="rgba(245,240,232,0.25)" />
-
-            {/* Cancel badge — shown while editing target heading */}
-            {applyActive && targetHdg !== null && (() => {
-              const pos = pt(R_OUTER + 18, targetHdg);
-              return (
-                <g
-                  className={styles.cancelBadge}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  onPointerDown={(e) => { e.stopPropagation(); cancelEdit(); }}
-                >
-                  <circle r="14" className={styles.cancelBadgeBg} />
-                  <text textAnchor="middle" dy="-2" className={styles.cancelBadgeValue}>
-                    {Math.round(targetHdg)}°
-                  </text>
-                  <text textAnchor="middle" dy="10" className={styles.cancelBadgeX}>×</text>
-                </g>
-              );
-            })()}
           </svg>
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons — layout: Lock (gauche) | Valider (centre) | Annuler (droite) */}
         <div className={styles.actions}>
           <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
             <button
@@ -505,6 +487,17 @@ export default function Compass(): React.ReactElement {
             >
               <Check size={14} strokeWidth={3} />
               <span>Valider</span>
+            </button>
+          </Tooltip>
+          <Tooltip text="Annuler le changement en cours" shortcut="Échap" position="bottom">
+            <button
+              type="button"
+              className={`${styles.actionBtn} ${applyActive ? styles.cancelActive : styles.cancelInactive}`}
+              onClick={cancelEdit}
+              disabled={!applyActive}
+              aria-label="Annuler"
+            >
+              <span className={styles.cancelX} aria-hidden="true">×</span>
             </button>
           </Tooltip>
         </div>

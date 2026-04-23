@@ -135,31 +135,25 @@
   pointer-events: none;
 }
 
-/* Cancel badge — appears on target heading during edit */
-.cancelBadge {
+/* Cancel button — sits to the right of Valider in the actions bar.
+ * Active only while there's a pending heading/lock edit. */
+.cancelActive {
+  border-color: rgba(217, 123, 90, 0.6);
+  color: #d97b5a;
   cursor: pointer;
-  pointer-events: all;
 }
-.cancelBadgeBg {
-  fill: rgba(26, 42, 59, 0.95);
-  stroke: #c9a227;
-  stroke-width: 1.5;
-  transition: fill 0.15s ease;
+.cancelActive:hover {
+  border-color: #d97b5a;
+  background: rgba(217, 123, 90, 0.12);
 }
-.cancelBadgeValue {
-  fill: #f5f0e8;
-  font-size: 8px;
-  font-weight: 600;
-  pointer-events: none;
+.cancelInactive {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
-.cancelBadgeX {
-  fill: #d97b5a;
-  font-size: 12px;
+.cancelX {
+  font-size: 16px;
   font-weight: 700;
-  pointer-events: none;
-}
-.cancelBadge:hover .cancelBadgeBg {
-  fill: rgba(217, 123, 90, 0.25);
+  line-height: 1;
 }
 
 /* Confirm modal overlay */
