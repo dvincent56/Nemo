@@ -135,6 +135,33 @@
   pointer-events: none;
 }
 
+/* Cancel badge — appears on target heading during edit */
+.cancelBadge {
+  cursor: pointer;
+  pointer-events: all;
+}
+.cancelBadgeBg {
+  fill: rgba(26, 42, 59, 0.95);
+  stroke: #c9a227;
+  stroke-width: 1.5;
+  transition: fill 0.15s ease;
+}
+.cancelBadgeValue {
+  fill: #f5f0e8;
+  font-size: 8px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.cancelBadgeX {
+  fill: #d97b5a;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.cancelBadge:hover .cancelBadgeBg {
+  fill: rgba(217, 123, 90, 0.25);
+}
+
 /* Confirm modal overlay */
 .modalOverlay {
   position: fixed;

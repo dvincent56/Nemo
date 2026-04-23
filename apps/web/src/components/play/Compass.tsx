@@ -448,6 +448,24 @@ export default function Compass(): React.ReactElement {
 
             {/* Center dot */}
             <circle cx={CX} cy={CY} r={3} fill="rgba(245,240,232,0.25)" />
+
+            {/* Cancel badge — shown while editing target heading */}
+            {applyActive && targetHdg !== null && (() => {
+              const pos = pt(R_OUTER + 18, targetHdg);
+              return (
+                <g
+                  className={styles.cancelBadge}
+                  transform={`translate(${pos.x}, ${pos.y})`}
+                  onPointerDown={(e) => { e.stopPropagation(); cancelEdit(); }}
+                >
+                  <circle r="14" className={styles.cancelBadgeBg} />
+                  <text textAnchor="middle" dy="-2" className={styles.cancelBadgeValue}>
+                    {Math.round(targetHdg)}°
+                  </text>
+                  <text textAnchor="middle" dy="10" className={styles.cancelBadgeX}>×</text>
+                </g>
+              );
+            })()}
           </svg>
         </div>
 
