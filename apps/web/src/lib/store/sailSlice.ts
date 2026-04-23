@@ -32,5 +32,22 @@ export function createSailSlice(set: (fn: (s: GameStore) => Partial<GameStore>) 
           },
         },
       })),
+    setOptimisticSailChange: (patch: {
+      currentSail: SailId;
+      transitionStartMs: number;
+      transitionEndMs: number;
+    }) =>
+      set((s) => ({
+        sail: {
+          ...s.sail,
+          currentSail: patch.currentSail,
+          transitionStartMs: patch.transitionStartMs,
+          transitionEndMs: patch.transitionEndMs,
+          pending: {
+            ...s.sail.pending,
+            sailChange: { expected: patch, since: Date.now() },
+          },
+        },
+      })),
   };
 }

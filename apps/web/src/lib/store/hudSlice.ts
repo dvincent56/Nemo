@@ -21,5 +21,16 @@ export function createHudSlice(set: (fn: (s: GameStore) => Partial<GameStore>) =
   return {
     hud: INITIAL_HUD,
     setHud: (patch: Partial<HudState>) => set((s) => ({ hud: { ...s.hud, ...patch } })),
+    setHudOptimistic: (field: 'hdg', value: number) =>
+      set((s) => ({
+        hud: {
+          ...s.hud,
+          [field]: value,
+          pending: {
+            ...s.hud.pending,
+            [field]: { expected: value, since: Date.now() },
+          },
+        },
+      })),
   };
 }

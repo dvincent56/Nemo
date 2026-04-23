@@ -191,9 +191,15 @@ export interface GameStore {
   lastTickUnix: number | null;
 
   setHud: (patch: Partial<HudState>) => void;
+  setHudOptimistic: (field: 'hdg', value: number) => void;
   setSail: (patch: Partial<SailSliceState>) => void;
   toggleSailAuto: () => void;
   setSailOptimistic: (field: 'sailAuto', value: boolean) => void;
+  setOptimisticSailChange: (patch: {
+    currentSail: SailId;
+    transitionStartMs: number;
+    transitionEndMs: number;
+  }) => void;
   setMapView: (center: [number, number], zoom: number) => void;
   setMapBounds: (bounds: MapBounds) => void;
   setFollowBoat: (follow: boolean) => void;
