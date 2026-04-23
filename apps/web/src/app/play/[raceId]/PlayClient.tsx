@@ -285,7 +285,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {/* Right stack — action buttons + compass */}
         {canInteract && (
           <div className={styles.rightStack}>
-            <div className={styles.actionButtons}>
+            <div className={styles.actionButtons} data-compass-zone="true">
               <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}

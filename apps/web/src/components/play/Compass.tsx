@@ -276,6 +276,20 @@ export default function Compass(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   });
 
+  // ── Tap-outside cancel: click anywhere outside the compass and action
+  // buttons while editing → cancel the pending heading change. Containers
+  // that must not trigger cancel are tagged with `data-compass-zone="true"`.
+  useEffect(() => {
+    if (!applyActive) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest('[data-compass-zone="true"]')) return;
+      cancelEdit();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [applyActive]);
+
   // ── Apply heading / lock state ──
   // A single validation path: commits both heading changes AND lock toggles
   // so the player can compose the two (e.g. drag + lock) then validate once.
@@ -359,7 +373,7 @@ export default function Compass(): React.ReactElement {
 
   return (
     <>
-      <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`}>
+      <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`} data-compass-zone="true">
         {/* Readouts */}
         <div className={styles.readouts}>
           <div>
