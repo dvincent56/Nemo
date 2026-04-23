@@ -29,8 +29,22 @@ import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
 import { interpolateGfsWind } from '@/lib/weather/gfsParser';
 import { loadPolar } from '@/lib/polar';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { Trophy, Sailboat, Route, LocateFixed, Plus, Minus } from 'lucide-react';
 import styles from './page.module.css';
+
+// Main-thread GameBalance bootstrap. Workers load their own instance via
+// postMessage; this client-side load is needed for any UI component that
+// reads GameBalance at render (e.g. Compass's maneuver hint).
+let gbBootstrap: Promise<void> | null = null;
+function bootstrapGameBalance(): Promise<void> {
+  if (GameBalance.isLoaded) return Promise.resolve();
+  if (gbBootstrap) return gbBootstrap;
+  gbBootstrap = fetch('/data/game-balance.json')
+    .then((r) => r.json())
+    .then((json) => { GameBalance.load(json); });
+  return gbBootstrap;
+}
 
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
   ssr: false,
@@ -109,6 +123,7 @@ function useBoatInit(raceId: string): void {
 export default function PlayClient({ race }: { race: RaceSummary }): React.ReactElement {
   const [session, setSession] = useState<SessionContext>(ANONYMOUS);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
 
@@ -117,7 +132,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     if (typeof document !== 'undefined' && document.cookie.includes('nemo_access_token=')) {
       setIsRegistered(true);
     }
-  }, []);
+    if (!gbReady) {
+      bootstrapGameBalance().then(() => setGbReady(true)).catch(() => {});
+    }
+  }, [gbReady]);
 
   const access = useMemo(
     () => decideRaceAccess({ race, session, isRegistered }),
@@ -179,6 +197,14 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       useGameStore.getState().openPanel(panel);
     }
   };
+
+  if (!gbReady) {
+    return (
+      <div className={styles.mapSkeleton}>
+        <span className={styles.skeletonLabel}>Chargement des paramètres de jeu…</span>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.app}>
