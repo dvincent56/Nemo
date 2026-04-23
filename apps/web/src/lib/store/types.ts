@@ -192,7 +192,6 @@ export interface GameStore {
   setHud: (patch: Partial<HudState>) => void;
   setHudOptimistic: (field: 'hdg', value: number) => void;
   setSail: (patch: Partial<SailSliceState>) => void;
-  toggleSailAuto: () => void;
   setSailOptimistic: (field: 'sailAuto', value: boolean) => void;
   setOptimisticSailChange: (patch: {
     currentSail: SailId;

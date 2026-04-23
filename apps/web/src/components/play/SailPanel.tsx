@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SailId } from '@nemo/shared-types';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
+import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
 import styles from './SailPanel.module.css';
 
 /* ── Sail icon SVGs (vue de profil, mât à gauche) ── */
@@ -162,8 +163,24 @@ export default function SailPanel(): React.ReactElement {
   };
 
   const toggleAuto = () => {
-    sendOrder({ type: 'MODE', value: { auto: !sailAuto } });
-    useGameStore.getState().toggleSailAuto();
+    const next = !sailAuto;
+    sendOrder({ type: 'MODE', value: { auto: next } });
+    useGameStore.getState().setSailOptimistic('sailAuto', next);
+
+    // When switching TO auto, optimistically pick the best sail for current TWA/TWS
+    // so the player sees the switch immediately without waiting for the next tick.
+    if (next && polar) {
+      const optimal = pickOptimalSail(polar, twa, tws);
+      if (optimal !== currentSail) {
+        const duration = getTransitionDuration(currentSail, optimal);
+        const startMs = Date.now();
+        useGameStore.getState().setOptimisticSailChange({
+          currentSail: optimal,
+          transitionStartMs: startMs,
+          transitionEndMs: startMs + duration * 1000,
+        });
+      }
+    }
   };
 
   return (

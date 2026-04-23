@@ -20,7 +20,6 @@ export function createSailSlice(set: (fn: (s: GameStore) => Partial<GameStore>) 
   return {
     sail: INITIAL_SAIL,
     setSail: (patch: Partial<SailSliceState>) => set((s) => ({ sail: { ...s.sail, ...patch } })),
-    toggleSailAuto: () => set((s) => ({ sail: { ...s.sail, sailAuto: !s.sail.sailAuto } })),
     setSailOptimistic: (field: 'sailAuto', value: boolean) =>
       set((s) => ({
         sail: {
