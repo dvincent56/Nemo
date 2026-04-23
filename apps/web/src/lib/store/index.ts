@@ -16,6 +16,7 @@ import { createProgSlice } from './progSlice';
 import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 import { createMapAppearanceSlice } from './mapAppearanceSlice';
+import { mergeField } from './pending';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
 export type { TimelineState, LayersState, PanelState, WeatherState, MapAppearanceState } from './types';
@@ -77,14 +78,29 @@ export const useGameStore = create<GameStore>((set) => ({
           const hdgFromMsg = Number(m['hdg'] ?? s.hud.hdg);
           const twdFromMsg = typeof serverTwd === 'number' ? serverTwd : s.hud.twd;
           const twsFromMsg = typeof serverTws === 'number' ? serverTws : s.hud.tws;
+          const now = Date.now();
+          const hdgMerged = mergeField(s.hud.pending.hdg, hdgFromMsg, now);
+          const sailAutoServer = m['sailAuto'] === true;
+          const sailAutoMerged = mergeField(s.sail.pending.sailAuto, sailAutoServer, now);
+          const sailChangeServer = {
+            currentSail,
+            transitionStartMs: Number(m['transitionStartMs'] ?? 0),
+            transitionEndMs: Number(m['transitionEndMs'] ?? 0),
+          };
+          const sailChangeMerged = mergeField(
+            s.sail.pending.sailChange,
+            sailChangeServer,
+            now,
+            (a, b) => a.currentSail === b.currentSail,
+          );
           // Prefer the authoritative TWA (server's TWD + heading) over the
           // locally-interpolated one, so the displayed TWA matches the engine.
-          const derivedTwa = ((hdgFromMsg - twdFromMsg + 540) % 360) - 180;
+          const derivedTwa = ((hdgMerged.value - twdFromMsg + 540) % 360) - 180;
           nextHud = {
             ...s.hud,
             lat: Number(m['lat'] ?? s.hud.lat),
             lon: Number(m['lon'] ?? s.hud.lon),
-            hdg: hdgFromMsg,
+            hdg: hdgMerged.value,
             bsp: Number(m['bsp'] ?? s.hud.bsp),
             twd: twdFromMsg,
             tws: twsFromMsg,
@@ -92,18 +108,22 @@ export const useGameStore = create<GameStore>((set) => ({
             twaLock: typeof serverTwaLock === 'number' ? serverTwaLock : null,
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             twaColor: twaColorFromCode(twaColorCode),
+            pending: hdgMerged.pending ? { hdg: hdgMerged.pending } : {},
           };
-          const sailAutoServer = m['sailAuto'] === true;
           nextSail = {
             ...s.sail,
-            currentSail,
+            currentSail: sailChangeMerged.value.currentSail,
             sailPending: null,
-            transitionStartMs: Number(m['transitionStartMs'] ?? 0),
-            transitionEndMs: Number(m['transitionEndMs'] ?? 0),
-            sailAuto: sailAutoServer,
+            transitionStartMs: sailChangeMerged.value.transitionStartMs,
+            transitionEndMs: sailChangeMerged.value.transitionEndMs,
+            sailAuto: sailAutoMerged.value,
             maneuverKind: (Number(m['maneuverKind'] ?? 0)) as 0 | 1 | 2,
             maneuverStartMs: Number(m['maneuverStartMs'] ?? 0),
             maneuverEndMs: Number(m['maneuverEndMs'] ?? 0),
+            pending: {
+              ...(sailAutoMerged.pending ? { sailAuto: sailAutoMerged.pending } : {}),
+              ...(sailChangeMerged.pending ? { sailChange: sailChangeMerged.pending } : {}),
+            },
           };
         }
       }
