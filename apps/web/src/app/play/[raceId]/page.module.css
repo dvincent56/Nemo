@@ -61,6 +61,36 @@
   pointer-events: auto;
 }
 
+/* Layout paliers — responsive selection driven by useCompassLayout hook.
+ * Stack (default): boutons verticaux au-dessus du compass.
+ * Bar horizontal: écrans "paysage étroit" — boutons en ligne au-dessus.
+ * Side-by-side: très petite hauteur — boutons verticaux à gauche du compass. */
+.rightStack.layout_stack_vertical {
+  flex-direction: column;
+  align-items: flex-end;
+}
+.rightStack.layout_stack_vertical .actionButtons {
+  flex-direction: column;
+}
+
+.rightStack.layout_bar_horizontal {
+  flex-direction: column;
+  align-items: flex-end;
+}
+.rightStack.layout_bar_horizontal .actionButtons {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rightStack.layout_side_by_side {
+  flex-direction: row-reverse;
+  align-items: center;
+}
+.rightStack.layout_side_by_side .actionButtons {
+  flex-direction: column;
+}
+
 .actionButtons {
   display: flex;
   flex-direction: column;

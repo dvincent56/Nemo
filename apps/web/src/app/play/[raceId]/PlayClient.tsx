@@ -27,6 +27,7 @@ import LayersWidget from '@/components/play/LayersWidget';
 import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
+import { useCompassLayout } from '@/components/play/hooks/useCompassLayout';
 import { interpolateGfsWind } from '@/lib/weather/gfsParser';
 import { loadPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
@@ -124,6 +125,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const [session, setSession] = useState<SessionContext>(ANONYMOUS);
   const [isRegistered, setIsRegistered] = useState(false);
   const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
+  const compassLayout = useCompassLayout();
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
 
@@ -284,7 +286,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
         {/* Right stack — action buttons + compass */}
         {canInteract && (
-          <div className={styles.rightStack}>
+          <div className={`${styles.rightStack} ${styles[`layout_${compassLayout.replace(/-/g, '_')}`]}`}>
             <div className={styles.actionButtons} data-compass-zone="true">
               <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
