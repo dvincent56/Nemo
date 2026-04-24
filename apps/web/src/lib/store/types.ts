@@ -1,6 +1,7 @@
 'use client';
 
 import type { SailId, OrderTrigger, BoatClass, ExclusionZone } from '@nemo/shared-types';
+import type { RoutePlan } from '@nemo/routing';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { BoatEffects } from '@/lib/api';
 import type { PendingField } from './pending';
@@ -173,8 +174,39 @@ export interface BoatLive {
   sail: number; tickSeq: number;
 }
 
+export type RouterPhase = 'idle' | 'placing' | 'calculating' | 'results';
+export type RouterPreset = 'FAST' | 'BALANCED' | 'HIGHRES';
+
+export interface RouterState {
+  phase: RouterPhase;
+  destination: { lat: number; lon: number } | null;
+  preset: RouterPreset;
+  coastDetection: boolean;
+  coneHalfDeg: number;
+  computedRoute: RoutePlan | null;
+  error: string | null;
+  /** Increments on every calculation start; results with stale id are dropped. */
+  calcGenId: number;
+}
+
+export interface RouterActions {
+  openRouter(): void;
+  closeRouter(): void;
+  enterPlacingMode(): void;
+  exitPlacingMode(): void;
+  setDestination(lat: number, lon: number): void;
+  setRouterPreset(p: RouterPreset): void;
+  setCoastDetection(v: boolean): void;
+  setConeHalfDeg(deg: number): void;
+  /** Returns the new calcGenId for the caller to track. */
+  startRouterCalculation(): number;
+  setRouteResult(plan: RoutePlan, genId: number): void;
+  setRouteError(msg: string, genId: number): void;
+  clearRoute(): void;
+}
+
 // Combined store interface — all slices + actions
-export interface GameStore {
+export interface GameStore extends RouterActions {
   hud: HudState;
   sail: SailSliceState;
   map: MapState;
@@ -187,6 +219,7 @@ export interface GameStore {
   connection: ConnectionState;
   prog: ProgState;
   preview: import('./previewSlice').PreviewState;
+  router: RouterState;
   zones: ExclusionZone[];
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
