@@ -37,8 +37,6 @@ export async function fetchRaces(filters: { class?: string; status?: string } = 
 
 // ---------------------------------------------------------------------------
 // Boat state — état initial du bateau au chargement de la page play
-// En prod : Fastify GET /api/v1/races/:id/my-boat
-// En dev  : Next route handler mock
 // ---------------------------------------------------------------------------
 
 export interface BoatState {
@@ -53,6 +51,7 @@ export interface BoatState {
   vmg: number;
   dtf: number;
   overlapFactor: number;
+  bspBaseMultiplier: number;
   rank: number;
   totalParticipants: number;
   rankTrend: number;
@@ -97,25 +96,14 @@ export const NEUTRAL_BOAT_EFFECTS: BoatEffects = {
 const DEMO_BOAT_ID = process.env['NEXT_PUBLIC_DEMO_BOAT_ID'] ?? 'demo-boat-1';
 
 export async function fetchMyBoat(raceId: string): Promise<BoatState | null> {
-  // Read the authoritative runtime snapshot from the game engine so the HUD
-  // doesn't flash mocked values before the first WS tick arrives. The Next
-  // proxy route at /api/v1/races/:raceId/my-boat is kept as a fallback for
-  // local dev when the engine isn't reachable.
   const engineUrl = new URL(
     `/api/v1/races/${raceId}/runtime/${DEMO_BOAT_ID}`,
     API_BASE,
   );
-  try {
-    const res = await fetch(engineUrl);
-    if (res.ok) return (await res.json()) as BoatState;
-    if (res.status === 404) return null;
-  } catch {
-    // network/engine down — fall through to the Next mock
-  }
-  const fallback = await fetch(new URL(`/api/v1/races/${raceId}/my-boat`, WEB_BASE));
-  if (fallback.status === 404) return null;
-  if (!fallback.ok) return null;
-  return (await fallback.json()) as BoatState;
+  const res = await fetch(engineUrl);
+  if (res.ok) return (await res.json()) as BoatState;
+  if (res.status === 404) return null;
+  return null;
 }
 
 export async function fetchRaceZones(raceId: string): Promise<ExclusionZone[]> {

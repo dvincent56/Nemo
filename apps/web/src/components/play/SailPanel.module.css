@@ -145,7 +145,7 @@
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 11px;
-  color: rgba(245, 240, 232, 0.20);
+  color: rgba(245, 240, 232, 0.42);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }

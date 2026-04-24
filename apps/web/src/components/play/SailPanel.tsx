@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { SailId } from '@nemo/shared-types';
+import type { Polar, SailId } from '@nemo/shared-types';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
@@ -90,14 +90,15 @@ const SAILS: { id: SailId; name: string }[] = [
 export default function SailPanel(): React.ReactElement {
   const sailState = useGameStore((s) => s.sail);
   const { currentSail, sailAuto, transitionStartMs, transitionEndMs } = sailState;
-  const { twa, tws, boatClass } = useGameStore((s) => s.hud);
+  const { twa, tws, boatClass, bspBaseMultiplier } = useGameStore((s) => s.hud);
   const [candidateSail, setCandidateSail] = useState<SailId | null>(null);
   const [wasAuto, setWasAuto] = useState(false);
-  const [polarReady, setPolarReady] = useState(false);
+  const [polarReady, setPolarReady] = useState(() => !!boatClass && !!getCachedPolar(boatClass));
 
-  // Load polar data for speed estimates
   useEffect(() => {
-    loadPolar(boatClass).then(() => setPolarReady(true));
+    if (!boatClass) return;
+    if (getCachedPolar(boatClass)) { setPolarReady(true); return; }
+    loadPolar(boatClass).then(() => setPolarReady(true)).catch(() => {});
   }, [boatClass]);
 
   // Local 1s tick to update remaining display from timestamps
@@ -107,14 +108,9 @@ export default function SailPanel(): React.ReactElement {
 
   // Polar data for per-sail speed estimates at current TWA/TWS
   const absTwa = Math.min(Math.abs(twa), 180);
-  const polar = polarReady ? getCachedPolar(boatClass) : null;
+  const polar = polarReady && boatClass ? getCachedPolar(boatClass) : null;
 
-  // Only show sails that the boat's polar actually defines. For classes
-  // like CRUISER_RACER the polar only carries JIB + SPI — listing the full
-  // 7-sail set here would dangle empty rows.
-  const availableSails = polar
-    ? SAILS.filter((s) => (s.id as string) in polar.speeds)
-    : SAILS;
+  const availableSails = SAILS;
 
   useEffect(() => {
     if (!isTransitioning) {
@@ -126,12 +122,32 @@ export default function SailPanel(): React.ReactElement {
   }, [isTransitioning]);
 
   const totalSec = transitionEndMs > transitionStartMs ? (transitionEndMs - transitionStartMs) / 1000 : 0;
-  const remainingSec = isTransitioning ? Math.max(0, Math.ceil((transitionEndMs - now) / 1000)) : 0;
-  const progressPct = totalSec > 0 ? (remainingSec / totalSec) * 100 : 0;
+  // Clamp to totalSec: when transitionStartMs > now (server clock ahead of client), the raw
+  // remaining exceeds the total duration — cap it so the bar stays at 100% until the server's
+  // start time is reached, then counts down normally.
+  const remainingRaw = isTransitioning ? Math.max(0, Math.ceil((transitionEndMs - now) / 1000)) : 0;
+  const remainingSec = Math.min(remainingRaw, totalSec);
+  const progressPct = totalSec > 0 ? Math.min(100, (remainingSec / totalSec) * 100) : 0;
 
   const onSailClick = (id: SailId) => {
     if (id === currentSail || isTransitioning) return;
-    setWasAuto(sailAuto);
+    if (sailAuto) {
+      // In auto mode: switch sail immediately (no confirm step), revert to manual.
+      sendOrder({ type: 'MODE', value: { auto: false } });
+      useGameStore.getState().setSailOptimistic('sailAuto', false);
+      sendOrder({ type: 'SAIL', value: { sail: id } });
+      const duration = getTransitionDuration(currentSail, id);
+      const startMs = Date.now();
+      useGameStore.getState().setOptimisticSailChange({
+        currentSail: id,
+        transitionStartMs: startMs,
+        transitionEndMs: startMs + duration * 1000,
+      });
+      setNow(startMs);
+      useGameStore.getState().setPreview({ sail: null });
+      return;
+    }
+    setWasAuto(false);
     setCandidateSail(id);
     useGameStore.getState().setPreview({ sail: id });
   };
@@ -167,19 +183,25 @@ export default function SailPanel(): React.ReactElement {
     sendOrder({ type: 'MODE', value: { auto: next } });
     useGameStore.getState().setSailOptimistic('sailAuto', next);
 
-    // When switching TO auto, optimistically pick the best sail for current TWA/TWS
-    // so the player sees the switch immediately without waiting for the next tick.
-    if (next && polar) {
-      const optimal = pickOptimalSail(polar, twa, tws);
-      if (optimal !== currentSail) {
-        const duration = getTransitionDuration(currentSail, optimal);
-        const startMs = Date.now();
-        useGameStore.getState().setOptimisticSailChange({
-          currentSail: optimal,
-          transitionStartMs: startMs,
-          transitionEndMs: startMs + duration * 1000,
-        });
-      }
+    if (!next) return;
+
+    const applyOptimalSail = (p: Polar) => {
+      const optimal = pickOptimalSail(p, twa, tws);
+      if (optimal === currentSail) return;
+      const duration = getTransitionDuration(currentSail, optimal);
+      const startMs = Date.now();
+      useGameStore.getState().setOptimisticSailChange({
+        currentSail: optimal,
+        transitionStartMs: startMs,
+        transitionEndMs: startMs + duration * 1000,
+      });
+      setNow(startMs);
+    };
+
+    if (polar) {
+      applyOptimalSail(polar);
+    } else {
+      if (boatClass) loadPolar(boatClass).then((p) => applyOptimalSail(p)).catch(() => {});
     }
   };
 
@@ -201,8 +223,13 @@ export default function SailPanel(): React.ReactElement {
           const isActive = s.id === currentSail;
           const isCandidate = s.id === candidateSail;
           const disabled = isTransitioning && !isActive;
-          const estimatedBsp = polar ? getPolarSpeed(polar, s.id, absTwa, tws) : null;
-          const inRange = estimatedBsp !== null && estimatedBsp > 0.5;
+          // Apply bspBaseMultiplier (wear + upgrades + swell) so per-sail speed
+          // reflects actual boat performance, not raw polar.
+          const estimatedBsp = polar
+            ? getPolarSpeed(polar, s.id, absTwa, tws) * bspBaseMultiplier
+            : null;
+          const inRange = estimatedBsp !== null && estimatedBsp > 0.1;
+          const speedLabel = inRange ? `${estimatedBsp!.toFixed(2)} kn` : '—';
           return (
             <button
               key={s.id}
@@ -217,7 +244,7 @@ export default function SailPanel(): React.ReactElement {
                   <span className={styles.sailRowName}>{s.id}</span>
                   <span className={styles.sailRowFullName}>{s.name}</span>
                   <span className={inRange ? styles.sailRowSpeed : styles.sailRowSpeedOff}>
-                    {estimatedBsp !== null ? `${estimatedBsp.toFixed(3)} kn` : '—'}
+                    {speedLabel}
                   </span>
                 </div>
                 {/* Transition progress bar — only on active sail during penalty */}

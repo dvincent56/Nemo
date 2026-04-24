@@ -472,6 +472,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const snapshot = weather.gridData;
     if (!decoded && !snapshot) return;
     if (!hud.lat && !hud.lon) return;
+    if (!hud.boatClass) return;
     if (!polarRef.current) return;
 
     // Preview overrides actual state (compass drag, sail hover, TWA lock)

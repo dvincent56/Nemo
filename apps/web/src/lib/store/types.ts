@@ -15,9 +15,11 @@ export interface WearDetail {
 }
 
 export interface HudState {
-  boatClass: BoatClass;
+  boatClass: BoatClass | null;
   tws: number; twd: number; twa: number; hdg: number;
   bsp: number; vmg: number; dtf: number; overlapFactor: number;
+  /** Polar→actual BSP multiplier (wear + upgrades + swell, no overlap/transition/maneuver/zone). */
+  bspBaseMultiplier: number;
   twaColor: TwaColor;
   rank: number; totalParticipants: number; rankTrend: number;
   wearGlobal: number; wearDetail: WearDetail;

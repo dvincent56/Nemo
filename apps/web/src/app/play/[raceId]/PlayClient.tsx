@@ -71,19 +71,22 @@ function useBoatInit(raceId: string): void {
     const reset = fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
       .catch(() => null);
 
-    reset.then(() => fetchMyBoat(raceId)).then((boat) => {
+    reset.then(() => fetchMyBoat(raceId)).then(async (boat) => {
       if (cancelled || !boat) return;
-      // NB: on n'écrit PAS twd/tws/twa depuis le snapshot HTTP. Le snapshot
-      // est le résultat du dernier tick moteur, qui peut avoir jusqu'à
-      // `tickIntervalSeconds` d'âge, et le vent a avancé depuis. Le hook
-      // GFS ci-dessous sème les valeurs à partir de la grille multi-heures
-      // avec interpolation temporelle (même formule que le moteur), puis le
-      // premier tick WS prend le relais sans flash visible.
+
+      // Load polar before seeding the store so that when boatClass hits the
+      // store and triggers SailPanel/Compass renders, getCachedPolar() is
+      // already populated — no flash of '—' values.
+      await loadPolar(boat.boatClass).catch(() => {});
+
+      if (cancelled) return;
       store.setHud({
         boatClass: boat.boatClass,
         lat: boat.lat, lon: boat.lon, hdg: boat.hdg, bsp: boat.bsp,
+        twd: boat.twd, tws: boat.tws, twa: boat.twa,
         vmg: boat.vmg,
         dtf: boat.dtf, overlapFactor: boat.overlapFactor,
+        bspBaseMultiplier: boat.bspBaseMultiplier,
         rank: boat.rank, totalParticipants: boat.totalParticipants,
         rankTrend: boat.rankTrend, wearGlobal: boat.wearGlobal,
         wearDetail: boat.wearDetail,
@@ -100,9 +103,6 @@ function useBoatInit(raceId: string): void {
         maneuverEndMs: boat.maneuverEndMs,
       });
       store.setConnection('open');
-
-      // Pre-load polar data for this boat class (cached for Compass estimation)
-      loadPolar(boat.boatClass).catch(() => {});
 
       // Load race exclusion zones (DST/ZEA/ZPC/ZES)
       fetchRaceZones(raceId)

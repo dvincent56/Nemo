@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
-import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
+import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
 import { Lock, LockOpen, Check, AlertTriangle } from 'lucide-react';
 import styles from './Compass.module.css';
@@ -113,6 +113,14 @@ export default function Compass(): React.ReactElement {
   const boatClass = useGameStore((s) => s.hud.boatClass);
   const currentSail = useGameStore((s) => s.sail.currentSail);
   const sailAuto = useGameStore((s) => s.sail.sailAuto);
+  const actualBsp = useGameStore((s) => s.hud.bsp);
+  const bspBaseMultiplier = useGameStore((s) => s.hud.bspBaseMultiplier);
+  const [polarReady, setPolarReady] = useState(() => !!boatClass && !!getCachedPolar(boatClass));
+  useEffect(() => {
+    if (!boatClass) return;
+    if (getCachedPolar(boatClass)) { setPolarReady(true); return; }
+    loadPolar(boatClass).then(() => setPolarReady(true)).catch(() => {});
+  }, [boatClass]);
 
   // Lock state differs from the last committed value → needs validation.
   // committedTwaLock mirrors what we've told the server (optimistically on
@@ -129,13 +137,13 @@ export default function Compass(): React.ReactElement {
   const displayTwa = ((displayHdg - twd + 540) % 360) - 180;
   const vmgGlow = isInVmgZone(displayTwa);
 
-  // Compass BSP is ALWAYS the polar estimate (current sail at displayed TWA
-  // and current TWS). Jamais la BSP réelle — celle-ci contient les pénalités
-  // de manœuvre / transition et est affichée dans le HUD uniquement. Le
-  // compass reste "théorique" : ce que la voile peut donner dans les
-  // conditions actuelles, sans incident de parcours.
-  const polar = getCachedPolar(boatClass);
-  const displayBsp = polar ? getPolarSpeed(polar, currentSail, displayTwa, tws) : 0;
+  const polar = (polarReady && boatClass) ? getCachedPolar(boatClass) : null;
+  // At rest: show actual server BSP (matches HUD exactly, includes all factors).
+  // During drag: show polar estimate at the target heading (predictive mode).
+  const isDragging = targetHdg !== null && targetHdg !== hdg;
+  const displayBsp = isDragging
+    ? (polar ? getPolarSpeed(polar, currentSail, displayTwa, tws) * bspBaseMultiplier : 0)
+    : actualBsp;
 
   // Efficacité : compare la voile active à la meilleure voile au même TWA/TWS.
   // Green = on est sur la meilleure voile à cet angle. Rouge = il existe une
@@ -157,6 +165,9 @@ export default function Compass(): React.ReactElement {
   // empannage > virement > changement de voile (durées & pénalités de vitesse
   // décroissantes). Le message est rendu en absolute au-dessus du compass
   // pour ne pas modifier sa hauteur quand il apparaît/disparaît.
+  // Duration extracted separately so apply() can set the optimistic maneuver
+  // badge without re-computing the hint logic a second time.
+  let pendingManeuverDurSec = 0;
   let pendingHint: { kind: 'gybe' | 'tack' | 'sail'; label: string; className: string } | null = null;
   if (applyActive && polar && boatClass) {
     const sameSign = Math.sign(displayTwa) === Math.sign(twa) || twa === 0;
@@ -168,10 +179,12 @@ export default function Compass(): React.ReactElement {
       const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
       const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
       pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: styles.hintGybe! };
+      pendingManeuverDurSec = dur;
     } else if (isTack) {
       const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
       const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
       pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: styles.hintTack! };
+      pendingManeuverDurSec = dur;
     } else if (sailAuto) {
       const optimal = pickOptimalSail(polar, displayTwa, tws);
       if (optimal !== currentSail) {
@@ -335,13 +348,31 @@ export default function Compass(): React.ReactElement {
       useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
       if (targetHdg !== null) useGameStore.getState().setHudOptimistic('hdg', Math.round(targetHdg));
     }
+    // Optimistic maneuver badge — appears immediately in HudBar without waiting
+    // for the server tick that confirms the tack/gybe.
+    if (pendingHint && pendingManeuverDurSec > 0 &&
+        (pendingHint.kind === 'tack' || pendingHint.kind === 'gybe')) {
+      const startMs = Date.now();
+      useGameStore.getState().setSail({
+        maneuverKind: pendingHint.kind === 'gybe' ? 2 : 1,
+        maneuverStartMs: startMs,
+        maneuverEndMs: startMs + pendingManeuverDurSec * 1000,
+      });
+    }
     setTargetHdg(null);
   };
 
   // ── Cancel editing ──
   const cancelEdit = () => {
     setTargetHdg(null);
-    useGameStore.getState().setPreview({ hdg: null });
+    if (committedTwaLock !== null) {
+      setTwaLocked(true);
+      setLockedTwa(committedTwaLock);
+      useGameStore.getState().setPreview({ hdg: null, twaLocked: true, lockedTwa: committedTwaLock });
+    } else {
+      setTwaLocked(false);
+      useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
+    }
     writeSvg(hdg);
     const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
     if (ghost) ghost.style.opacity = '0';
@@ -404,10 +435,10 @@ export default function Compass(): React.ReactElement {
           </div>
         )}
 
-        {/* Readouts — 3 colonnes : BSP / Cap / TWA (TWS est dans le HUD) */}
+        {/* Readouts — 3 colonnes : Vitesse / Cap / TWA (TWS est dans le HUD) */}
         <div className={styles.readouts}>
           <div>
-            <p className={styles.readoutLabel}>BSP</p>
+            <p className={styles.readoutLabel}>Vitesse</p>
             <p className={`${styles.readoutValue} ${bspColor}`}>
               {displayBsp.toFixed(2)} <small>nds</small>
             </p>

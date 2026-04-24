@@ -91,6 +91,10 @@ export function advanceSailState(
   _dtSec: number,
   nowMs: number,
   loadoutEffects?: AggregatedEffects,
+  /** Actual wall-clock time for new transition start timestamps.
+   *  Defaults to nowMs. Pass Date.now() from the caller so auto-switch
+   *  timestamps are never tied to a miscalibrated tickStartMs. */
+  wallNowMs?: number,
 ): SailRuntimeState {
   const twaAbs = Math.min(Math.abs(twa), 180);
   const next: SailRuntimeState = { ...state };
@@ -122,10 +126,11 @@ export function advanceSailState(
       const shouldSwitch = activeBsp <= 0 || optimalBsp / activeBsp > threshold;
       if (shouldSwitch) {
         const dur = getTransitionDuration(next.active, optimal, loadoutEffects);
+        const startMs = wallNowMs ?? nowMs;
         next.active = optimal;
         next.pending = null;
-        next.transitionStartMs = nowMs;
-        next.transitionEndMs = nowMs + dur * 1000;
+        next.transitionStartMs = startMs;
+        next.transitionEndMs = startMs + dur * 1000;
       }
     }
   }

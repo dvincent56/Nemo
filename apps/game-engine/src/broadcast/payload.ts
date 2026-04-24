@@ -35,6 +35,8 @@ export interface GoneUpdate {
 /** Extension propre au bateau du joueur (addendum HUD §2.1). */
 export interface MyBoatFullUpdate extends FullUpdate {
   overlapFactor: number;
+  /** Polar→actual BSP multiplier excluding overlap/transition/maneuver/zone. */
+  bspBaseMultiplier: number;
   twaColor: 0 | 1 | 2 | 3;
   coastRisk: 0 | 1 | 2 | 3;
   /** TWD used by the server to compute heading this tick (degrees). Allows
@@ -99,6 +101,7 @@ export function buildFullUpdate(
   return {
     ...base,
     overlapFactor: outcome.overlapFactor,
+    bspBaseMultiplier: outcome.bspBaseMultiplier,
     twaColor,
     coastRisk: outcome.coastRisk,
     twd: ((runtime.boat.heading - outcome.twa) % 360 + 360) % 360,

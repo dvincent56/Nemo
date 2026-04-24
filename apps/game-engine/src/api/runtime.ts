@@ -20,6 +20,8 @@ interface BoatSnapshotDTO {
   vmg: number;
   dtf: number;
   overlapFactor: number;
+  /** Polar→actual BSP multiplier excluding overlap/transition/maneuver/zone. */
+  bspBaseMultiplier: number;
   rank: number;
   totalParticipants: number;
   rankTrend: number;
@@ -73,6 +75,7 @@ export function registerRuntimeRoutes(app: FastifyInstance, tick: TickManager): 
         vmg: 0, // not yet computed in tick outcome
         dtf: 0, // requires route/waypoint math — fill later
         overlapFactor: outcome.overlapFactor,
+        bspBaseMultiplier: outcome.bspBaseMultiplier,
         rank: 0,
         totalParticipants: 0,
         rankTrend: 0,

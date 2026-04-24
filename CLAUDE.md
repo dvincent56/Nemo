@@ -23,7 +23,7 @@ When tasked with one of the following, read the matching runbook BEFORE planning
 This project has a graphify knowledge graph at graphify-out/.
 
 Rules:
-- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
-- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
-- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
-- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- **Only use graphify when the user explicitly requests an architecture session or asks `/graphify`** — do NOT read graphify-out/GRAPH_REPORT.md proactively on every architecture question
+- When graphify is requested: read graphify-out/wiki/index.md if it exists, otherwise graphify-out/GRAPH_REPORT.md
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — only when in an explicit architecture session
+- After modifying code files in a graphify session, run `graphify update .` to keep the graph current (AST-only, no API cost)

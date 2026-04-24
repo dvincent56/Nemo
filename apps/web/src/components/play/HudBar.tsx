@@ -1,8 +1,9 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { SailId } from '@nemo/shared-types';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore } from '@/lib/store';
 import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import Tooltip from '@/components/ui/Tooltip';
@@ -22,36 +23,90 @@ function factorColor(f: number): string {
   return '#c9a227';
 }
 
+/** Ray-casting point-in-polygon — ring coords are [lon, lat] GeoJSON pairs */
+function pointInPolygon(lat: number, lon: number, ring: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const pi = ring[i];
+    const pj = ring[j];
+    if (!pi || !pj) continue;
+    const xi = pi[0], yi = pi[1];
+    const xj = pj[0], yj = pj[1];
+    if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 function HudBarInner(): React.ReactElement {
   const hud = useGameStore((s) => s.hud);
   const sail = useGameStore((s) => s.sail);
-  const now = Date.now();
+  const zones = useGameStore((s) => s.zones);
+  const [now, setNow] = useState(() => Date.now());
 
-  // BSP efficiency ratio: compare real BSP to the best polar speed achievable
-  // at the current TWA/TWS across all sails. Drops hard during any maneuver
-  // because `bsp` already carries the transition / tack / gybe penalty —
-  // giving the player a visible cue that the number is depressed on purpose.
-  const polar = getCachedPolar(hud.boatClass);
+  const tackOrGybe = sail.maneuverKind !== 0 && now < sail.maneuverEndMs;
+  // "transitioning" = any window where transition is declared (includes server-clock-ahead pending phase)
+  const sailTransitioning = sail.transitionEndMs > 0 && now < sail.transitionEndMs;
+  // "active" = transition has actually started from client's clock perspective — apply BSP penalty
+  const sailTransitionActive = sail.transitionEndMs > 0 && now >= sail.transitionStartMs && now < sail.transitionEndMs;
+
+  // Live countdown — runs only during active maneuver/transition windows to
+  // avoid continuous re-renders during normal navigation.
+  useEffect(() => {
+    if (!tackOrGybe && !sailTransitioning) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [tackOrGybe, sailTransitioning]);
+
+  const polar = hud.boatClass ? getCachedPolar(hud.boatClass) : null;
   const bestPolarAtTwa = polar
     ? Math.max(...(Object.keys(polar.speeds) as SailId[]).map((s) =>
         getPolarSpeed(polar, s, hud.twa, hud.tws)))
     : 0;
-  const bspRatio = bestPolarAtTwa > 0 ? hud.bsp / bestPolarAtTwa : 1;
+
+  // During a maneuver/transition the server hasn't ticked yet, but the client
+  // knows the penalty factor (same game-balance), so simulate the reduced BSP
+  // immediately — same computation as the engine, no waiting for a tick.
+  const polarBspCurrentSail = polar
+    ? getPolarSpeed(polar, sail.currentSail, hud.twa, hud.tws)
+    : 0;
+  let displayBsp = hud.bsp;
+  if (polarBspCurrentSail > 0) {
+    if (tackOrGybe) {
+      const factor = sail.maneuverKind === 2
+        ? (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)
+        : (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60);
+      displayBsp = polarBspCurrentSail * factor;
+    } else if (sailTransitionActive) {
+      displayBsp = polarBspCurrentSail * (GameBalance.sails?.transitionPenalty ?? 0.7);
+    }
+  }
+
+  const bspRatio = bestPolarAtTwa > 0 ? displayBsp / bestPolarAtTwa : 1;
   const bspColor = bspRatio >= 0.95 ? styles.live
     : bspRatio >= 0.80 ? styles.warn
     : styles.danger;
 
-  // Active maneuver badge — explains any BSP suppression the player sees.
-  // Priority: gybe > tack > sail transition (matches engine penalty ordering).
-  const tackOrGybe = sail.maneuverKind !== 0 && now < sail.maneuverEndMs;
-  const sailTransitioning = sail.transitionEndMs > 0 && now < sail.transitionEndMs;
-  let maneuverBadge: { label: string; className: string } | null = null;
+  // Penalty dot — a small coloured circle next to BSP with a descriptive tooltip.
+  // Priority: gybe > tack > sail transition > zone (matches engine penalty ordering).
+  let penaltyDot: { tooltip: string; dotClass: string } | null = null;
   if (tackOrGybe && sail.maneuverKind === 2) {
-    maneuverBadge = { label: 'Empannage', className: styles.maneuverBadgeGybe! };
+    penaltyDot = { tooltip: 'Empannage en cours — vitesse réduite', dotClass: styles.maneuverDotGybe! };
   } else if (tackOrGybe && sail.maneuverKind === 1) {
-    maneuverBadge = { label: 'Virement', className: styles.maneuverBadgeTack! };
+    penaltyDot = { tooltip: 'Virement en cours — vitesse réduite', dotClass: styles.maneuverDotTack! };
   } else if (sailTransitioning) {
-    maneuverBadge = { label: 'Chgt voile', className: styles.maneuverBadgeSail! };
+    penaltyDot = { tooltip: 'Changement de voile en cours — vitesse réduite', dotClass: styles.maneuverDotSail! };
+  } else if (hud.lat || hud.lon) {
+    const activeZone = zones.find((z) => {
+      const ring = z.geometry.coordinates[0];
+      return ring !== undefined && (z.speedMultiplier ?? 1) < 1 &&
+        pointInPolygon(hud.lat, hud.lon, ring);
+    });
+    if (activeZone) {
+      const pct = Math.round((1 - (activeZone.speedMultiplier ?? 1)) * 100);
+      penaltyDot = { tooltip: `Zone de ralentissement −${pct}%`, dotClass: styles.maneuverDotZone! };
+    }
   }
 
   const trendClass = hud.rankTrend > 0 ? styles.trendUp : hud.rankTrend < 0 ? styles.trendDown : '';
@@ -76,29 +131,34 @@ function HudBarInner(): React.ReactElement {
 
       {/* Stats */}
       <div className={styles.stats}>
-        <Tooltip text="Vitesse réelle du bateau — pénalités de manœuvre incluses" position="bottom">
+        <Tooltip
+          text={penaltyDot
+            ? `Vitesse réelle du bateau · ${penaltyDot.tooltip}`
+            : 'Vitesse réelle du bateau — pénalités de manœuvre incluses'}
+          position="bottom"
+        >
           <div className={styles.stat}>
-            <span className={styles.statLabel}>BSP</span>
-            <span className={`${styles.statValue} ${bspColor}`}>
-              {hud.bsp.toFixed(2)} <small>nds</small>
-              {maneuverBadge && (
-                <span className={`${styles.maneuverBadge} ${maneuverBadge.className}`}>
-                  {maneuverBadge.label}
-                </span>
+            <span className={styles.statLabel}>
+              BSP
+              {penaltyDot && (
+                <span className={`${styles.maneuverDot} ${penaltyDot.dotClass}`} />
               )}
+            </span>
+            <span className={`${styles.statValue} ${bspColor}`}>
+              {displayBsp.toFixed(2)} <small>nds</small>
             </span>
           </div>
         </Tooltip>
         <Tooltip text="Vitesse réelle du vent" position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWS</span>
-            <span className={styles.statValue}>{hud.tws.toFixed(3)} <small>nds</small></span>
+            <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
           </div>
         </Tooltip>
         <Tooltip text="Direction du vent (d'où il vient)" position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWD</span>
-            <span className={styles.statValue}>{hud.twd.toFixed(3)}°</span>
+            <span className={styles.statValue}>{Math.round(hud.twd)}°</span>
           </div>
         </Tooltip>
         <Tooltip text="Angle du vent / bateau" position="bottom">

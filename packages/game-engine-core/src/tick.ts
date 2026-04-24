@@ -45,6 +45,11 @@ export interface TickOutcome {
   twa: number;                 // TWA du dernier segment
   tws: number;
   overlapFactor: number;
+  /** Multiplier to apply to raw polar speed to get expected BSP under current
+   *  conditions, EXCLUDING overlap, transition, maneuver and zone factors.
+   *  Includes condition (wear), loadout effects (upgrades) and swell.
+   *  Used by client SailPanel to display realistic per-sail speeds. */
+  bspBaseMultiplier: number;
   zoneAlerts: { zoneId: string; type: string; reason: string }[];
   zoneCleared: string[];
   coastRisk: 0 | 1 | 2 | 3;
@@ -92,6 +97,9 @@ export function runTick(
   // Include "late" orders (effectiveTs < tickStartMs) — they arrived between ticks
   const twaAtStart = computeTWA(runtime.segmentState.heading, weather.twd);
   let sailState = runtime.sailState;
+  // Track effectiveTs of the MODE(auto:true) order so the auto-switch uses the
+  // click timestamp as transitionStartMs — keeping client optimistic in sync.
+  let autoEnableTs: number | undefined;
   for (const env of runtime.orderHistory) {
     if (env.effectiveTs >= tickEndMs) continue;
     if (env.order.type === 'SAIL') {
@@ -101,7 +109,10 @@ export function runTick(
       }
     } else if (env.order.type === 'MODE') {
       const auto = env.order.value['auto'];
-      if (typeof auto === 'boolean') sailState = { ...sailState, autoMode: auto };
+      if (typeof auto === 'boolean') {
+        if (auto && !sailState.autoMode) autoEnableTs = env.effectiveTs;
+        sailState = { ...sailState, autoMode: auto };
+      }
     }
   }
   const newSailState = advanceSailState(
@@ -110,10 +121,13 @@ export function runTick(
     twaAtStart,
     weather.tws,
     tickDurationSec,
-    tickEndMs,
+    tickStartMs,
     aggEffects,
+    autoEnableTs ?? Date.now(),
   );
-  const transitionFactor = transitionSpeedFactor(sailState, tickStartMs, aggEffects);
+  // Use newSailState so auto-switch transitions are penalised in the same tick
+  // they start (sailState pre-advance has transitionEndMs=0 when auto-switch fires).
+  const transitionFactor = transitionSpeedFactor(newSailState, tickStartMs, aggEffects);
 
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
@@ -172,10 +186,12 @@ export function runTick(
   };
 
   // --- Segmentation ---
+  // Seed the segment state with the sail decided by advanceSailState so that
+  // auto-switch transitions use the correct sail polar from the first segment.
   const { segments, finalState } = buildSegments({
     tickStartMs,
     tickEndMs,
-    initialState: runtime.segmentState,
+    initialState: { ...runtime.segmentState, sail: newSailState.active },
     orders: runtime.orderHistory,
     polar: deps.polar,
     weather,
@@ -299,6 +315,7 @@ export function runTick(
     twa: displayTwa,
     tws: weather.tws,
     overlapFactor,
+    bspBaseMultiplier: coreMultiplier * swellFactor,
     zoneAlerts: newAlerts,
     zoneCleared: clearedAlerts,
     coastRisk: risk,

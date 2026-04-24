@@ -97,7 +97,15 @@ async function main() {
       else history.splice(insertAt, 0, msg.envelope);
       runtimes[idx] = { ...rt, orderHistory: history };
       log.info(
-        { boatId: msg.boatId, type: msg.envelope.order.type, effectiveTs: msg.envelope.effectiveTs },
+        {
+          boatId: msg.boatId,
+          type: msg.envelope.order.type,
+          effectiveTs: msg.envelope.effectiveTs,
+          clientTs: msg.envelope.clientTs,
+          receivedAt: msg.envelope.receivedAt,
+          value: msg.envelope.order.value,
+          wallNow: Date.now(),
+        },
         'order ingested',
       );
       return;
@@ -113,9 +121,12 @@ async function main() {
       void (async () => {
         await new Promise((r) => setImmediate(r));
         seq += 1;
-        const tickStartMs = lastTickEnd;
-        const tickEndMs = tickStartMs + TICK_MS;
-        lastTickEnd = tickEndMs;
+        const wallNow = Date.now();
+        // Anchor tickEndMs to the actual wall clock so lastTickEnd can never
+        // drift ahead of real time (e.g. after dev resets or rapid replays).
+        const tickStartMs = Math.min(lastTickEnd, wallNow);
+        const tickEndMs = wallNow;
+        lastTickEnd = wallNow;
         const outcomes: TickOutcome[] = runtimes.map(
           (r) => runTick(r, { polar, weather, zones, coastline }, tickStartMs, tickEndMs),
         );
@@ -132,6 +143,11 @@ async function main() {
             bsp: o.bsp.toFixed(3),
             sail: o.runtime.boat.sail,
             segments: o.segments.length,
+            transitionStartMs: o.runtime.sailState.transitionStartMs,
+            transitionEndMs: o.runtime.sailState.transitionEndMs,
+            tickStartMs,
+            tickEndMs,
+            now: Date.now(),
           }, 'tick');
         }
         parentPort!.postMessage({ kind: 'tick:done', seq, runtimes, outcomes });

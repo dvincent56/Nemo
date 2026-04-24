@@ -107,6 +107,7 @@ export const useGameStore = create<GameStore>((set) => ({
             twa: typeof serverTwaLock === 'number' ? serverTwaLock : derivedTwa,
             twaLock: typeof serverTwaLock === 'number' ? serverTwaLock : null,
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
+            bspBaseMultiplier: Number(m['bspBaseMultiplier'] ?? s.hud.bspBaseMultiplier),
             twaColor: twaColorFromCode(twaColorCode),
             pending: hdgMerged.pending ? { hdg: hdgMerged.pending } : {},
           };
