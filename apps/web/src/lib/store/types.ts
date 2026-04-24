@@ -97,7 +97,7 @@ export interface MapAppearanceState {
   oceanPresetId: string;
 }
 
-export type PanelName = 'ranking' | 'sails' | 'programming';
+export type PanelName = 'ranking' | 'sails' | 'programming' | 'router';
 
 export interface PanelState {
   activePanel: PanelName | null;
