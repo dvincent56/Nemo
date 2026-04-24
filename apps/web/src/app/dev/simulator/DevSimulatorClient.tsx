@@ -12,8 +12,8 @@ import { FleetLayer } from './FleetLayer';
 // engine became the canonical "planned path" reference.
 import { StartPointLayer } from './StartPointLayer';
 import { EndPointLayer } from './EndPointLayer';
-import { RouteLayer } from './RouteLayer';
-import { IsochroneLayer } from './IsochroneLayer';
+import { RouteLayer } from '@/components/map/routing/RouteLayer';
+import { IsochroneLayer } from '@/components/map/routing/IsochroneLayer';
 import { RoutingControls } from './RoutingControls';
 import { PRESETS, buildPresetBoat } from './presets';
 import { boatColor } from './colors';
