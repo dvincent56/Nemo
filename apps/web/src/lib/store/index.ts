@@ -206,7 +206,7 @@ export function connectRace(raceId: string, accessToken?: string): RaceConnectio
 export interface OrderPayload {
   type: 'CAP' | 'TWA' | 'WPT' | 'SAIL' | 'MODE' | 'VMG';
   value: Record<string, unknown>;
-  trigger?: { type: 'IMMEDIATE' } | { type: 'AT_TIME'; time: number };
+  trigger?: import('@nemo/shared-types').OrderTrigger;
 }
 
 export function sendOrder(payload: OrderPayload): boolean {

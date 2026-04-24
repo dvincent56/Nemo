@@ -10,15 +10,15 @@
  * has at least 5 min of runway.
  */
 
+import type { OrderTrigger } from '@nemo/shared-types';
+
 export const MIN_LEAD_TIME_MS = 5 * 60 * 1000;
 
-export type Trigger =
-  | { type: 'AT_TIME'; time: number }            // seconds since Unix epoch
-  | { type: 'AT_WAYPOINT'; waypointOrderId: string }
-  | { type: 'AFTER_DURATION'; duration: number }; // duration in seconds
+/** Local re-export so tests and consumers don't need to reach into shared-types. */
+export type Trigger = OrderTrigger;
 
 export interface OrderLike {
-  trigger: Trigger;
+  trigger: OrderTrigger;
 }
 
 export function isObsolete(
@@ -29,15 +29,17 @@ export function isObsolete(
   switch (order.trigger.type) {
     case 'AT_TIME':
       return order.trigger.time * 1000 <= nowMs;
-    case 'AFTER_DURATION':
-      return false;
     case 'AT_WAYPOINT':
       return passedWaypoints.has(order.trigger.waypointOrderId);
+    case 'AFTER_DURATION':
+    case 'IMMEDIATE':
+    case 'SEQUENTIAL':
+      return false;
   }
 }
 
 export function validateLeadTime(
-  trigger: Trigger,
+  trigger: OrderTrigger,
   nowMs: number,
 ): { ok: boolean; error?: string } {
   switch (trigger.type) {
@@ -55,6 +57,11 @@ export function validateLeadTime(
       return { ok: true };
     }
     case 'AT_WAYPOINT':
+      return { ok: true };
+    // IMMEDIATE / SEQUENTIAL shouldn't flow through form validation (ProgPanel
+    // restricts the UI to the three scheduled kinds), but stay safe.
+    case 'IMMEDIATE':
+    case 'SEQUENTIAL':
       return { ok: true };
   }
 }
