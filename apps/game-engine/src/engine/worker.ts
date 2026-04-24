@@ -104,29 +104,39 @@ async function main() {
     }
 
     if (msg.kind === 'tick') {
-      seq += 1;
-      const tickStartMs = lastTickEnd;
-      const tickEndMs = tickStartMs + TICK_MS;
-      lastTickEnd = tickEndMs;
-      const outcomes: TickOutcome[] = runtimes.map(
-        (r) => runTick(r, { polar, weather, zones, coastline }, tickStartMs, tickEndMs),
-      );
-      runtimes = outcomes.map((o) => o.runtime);
-      for (const o of outcomes) {
-        log.info({
-          tick: seq,
-          boat: o.runtime.boat.id,
-          lat: o.runtime.boat.position.lat.toFixed(6),
-          lon: o.runtime.boat.position.lon.toFixed(6),
-          hdg: o.runtime.boat.heading,
-          twa: o.twa.toFixed(2),
-          tws: o.tws,
-          bsp: o.bsp.toFixed(3),
-          sail: o.runtime.boat.sail,
-          segments: o.segments.length,
-        }, 'tick');
-      }
-      parentPort!.postMessage({ kind: 'tick:done', seq, runtimes, outcomes });
+      // Drain any pending ingestOrder messages before running the tick.
+      // When a 'tick' and an 'ingestOrder' land in the queue close together,
+      // whichever was dequeued first would otherwise win — we want orders
+      // that arrived before the tick's wall-clock boundary to be part of
+      // this tick. A single setImmediate yield lets the message loop process
+      // anything already queued, then we resume with the tick handler below.
+      void (async () => {
+        await new Promise((r) => setImmediate(r));
+        seq += 1;
+        const tickStartMs = lastTickEnd;
+        const tickEndMs = tickStartMs + TICK_MS;
+        lastTickEnd = tickEndMs;
+        const outcomes: TickOutcome[] = runtimes.map(
+          (r) => runTick(r, { polar, weather, zones, coastline }, tickStartMs, tickEndMs),
+        );
+        runtimes = outcomes.map((o) => o.runtime);
+        for (const o of outcomes) {
+          log.info({
+            tick: seq,
+            boat: o.runtime.boat.id,
+            lat: o.runtime.boat.position.lat.toFixed(6),
+            lon: o.runtime.boat.position.lon.toFixed(6),
+            hdg: o.runtime.boat.heading,
+            twa: o.twa.toFixed(2),
+            tws: o.tws,
+            bsp: o.bsp.toFixed(3),
+            sail: o.runtime.boat.sail,
+            segments: o.segments.length,
+          }, 'tick');
+        }
+        parentPort!.postMessage({ kind: 'tick:done', seq, runtimes, outcomes });
+      })();
+      return;
     }
   });
 
