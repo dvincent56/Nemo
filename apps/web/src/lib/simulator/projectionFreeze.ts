@@ -108,21 +108,27 @@ export function freezeProjection(payload: FreezePayload): Promise<ProjectionResu
 }
 
 // Linearly interpolate the projection polyline at a given absolute timestamp.
-// projection.points[i].timestamp is absolute ms (since the projection was run
-// with nowMs = startTimeMs, so timestamps start there and run forward).
+// pointsBuf is laid out as [lat, lon, dtMs, bsp, tws, twd] × pointsCount,
+// where dtMs is the offset from result.startMs.
 export function projectionAt(result: ProjectionResult, absMs: number): Position {
-  const pts = result.points;
-  if (pts.length === 0) return { lat: 0, lon: 0 };
-  if (absMs <= pts[0]!.timestamp) return { lat: pts[0]!.lat, lon: pts[0]!.lon };
-  for (let i = 1; i < pts.length; i++) {
-    const b = pts[i]!;
-    if (b.timestamp >= absMs) {
-      const a = pts[i - 1]!;
-      const span = b.timestamp - a.timestamp || 1;
-      const t = (absMs - a.timestamp) / span;
-      return { lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t };
+  const buf = result.pointsBuf;
+  const n = result.pointsCount;
+  if (n === 0) return { lat: 0, lon: 0 };
+  const targetDt = absMs - result.startMs;
+  if (targetDt <= buf[2]!) return { lat: buf[0]!, lon: buf[1]! };
+  for (let i = 1; i < n; i++) {
+    const bb = i * 6;
+    const bDt = buf[bb + 2]!;
+    if (bDt >= targetDt) {
+      const ab = (i - 1) * 6;
+      const aDt = buf[ab + 2]!;
+      const span = bDt - aDt || 1;
+      const t = (targetDt - aDt) / span;
+      const aLat = buf[ab]!, aLon = buf[ab + 1]!;
+      const bLat = buf[bb]!, bLon = buf[bb + 1]!;
+      return { lat: aLat + (bLat - aLat) * t, lon: aLon + (bLon - aLon) * t };
     }
   }
-  const last = pts[pts.length - 1]!;
-  return { lat: last.lat, lon: last.lon };
+  const lastB = (n - 1) * 6;
+  return { lat: buf[lastB]!, lon: buf[lastB + 1]! };
 }

@@ -65,6 +65,7 @@
   },
   "sails": {
     "transitionPenalty": 0.7,
+    "overlapThreshold": 1.014,
     "definitions": {
       "JIB": {
         "twaMin": 28,

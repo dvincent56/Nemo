@@ -25,6 +25,20 @@ export function haversineKm(a: LonLat, b: LonLat): number {
   return haversine(a, b, EARTH_RADIUS_KM);
 }
 
+/** Position-object variants — web-side code historically uses {lat, lon} objects. */
+export function haversinePosNM(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  return haversine([a.lon, a.lat], [b.lon, b.lat], EARTH_RADIUS_NM);
+}
+
+export function haversinePosKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  return haversine([a.lon, a.lat], [b.lon, b.lat], EARTH_RADIUS_KM);
+}
+
+/** 4-scalar variant for hot paths (buffer-indexed loops) that don't want to allocate. */
+export function haversineKmScalar(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  return haversine([lon1, lat1], [lon2, lat2], EARTH_RADIUS_KM);
+}
+
 export interface Course {
   start: LonLat;
   finish: LonLat;

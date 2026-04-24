@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Flag, BoatSvg } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
+import { fetchMyBoats } from '@/lib/marina-api';
 import { PROFILE_SEED, type FleetBoat, type PalmaresEntry, type ActivityEntry } from './data';
 import styles from './page.module.css';
 
@@ -87,11 +88,22 @@ function ActivityRow({ entry }: { entry: ActivityEntry }): React.ReactElement {
 export default function ProfileView(): React.ReactElement | null {
   const router = useRouter();
   const [username, setUsername] = useState<string | null>(null);
+  const [fleet, setFleet] = useState<FleetBoat[]>([]);
 
   useEffect(() => {
     const s = readClientSession();
     if (s.username) {
       setUsername(s.username);
+      fetchMyBoats().then(({ boats }) => {
+        setFleet(boats.map((b) => ({
+          id: b.id,
+          class: b.boatClass as FleetBoat['class'],
+          name: b.name,
+          races: b.racesCount,
+          bestRank: null,
+          hullColor: b.hullColor ?? '#1a2840',
+        })));
+      }).catch(() => { /* fleet reste vide */ });
     } else {
       router.replace('/login');
     }
@@ -187,7 +199,7 @@ export default function ProfileView(): React.ReactElement | null {
           </Link>
         </header>
         <div className={styles.fleetGrid}>
-          {PROFILE_SEED.fleet.map((b) => <FleetTile key={b.id} boat={b} />)}
+          {fleet.map((b) => <FleetTile key={b.id} boat={b} />)}
         </div>
       </section>
 

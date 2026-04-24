@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Wind, Waves, Shrimp, Eclipse, Ban } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useGameStore } from '@/lib/store';
 import type { LayerName } from '@/lib/store';
 import { useGfsStatus } from '@/hooks/useGfsStatus';
@@ -27,12 +29,20 @@ function fmtCountdown(targetTs: number): string {
   return `~${h}h${String(m).padStart(2, '0')}`;
 }
 
-const LAYERS: { id: LayerName; icon: string; label: string }[] = [
-  { id: 'wind', icon: '≋', label: 'Vent' },
-  { id: 'swell', icon: '∿', label: 'Houle' },
-  { id: 'coastline', icon: '⌇', label: 'Trait de côte' },
-  { id: 'opponents', icon: '⛵', label: 'Adversaires' },
-  { id: 'zones', icon: '⊘', label: 'Zones' },
+interface LayerRow {
+  id: LayerName;
+  Icon?: LucideIcon;
+  /** Fallback unicode glyph when no lucide icon fits (e.g. coastline). */
+  glyph?: string;
+  label: string;
+}
+
+const LAYERS: LayerRow[] = [
+  { id: 'wind', Icon: Wind, label: 'Vent' },
+  { id: 'swell', Icon: Waves, label: 'Houle' },
+  { id: 'coastline', glyph: '⌇', label: 'Trait de côte' },
+  { id: 'opponents', Icon: Shrimp, label: 'Adversaires' },
+  { id: 'zones', Icon: Ban, label: 'Zones' },
 ];
 
 interface LayersWidgetProps {
@@ -77,7 +87,9 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
         return (
           <div key={l.id} className={styles.row} onClick={() => toggleLayer(l.id)}>
             <span className={`${styles.rowLabel} ${!isOn ? styles.rowLabelOff : ''}`}>
-              <span className={styles.icon}>{l.icon}</span>
+              <span className={styles.icon}>
+                {l.Icon ? <l.Icon size={14} strokeWidth={2} /> : l.glyph}
+              </span>
               {l.label}
             </span>
             <div className={`${styles.switch} ${isOn ? styles.switchOn : ''}`}>
@@ -102,7 +114,7 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
         }}
       >
         <span className={styles.rowLabel}>
-          <span className={styles.icon}>◐</span>
+          <span className={styles.icon}><Eclipse size={14} strokeWidth={2} /></span>
           Apparence
         </span>
         <span className={styles.chevron}>›</span>

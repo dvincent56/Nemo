@@ -70,6 +70,12 @@ export interface SailsConfig {
    *  would be marginally faster — so the boat doesn't flap between sails
    *  across a 0.5 kt gain during the 360 s transition penalty. */
   definitions: Record<SailId, { twaMin: number; twaMax: number }>;
+  /** Ratio optimal/active BSP required before auto-mode switches sails.
+   *  Under this threshold the boat stays on the active sail but receives
+   *  the optimal sail's BSP (overlap bonus) — avoids flapping between
+   *  sails across a sub-threshold gain. Expressed as a multiplier, so
+   *  1.014 = "new sail must be 1.4% faster to trigger a switch". */
+  overlapThreshold: number;
 }
 
 export interface RewardsConfig {

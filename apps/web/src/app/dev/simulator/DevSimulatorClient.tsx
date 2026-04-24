@@ -36,17 +36,7 @@ import type { Position } from '@nemo/shared-types';
 import type { Preset, RoutePlan, RouteInput } from '@nemo/routing';
 import styles from './DevSimulator.module.css';
 
-/** Approximate haversine distance in nautical miles between two positions. */
-function haversineNM(a: Position, b: Position): number {
-  const R = 3440.065; // Earth radius in NM
-  const toRad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * toRad;
-  const dLon = (b.lon - a.lon) * toRad;
-  const sinLat = Math.sin(dLat / 2);
-  const sinLon = Math.sin(dLon / 2);
-  const h = sinLat * sinLat + Math.cos(a.lat * toRad) * Math.cos(b.lat * toRad) * sinLon * sinLon;
-  return R * 2 * Math.asin(Math.sqrt(h));
-}
+import { haversinePosNM as haversineNM } from '@/lib/geo';
 
 const DEFAULT_START_POS: Position = { lat: 47.0, lon: -3.0 };
 
@@ -276,7 +266,7 @@ export function DevSimulatorClient() {
           polar: primaryPolar,
         })
           .then(result => {
-            console.log('[DevSim] projection frozen:', result.points.length, 'pts');
+            console.log('[DevSim] projection frozen:', result.pointsCount, 'pts');
             setProjection(result);
           })
           .catch(err => {

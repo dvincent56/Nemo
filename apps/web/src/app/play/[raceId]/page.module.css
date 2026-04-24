@@ -61,36 +61,6 @@
   pointer-events: auto;
 }
 
-/* Layout paliers — responsive selection driven by useCompassLayout hook.
- * Stack (default): boutons verticaux au-dessus du compass.
- * Bar horizontal: écrans "paysage étroit" — boutons en ligne au-dessus.
- * Side-by-side: très petite hauteur — boutons verticaux à gauche du compass. */
-.rightStack.layout_stack_vertical {
-  flex-direction: column;
-  align-items: flex-end;
-}
-.rightStack.layout_stack_vertical .actionButtons {
-  flex-direction: column;
-}
-
-.rightStack.layout_bar_horizontal {
-  flex-direction: column;
-  align-items: flex-end;
-}
-.rightStack.layout_bar_horizontal .actionButtons {
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.rightStack.layout_side_by_side {
-  flex-direction: row-reverse;
-  align-items: center;
-}
-.rightStack.layout_side_by_side .actionButtons {
-  flex-direction: column;
-}
-
 .actionButtons {
   display: flex;
   flex-direction: column;
@@ -332,10 +302,12 @@
   .zoomBtn { width: 46px; height: 34px; }
 }
 
-/* Small screens */
+/* Small screens — aligner les marges/gaps gauche ↔ droite pour une grille
+ * symétrique (le layout panel et le compass partagent la même marge basse,
+ * et l'écart WindLegend ↔ layers reflète celui compass ↔ action buttons). */
 @media (max-width: 860px) {
   .app { --hud-h: 48px; }
-  .leftStack { left: 10px; bottom: 10px; }
+  .leftStack { left: 10px; bottom: 10px; gap: 6px; }
   .rightStack { bottom: 10px; right: 10px; gap: 6px; }
   .actionBtn { width: 42px; height: 42px; gap: 0; }
   .actionBtn > span:not(.actionBtnIcon) { display: none; }
@@ -391,9 +363,11 @@
   .rankingFab { display: flex; }
 }
 
-/* Landscape with small height */
+/* Landscape with small height — idem : marge et gap identiques des deux
+ * côtés pour que le layout panel descende au même niveau que le compass. */
 @media (max-height: 500px) {
   .app { --hud-h: 44px; --timeline-h: 44px; }
+  .leftStack { left: 6px; bottom: 6px; gap: 4px; }
   .rightStack { bottom: 6px; right: 6px; gap: 4px; }
   .actionButtons { flex-direction: row; gap: 4px; }
   .actionBtn { width: 38px; height: 38px; gap: 0; }

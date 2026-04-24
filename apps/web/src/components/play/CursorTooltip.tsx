@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { mapInstance } from './MapCanvas';
 import { useGameStore } from '@/lib/store';
-import { interpolateGfsWind } from '@/lib/weather/gfsParser';
+import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
+import { formatDMS } from './formatDMS';
 import styles from './CursorTooltip.module.css';
 
 interface CursorData {
@@ -16,16 +17,6 @@ interface CursorData {
   swellHeight: number;
   swellDir: number;
   swellPeriod: number;
-}
-
-function formatDMS(decimal: number, isLat: boolean): string {
-  const abs = Math.abs(decimal);
-  const deg = Math.floor(abs);
-  const min = ((abs - deg) * 60).toFixed(2);
-  const dir = isLat
-    ? (decimal >= 0 ? 'N' : 'S')
-    : (decimal >= 0 ? 'E' : 'O');
-  return `${deg}°${min}'${dir}`;
 }
 
 export default function CursorTooltip(): React.ReactElement | null {
@@ -53,18 +44,28 @@ export default function CursorTooltip(): React.ReactElement | null {
     if (!ev || !mapInstance) return;
 
     const lngLat = mapInstance.unproject([ev.mapX, ev.mapY]);
-    const grid = useGameStore.getState().weather.gridData;
+    const weatherState = useGameStore.getState().weather;
+    const decoded = weatherState.decodedGrid;
+    const grid = weatherState.gridData;
 
     let tws = 0;
     let twd = 0;
     let swellHeight = 0;
     let swellDir = 0;
     let swellPeriod = 0;
-    if (grid) {
-      const wind = interpolateGfsWind(grid, lngLat.lat, lngLat.lng);
+    // Wind: sample from the raw multi-hour decoded grid with temporal interp
+    // at the current wall-clock — mirrors what the engine does each tick, so
+    // the map tooltip stays in sync with the HUD/compass instead of drifting
+    // by ~1 kt as simulation time moves past the moment the snapshot `grid`
+    // was last rebuilt.
+    if (decoded) {
+      const wind = sampleDecodedWindAtTime(decoded, lngLat.lat, lngLat.lng);
       tws = wind.tws;
       twd = wind.twd;
-      // Find nearest grid point for swell (normalize lon for 0-360 grids)
+    }
+    // Swell: the 2D snapshot is good enough (no sub-hour evolution visible
+    // at the UI cadence) and saves a second temporal interp pass.
+    if (grid) {
       let swellLon = lngLat.lng;
       if (swellLon < grid.bounds.west) swellLon += 360;
       const gy = Math.max(0, Math.min(grid.rows - 1, Math.floor((lngLat.lat - grid.bounds.south) / grid.resolution)));

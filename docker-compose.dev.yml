@@ -25,11 +25,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "6gb", "--maxmemory-policy", "allkeys-lru"]
+    # Cache météo pur mémoire : pas d'AOF ni de RDB (évite le gonflement du VHDX).
+    # Le weather-engine repopule Redis au redémarrage.
+    command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "6gb", "--maxmemory-policy", "allkeys-lru"]
     ports:
       - "6379:6379"
     volumes:
@@ -39,6 +46,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   weather-engine:
     build:
@@ -52,6 +64,11 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   pgdata:

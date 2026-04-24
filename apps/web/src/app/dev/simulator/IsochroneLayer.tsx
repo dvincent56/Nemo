@@ -27,16 +27,7 @@ const LAYER_ID = 'sim-iso-lines';
 // connecting them would draw through land or empty space.
 const MAX_SEGMENT_NM = 120;
 
-function haversineNm(a: IsochronePoint, b: IsochronePoint): number {
-  const R = 3440.065;
-  const toRad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * toRad;
-  const dLon = (b.lon - a.lon) * toRad;
-  const lat1 = a.lat * toRad;
-  const lat2 = b.lat * toRad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
+import { haversinePosNM as haversineNm } from '@/lib/geo';
 
 // One Chaikin corner-cutting pass: for each segment (p, q) generate two new
 // points at 1/4 and 3/4 along it. Two iterations produce a visibly smooth

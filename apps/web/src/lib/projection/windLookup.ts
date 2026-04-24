@@ -11,13 +11,42 @@ export interface WeatherAtPoint {
   swellPeriod: number;
 }
 
-const DEG_TO_RAD = Math.PI / 180;
-const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
+const RAD_TO_DEG = 180 / Math.PI;
+// Per-point layout: [u_kn, v_kn, swh, swellSin, swellCos, swellPeriod]
+// Storing wind as (u, v) in knots and swell direction as (sin, cos) lets us
+// interpolate every field linearly — no trig in the bilinear/trilinear loop.
+// We pay one sqrt + two atan2 per *output* sample instead of per corner.
+const FIELDS_PER_POINT = 6;
+
+const ZERO: WeatherAtPoint = { tws: 0, twd: 0, swh: 0, swellDir: 0, swellPeriod: 0 };
+
+/** Convert a raw 6-tuple (u, v, swh, swSin, swCos, swPer) to user-facing fields. */
+function rawToWeather(
+  u: number,
+  v: number,
+  swh: number,
+  swSin: number,
+  swCos: number,
+  swPer: number,
+): WeatherAtPoint {
+  const tws = Math.sqrt(u * u + v * v);
+  // u/v are wind components blowing TO; meteorological TWD is the direction
+  // wind comes FROM, so flip both sign before atan2 (matches old encoder).
+  const twd = ((Math.atan2(-u, -v) * RAD_TO_DEG) + 360) % 360;
+  const swellDir = ((Math.atan2(swSin, swCos) * RAD_TO_DEG) + 360) % 360;
+  return {
+    tws,
+    twd,
+    swh: swh > 0 ? swh : 0,
+    swellDir,
+    swellPeriod: swPer,
+  };
+}
 
 /**
  * Create a lookup function from a flat Float32Array of weather data.
  * Data layout per time layer: rows × cols points, each with FIELDS_PER_POINT floats.
- * Points ordered: lat descending (north→south), lon ascending (west→east).
+ * Points ordered: lat ascending (south→north), lon ascending (west→east).
  */
 export function createWindLookup(
   config: WindGridConfig,
@@ -27,10 +56,14 @@ export function createWindLookup(
   const pointsPerLayer = rows * cols;
   const floatsPerLayer = pointsPerLayer * FIELDS_PER_POINT;
 
-  function sampleLayer(layerIdx: number, lat: number, lon: number): WeatherAtPoint {
+  /**
+   * Bilinear interpolation of the 6 raw fields at (lat, lon) on the given layer.
+   * Writes results into `out` to avoid allocation on the hot path.
+   * Returns true on success, false if (lat, lon) is outside the grid.
+   */
+  function sampleRaw(layerIdx: number, lat: number, lon: number, out: Float64Array): boolean {
     const offset = layerIdx * floatsPerLayer;
 
-    // Grid is packed south-to-north, west-to-east (matches server encoder).
     const fx = (lon - bounds.west) / resolution;
     const fy = (lat - bounds.south) / resolution;
     const ix = Math.floor(fx);
@@ -39,71 +72,61 @@ export function createWindLookup(
     const dy = fy - iy;
 
     if (ix < 0 || ix >= cols - 1 || iy < 0 || iy >= rows - 1) {
-      return { tws: 0, twd: 0, swh: 0, swellDir: 0, swellPeriod: 0 };
+      return false;
     }
-    const x0 = ix, x1 = ix + 1, y0 = iy, y1 = iy + 1;
 
-    const idx = (r: number, c: number) => offset + (r * cols + c) * FIELDS_PER_POINT;
-    const i00 = idx(y0, x0);
-    const i10 = idx(y0, x1);
-    const i01 = idx(y1, x0);
-    const i11 = idx(y1, x1);
+    const i00 = offset + (iy * cols + ix) * FIELDS_PER_POINT;
+    const i10 = offset + (iy * cols + (ix + 1)) * FIELDS_PER_POINT;
+    const i01 = offset + ((iy + 1) * cols + ix) * FIELDS_PER_POINT;
+    const i11 = offset + ((iy + 1) * cols + (ix + 1)) * FIELDS_PER_POINT;
 
-    // Bilinear weight factors
     const w00 = (1 - dx) * (1 - dy);
     const w10 = dx * (1 - dy);
     const w01 = (1 - dx) * dy;
     const w11 = dx * dy;
 
-    // TWS: direct interpolation
-    const tws = data[i00]! * w00 + data[i10]! * w10 + data[i01]! * w01 + data[i11]! * w11;
-
-    // TWD: interpolate via u/v components to handle wrap-around
-    const toRad = DEG_TO_RAD;
-    const u = -(Math.sin(data[i00 + 1]! * toRad) * data[i00]! * w00
-              + Math.sin(data[i10 + 1]! * toRad) * data[i10]! * w10
-              + Math.sin(data[i01 + 1]! * toRad) * data[i01]! * w01
-              + Math.sin(data[i11 + 1]! * toRad) * data[i11]! * w11);
-    const v = -(Math.cos(data[i00 + 1]! * toRad) * data[i00]! * w00
-              + Math.cos(data[i10 + 1]! * toRad) * data[i10]! * w10
-              + Math.cos(data[i01 + 1]! * toRad) * data[i01]! * w01
-              + Math.cos(data[i11 + 1]! * toRad) * data[i11]! * w11);
-    const twd = ((Math.atan2(-u, -v) / toRad) + 360) % 360;
-
-    // SWH, swellDir, swellPeriod: direct bilinear
-    const swh = data[i00 + 2]! * w00 + data[i10 + 2]! * w10 + data[i01 + 2]! * w01 + data[i11 + 2]! * w11;
-    const swellDir = data[i00 + 3]! * w00 + data[i10 + 3]! * w10 + data[i01 + 3]! * w01 + data[i11 + 3]! * w11;
-    const swellPeriod = data[i00 + 4]! * w00 + data[i10 + 4]! * w10 + data[i01 + 4]! * w01 + data[i11 + 4]! * w11;
-
-    return { tws: Math.max(0, tws), twd, swh: Math.max(0, swh), swellDir, swellPeriod };
+    // Each field interpolated independently — pure FMAs, no trig.
+    for (let f = 0; f < FIELDS_PER_POINT; f++) {
+      out[f] = data[i00 + f]! * w00
+             + data[i10 + f]! * w10
+             + data[i01 + f]! * w01
+             + data[i11 + f]! * w11;
+    }
+    return true;
   }
+
+  // Reusable scratch buffers — keeps the hot path allocation-free.
+  const scratch0 = new Float64Array(FIELDS_PER_POINT);
+  const scratch1 = new Float64Array(FIELDS_PER_POINT);
 
   /**
    * Get weather at (lat, lon, timeMs) with temporal interpolation between GRIB layers.
-   * Returns null if timeMs is beyond the last GRIB timestamp.
+   * Returns null only if no timestamps are configured; out-of-bounds returns ZERO.
    */
   return function getWeatherAt(lat: number, lon: number, timeMs: number): WeatherAtPoint | null {
-    if (timestamps.length === 0) return null;
+    const nLayers = timestamps.length;
+    if (nLayers === 0) return null;
 
-    // Single snapshot: use it for the whole projection horizon.
-    if (timestamps.length === 1) {
-      return sampleLayer(0, lat, lon);
+    // Single snapshot, before-first, or after-last → sample one layer.
+    let singleLayer = -1;
+    if (nLayers === 1) {
+      singleLayer = 0;
+    } else if (timeMs >= timestamps[nLayers - 1]!) {
+      singleLayer = nLayers - 1;
+    } else if (timeMs <= timestamps[0]!) {
+      singleLayer = 0;
     }
 
-    // Beyond the last timestamp: extrapolate with the last layer (keeps
-    // projection alive past GRIB coverage, at the cost of accuracy).
-    const lastTs = timestamps[timestamps.length - 1]!;
-    if (timeMs >= lastTs) {
-      return sampleLayer(timestamps.length - 1, lat, lon);
+    if (singleLayer >= 0) {
+      if (!sampleRaw(singleLayer, lat, lon, scratch0)) return ZERO;
+      return rawToWeather(scratch0[0]!, scratch0[1]!, scratch0[2]!, scratch0[3]!, scratch0[4]!, scratch0[5]!);
     }
 
-    // Before the first timestamp: use the first layer.
-    if (timeMs <= timestamps[0]!) {
-      return sampleLayer(0, lat, lon);
-    }
-
+    // Locate bracketing layers. Timestamps are typically sparse but ordered;
+    // a linear scan is still cheap (≤ ~40 layers in practice). We could binary
+    // search but the win is negligible vs. the bilinear work above.
     let t0Idx = 0;
-    for (let i = 0; i < timestamps.length - 1; i++) {
+    for (let i = 0; i < nLayers - 1; i++) {
       if (timeMs >= timestamps[i]! && timeMs < timestamps[i + 1]!) {
         t0Idx = i;
         break;
@@ -114,29 +137,30 @@ export function createWindLookup(
     const t1 = timestamps[t1Idx]!;
     const tFrac = (timeMs - t0) / (t1 - t0);
 
-    if (tFrac <= 0.01) return sampleLayer(t0Idx, lat, lon);
-    if (tFrac >= 0.99) return sampleLayer(t1Idx, lat, lon);
+    // Snap to layer endpoints when extremely close to avoid an extra sample.
+    if (tFrac <= 0.01) {
+      if (!sampleRaw(t0Idx, lat, lon, scratch0)) return ZERO;
+      return rawToWeather(scratch0[0]!, scratch0[1]!, scratch0[2]!, scratch0[3]!, scratch0[4]!, scratch0[5]!);
+    }
+    if (tFrac >= 0.99) {
+      if (!sampleRaw(t1Idx, lat, lon, scratch0)) return ZERO;
+      return rawToWeather(scratch0[0]!, scratch0[1]!, scratch0[2]!, scratch0[3]!, scratch0[4]!, scratch0[5]!);
+    }
 
-    // Temporal interpolation between two spatial samples
-    const w0 = sampleLayer(t0Idx, lat, lon);
-    const w1 = sampleLayer(t1Idx, lat, lon);
+    // Trilinear in u/v + sin/cos space — interpolate raw fields, convert once.
+    if (!sampleRaw(t0Idx, lat, lon, scratch0)) return ZERO;
+    if (!sampleRaw(t1Idx, lat, lon, scratch1)) return ZERO;
 
-    return {
-      tws: w0.tws * (1 - tFrac) + w1.tws * tFrac,
-      twd: temporalInterpAngle(w0.twd, w1.twd, tFrac),
-      swh: w0.swh * (1 - tFrac) + w1.swh * tFrac,
-      swellDir: temporalInterpAngle(w0.swellDir, w1.swellDir, tFrac),
-      swellPeriod: w0.swellPeriod * (1 - tFrac) + w1.swellPeriod * tFrac,
-    };
+    const oneMinusT = 1 - tFrac;
+    const u   = scratch0[0]! * oneMinusT + scratch1[0]! * tFrac;
+    const v   = scratch0[1]! * oneMinusT + scratch1[1]! * tFrac;
+    const swh = scratch0[2]! * oneMinusT + scratch1[2]! * tFrac;
+    const sSin = scratch0[3]! * oneMinusT + scratch1[3]! * tFrac;
+    const sCos = scratch0[4]! * oneMinusT + scratch1[4]! * tFrac;
+    const sPer = scratch0[5]! * oneMinusT + scratch1[5]! * tFrac;
+
+    return rawToWeather(u, v, swh, sSin, sCos, sPer);
   };
-}
-
-/** Linear interpolation of angles (0-360) handling wrap-around. */
-function temporalInterpAngle(a: number, b: number, t: number): number {
-  let diff = b - a;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-  return ((a + diff * t) + 360) % 360;
 }
 
 /**

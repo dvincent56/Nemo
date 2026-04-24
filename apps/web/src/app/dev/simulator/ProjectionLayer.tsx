@@ -26,7 +26,14 @@ export function ProjectionLayer({ projection }: Props) {
         setTimeout(apply, 200);
         return;
       }
-      const coords = projection?.points.map((p) => [p.lon, p.lat]) ?? [];
+      const coords: Array<[number, number]> = [];
+      if (projection) {
+        const buf = projection.pointsBuf;
+        for (let i = 0; i < projection.pointsCount; i++) {
+          const b = i * 6;
+          coords.push([buf[b + 1]!, buf[b]!]); // [lon, lat]
+        }
+      }
       const geoJson: GeoJSON.Feature<GeoJSON.LineString> = {
         type: 'Feature',
         properties: {},

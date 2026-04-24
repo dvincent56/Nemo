@@ -4,7 +4,6 @@
 import type {
   ProjectionInput,
   ProjectionResult,
-  ProjectionPoint,
   TimeMarker,
   ManeuverMarker,
   WorkerInMessage,
@@ -75,15 +74,6 @@ function pickOptimalSail(polar: PolarData, twa: number, tws: number): string {
   return best ?? Object.keys(polar.speeds)[0]!;
 }
 
-/** Mirror of engine/sails.ts::isSailInRange — keep the active sail while
- *  its declared TWA range still covers the boat's TWA, so the projection
- *  predicts the same auto-switch hysteresis as the live engine. */
-function isSailInRange(sail: string, twaAbs: number): boolean {
-  const defs = GameBalance.sails.definitions as Record<string, { twaMin: number; twaMax: number }> | undefined;
-  const def = defs?.[sail];
-  if (!def) return true;
-  return twaAbs >= def.twaMin && twaAbs <= def.twaMax;
-}
 
 // ── Init: load GameBalance on worker start ──
 
@@ -127,6 +117,15 @@ async function ensureCoastline(): Promise<void> {
 // per-drag Float32Array reallocation/transfer.
 let cachedWindLookup: ReturnType<typeof createWindLookup> | null = null;
 
+// ── Result buffer layout ──
+// Float32Array packed as [lat, lon, dtMs, bsp, tws, twd] × N. dtMs is the
+// offset from result.startMs in milliseconds (fits in f32 up to ~24 days,
+// well above the 5-day projection horizon). The full 4096×6 buffer is
+// pre-allocated per simulate() call and transferred zero-copy back to the
+// main thread — no JSON serialization of N small objects.
+const POINT_FIELDS = 6;
+const MAX_POINTS = 4096; // 5d × 30min ≈ 240; 4096 is safe headroom
+
 // ── Main simulation ──
 
 function simulate(input: ProjectionInput): ProjectionResult {
@@ -153,7 +152,23 @@ function simulate(input: ProjectionInput): ProjectionResult {
   const bspMax = computeBspMax(polar);
   const effects = input.effects;
 
-  const points: ProjectionPoint[] = [];
+  // Output buffer + counters. Maneuver/time markers carry an `index` into
+  // pointsBuf (in points, not floats). pushPoint() writes the next slot.
+  const pointsBuf = new Float32Array(MAX_POINTS * POINT_FIELDS);
+  let count = 0;
+  const startMs = input.nowMs;
+  const pushPoint = (lat: number, lon: number, ts: number, bsp: number, tws: number, twd: number) => {
+    if (count >= MAX_POINTS) return;
+    const b = count * POINT_FIELDS;
+    pointsBuf[b] = lat;
+    pointsBuf[b + 1] = lon;
+    pointsBuf[b + 2] = ts - startMs; // dtMs offset from startMs
+    pointsBuf[b + 3] = bsp;
+    pointsBuf[b + 4] = tws;
+    pointsBuf[b + 5] = twd;
+    count++;
+  };
+
   const timeMarkers: TimeMarker[] = [];
   const maneuverMarkers: ManeuverMarker[] = [];
 
@@ -171,7 +186,6 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let prevTwa = input.prevTwa;
   let zonesInside = new Set<string>();
 
-  const startMs = input.nowMs;
   let currentMs = startMs;
   const endMs = startMs + DAYS_5 * 1000;
 
@@ -181,31 +195,15 @@ function simulate(input: ProjectionInput): ProjectionResult {
 
   // Track which time marker hours we've passed
   let nextTimeMarkerIdx = 0;
-  let stepCount = 0;
-  let prevHdgForJumpDetect: number | null = null;
 
   // Initial point
   const initWeather = getWeatherAt(lat, lon, currentMs);
   if (!initWeather) {
-    return { points: [], timeMarkers: [], maneuverMarkers: [], bspMax };
+    return { pointsBuf, pointsCount: 0, startMs, timeMarkers: [], maneuverMarkers: [], bspMax };
   }
   const initTwa = twaLock ?? computeTWA(hdg, initWeather.twd);
-  console.log('[Worker] init', {
-    lat, lon, hdg, twaLock,
-    referenceTwd: input.referenceTwd,
-    twdOffset,
-    initTwd: initWeather.twd,
-    initTws: initWeather.tws,
-    initTwa,
-    initBsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs, initWeather, hdg),
-  });
-  points.push({
-    lat, lon,
-    timestamp: currentMs,
-    bsp: computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs, initWeather, hdg),
-    tws: initWeather.tws,
-    twd: initWeather.twd,
-  });
+  const initBsp = computeBsp(polar, activeSail, initTwa, initWeather.tws, condition, effects, maneuver, transition, currentMs, initWeather, hdg);
+  pushPoint(lat, lon, currentMs, initBsp, initWeather.tws, initWeather.twd);
 
   while (currentMs < endMs) {
     const elapsedSec = (currentMs - startMs) / 1000;
@@ -290,7 +288,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
       // Add maneuver marker (skip MODE changes which are invisible)
       if (seg.type !== 'MODE') {
         maneuverMarkers.push({
-          index: points.length, // will be the next point added
+          index: count, // will be the next point added
           type: markerType,
           detail: markerDetail,
         });
@@ -301,13 +299,8 @@ function simulate(input: ProjectionInput): ProjectionResult {
       if (weather) {
         const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
         prevTwa = twa;
-        points.push({
-          lat, lon,
-          timestamp: currentMs,
-          bsp: computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg),
-          tws: weather.tws,
-          twd: weather.twd,
-        });
+        const segBsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg);
+        pushPoint(lat, lon, currentMs, segBsp, weather.tws, weather.twd);
       }
 
       segIdx++;
@@ -327,30 +320,36 @@ function simulate(input: ProjectionInput): ProjectionResult {
     // If in TWA lock mode, update heading from wind direction
     const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
 
-    // Auto-sail: switch to optimal sail if in auto mode and not currently transitioning.
-    // Mirror the engine's hysteresis: stay on the current sail while its
-    // declared TWA range still covers us, so the projection doesn't predict
-    // flap switches for sub-percent BSP gains.
+    // Auto-sail: switch to optimal sail if in auto mode and not currently
+    // transitioning. Mirror engine/sails.ts hysteresis: switch only when the
+    // optimal sail beats the active by more than `overlapThreshold` (e.g.
+    // +1.4%) so the projection doesn't predict flap switches for marginal
+    // gains. When the active is out of its polar range (bsp=0), switch
+    // unconditionally.
     const isTransitioning = transition !== null && currentMs < transition.endMs;
     const twaAbs = Math.min(Math.abs(twa), 180);
     const currentBsp = getPolarSpeed(polar, activeSail, twaAbs, weather.tws);
-    const stayInRange = isSailInRange(activeSail, twaAbs) && currentBsp > 0;
-    if (sailAuto && !isTransitioning && !stayInRange) {
+    if (sailAuto && !isTransitioning) {
       const optimal = pickOptimalSail(polar, twa, weather.tws);
       if (optimal !== activeSail) {
-        const transKey = `${activeSail}_${optimal}`;
-        const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
-        const sailTransDurAdj = sailTransDur * effects.maneuverMul.sailChange.dur;
-        transition = {
-          endMs: currentMs + sailTransDurAdj * 1000,
-          speedFactor: GameBalance.sails.transitionPenalty * effects.maneuverMul.sailChange.speed,
-        };
-        maneuverMarkers.push({
-          index: points.length,
-          type: 'sail_change',
-          detail: `Auto: ${activeSail} → ${optimal}`,
-        });
-        activeSail = optimal as typeof activeSail;
+        const optimalBsp = getPolarSpeed(polar, optimal, twaAbs, weather.tws);
+        const threshold = GameBalance.sails.overlapThreshold;
+        const shouldSwitch = currentBsp <= 0 || optimalBsp / currentBsp > threshold;
+        if (shouldSwitch) {
+          const transKey = `${activeSail}_${optimal}`;
+          const sailTransDur = (GameBalance.sails.transitionTimes as Record<string, number>)[transKey] ?? 180;
+          const sailTransDurAdj = sailTransDur * effects.maneuverMul.sailChange.dur;
+          transition = {
+            endMs: currentMs + sailTransDurAdj * 1000,
+            speedFactor: GameBalance.sails.transitionPenalty * effects.maneuverMul.sailChange.speed,
+          };
+          maneuverMarkers.push({
+            index: count,
+            type: 'sail_change',
+            detail: `Auto: ${activeSail} → ${optimal}`,
+          });
+          activeSail = optimal as typeof activeSail;
+        }
       }
     }
 
@@ -358,26 +357,6 @@ function simulate(input: ProjectionInput): ProjectionResult {
       // Heading = TWD + TWA (reverse of computeTWA)
       hdg = ((weather.twd + twaLock) % 360 + 360) % 360;
     }
-
-    // Diagnostic: log TWD at 0/15/30/45/60/90/120/180min to spot interpolation
-    // artefacts, and flag any >20° heading jump between successive steps.
-    stepCount++;
-    const elapsedMin = (currentMs - startMs) / 60000;
-    const snapshotMin = [0, 15, 30, 45, 60, 90, 120, 180];
-    if (snapshotMin.includes(Math.round(elapsedMin))) {
-      console.log(`[Worker] t+${Math.round(elapsedMin)}min`, {
-        lat: lat.toFixed(3), lon: lon.toFixed(3),
-        hdg: Math.round(hdg), twd: Math.round(weather.twd),
-        tws: weather.tws.toFixed(1), twa: Math.round(twa),
-      });
-    }
-    if (prevHdgForJumpDetect !== null) {
-      const jump = Math.abs(((hdg - prevHdgForJumpDetect + 540) % 360) - 180);
-      if (jump > 20) {
-        console.warn(`[Worker] heading jump at step ${stepCount} (t+${elapsedMin.toFixed(1)}min): ${Math.round(prevHdgForJumpDetect)}° → ${Math.round(hdg)}° (twd=${Math.round(weather.twd)}°)`);
-      }
-    }
-    prevHdgForJumpDetect = hdg;
 
     // Compute BSP — apply zone modulation for the segment we're ABOUT to traverse.
     // In auto mode, when the hysteresis keeps a sub-optimal sail active (inside
@@ -410,16 +389,16 @@ function simulate(input: ProjectionInput): ProjectionResult {
       if (!cross) continue;
       // Insert a point at the crossing (outside-side, with pre-zone BSP) so the
       // rendered line color transitions exactly at the boundary.
-      points.push({
-        lat: cross.lat,
-        lon: cross.lon,
-        timestamp: currentMs + cross.t * dt * 1000,
-        bsp: bsp / (zoneAtStart.factor !== 1 ? zoneAtStart.factor : 1),
-        tws: weather.tws,
-        twd: weather.twd,
-      });
+      pushPoint(
+        cross.lat,
+        cross.lon,
+        currentMs + cross.t * dt * 1000,
+        bsp / (zoneAtStart.factor !== 1 ? zoneAtStart.factor : 1),
+        weather.tws,
+        weather.twd,
+      );
       maneuverMarkers.push({
-        index: points.length - 1,
+        index: count - 1,
         type: 'zone_entry',
         detail: `${z.name} (×${z.speedMultiplier.toFixed(2)} vitesse)`,
       });
@@ -433,16 +412,9 @@ function simulate(input: ProjectionInput): ProjectionResult {
       const hit = coast.segmentCrossesCoast(lat, lon, newPos.lat, newPos.lon, 6);
       if (hit) {
         // Record grounding marker and final point, then exit the loop.
-        points.push({
-          lat: hit.lat,
-          lon: hit.lon,
-          timestamp: currentMs,
-          bsp: 0,
-          tws: weather.tws,
-          twd: weather.twd,
-        });
+        pushPoint(hit.lat, hit.lon, currentMs, 0, weather.tws, weather.twd);
         maneuverMarkers.push({
-          index: points.length - 1,
+          index: count - 1,
           type: 'grounding',
           detail: 'Échouage — collision avec la côte',
         });
@@ -482,13 +454,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
     const twaAtNew = twaLock !== null ? twaLock : computeTWA(hdg, weatherAtNew.twd);
     const bspAtNew = computeBsp(polar, activeSail, twaAtNew, weatherAtNew.tws, condition, effects, maneuver, transition, currentMs, weatherAtNew, hdg);
 
-    points.push({
-      lat, lon,
-      timestamp: currentMs,
-      bsp: bspAtNew,
-      tws: weatherAtNew.tws,
-      twd: weatherAtNew.twd,
-    });
+    pushPoint(lat, lon, currentMs, bspAtNew, weatherAtNew.tws, weatherAtNew.twd);
 
     // Check time markers
     const elapsedHours = (currentMs - startMs) / (3600 * 1000);
@@ -498,26 +464,16 @@ function simulate(input: ProjectionInput): ProjectionResult {
     ) {
       const h = TIME_MARKER_HOURS[nextTimeMarkerIdx]!;
       const major = isMajorMarker(h);
-      if (major) {
-        console.log(`[Worker] ${h}h marker`, {
-          lat: lat.toFixed(3),
-          lon: lon.toFixed(3),
-          hdg: Math.round(hdg),
-          bsp: bspAtNew.toFixed(2),
-          tws: weatherAtNew.tws.toFixed(1),
-          twd: Math.round(weatherAtNew.twd),
-        });
-      }
       const label = major ? (h >= 72 ? `${h / 24}j` : `${h}h`) : '';
       timeMarkers.push({
-        index: points.length - 1,
+        index: count - 1,
         label,
       });
       nextTimeMarkerIdx++;
     }
   }
 
-  return { points, timeMarkers, maneuverMarkers, bspMax };
+  return { pointsBuf, pointsCount: count, startMs, timeMarkers, maneuverMarkers, bspMax };
 }
 
 // ── Worker message handler ──
@@ -539,7 +495,9 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
       await Promise.all([ensureBalance(), ensureCoastline()]);
       const result = simulate(msg.input);
       const out: WorkerOutMessage = { type: 'result', result };
-      self.postMessage(out);
+      // Zero-copy transfer of the points buffer — postMessage no longer
+      // serializes ~500 small objects, just hands the ArrayBuffer over.
+      self.postMessage(out, [result.pointsBuf.buffer]);
     } catch (err) {
       const out: WorkerOutMessage = { type: 'error', message: String(err) };
       self.postMessage(out);

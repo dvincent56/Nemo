@@ -1,5 +1,7 @@
 // apps/web/src/lib/projection/simulate.ts
 import { GameBalance } from '@nemo/game-balance/browser';
+import { computeBsp as computeBaseBsp, getPolarSpeed as polarLibGetPolarSpeed } from '@nemo/game-engine-core/browser';
+import type { Polar, SailId } from '@nemo/shared-types';
 import type { ProjectionEffects } from './types';
 import type { WeatherAtPoint } from './windLookup';
 
@@ -55,53 +57,13 @@ export interface PolarData {
   speeds: Record<string, number[][]>;
 }
 
-function findBracket(arr: number[], value: number): { i0: number; i1: number; t: number } {
-  if (value <= arr[0]!) return { i0: 0, i1: 0, t: 0 };
-  if (value >= arr[arr.length - 1]!) {
-    const last = arr.length - 1;
-    return { i0: last, i1: last, t: 0 };
-  }
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (value >= arr[i]! && value <= arr[i + 1]!) {
-      const span = arr[i + 1]! - arr[i]!;
-      return { i0: i, i1: i + 1, t: span === 0 ? 0 : (value - arr[i]!) / span };
-    }
-  }
-  return { i0: 0, i1: 0, t: 0 };
-}
-
+// Delegates to @nemo/polar-lib/browser — single source of truth with the
+// engine tick and routing. The thin wrapper exists only to accept the
+// projection's looser PolarData / sail typing at the worker boundary;
+// the interpolation math is defined once, in polar-lib.
 export function getPolarSpeed(polar: PolarData, sail: string, twa: number, tws: number): number {
-  const absTwa = Math.min(Math.abs(twa), 180);
-  const sailSpeeds = polar.speeds[sail];
-  // Unavailable sail (e.g., Cruiser Racer only has JIB/SPI) → 0.
-  if (!sailSpeeds || !Array.isArray(sailSpeeds)) return 0;
-  return getPolarSpeedFromGrid(sailSpeeds, polar.twa, polar.tws, absTwa, tws);
-}
-
-function getPolarSpeedFromGrid(
-  speeds: number[][],
-  twaAxis: number[],
-  twsAxis: number[],
-  absTwa: number,
-  tws: number,
-): number {
-  // Dead zone: below the first TWA in the polar axis → 0 (face-to-wind).
-  const minTwa = twaAxis[0];
-  if (minTwa !== undefined && absTwa < minTwa) return 0;
-  const a = findBracket(twaAxis, absTwa);
-  const s = findBracket(twsAxis, tws);
-
-  const r0 = speeds[a.i0];
-  const r1 = speeds[a.i1];
-  if (!Array.isArray(r0) || !Array.isArray(r1)) return 0;
-  const v00 = r0[s.i0] ?? 0;
-  const v01 = r0[s.i1] ?? 0;
-  const v10 = r1[s.i0] ?? 0;
-  const v11 = r1[s.i1] ?? 0;
-
-  const top = v00 * (1 - s.t) + v01 * s.t;
-  const bot = v10 * (1 - s.t) + v11 * s.t;
-  return top * (1 - a.t) + bot * a.t;
+  if (!polar.speeds[sail]) return 0;
+  return polarLibGetPolarSpeed(polar as unknown as Polar, sail as SailId, twa, tws);
 }
 
 /** Compute BSP max across all TWA/TWS combinations for gradient normalization. */
@@ -118,17 +80,6 @@ export function computeBspMax(polar: PolarData): number {
     }
   }
   return max;
-}
-
-// ── TWA/TWS band selection (matches game-engine bands.ts) ──
-
-function bandFor(value: number, thresholds: readonly number[]): number {
-  let band = 0;
-  for (const t of thresholds) {
-    if (value >= t) band++;
-    else break;
-  }
-  return band;
 }
 
 // ── Wear calculation (port of wear.ts, minus driveMode) ──
@@ -294,7 +245,12 @@ export function transitionSpeedFactor(transition: { endMs: number; speedFactor: 
   return GameBalance.sails.transitionPenalty * effects.maneuverMul.sailChange.speed;
 }
 
-// ── Full speed chain (matches tick.ts bspMultiplier) ──
+// ── Full speed chain = engine-core base × projection-only transients ──
+// Base (polar × condition × TWA/TWS bands) comes from the shared speed
+// model in @nemo/game-engine-core — single source of truth with runTick
+// and the routing engine. Transient factors (manoeuvre, sail transition,
+// swell) are layered on top here because they're specific to the forward
+// projection and not available to the routing engine.
 
 export function computeBsp(
   polar: PolarData,
@@ -309,20 +265,13 @@ export function computeBsp(
   weather?: { swh: number; swellDir: number },
   heading?: number,
 ): number {
-  const baseBsp = getPolarSpeed(polar, sail, twa, tws);
-  const twaBand = bandFor(Math.abs(twa), [60, 90, 120, 150]);
-  const twsBand = bandFor(tws, [10, 20]);
+  const base = computeBaseBsp(polar as unknown as Polar, sail as SailId, twa, tws, effects, condition);
   const swellFactor = weather && heading !== undefined
     ? swellSpeedFactor(weather.swh, weather.swellDir, heading)
     : 1;
 
-  const multiplier =
-    effects.speedByTwa[twaBand]! *
-    effects.speedByTws[twsBand]! *
-    conditionSpeedPenalty(condition) *
-    maneuverSpeedFactor(maneuver, nowMs) *
-    transitionSpeedFactor(transition, nowMs, effects) *
-    swellFactor;
-
-  return baseBsp * multiplier;
+  return base
+    * maneuverSpeedFactor(maneuver, nowMs)
+    * transitionSpeedFactor(transition, nowMs, effects)
+    * swellFactor;
 }

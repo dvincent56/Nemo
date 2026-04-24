@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SailId } from '@nemo/shared-types';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
-import { Lock, LockOpen, Check } from 'lucide-react';
+import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
+import { Lock, LockOpen, Check, AlertTriangle } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
 
@@ -106,11 +108,11 @@ export default function Compass(): React.ReactElement {
   const hdg = useGameStore((s) => s.hud.hdg);
   const twd = useGameStore((s) => s.hud.twd);
   const tws = useGameStore((s) => s.hud.tws);
-  const bsp = useGameStore((s) => s.hud.bsp);
   const twa = useGameStore((s) => s.hud.twa);
   const serverTwaLock = useGameStore((s) => s.hud.twaLock);
   const boatClass = useGameStore((s) => s.hud.boatClass);
   const currentSail = useGameStore((s) => s.sail.currentSail);
+  const sailAuto = useGameStore((s) => s.sail.sailAuto);
 
   // Lock state differs from the last committed value → needs validation.
   // committedTwaLock mirrors what we've told the server (optimistically on
@@ -127,27 +129,59 @@ export default function Compass(): React.ReactElement {
   const displayTwa = ((displayHdg - twd + 540) % 360) - 180;
   const vmgGlow = isInVmgZone(displayTwa);
 
-  // Estimated BSP from polars — only during heading edit
+  // Compass BSP is ALWAYS the polar estimate (current sail at displayed TWA
+  // and current TWS). Jamais la BSP réelle — celle-ci contient les pénalités
+  // de manœuvre / transition et est affichée dans le HUD uniquement. Le
+  // compass reste "théorique" : ce que la voile peut donner dans les
+  // conditions actuelles, sans incident de parcours.
   const polar = getCachedPolar(boatClass);
-  const displayBsp = applyActive && polar
-    ? getPolarSpeed(polar, currentSail, displayTwa, tws)
-    : bsp;
+  const displayBsp = polar ? getPolarSpeed(polar, currentSail, displayTwa, tws) : 0;
 
-  // BSP efficiency color: compare to max polar speed at current TWS
-  const maxPolarBsp = polar
-    ? Math.max(...polar.twa.map((a) => {
-        let best = 0;
-        for (const s of Object.keys(polar.speeds)) {
-          const v = getPolarSpeed(polar, s as SailId, a, tws);
-          if (v > best) best = v;
-        }
-        return best;
-      }))
+  // Efficacité : compare la voile active à la meilleure voile au même TWA/TWS.
+  // Green = on est sur la meilleure voile à cet angle. Rouge = il existe une
+  // voile bien plus rapide ; en auto la bascule va arriver, en manuel c'est
+  // un signal de changement à faire.
+  const bestPolarAtTwa = polar
+    ? Math.max(...(Object.keys(polar.speeds) as SailId[]).map((s) => getPolarSpeed(polar, s, displayTwa, tws)))
     : 0;
-  const bspRatio = maxPolarBsp > 0 ? displayBsp / maxPolarBsp : 1;
-  const bspColor = bspRatio >= 0.85 ? styles.live     // vert — efficace
-    : bspRatio >= 0.6 ? styles.warn                    // orange — moyen
-    : styles.danger;                                   // rouge — inefficace
+  const bspRatio = bestPolarAtTwa > 0 ? displayBsp / bestPolarAtTwa : 1;
+  const bspColor = bspRatio >= 0.95 ? styles.live   // vert — voile optimale ou quasi
+    : bspRatio >= 0.80 ? styles.warn                 // orange — une meilleure voile existe
+    : styles.danger;                                 // rouge — voile fortement sous-optimale
+
+  // ── Hint "la validation va déclencher une manœuvre" ─────────────────
+  // Affiché pendant l'édition de cap quand la validation provoquera un coût
+  // visible : virement (TWA change de bord, |newTwa|<90), empannage (idem
+  // mais |newTwa|>90), ou changement de voile auto (nouveau TWA → autre voile
+  // optimale). Si plusieurs s'appliquent, on affiche le plus contraignant :
+  // empannage > virement > changement de voile (durées & pénalités de vitesse
+  // décroissantes). Le message est rendu en absolute au-dessus du compass
+  // pour ne pas modifier sa hauteur quand il apparaît/disparaît.
+  let pendingHint: { kind: 'gybe' | 'tack' | 'sail'; label: string; className: string } | null = null;
+  if (applyActive && polar && boatClass) {
+    const sameSign = Math.sign(displayTwa) === Math.sign(twa) || twa === 0;
+    const isManeuver = !sameSign && displayTwa !== 0 && twa !== 0;
+    const isTack = isManeuver && Math.abs(displayTwa) < 90;
+    const isGybe = isManeuver && Math.abs(displayTwa) >= 90;
+
+    if (isGybe) {
+      const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
+      const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
+      pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: styles.hintGybe! };
+    } else if (isTack) {
+      const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
+      const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
+      pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: styles.hintTack! };
+    } else if (sailAuto) {
+      const optimal = pickOptimalSail(polar, displayTwa, tws);
+      if (optimal !== currentSail) {
+        const key = `${currentSail}_${optimal}`;
+        const dur = (GameBalance.sails?.transitionTimes as Record<string, number> | undefined)?.[key] ?? 180;
+        const pct = Math.round((1 - (GameBalance.sails?.transitionPenalty ?? 0.7)) * 100);
+        pendingHint = { kind: 'sail', label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: styles.hintSail! };
+      }
+    }
+  }
 
   // ── SVG direct DOM update (60fps during drag) ──
   const writeSvg = useCallback((target: number) => {
@@ -276,20 +310,6 @@ export default function Compass(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  // ── Tap-outside cancel: click anywhere outside the compass and action
-  // buttons while editing → cancel the pending heading change. Containers
-  // that must not trigger cancel are tagged with `data-compass-zone="true"`.
-  useEffect(() => {
-    if (!applyActive) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Element | null;
-      if (target?.closest('[data-compass-zone="true"]')) return;
-      cancelEdit();
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [applyActive]);
-
   // ── Apply heading / lock state ──
   // A single validation path: commits both heading changes AND lock toggles
   // so the player can compose the two (e.g. drag + lock) then validate once.
@@ -373,19 +393,23 @@ export default function Compass(): React.ReactElement {
 
   return (
     <>
-      <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`} data-compass-zone="true">
-        {/* Readouts */}
+      <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`}>
+        {/* Floating hint (position: absolute) — shown only during edit when
+            the validation would trigger a maneuver. Doesn't alter wrapper
+            height so the compass stays stable when it appears/disappears. */}
+        {pendingHint && (
+          <div className={`${styles.floatingHint} ${pendingHint.className}`}>
+            <span className={styles.hintIcon}><AlertTriangle size={12} strokeWidth={2.5} /></span>
+            <span>{pendingHint.label}</span>
+          </div>
+        )}
+
+        {/* Readouts — 3 colonnes : BSP / Cap / TWA (TWS est dans le HUD) */}
         <div className={styles.readouts}>
           <div>
-            <p className={styles.readoutLabel}>Vit. bateau</p>
+            <p className={styles.readoutLabel}>BSP</p>
             <p className={`${styles.readoutValue} ${bspColor}`}>
-              {displayBsp.toFixed(3)} <small>nds</small>
-            </p>
-          </div>
-          <div>
-            <p className={styles.readoutLabel}>Vent local</p>
-            <p className={styles.readoutValue}>
-              {tws.toFixed(3)} <small>nds</small>
+              {displayBsp.toFixed(2)} <small>nds</small>
             </p>
           </div>
           <div>
@@ -465,7 +489,7 @@ export default function Compass(): React.ReactElement {
           </svg>
         </div>
 
-        {/* Action buttons — layout: Lock (gauche) | Valider (centre) | Annuler (droite) */}
+        {/* Action buttons */}
         <div className={styles.actions}>
           <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
             <button

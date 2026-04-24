@@ -1,11 +1,20 @@
 export {
   runTick,
-  computeBsp,
   type BoatRuntime,
   type TickDeps,
   type TickOutcome,
   type CoastlineProbe,
 } from './tick';
+
+export {
+  computeBsp,
+  type SpeedEffects,
+} from './speed-model';
+
+// Re-export polar-lib's getPolarSpeed so browser callers (projection
+// worker) can reach the single source of truth via @nemo/game-engine-core
+// without adding @nemo/polar-lib to their direct dependencies.
+export { getPolarSpeed } from '@nemo/polar-lib/browser';
 
 export {
   resolveBoatLoadout,
@@ -39,7 +48,6 @@ export {
   transitionSpeedFactor,
   computeOverlapFactor,
   getTransitionDuration,
-  isSailInRange,
   pickOptimalSail,
   maneuverSpeedFactor,
   type ManeuverPenaltyState,

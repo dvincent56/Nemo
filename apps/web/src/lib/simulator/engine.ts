@@ -27,19 +27,7 @@ import type {
 // Tick size in milliseconds — must match game-engine tick interval.
 const TICK_MS = 30_000;
 
-/** Haversine distance in nautical miles between two positions. */
-function haversineNM(a: Position, b: Position): number {
-  const R = 3440.065; // Earth radius in nautical miles
-  const toRad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * toRad;
-  const dLon = (b.lon - a.lon) * toRad;
-  const lat1 = a.lat * toRad;
-  const lat2 = b.lat * toRad;
-  const sinDLat = Math.sin(dLat / 2);
-  const sinDLon = Math.sin(dLon / 2);
-  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
+import { haversinePosNM as haversineNM } from '@/lib/geo';
 
 type Listener = (msg: SimOutMessage) => void;
 

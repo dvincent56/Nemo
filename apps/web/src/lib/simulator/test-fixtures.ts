@@ -37,17 +37,16 @@ export function loadFixtureGameBalance(): unknown {
 }
 
 /**
- * A minimal 2×2 grid of constant 12 m/s wind from the north covering 48 h.
+ * A minimal 2×2 grid of constant 12 (knots) wind from the north covering 48 h.
  *
  * Shape matches createWindLookup(config: WindGridConfig, data: Float32Array)
  * from apps/web/src/lib/projection/windLookup.ts:
  *   - WindGridConfig: { bounds, resolution, cols, rows, timestamps }
- *   - data: flat Float32Array, layout per layer = rows × cols × 5 floats
- *     [tws, twd, swh, swellDir, swellPeriod] per point,
+ *   - data: flat Float32Array, layout per layer = rows × cols × 6 floats
+ *     [u_kn, v_kn, swh, swellSin, swellCos, swellPeriod] per point,
  *     ordered south→north, west→east.
  *
- * Source: apps/web/src/lib/projection/windLookup.ts, lines 3-9 (WindGridConfig)
- * and lines 20-33 (FIELDS_PER_POINT, data layout).
+ * Source: apps/web/src/lib/projection/windLookup.ts (FIELDS_PER_POINT, layout).
  */
 export function makeConstantWind(): { windGrid: WindGridConfig; windData: Float32Array } {
   // 2 cols × 2 rows grid covering 40°N–50°N, 10°W–0°W, 10° resolution
@@ -63,20 +62,22 @@ export function makeConstantWind(): { windGrid: WindGridConfig; windData: Float3
     timestamps,
   };
 
-  // 5 fields per point: tws, twd, swh, swellDir, swellPeriod
-  const FIELDS = 5;
+  // 6 fields per point: u_kn, v_kn, swh, swellSin, swellCos, swellPeriod
+  const FIELDS = 6;
   const pointsPerLayer = rows * cols;
   const floatsPerLayer = pointsPerLayer * FIELDS;
   const numLayers = timestamps.length;
   const windData = new Float32Array(numLayers * floatsPerLayer);
 
-  // Fill all points in all layers with constant 12 m/s wind from north (twd=0)
+  // Constant 12-knot wind from the north (twd = 0°). Wind blows TO the south
+  // → u = 0, v = -12. Swell from north (sin = 0, cos = 1).
   for (let i = 0; i < windData.length; i += FIELDS) {
-    windData[i + 0] = 12;  // tws m/s
-    windData[i + 1] = 0;   // twd degrees (from north)
-    windData[i + 2] = 1.5; // swh meters
-    windData[i + 3] = 0;   // swellDir degrees
-    windData[i + 4] = 8;   // swellPeriod seconds
+    windData[i + 0] = 0;    // u (kn) — east-west component
+    windData[i + 1] = -12;  // v (kn) — north-south component (negative = blowing south)
+    windData[i + 2] = 1.5;  // swh meters
+    windData[i + 3] = 0;    // swellSin (0° → sin=0)
+    windData[i + 4] = 1;    // swellCos (0° → cos=1)
+    windData[i + 5] = 8;    // swellPeriod seconds
   }
 
   return { windGrid, windData };

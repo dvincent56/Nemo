@@ -1,4 +1,5 @@
 .wrapper {
+  position: relative;
   width: clamp(220px, 32vw, 280px);
   background: rgba(12, 20, 36, 0.92);
   border: 1px solid rgba(245, 240, 232, 0.16);
@@ -10,18 +11,63 @@
   transition: box-shadow 300ms, border-color 300ms;
 }
 
+/* Floating hint — sits above the wrapper so it never changes compass height. */
+.floatingHint {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 8px 10px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  background: rgba(12, 20, 36, 0.96);
+  border: 1px solid rgba(245, 240, 232, 0.18);
+  color: #f0b96b;
+  pointer-events: none;
+}
+
+.hintIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hintGybe { color: #e05252; border-color: rgba(224, 82, 82, 0.45); }
+.hintTack { color: #f0b96b; border-color: rgba(240, 185, 107, 0.45); }
+.hintSail { color: #c9a227; border-color: rgba(201, 162, 39, 0.45); }
+
 .vmgGlow {
   box-shadow: 0 0 20px rgba(108, 210, 138, 0.25), 0 0 40px rgba(108, 210, 138, 0.10);
   border-color: rgba(108, 210, 138, 0.35);
 }
 
-/* Readouts grid */
+/* Readouts grid — 3 colonnes : BSP / Cap / TWA. TWS vit dans le HUD, et la
+ * direction du vent est déjà indiquée par les WindWaves animées autour du
+ * compass, donc on évite la redondance et on gagne une ligne de hauteur.
+ * Chaque cellule est centrée et séparée par un trait fin façon HUD. */
 .readouts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 14px;
-  padding-bottom: 12px;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(245, 240, 232, 0.16);
+}
+
+.readouts > div {
+  text-align: center;
+  padding: 0 6px;
+  border-right: 1px solid rgba(245, 240, 232, 0.16);
+}
+
+.readouts > div:last-child {
+  border-right: none;
 }
 
 .readoutLabel {
@@ -135,8 +181,7 @@
   pointer-events: none;
 }
 
-/* Cancel button — sits to the right of Valider in the actions bar.
- * Active only while there's a pending heading/lock edit. */
+/* Cancel button — active only while editing */
 .cancelActive {
   border-color: rgba(217, 123, 90, 0.6);
   color: #d97b5a;

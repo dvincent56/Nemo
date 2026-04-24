@@ -107,11 +107,40 @@ export interface ManeuverMarker {
   detail: string;
 }
 
+/**
+ * Number of float fields per packed point. Layout:
+ *   [lat, lon, dtMs, bsp, tws, twd]
+ * dtMs is the offset in ms from `ProjectionResult.startMs`. Storing dt
+ * (instead of absolute ms) lets us fit the value in a Float32 with full
+ * ms precision well beyond the 5-day projection horizon.
+ */
+export const PROJECTION_POINT_FIELDS = 6;
+
 export interface ProjectionResult {
-  points: ProjectionPoint[];
+  /** Packed [lat, lon, dtMs, bsp, tws, twd] × pointsCount. The buffer is
+   *  pre-allocated worst-case in the worker and transferred zero-copy. */
+  pointsBuf: Float32Array;
+  /** Number of valid points in pointsBuf (length / 6). */
+  pointsCount: number;
+  /** Reference timestamp; absolute timestamp_i = startMs + pointsBuf[i*6+2] */
+  startMs: number;
   timeMarkers: TimeMarker[];
   maneuverMarkers: ManeuverMarker[];
   bspMax: number;
+}
+
+/** Read a single packed point as an object. Use sparingly — for tight loops
+ *  prefer direct buffer access via PROJECTION_POINT_FIELDS. */
+export function readProjectionPoint(r: ProjectionResult, i: number): ProjectionPoint {
+  const b = i * PROJECTION_POINT_FIELDS;
+  return {
+    lat: r.pointsBuf[b]!,
+    lon: r.pointsBuf[b + 1]!,
+    timestamp: r.startMs + r.pointsBuf[b + 2]!,
+    bsp: r.pointsBuf[b + 3]!,
+    tws: r.pointsBuf[b + 4]!,
+    twd: r.pointsBuf[b + 5]!,
+  };
 }
 
 // ── Worker Messages ──

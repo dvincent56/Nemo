@@ -15,13 +15,92 @@ import type {
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
-const DEBOUNCE_HDG_MS = 33;
-const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
+// ── line-gradient color ramp ──
+// Mirrors the previous static `line-color` interpolate stops (red → orange →
+// yellow → green by speed-to-bspMax ratio). We bake colors per vertex client-
+// side because `line-gradient` only accepts `['line-progress']` as input —
+// data-driven attributes are not allowed inside it.
+const COLOR_STOPS: ReadonlyArray<readonly [number, number, number, number]> = [
+  [0.0, 192, 57, 43],   // #c0392b — red
+  [0.2, 192, 57, 43],
+  [0.35, 230, 126, 34], // #e67e22 — orange
+  [0.5, 241, 196, 15],  // #f1c40f — yellow
+  [0.75, 39, 174, 96],  // #27ae60 — green
+  [1.0, 39, 174, 96],
+];
+
+function bspRatioToRgb(ratio: number): string {
+  const r = ratio <= 0 ? 0 : ratio >= 1 ? 1 : ratio;
+  for (let i = 0; i < COLOR_STOPS.length - 1; i++) {
+    const [t0, r0, g0, b0] = COLOR_STOPS[i]!;
+    const [t1, r1, g1, b1] = COLOR_STOPS[i + 1]!;
+    if (r >= t0 && r <= t1) {
+      const f = t1 === t0 ? 0 : (r - t0) / (t1 - t0);
+      const R = Math.round(r0 + (r1 - r0) * f);
+      const G = Math.round(g0 + (g1 - g0) * f);
+      const B = Math.round(b0 + (b1 - b0) * f);
+      return `rgb(${R},${G},${B})`;
+    }
+  }
+  const last = COLOR_STOPS[COLOR_STOPS.length - 1]!;
+  return `rgb(${last[1]},${last[2]},${last[3]})`;
+}
+
+import { haversineKmScalar as haversineKm } from '@/lib/geo';
+
+/**
+ * Build a MapLibre `line-gradient` expression directly from the packed
+ * pointsBuf [lat, lon, dtMs, bsp, tws, twd] × N. Avoids any per-vertex
+ * object allocation on the hot path.
+ *
+ * Note: MapLibre's `line-progress` is computed in projected (mercator) space
+ * while we use geodesic (haversine). At mid-latitudes the two diverge by less
+ * than ~1% over the projection's typical extent — visually invisible.
+ */
+function buildLineGradient(
+  buf: Float32Array,
+  count: number,
+  bspMax: number,
+): unknown | null {
+  if (count < 2) return null;
+
+  const dist = new Float64Array(count);
+  let total = 0;
+  for (let i = 1; i < count; i++) {
+    const b0 = (i - 1) * 6;
+    const b1 = i * 6;
+    const d = haversineKm(buf[b0]!, buf[b0 + 1]!, buf[b1]!, buf[b1 + 1]!);
+    total += d;
+    dist[i] = total;
+  }
+  if (total <= 0) return null;
+
+  const expr: unknown[] = ['interpolate', ['linear'], ['line-progress']];
+  let lastT = -1;
+  for (let i = 0; i < count; i++) {
+    let t = dist[i]! / total;
+    // MapLibre requires strictly increasing stops. Nudge duplicates forward
+    // by a tiny epsilon — degenerate cases (zero-distance segments) are rare
+    // but possible when the projection records two points at the same spot.
+    if (t <= lastT) t = lastT + 1e-7;
+    if (t > 1) t = 1;
+    lastT = t;
+    const bsp = buf[i * 6 + 3]!;
+    const ratio = bspMax > 0 ? bsp / bspMax : 0;
+    expr.push(t, bspRatioToRgb(ratio));
+  }
+  return expr;
+}
+
+// Packed layout: [u_kn, v_kn, swh, swellSin, swellCos, swellPeriod]. Storing
+// wind as (u, v) and swell direction as (sin, cos) lets the lookup interpolate
+// every field linearly — no per-corner trig in the hot sample path.
+const FIELDS_PER_POINT = 6;
 const MS_TO_KTS = 1.94384;
 
 /**
- * Convert the multi-hour decoded GRIB grid (u/v/swh/mwdSin/mwdCos/mwp per hour)
- * into a packed Float32Array of (tws/twd/swh/swellDir/swellPeriod) for the worker.
+ * Pack the multi-hour decoded GRIB grid (u/v/swh/mwdSin/mwdCos/mwp per hour)
+ * into the worker's expected layout (u_kn/v_kn/swh/mwdSin/mwdCos/mwp).
  * One layer per forecast hour — enables temporal interpolation.
  */
 function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
@@ -74,23 +153,21 @@ function packWindDataFromDecoded(decoded: DecodedWeatherGrid): {
     const outHour = h * pointsPerHour * FIELDS_PER_POINT;
     for (let i = 0; i < pointsPerHour; i++) {
       const sb = srcHour + i * 6;
+      const ob = outHour + i * FIELDS_PER_POINT;
       const u = src[sb]!;
       const v = src[sb + 1]!;
       const swh = src[sb + 2]!;
       const mwdSin = src[sb + 3]!;
       const mwdCos = src[sb + 4]!;
       const mwp = src[sb + 5]!;
-      const tws = Math.sqrt(u * u + v * v) * MS_TO_KTS;
-      const twd = ((Math.atan2(-u, -v) * 180 / Math.PI) + 360) % 360;
-      const swellDir = Number.isFinite(mwdSin) && Number.isFinite(mwdCos)
-        ? ((Math.atan2(mwdSin, mwdCos) * 180 / Math.PI) + 360) % 360
-        : 0;
-      const ob = outHour + i * FIELDS_PER_POINT;
-      out[ob] = tws;
-      out[ob + 1] = twd;
-      out[ob + 2] = Number.isFinite(swh) ? Math.max(0, swh) : 0;
-      out[ob + 3] = swellDir;
-      out[ob + 4] = Number.isFinite(mwp) ? mwp : 0;
+      // u/v converted to knots once at pack time; the lookup just runs sqrt.
+      out[ob] = u * MS_TO_KTS;
+      out[ob + 1] = v * MS_TO_KTS;
+      out[ob + 2] = Number.isFinite(swh) && swh > 0 ? swh : 0;
+      // mwdSin/mwdCos already form a unit vector — store as-is for linear interp.
+      out[ob + 3] = Number.isFinite(mwdSin) ? mwdSin : 0;
+      out[ob + 4] = Number.isFinite(mwdCos) ? mwdCos : 0;
+      out[ob + 5] = Number.isFinite(mwp) ? mwp : 0;
     }
   }
 
@@ -116,7 +193,8 @@ const BOAT_CLASS_FILES: Record<BoatClass, string> = {
 
 /**
  * Single-snapshot fallback: pack a WeatherGrid (already tws/twd) when the
- * decoded multi-hour binary isn't available yet.
+ * decoded multi-hour binary isn't available yet. Converts tws/twd → u/v and
+ * swellDir → sin/cos to match the layout the lookup expects.
  */
 function packWindDataFromSnapshot(grid: {
   points: Array<{ tws: number; twd: number; swellHeight: number; swellDir: number; swellPeriod: number }>;
@@ -135,14 +213,20 @@ function packWindDataFromSnapshot(grid: {
 } {
   const n = grid.points.length;
   const data = new Float32Array(n * FIELDS_PER_POINT);
+  const DEG_TO_RAD = Math.PI / 180;
   for (let i = 0; i < n; i++) {
     const p = grid.points[i]!;
     const b = i * FIELDS_PER_POINT;
-    data[b] = p.tws;
-    data[b + 1] = p.twd;
-    data[b + 2] = p.swellHeight;
-    data[b + 3] = p.swellDir;
-    data[b + 4] = p.swellPeriod;
+    // Recover u/v from (tws, twd). twd is the direction wind comes FROM, so
+    // (-sin, -cos) gives the direction it blows TO — matches the GRIB convention.
+    const twdRad = p.twd * DEG_TO_RAD;
+    data[b] = -Math.sin(twdRad) * p.tws;
+    data[b + 1] = -Math.cos(twdRad) * p.tws;
+    data[b + 2] = p.swellHeight > 0 ? p.swellHeight : 0;
+    const swdRad = p.swellDir * DEG_TO_RAD;
+    data[b + 3] = Math.sin(swdRad);
+    data[b + 4] = Math.cos(swdRad);
+    data[b + 5] = p.swellPeriod;
   }
   return {
     data,
@@ -208,7 +292,6 @@ function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: stri
 
 export function useProjectionLine(map: maplibregl.Map | null): void {
   const workerRef = useRef<Worker | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(map);
   const lastResultRef = useRef<ProjectionResult | null>(null);
@@ -220,6 +303,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   // Tracks which packed grid has already been seeded to the worker — avoids
   // re-transferring 10-30 MB of wind data on every compute.
   const seededPackedRef = useRef<ReturnType<typeof packWindDataFromDecoded> | null>(null);
+  // Coalescing instead of debounce: at most one compute in flight; if a
+  // request arrives while busy we mark `pending` and re-fire on result with
+  // the latest store state. Zero baseline latency on drag — no setTimeout.
+  const inFlightRef = useRef(false);
+  const pendingRef = useRef(false);
 
   // Keep mapRef in sync without re-running effects when map changes
   useEffect(() => {
@@ -244,34 +332,40 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       return;
     }
     const map = m;
+    const buf = result.pointsBuf;
+    const count = result.pointsCount;
 
-    // Line source: one LineString segment per pair of points with bspRatio property
-    const lineFeatures: GeoJSON.Feature[] = [];
-    for (let i = 0; i < result.points.length - 1; i++) {
-      const p0 = result.points[i]!;
-      const p1 = result.points[i + 1]!;
-      lineFeatures.push({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [[p0.lon, p0.lat], [p1.lon, p1.lat]],
-        },
-        properties: {
-          bsp: p0.bsp,
-          bspRatio: result.bspMax > 0 ? p0.bsp / result.bspMax : 0,
-        },
-      });
-    }
-
+    // Line source: one LineString covering all points. Color is applied via
+    // a `line-gradient` paint expression keyed on `line-progress`, with a
+    // stop per vertex placed at its normalised cumulative-distance position.
+    // This replaces the old per-segment Feature approach (~500 features per
+    // recompute), which was the main render-side bottleneck on mobile.
     const lineSrc = map.getSource('projection-line') as maplibregl.GeoJSONSource | undefined;
-    lineSrc?.setData({ type: 'FeatureCollection', features: lineFeatures });
+    if (count < 2) {
+      lineSrc?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} });
+    } else {
+      const coords: Array<[number, number]> = new Array(count);
+      for (let i = 0; i < count; i++) {
+        const b = i * 6;
+        coords[i] = [buf[b + 1]!, buf[b]!]; // [lon, lat]
+      }
+      lineSrc?.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: coords },
+        properties: {},
+      });
+      const gradient = buildLineGradient(buf, count, result.bspMax);
+      if (gradient) {
+        map.setPaintProperty('projection-line-layer', 'line-gradient', gradient);
+      }
+    }
 
     // Time markers source
     const timeFeatures: GeoJSON.Feature[] = result.timeMarkers.map((m) => {
-      const p = result.points[m.index]!;
+      const b = m.index * 6;
       return {
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        geometry: { type: 'Point', coordinates: [buf[b + 1]!, buf[b]!] },
         properties: { label: m.label },
       };
     });
@@ -282,12 +376,16 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     // Maneuver markers source
     const manFeatures: GeoJSON.Feature[] = result.maneuverMarkers
       .map((m) => {
-        const p = result.points[m.index];
-        if (!p) return null;
+        if (m.index < 0 || m.index >= count) return null;
+        const b = m.index * 6;
         return {
           type: 'Feature',
-          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
-          properties: { type: m.type, detail: m.detail, timestamp: p.timestamp },
+          geometry: { type: 'Point', coordinates: [buf[b + 1]!, buf[b]!] },
+          properties: {
+            type: m.type,
+            detail: m.detail,
+            timestamp: result.startMs + buf[b + 2]!,
+          },
         };
       })
       .filter(Boolean) as GeoJSON.Feature[];
@@ -313,15 +411,17 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     worker.onmessage = (e: MessageEvent<WorkerOutMessage>) => {
       if (e.data.type === 'result') {
-        console.log('[Projection] result:', {
-          points: e.data.result.points.length,
-          timeMarkers: e.data.result.timeMarkers.length,
-          maneuverMarkers: e.data.result.maneuverMarkers.length,
-          bspMax: e.data.result.bspMax,
-        });
+        inFlightRef.current = false;
         lastResultRef.current = e.data.result;
         updateMapSources(e.data.result);
+        // If the user kept dragging while we were computing, fire a fresh
+        // compute with the latest store state — no debounce, no stale frame.
+        if (pendingRef.current) {
+          pendingRef.current = false;
+          requestCompute();
+        }
       } else if (e.data.type === 'error') {
+        inFlightRef.current = false;
         console.error('[Projection] worker error:', e.data.message);
       }
     };
@@ -351,138 +451,111 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       .then((r) => r.json())
       .then((polar) => {
         polarRef.current = polar;
-        console.log('[Projection] polar loaded:', boatClass, '— TWA axis:', polar.twa?.length, 'pts, TWS axis:', polar.tws?.length, 'pts, sails:', Object.keys(polar.speeds ?? {}).join(','));
-        requestCompute(true);
+        requestCompute();
       })
       .catch((err) => console.error('[Projection] polar fetch failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boatClass]);
 
-  // Trigger recalculation
-  const requestCompute = useCallback((immediate = false) => {
+  // Trigger recalculation. Coalescing: at most one compute in flight; while
+  // busy, just mark pending and the result handler re-fires with latest state.
+  const requestCompute = useCallback(() => {
     if (!workerRef.current) return;
+    if (inFlightRef.current) {
+      pendingRef.current = true;
+      return;
+    }
 
-    const doCompute = () => {
-      const state = useGameStore.getState();
-      const { hud, sail, weather, prog, preview, zones } = state;
-      const decoded = weather.decodedGrid;
-      const snapshot = weather.gridData;
-      if (!decoded && !snapshot) {
-        console.log('[Projection] skip: no weather grid');
-        return;
+    const state = useGameStore.getState();
+    const { hud, sail, weather, prog, preview, zones } = state;
+    const decoded = weather.decodedGrid;
+    const snapshot = weather.gridData;
+    if (!decoded && !snapshot) return;
+    if (!hud.lat && !hud.lon) return;
+    if (!polarRef.current) return;
+
+    // Preview overrides actual state (compass drag, sail hover, TWA lock)
+    const effectiveHdg = preview.hdg ?? hud.hdg;
+    const effectiveSail = preview.sail ?? sail.currentSail;
+    let effectiveTwaLock = preview.twaLocked ? preview.lockedTwa : null;
+
+    // Dragging compass while TWA locked: interpret the new heading as
+    // a new locked TWA (relative to current wind direction).
+    if (preview.twaLocked && preview.hdg !== null) {
+      effectiveTwaLock = ((preview.hdg - hud.twd + 540) % 360) - 180;
+      if (effectiveTwaLock === -180) effectiveTwaLock = 180;
+    }
+
+    // Pack wind data — prefer multi-hour decoded, fall back to single snapshot.
+    // The packed buffer is kept on the main thread (cached in packedWindRef)
+    // only so we can detect when the grid has changed and needs re-seeding.
+    let packed: ReturnType<typeof packWindDataFromDecoded>;
+    if (decoded) {
+      if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
+        packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
+        seededPackedRef.current = null; // grid changed — need to re-seed the worker
       }
-      if (!hud.lat && !hud.lon) {
-        console.log('[Projection] skip: no boat position');
-        return;
-      }
-      if (!polarRef.current) {
-        console.log('[Projection] skip: polar not loaded yet');
-        return;
-      }
+      packed = packedWindRef.current.packed;
+    } else {
+      packed = packWindDataFromSnapshot(snapshot!);
+    }
 
-      // Preview overrides actual state (compass drag, sail hover, TWA lock)
-      const effectiveHdg = preview.hdg ?? hud.hdg;
-      const effectiveSail = preview.sail ?? sail.currentSail;
-      let effectiveTwaLock = preview.twaLocked ? preview.lockedTwa : null;
-
-      // Dragging compass while TWA locked: interpret the new heading as
-      // a new locked TWA (relative to current wind direction).
-      if (preview.twaLocked && preview.hdg !== null) {
-        effectiveTwaLock = ((preview.hdg - hud.twd + 540) % 360) - 180;
-        if (effectiveTwaLock === -180) effectiveTwaLock = 180;
-      }
-
-      console.log('[Projection] input', {
-        hudHdg: hud.hdg,
-        hudTwa: hud.twa,
-        hudTwaLock: hud.twaLock,
-        previewHdg: preview.hdg,
-        previewTwaLocked: preview.twaLocked,
-        previewLockedTwa: preview.lockedTwa,
-        effectiveHdg,
-        effectiveTwaLock,
-        effectiveSail,
-        sailAuto: sail.sailAuto,
-      });
-
-      // Pack wind data — prefer multi-hour decoded, fall back to single snapshot.
-      // The packed buffer is kept on the main thread (cached in packedWindRef)
-      // only so we can detect when the grid has changed and needs re-seeding.
-      let packed: ReturnType<typeof packWindDataFromDecoded>;
-      if (decoded) {
-        if (!packedWindRef.current || packedWindRef.current.decoded !== decoded) {
-          console.log('[Projection] packing wind data from', decoded.header.numHours, 'hours');
-          packedWindRef.current = { decoded, packed: packWindDataFromDecoded(decoded) };
-          seededPackedRef.current = null; // grid changed — need to re-seed the worker
-        }
-        packed = packedWindRef.current.packed;
-      } else {
-        packed = packWindDataFromSnapshot(snapshot!);
-      }
-
-      // Seed the worker once per grid — subsequent `compute` messages carry
-      // only boat state (~1 KB) instead of re-transferring 10-30 MB of wind.
-      if (seededPackedRef.current !== packed) {
-        const seed = new Float32Array(packed.data); // copy because we transfer
-        const seedMsg: WorkerInMessage = {
-          type: 'setWindGrid',
-          windGrid: {
-            bounds: packed.bounds,
-            resolution: packed.resolution,
-            cols: packed.cols,
-            rows: packed.rows,
-            timestamps: packed.timestamps,
-          },
-          windData: seed,
-        };
-        workerRef.current!.postMessage(seedMsg, [seed.buffer]);
-        seededPackedRef.current = packed;
-      }
-
-      const nowMs = Date.now();
-
-      const input: ProjectionInput = {
-        lat: hud.lat,
-        lon: hud.lon,
-        hdg: effectiveHdg,
-        nowMs,
-        boatClass: hud.boatClass,
-        activeSail: effectiveSail,
-        sailAuto: sail.sailAuto,
-        twaLock: effectiveTwaLock,
-        segments: orderQueueToSegments(prog.orderQueue),
-        polar: polarRef.current!,
-        // Real aggregated loadout effects from the engine — upgrade bonuses
-        // and wear multipliers shape the predicted trajectory the same way
-        // they shape the live tick.
-        effects: hud.effects,
-        condition: {
-          hull: hud.wearDetail.hull,
-          rig: hud.wearDetail.rig,
-          sails: hud.wearDetail.sails,
-          electronics: hud.wearDetail.electronics,
+    // Seed the worker once per grid — subsequent `compute` messages carry
+    // only boat state (~1 KB) instead of re-transferring 10-30 MB of wind.
+    if (seededPackedRef.current !== packed) {
+      const seed = new Float32Array(packed.data); // copy because we transfer
+      const seedMsg: WorkerInMessage = {
+        type: 'setWindGrid',
+        windGrid: {
+          bounds: packed.bounds,
+          resolution: packed.resolution,
+          cols: packed.cols,
+          rows: packed.rows,
+          timestamps: packed.timestamps,
         },
-        activeManeuver: sail.maneuverEndMs > Date.now()
-          ? { endMs: sail.maneuverEndMs, speedFactor: 0.7 }
-          : null,
-        activeTransition: sail.transitionEndMs > Date.now()
-          ? { endMs: sail.transitionEndMs, speedFactor: 0.7 }
-          : null,
-        prevTwa: hud.twa || null,
-        referenceTwd: hud.twd,
-        zones: zones.map(toProjectionZone).filter((z): z is ProjectionZone => z !== null),
+        windData: seed,
       };
+      workerRef.current.postMessage(seedMsg, [seed.buffer]);
+      seededPackedRef.current = packed;
+    }
 
-      const msg: WorkerInMessage = { type: 'compute', input };
-      workerRef.current!.postMessage(msg);
+    const nowMs = Date.now();
+
+    const input: ProjectionInput = {
+      lat: hud.lat,
+      lon: hud.lon,
+      hdg: effectiveHdg,
+      nowMs,
+      boatClass: hud.boatClass,
+      activeSail: effectiveSail,
+      sailAuto: sail.sailAuto,
+      twaLock: effectiveTwaLock,
+      segments: orderQueueToSegments(prog.orderQueue),
+      polar: polarRef.current,
+      // Real aggregated loadout effects from the engine — upgrade bonuses
+      // and wear multipliers shape the predicted trajectory the same way
+      // they shape the live tick.
+      effects: hud.effects,
+      condition: {
+        hull: hud.wearDetail.hull,
+        rig: hud.wearDetail.rig,
+        sails: hud.wearDetail.sails,
+        electronics: hud.wearDetail.electronics,
+      },
+      activeManeuver: sail.maneuverEndMs > Date.now()
+        ? { endMs: sail.maneuverEndMs, speedFactor: 0.7 }
+        : null,
+      activeTransition: sail.transitionEndMs > Date.now()
+        ? { endMs: sail.transitionEndMs, speedFactor: 0.7 }
+        : null,
+      prevTwa: hud.twa || null,
+      referenceTwd: hud.twd,
+      zones: zones.map(toProjectionZone).filter((z): z is ProjectionZone => z !== null),
     };
 
-    if (immediate) {
-      doCompute();
-    } else {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(doCompute, DEBOUNCE_HDG_MS);
-    }
+    const msg: WorkerInMessage = { type: 'compute', input };
+    workerRef.current.postMessage(msg);
+    inFlightRef.current = true;
   }, []);
 
   // Subscribe to store changes that trigger recalculation
@@ -526,20 +599,20 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevPreviewTwaLocked = s.preview.twaLocked;
       prevPreviewLockedTwa = s.preview.lockedTwa;
 
-      // Compass drag → debounced. Everything else → immediate.
-      if (previewHdgChanged || hdgChanged) {
-        requestCompute(false);
-      } else if (
+      // All state changes funnel through the same coalescing path —
+      // backpressure is handled by inFlight/pending refs, not by debounce.
+      if (
+        previewHdgChanged || hdgChanged ||
         sailChanged || autoChanged || queueChanged || tickChanged || gridChanged ||
         zonesChanged ||
         previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged
       ) {
-        requestCompute(true);
+        requestCompute();
       }
     });
 
     // Initial computation
-    requestCompute(true);
+    requestCompute();
 
     return unsub;
   }, [requestCompute]);

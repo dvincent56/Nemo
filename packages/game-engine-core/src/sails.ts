@@ -33,26 +33,19 @@ export function pickOptimalSail(polar: Polar, twa: number, tws: number): SailId 
   return best;
 }
 
-/** True if `twaAbs` sits inside the declared TWA range of `sail`.
- *  Used by the auto-sail logic as a hysteresis: while the current sail
- *  covers the TWA we don't switch for marginal BSP gains. */
-export function isSailInRange(sail: SailId, twaAbs: number): boolean {
-  const def = GameBalance.sails.definitions[sail];
-  if (!def) return true;
-  return twaAbs >= def.twaMin && twaAbs <= def.twaMax;
-}
-
 /**
- * Bonus de recouvrement — n'a de sens qu'en mode voile auto.
+ * Bonus de recouvrement — uniquement en mode voile auto, hors manœuvre.
  *
- * Quand l'hystérésis d'auto garde la voile active dans sa plage alors
- * qu'une autre voile serait marginalement plus rapide, le moteur accorde
- * la BSP de la voile optimale (ratio opt/active ≥ 1) ; le joueur profite
- * de la vitesse optimale tout en évitant la pénalité de changement de
- * voile — à ses risques : le moindre décalage de vent fait bascule et il
- * encaisse les 360 s de transition.
+ * L'auto-switch ne déclenche que si la voile optimale bat l'active de plus
+ * de `overlapThreshold` (ex: 1.014 = +1.4%). Sous ce seuil le moteur garde
+ * l'active mais lui applique la BSP de l'optimale : le joueur profite de la
+ * vitesse optimale sans payer la pénalité de changement de voile. Le facteur
+ * renvoyé = ratio opt/active, borné à `overlapThreshold` — au-delà, la
+ * transition a dû être déclenchée (si ce n'est pas le cas, le cap protège
+ * contre un facteur absurde).
  *
- * Mode manuel : 1.0 sans exception. Le joueur assume sa voile.
+ * Retourne 1.0 en mode manuel, pendant une transition de voile, ou pendant
+ * un virement/empannage (ces états cumulent déjà leurs propres pénalités).
  */
 export function computeOverlapFactor(
   activeSail: SailId,
@@ -60,15 +53,18 @@ export function computeOverlapFactor(
   tws: number,
   polar: Polar,
   autoMode: boolean,
+  isManoeuvring: boolean,
 ): number {
-  if (!autoMode) return 1.0;
+  if (!autoMode || isManoeuvring) return 1.0;
   const twaAbs = Math.min(Math.abs(twa), 180);
   const activeBsp = getPolarSpeed(polar, activeSail, twaAbs, tws);
   if (activeBsp <= 0) return 1.0;
   const optimal = pickOptimalSail(polar, twa, tws);
   if (activeSail === optimal) return 1.0;
   const optBsp = getPolarSpeed(polar, optimal, twaAbs, tws);
-  return optBsp / activeBsp;
+  const ratio = optBsp / activeBsp;
+  const cap = GameBalance.sails.overlapThreshold;
+  return Math.max(1.0, Math.min(ratio, cap));
 }
 
 function transitionKey(from: SailId, to: SailId): string {
@@ -114,13 +110,17 @@ export function advanceSailState(
 
   const isManoeuvring = next.transitionEndMs > 0 && nowMs < next.transitionEndMs;
   if (next.autoMode && !isManoeuvring) {
-    // Keep the current sail while its TWA range still covers us — avoids
-    // flapping across a crossover for a sub-percent BSP gain, given that
-    // every switch costs a 120-360 s ×0.7 transition penalty.
-    const stayInRange = isSailInRange(next.active, twaAbs) && activeBsp > 0;
-    if (!stayInRange) {
-      const optimal = pickOptimalSail(polar, twa, tws);
-      if (optimal !== next.active) {
+    // Hystérésis BSP : on ne déclenche un changement de voile que si l'optimale
+    // bat l'active d'au moins `overlapThreshold` (+1.4% par défaut). Sous ce
+    // seuil, l'overlap applique la BSP optimale à la voile active (voir
+    // computeOverlapFactor). Si l'active donne 0 kt (hors plage polar), on
+    // switch sans condition.
+    const optimal = pickOptimalSail(polar, twa, tws);
+    if (optimal !== next.active) {
+      const optimalBsp = getPolarSpeed(polar, optimal, twaAbs, tws);
+      const threshold = GameBalance.sails.overlapThreshold;
+      const shouldSwitch = activeBsp <= 0 || optimalBsp / activeBsp > threshold;
+      if (shouldSwitch) {
         const dur = getTransitionDuration(next.active, optimal, loadoutEffects);
         next.active = optimal;
         next.pending = null;

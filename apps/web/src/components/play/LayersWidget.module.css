@@ -7,6 +7,8 @@
   flex-direction: column;
   gap: 8px;
   min-width: 170px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .title {
@@ -44,6 +46,12 @@
 .icon {
   font-size: 14px;
   color: rgba(245, 240, 232, 0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .switch {
@@ -103,17 +111,18 @@
   50% { opacity: 1; }
 }
 
-/* Phone — compact: icon + toggle only */
+/* Phone — garde la largeur pleine du leftStack (alignée avec WindLegend) et
+ * préserve les labels ; on ne rétrécit que les paddings internes et les
+ * éléments interactifs pour gagner de la hauteur sans changer la largeur. */
 @media (max-width: 600px) {
   .widget {
     padding: 6px 8px;
     gap: 5px;
-    min-width: auto;
   }
   .title { display: none; }
   .gfsStatus { display: none; }
   .row { gap: 8px; }
-  .rowLabel { font-size: 0; gap: 0; }
+  .rowLabel { font-size: 11px; }
   .icon { font-size: 13px; }
   .switch { width: 28px; height: 16px; }
   .switchDot { width: 12px; height: 12px; }

@@ -22,22 +22,40 @@
   font-weight: 700;
 }
 
-/* Phone portrait — shift down below ranking FAB */
-@media (max-width: 600px) {
-  .coords {
-    top: 44px;
-    left: 8px;
-    font-size: 10px;
-    padding: 5px 8px;
-  }
+/* Version inline single-line (mobile) — cachée en desktop */
+.inline { display: none; }
+.inlineSep {
+  margin: 0 6px;
+  color: rgba(245, 240, 232, 0.35);
 }
 
-/* Landscape mobile — same shift below ranking FAB */
+/* Mobile portrait — aligné sur le FAB classement : même top (8px), même
+ * padding vertical (6px) et line-height (16px) pour une hauteur de boîte
+ * identique (~30px). Décalé à left:72px pour laisser passer le FAB (~60px
+ * de large) avec un peu d'air. Single-line pour tenir sur 412px. */
+@media (max-width: 600px) {
+  .coords {
+    top: 8px;
+    left: 72px;
+    padding: 6px 10px;
+    font-size: 10px;
+    line-height: 16px;
+    align-items: center;
+  }
+  .row { display: none; }
+  .inline { display: inline-flex; align-items: baseline; }
+}
+
+/* Landscape mobile — idem */
 @media (max-height: 500px) {
   .coords {
-    top: 44px;
-    left: 8px;
+    top: 8px;
+    left: 72px;
+    padding: 6px 10px;
     font-size: 10px;
-    padding: 5px 8px;
+    line-height: 16px;
+    align-items: center;
   }
+  .row { display: none; }
+  .inline { display: inline-flex; align-items: baseline; }
 }

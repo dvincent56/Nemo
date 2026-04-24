@@ -1,17 +1,8 @@
 'use client';
 
 import { useGameStore } from '@/lib/store';
+import { formatDMS } from './formatDMS';
 import styles from './CoordsDisplay.module.css';
-
-function formatDMS(decimal: number, isLat: boolean): string {
-  const abs = Math.abs(decimal);
-  const deg = Math.floor(abs);
-  const min = ((abs - deg) * 60).toFixed(2);
-  const dir = isLat
-    ? (decimal >= 0 ? 'N' : 'S')
-    : (decimal >= 0 ? 'E' : 'O');
-  return `${deg}°${min}'${dir}`;
-}
 
 export default function CoordsDisplay(): React.ReactElement {
   const lat = useGameStore((s) => s.hud.lat);
@@ -25,6 +16,13 @@ export default function CoordsDisplay(): React.ReactElement {
       <div className={styles.row}>
         <span className={styles.value}>{formatDMS(lon, false)}</span>
       </div>
+      {/* Mobile : version compacte sur une ligne pour tenir à côté du FAB
+          classement sans descendre sous lui. Masquée en desktop via CSS. */}
+      <span className={styles.inline}>
+        <span className={styles.value}>{formatDMS(lat, true)}</span>
+        <span className={styles.inlineSep}>·</span>
+        <span className={styles.value}>{formatDMS(lon, false)}</span>
+      </span>
     </div>
   );
 }

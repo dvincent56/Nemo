@@ -43,8 +43,9 @@
   letter-spacing: 0.06em;
 }
 
-/* Phone */
-@media (max-width: 600px) {
+/* Phone portrait — compact mais visible (leftStack reste assez bas pour
+ * ne pas toucher le FAB classement en haut). */
+@media (max-width: 600px) and (orientation: portrait) {
   .legend {
     padding: 6px 8px;
     gap: 6px;
@@ -53,4 +54,11 @@
   .label { font-size: 8px; }
   .bar { height: 6px; }
   .ticks { font-size: 8px; }
+}
+
+/* Phone landscape — caché : hauteur très limitée, la leftStack remonte
+ * suffisamment pour passer sous le FAB classement. La valeur précise
+ * TWS/TWD reste accessible via le tooltip carte (doigt maintenu). */
+@media (max-width: 900px) and (orientation: landscape), (max-height: 500px) {
+  .legend { display: none; }
 }

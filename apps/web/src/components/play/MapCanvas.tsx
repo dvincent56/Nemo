@@ -191,23 +191,25 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       });
 
       // ── Projection line ──
+      // Single LineString + line-gradient: MapLibre rasterises one strip with
+      // a 256-sample 1D color texture, much cheaper than rendering N segment
+      // features. The gradient expression is set per-recompute by the hook
+      // via map.setPaintProperty(... 'line-gradient', ...).
       map.addSource('projection-line', {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+        lineMetrics: true,
       });
       map.addLayer({
         id: 'projection-line-layer',
         type: 'line',
         source: 'projection-line',
         paint: {
-          'line-color': [
-            'interpolate', ['linear'], ['get', 'bspRatio'],
-            0.0, '#c0392b',
-            0.2, '#c0392b',
-            0.35, '#e67e22',
-            0.5, '#f1c40f',
-            0.75, '#27ae60',
-            1.0, '#27ae60',
+          // Initial fallback gradient — the hook overwrites it on first compute
+          // with a per-vertex color ramp keyed on bspRatio along line-progress.
+          'line-gradient': [
+            'interpolate', ['linear'], ['line-progress'],
+            0, '#27ae60', 1, '#27ae60',
           ],
           'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
           'line-opacity': 0.85,

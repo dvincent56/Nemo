@@ -27,8 +27,7 @@ import LayersWidget from '@/components/play/LayersWidget';
 import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
-import { useCompassLayout } from '@/components/play/hooks/useCompassLayout';
-import { interpolateGfsWind } from '@/lib/weather/gfsParser';
+import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
 import { loadPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { Trophy, Sailboat, Route, LocateFixed, Plus, Minus } from 'lucide-react';
@@ -74,10 +73,16 @@ function useBoatInit(raceId: string): void {
 
     reset.then(() => fetchMyBoat(raceId)).then((boat) => {
       if (cancelled || !boat) return;
+      // NB: on n'écrit PAS twd/tws/twa depuis le snapshot HTTP. Le snapshot
+      // est le résultat du dernier tick moteur, qui peut avoir jusqu'à
+      // `tickIntervalSeconds` d'âge, et le vent a avancé depuis. Le hook
+      // GFS ci-dessous sème les valeurs à partir de la grille multi-heures
+      // avec interpolation temporelle (même formule que le moteur), puis le
+      // premier tick WS prend le relais sans flash visible.
       store.setHud({
         boatClass: boat.boatClass,
         lat: boat.lat, lon: boat.lon, hdg: boat.hdg, bsp: boat.bsp,
-        twd: boat.twd, tws: boat.tws, twa: boat.twa, vmg: boat.vmg,
+        vmg: boat.vmg,
         dtf: boat.dtf, overlapFactor: boat.overlapFactor,
         rank: boat.rank, totalParticipants: boat.totalParticipants,
         rankTrend: boat.rankTrend, wearGlobal: boat.wearGlobal,
@@ -125,7 +130,6 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const [session, setSession] = useState<SessionContext>(ANONYMOUS);
   const [isRegistered, setIsRegistered] = useState(false);
   const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
-  const compassLayout = useCompassLayout();
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
 
@@ -153,28 +157,25 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // Lazily fetch a high-res 0.25° tactical tile around the boat position.
   useTacticalTile();
 
-  // Sync HUD wind values from GFS grid at boat position.
-  // Only updates TWS (wind speed) locally — TWD/TWA come from the server tick
-  // payload so they stay consistent with the engine (and TWA-lock behaves).
-  // When no server tick has landed yet, we seed the full set from GFS to avoid
-  // an empty compass on first paint.
-  const gridData = useGameStore((s) => s.weather.gridData);
+  // Seed HUD wind from the multi-hour decoded GFS grid with temporal interp
+  // at the current wall-clock — same formula the engine runs at each tick,
+  // so the values match within bilinear rounding. Runs only before the first
+  // WS tick lands; after that, server payload takes over.
+  const decodedGrid = useGameStore((s) => s.weather.decodedGrid);
   const boatLat = useGameStore((s) => s.hud.lat);
   const boatLon = useGameStore((s) => s.hud.lon);
   const boatHdg = useGameStore((s) => s.hud.hdg);
   const lastTickUnix = useGameStore((s) => s.lastTickUnix);
   useEffect(() => {
-    if (!gridData || (!boatLat && !boatLon)) return;
-    // Once the first server tick lands, HUD TWS/TWD/TWA all come from the
-    // server payload (same data the engine uses for BSP). We only seed from
-    // local GFS before that to avoid showing empty values on first paint.
+    if (!decodedGrid || (!boatLat && !boatLon)) return;
     if (lastTickUnix !== null) return;
-    const wind = interpolateGfsWind(gridData, boatLat, boatLon);
+    const wind = sampleDecodedWindAtTime(decodedGrid, boatLat, boatLon);
+    if (wind.tws === 0 && wind.twd === 0) return; // out of grid
     const tws = Math.round(wind.tws * 10) / 10;
     const twd = Math.round(wind.twd);
     const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
     useGameStore.getState().setHud({ twd, tws, twa });
-  }, [gridData, boatLat, boatLon, boatHdg, lastTickUnix]);
+  }, [decodedGrid, boatLat, boatLon, boatHdg, lastTickUnix]);
 
   if (access.kind === 'blocked') {
     return (
@@ -286,8 +287,8 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
         {/* Right stack — action buttons + compass */}
         {canInteract && (
-          <div className={`${styles.rightStack} ${styles[`layout_${compassLayout.replace(/-/g, '_')}`]}`}>
-            <div className={styles.actionButtons} data-compass-zone="true">
+          <div className={styles.rightStack}>
+            <div className={styles.actionButtons}>
               <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}

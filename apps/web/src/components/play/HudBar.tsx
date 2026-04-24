@@ -2,7 +2,9 @@
 
 import { memo } from 'react';
 import Link from 'next/link';
+import type { SailId } from '@nemo/shared-types';
 import { useGameStore } from '@/lib/store';
+import { getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import Tooltip from '@/components/ui/Tooltip';
 import styles from './HudBar.module.css';
 
@@ -12,19 +14,45 @@ function wearColor(value: number): string {
   return '#9e2a2a';
 }
 
-/** Factor colour:
- *  - 1.00 : white (no overlap, manual or active === optimal)
- *  - small bonus : orange (comfortable overlap zone)
- *  - big bonus : red (close to the sail's TWA range edge — next wind shift
- *    forces a switch and the 360 s transition penalty kicks in). */
+/** Factor colour. Le facteur = (BSP appliquée / BSP voile active), uniquement
+ *  > 1 dans la zone de recouvrement auto (borné à `sails.overlapThreshold`,
+ *  ≈ 1.014). À 1.0 = pas de bonus ; tout entre 1.0 et cap = bonus en cours. */
 function factorColor(f: number): string {
   if (f <= 1.0001) return '#f5f0e8';
-  if (f < 1.03) return '#f0b96b';
-  return '#9e2a2a';
+  return '#c9a227';
 }
 
 function HudBarInner(): React.ReactElement {
   const hud = useGameStore((s) => s.hud);
+  const sail = useGameStore((s) => s.sail);
+  const now = Date.now();
+
+  // BSP efficiency ratio: compare real BSP to the best polar speed achievable
+  // at the current TWA/TWS across all sails. Drops hard during any maneuver
+  // because `bsp` already carries the transition / tack / gybe penalty —
+  // giving the player a visible cue that the number is depressed on purpose.
+  const polar = getCachedPolar(hud.boatClass);
+  const bestPolarAtTwa = polar
+    ? Math.max(...(Object.keys(polar.speeds) as SailId[]).map((s) =>
+        getPolarSpeed(polar, s, hud.twa, hud.tws)))
+    : 0;
+  const bspRatio = bestPolarAtTwa > 0 ? hud.bsp / bestPolarAtTwa : 1;
+  const bspColor = bspRatio >= 0.95 ? styles.live
+    : bspRatio >= 0.80 ? styles.warn
+    : styles.danger;
+
+  // Active maneuver badge — explains any BSP suppression the player sees.
+  // Priority: gybe > tack > sail transition (matches engine penalty ordering).
+  const tackOrGybe = sail.maneuverKind !== 0 && now < sail.maneuverEndMs;
+  const sailTransitioning = sail.transitionEndMs > 0 && now < sail.transitionEndMs;
+  let maneuverBadge: { label: string; className: string } | null = null;
+  if (tackOrGybe && sail.maneuverKind === 2) {
+    maneuverBadge = { label: 'Empannage', className: styles.maneuverBadgeGybe! };
+  } else if (tackOrGybe && sail.maneuverKind === 1) {
+    maneuverBadge = { label: 'Virement', className: styles.maneuverBadgeTack! };
+  } else if (sailTransitioning) {
+    maneuverBadge = { label: 'Chgt voile', className: styles.maneuverBadgeSail! };
+  }
 
   const trendClass = hud.rankTrend > 0 ? styles.trendUp : hud.rankTrend < 0 ? styles.trendDown : '';
   const trendText = hud.rankTrend > 0 ? `▲ ${hud.rankTrend}` : hud.rankTrend < 0 ? `▼ ${Math.abs(hud.rankTrend)}` : '';
@@ -48,10 +76,17 @@ function HudBarInner(): React.ReactElement {
 
       {/* Stats */}
       <div className={styles.stats}>
-        <Tooltip text="Vitesse du bateau sur l'eau" position="bottom">
+        <Tooltip text="Vitesse réelle du bateau — pénalités de manœuvre incluses" position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>BSP</span>
-            <span className={`${styles.statValue} ${styles.live}`}>{hud.bsp.toFixed(3)} <small>nds</small></span>
+            <span className={`${styles.statValue} ${bspColor}`}>
+              {hud.bsp.toFixed(2)} <small>nds</small>
+              {maneuverBadge && (
+                <span className={`${styles.maneuverBadge} ${maneuverBadge.className}`}>
+                  {maneuverBadge.label}
+                </span>
+              )}
+            </span>
           </div>
         </Tooltip>
         <Tooltip text="Vitesse réelle du vent" position="bottom">
@@ -90,7 +125,10 @@ function HudBarInner(): React.ReactElement {
             <span className={styles.statValue}>{Math.round(hud.dtf).toLocaleString('fr-FR')} <small>NM</small></span>
           </div>
         </Tooltip>
-        <Tooltip text="Recouvrement de voile automatique" position="bottom">
+        <Tooltip
+          text="Zone de recouvrement — en voile auto uniquement, garde la voile active quand une autre serait marginalement plus rapide (≤ +1.4%) et lui applique la BSP de l'optimale pour éviter les allers-retours."
+          position="bottom"
+        >
           <div className={styles.stat}>
             <span className={styles.statLabel}>Factor</span>
             <span className={styles.statValue} style={{ color: factorColor(hud.overlapFactor) }}>

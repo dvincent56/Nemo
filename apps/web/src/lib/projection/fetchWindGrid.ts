@@ -13,13 +13,16 @@ import {
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { WindGridConfig } from './windLookup';
 
-const FIELDS_PER_POINT = 5; // tws, twd, swh, swellDir, swellPeriod
+// Packed layout per cell: [u_kn, v_kn, swh, mwdSin, mwdCos, mwp]. Storing
+// wind as (u, v) and swell direction as (sin, cos) lets createWindLookup
+// interpolate every field linearly — no per-corner trig in the sample path.
+const FIELDS_PER_POINT = 6;
 const MS_TO_KTS = 1.94384;
 
 /**
  * Convert a multi-hour decoded GRIB grid into the packed Float32Array format
- * expected by createWindLookup. One layer per forecast hour, 5 floats per cell:
- * [tws (kn), twd (deg), swh (m), swellDir (deg), swellPeriod (s)].
+ * expected by createWindLookup. One layer per forecast hour, 6 floats per cell:
+ * [u (kn), v (kn), swh (m), swellSin, swellCos, swellPeriod (s)].
  *
  * Extracted from useProjectionLine so it can be reused by the dev simulator
  * without pulling in React hooks or game-store dependencies.
@@ -42,24 +45,19 @@ export function packWindData(decoded: DecodedWeatherGrid): {
     const outHour = h * pointsPerHour * FIELDS_PER_POINT;
     for (let i = 0; i < pointsPerHour; i++) {
       const sb = srcHour + i * 6;
+      const ob = outHour + i * FIELDS_PER_POINT;
       const u = src[sb]!;
       const v = src[sb + 1]!;
       const swh = src[sb + 2]!;
       const mwdSin = src[sb + 3]!;
       const mwdCos = src[sb + 4]!;
       const mwp = src[sb + 5]!;
-      const tws = Math.sqrt(u * u + v * v) * MS_TO_KTS;
-      const twd = ((Math.atan2(-u, -v) * 180 / Math.PI) + 360) % 360;
-      const swellDir =
-        Number.isFinite(mwdSin) && Number.isFinite(mwdCos)
-          ? ((Math.atan2(mwdSin, mwdCos) * 180 / Math.PI) + 360) % 360
-          : 0;
-      const ob = outHour + i * FIELDS_PER_POINT;
-      out[ob] = tws;
-      out[ob + 1] = twd;
-      out[ob + 2] = Number.isFinite(swh) ? Math.max(0, swh) : 0;
-      out[ob + 3] = swellDir;
-      out[ob + 4] = Number.isFinite(mwp) ? mwp : 0;
+      out[ob] = u * MS_TO_KTS;
+      out[ob + 1] = v * MS_TO_KTS;
+      out[ob + 2] = Number.isFinite(swh) && swh > 0 ? swh : 0;
+      out[ob + 3] = Number.isFinite(mwdSin) ? mwdSin : 0;
+      out[ob + 4] = Number.isFinite(mwdCos) ? mwdCos : 0;
+      out[ob + 5] = Number.isFinite(mwp) ? mwp : 0;
     }
   }
 
