@@ -113,6 +113,10 @@
   font-size: 10px;
 }
 .results {
+  /* Visually separate the results card from the cone slider above —
+   * without the gap the green-bordered block reads as part of the
+   * Configuration section. */
+  margin-top: 16px;
   background: rgba(50, 180, 100, 0.06);
   border: 1px solid rgba(50, 180, 100, 0.4);
   border-radius: 3px;
