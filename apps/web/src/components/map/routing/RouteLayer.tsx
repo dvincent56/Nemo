@@ -76,70 +76,86 @@ function lineFeature(points: RoutePolylinePoint[]): GeoJSON.Feature<GeoJSON.Line
 export function RouteLayer({ routes, primaryId, colorFor, nextGfsRunMs }: Props) {
   useEffect(() => {
     const map = mapInstance;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
 
-    const seen = new Set<string>();
-    for (const [id, plan] of routes) {
-      seen.add(id);
-      const color = colorFor(id);
-      const freshWidth = id === primaryId ? 3.5 : 2;
-      const staleWidth = id === primaryId ? 2.5 : 1.5;
-      const { fresh, stale } = splitAtBoundary(plan.polyline, nextGfsRunMs);
+    let cancelled = false;
 
-      const variants: Array<{
-        suffix: 'fresh' | 'stale';
-        points: RoutePolylinePoint[];
-        width: number;
-        dash: [number, number];
-      }> = [
-        { suffix: 'fresh', points: fresh, width: freshWidth, dash: [2, 2] },
-        { suffix: 'stale', points: stale, width: staleWidth, dash: [1, 4] },
-      ];
+    const install = () => {
+      if (cancelled) return;
+      // Match IsochroneLayer/RouterDestinationMarker: poll until style ready
+      // instead of bailing silently. A single early `return` on
+      // !isStyleLoaded() left the route invisible whenever the layer mounted
+      // before the style hot-load completed (race observed when applying a
+      // computed route on first panel open).
+      if (!map.isStyleLoaded()) { setTimeout(install, 200); return; }
 
-      for (const v of variants) {
-        const sourceId = `sim-route-${v.suffix}-${id}`;
-        const layerId = `sim-route-line-${v.suffix}-${id}`;
-        if (v.points.length < 2) {
-          // Nothing to draw for this half — drop any stale layer left over
-          // from a previous render where the boundary cut it differently.
-          if (map.getLayer(layerId)) map.removeLayer(layerId);
-          if (map.getSource(sourceId)) map.removeSource(sourceId);
-          continue;
-        }
-        const feat = lineFeature(v.points);
-        if (!map.getSource(sourceId)) {
-          map.addSource(sourceId, { type: 'geojson', data: feat });
-          map.addLayer({
-            id: layerId,
-            type: 'line',
-            source: sourceId,
-            paint: {
-              'line-color': color,
-              'line-width': v.width,
-              'line-opacity': v.suffix === 'fresh' ? 0.9 : 0.55,
-              'line-dasharray': v.dash,
-            },
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
-          });
-        } else {
-          (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(feat);
-          map.setPaintProperty(layerId, 'line-color', color);
-          map.setPaintProperty(layerId, 'line-width', v.width);
+      const seen = new Set<string>();
+      for (const [id, plan] of routes) {
+        seen.add(id);
+        const color = colorFor(id);
+        const freshWidth = id === primaryId ? 3.5 : 2;
+        const staleWidth = id === primaryId ? 2.5 : 1.5;
+        const { fresh, stale } = splitAtBoundary(plan.polyline, nextGfsRunMs);
+
+        const variants: Array<{
+          suffix: 'fresh' | 'stale';
+          points: RoutePolylinePoint[];
+          width: number;
+          dash: [number, number];
+        }> = [
+          { suffix: 'fresh', points: fresh, width: freshWidth, dash: [2, 2] },
+          { suffix: 'stale', points: stale, width: staleWidth, dash: [1, 4] },
+        ];
+
+        for (const v of variants) {
+          const sourceId = `sim-route-${v.suffix}-${id}`;
+          const layerId = `sim-route-line-${v.suffix}-${id}`;
+          if (v.points.length < 2) {
+            // Nothing to draw for this half — drop any stale layer left over
+            // from a previous render where the boundary cut it differently.
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+            continue;
+          }
+          const feat = lineFeature(v.points);
+          if (!map.getSource(sourceId)) {
+            map.addSource(sourceId, { type: 'geojson', data: feat });
+            map.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              paint: {
+                'line-color': color,
+                'line-width': v.width,
+                'line-opacity': v.suffix === 'fresh' ? 0.9 : 0.55,
+                'line-dasharray': v.dash,
+              },
+              layout: { 'line-cap': 'round', 'line-join': 'round' },
+            });
+          } else {
+            (map.getSource(sourceId) as maplibregl.GeoJSONSource).setData(feat);
+            map.setPaintProperty(layerId, 'line-color', color);
+            map.setPaintProperty(layerId, 'line-width', v.width);
+          }
         }
       }
-    }
 
-    // Remove routes that disappeared
-    const layers = map.getStyle().layers ?? [];
-    for (const layer of layers) {
-      const m = layer.id.match(/^sim-route-line-(fresh|stale)-(.+)$/);
-      if (!m) continue;
-      const id = m[2]!;
-      if (seen.has(id)) continue;
-      if (map.getLayer(layer.id)) map.removeLayer(layer.id);
-      const srcId = `sim-route-${m[1]}-${id}`;
-      if (map.getSource(srcId)) map.removeSource(srcId);
-    }
+      // Remove routes that disappeared
+      const layers = map.getStyle().layers ?? [];
+      for (const layer of layers) {
+        const m = layer.id.match(/^sim-route-line-(fresh|stale)-(.+)$/);
+        if (!m) continue;
+        const id = m[2]!;
+        if (seen.has(id)) continue;
+        if (map.getLayer(layer.id)) map.removeLayer(layer.id);
+        const srcId = `sim-route-${m[1]}-${id}`;
+        if (map.getSource(srcId)) map.removeSource(srcId);
+      }
+    };
+
+    install();
+
+    return () => { cancelled = true; };
   }, [routes, primaryId, colorFor, nextGfsRunMs]);
 
   return null;

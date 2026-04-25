@@ -383,7 +383,11 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               routes={new Map([['user', routerRoute]])}
               primaryId="user"
               colorFor={() => '#c9a227'}
-              nextGfsRunMs={Number.MAX_SAFE_INTEGER}
+              nextGfsRunMs={
+                decodedGrid?.header?.nextRunExpectedUtc
+                  ? decodedGrid.header.nextRunExpectedUtc * 1000
+                  : Number.MAX_SAFE_INTEGER
+              }
             />
           </>
         )}

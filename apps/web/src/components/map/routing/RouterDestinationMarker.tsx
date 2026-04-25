@@ -24,23 +24,32 @@ export default function RouterDestinationMarker({ lat, lon }: Props): null {
     const map = mapInstance;
     if (!map) return;
 
-    const ensure = () => {
+    let cancelled = false;
+
+    const install = () => {
+      if (cancelled) return;
+      // Same retry pattern as IsochroneLayer: a single styledata listener
+      // misses the case where the style loaded before this effect ran AND
+      // isStyleLoaded() momentarily reports false (e.g. during a tile fetch).
+      // Polling 200ms until ready is robust and bounded by the consumer
+      // unmounting (cancelled flag).
+      if (!map.isStyleLoaded()) { setTimeout(install, 200); return; }
       if (lat == null || lon == null) {
         if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
         if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
         return;
       }
-      const data = {
-        type: 'FeatureCollection' as const,
+      const data: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
         features: [{
-          type: 'Feature' as const,
-          geometry: { type: 'Point' as const, coordinates: [lon, lat] },
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [lon, lat] },
           properties: {},
         }],
       };
       const src = map.getSource(SOURCE_ID);
       if (src && 'setData' in src) {
-        (src as { setData: (d: typeof data) => void }).setData(data);
+        (src as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(data);
       } else {
         map.addSource(SOURCE_ID, { type: 'geojson', data });
         map.addLayer({
@@ -55,14 +64,23 @@ export default function RouterDestinationMarker({ lat, lon }: Props): null {
           },
         });
       }
+      // Ensure the marker draws on top of any layers added after it
+      // (route/iso lines, projection line, zone overlays).
+      if (map.getLayer(LAYER_ID)) {
+        try { map.moveLayer(LAYER_ID); } catch { /* ignore */ }
+      }
     };
 
-    if (map.isStyleLoaded()) ensure();
-    else map.once('styledata', ensure);
+    install();
 
     return () => {
-      if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
-      if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+      cancelled = true;
+      const m = mapInstance;
+      if (!m) return;
+      try {
+        if (m.getLayer(LAYER_ID)) m.removeLayer(LAYER_ID);
+        if (m.getSource(SOURCE_ID)) m.removeSource(SOURCE_ID);
+      } catch { /* ignore teardown race */ }
     };
   }, [lat, lon]);
 
