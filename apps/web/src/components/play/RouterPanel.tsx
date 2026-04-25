@@ -127,10 +127,10 @@ function ResultsBlock({
         <div className={styles.warning}>⚠ Route incomplète : météo limitée à J+7</div>
       )}
       <button type="button" className={styles.applyPrimary} onClick={() => onApply('WAYPOINTS')}>
-        → WAYPOINTS (auto-voile)
+        → POINTS DE CONTRÔLE (auto-voile)
       </button>
       <button type="button" className={styles.applySecondary} onClick={() => onApply('CAP')}>
-        → CAP SCHEDULE (auto-voile)
+        → PROGRAMMATION DE CAP (auto-voile)
       </button>
     </section>
   );
