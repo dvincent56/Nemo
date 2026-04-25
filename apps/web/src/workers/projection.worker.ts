@@ -264,6 +264,50 @@ function simulate(input: ProjectionInput): ProjectionResult {
   const hadWptOrders = wptQueue.length > 0;
   let lastWptCaptured = wptIdx >= wptQueue.length;
 
+  // Drive the WPT chain at the boat's CURRENT position: capture any WPTs
+  // we are inside, then point heading at the next active WPT. Returns true
+  // when every WPT in the chain has been captured (caller should stop).
+  //
+  // Called both at the top of the outer step AND after each partial advance
+  // inside the segment loop. The latter is critical: when a SAIL change
+  // triggers in the same step that the boat enters a WPT capture radius,
+  // a partial advance along the OLD (toward-current-WPT) heading would
+  // overshoot the natural turn point and the resulting pushPoint at the
+  // segment trigger creates a visible V/spur (geometry: P_prev → P_over
+  // along H_a, P_over → P_new along H_b). Capturing the WPT mid-segment-
+  // loop ensures the partial advance for any subsequent segment uses the
+  // already-flipped heading toward the next WPT, so no overshoot vertex.
+  const driveWpt = (): boolean => {
+    while (wptIdx < wptQueue.length) {
+      const w = wptQueue[wptIdx]!;
+      const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
+      if (haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm) {
+        // Captured — advance the chain. Anchor the marker to the most recent
+        // pushed point (count - 1) so it sits ON the line at the boat's actual
+        // entry into the capture radius. Don't push a synthetic vertex at the
+        // WPT and don't snap the boat to it: doing so (e97b233) jogged the
+        // polyline backward to the WPT and forward again on the next step,
+        // creating a visible "spur" / second line, and at coarse step sizes
+        // (5–30 min after t+1h) the post-snap advance overshot the next WPT
+        // by far more than its capture radius, leaving the boat orbiting it
+        // and clustering auto-sail markers at the orbit point.
+        maneuverMarkers.push({
+          index: count > 0 ? count - 1 : 0,
+          type: 'cap_change',
+          detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+        });
+        wptIdx++;
+        if (wptIdx >= wptQueue.length) lastWptCaptured = true;
+        continue;
+      }
+      // Override heading to point at the active WPT.
+      hdg = bearingDeg({ lat, lon }, { lat: v.lat, lon: v.lon });
+      twaLock = null;
+      break;
+    }
+    return hadWptOrders && lastWptCaptured;
+  };
+
   // Track which time marker hours we've passed
   let nextTimeMarkerIdx = 0;
 
@@ -279,6 +323,12 @@ function simulate(input: ProjectionInput): ProjectionResult {
   while (currentMs < endMs) {
     const elapsedSec = (currentMs - startMs) / 1000;
     let dt = getStepSize(elapsedSec);
+
+    // Capture any WPTs the boat is already inside and update heading toward
+    // the next one BEFORE processing segments. Without this, a SAIL trigger
+    // inside the same step would partial-advance along the stale toward-
+    // current-WPT heading and push an overshoot vertex (the spur).
+    if (driveWpt()) break;
 
     // Check if a segment triggers within this step — force exact computation at trigger
     let segmentTriggered = false;
@@ -301,6 +351,19 @@ function simulate(input: ProjectionInput): ProjectionResult {
         condition = applyWear(condition, wearDelta);
 
         currentMs = seg.triggerMs;
+
+        // After advancing, re-check WPT capture: the partial advance may
+        // have crossed into a WPT capture radius. If so, flip heading toward
+        // the next WPT BEFORE pushing the segment vertex, so the
+        // segment-trigger pushPoint below sits on a clean bend rather than
+        // overshooting along the now-stale heading.
+        if (driveWpt()) {
+          // Chain exhausted mid-step. Push the partial-advance point as the
+          // final vertex (so the segment marker has somewhere to anchor) and
+          // exit the segment loop; the outer loop's break-on-driveWpt at the
+          // top of the next iter will end the projection.
+          break;
+        }
       }
 
       // Apply segment order
@@ -384,47 +447,13 @@ function simulate(input: ProjectionInput): ProjectionResult {
       dt = getStepSize(newElapsed);
     }
 
-    // ── WPT chain: drive heading toward the active waypoint, advance on capture.
-    // Mirrors packages/game-engine-core/src/segments.ts applyOrder WPT case
-    // (heading = bearingDeg(position, wpt), twaLock cleared) and the capture
-    // detection in tick.ts (advance to next when distance < captureRadiusNm).
-    // We check capture before recomputing heading so a boat that has already
-    // reached the WPT immediately steers toward the next.
-    while (wptIdx < wptQueue.length) {
-      const w = wptQueue[wptIdx]!;
-      const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
-      if (haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm) {
-        // Captured — advance the chain. Anchor the marker to the most recent
-        // pushed point (count - 1) so it sits ON the line at the boat's actual
-        // entry into the capture radius. Don't push a synthetic vertex at the
-        // WPT and don't snap the boat to it: doing so (e97b233) jogged the
-        // polyline backward to the WPT and forward again on the next step,
-        // creating a visible "spur" / second line, and at coarse step sizes
-        // (5–30 min after t+1h) the post-snap advance overshot the next WPT
-        // by far more than its capture radius, leaving the boat orbiting it
-        // and clustering auto-sail markers at the orbit point. The cosmetic
-        // marker-on-bend offset was a much smaller problem than the artefacts.
-        maneuverMarkers.push({
-          index: count > 0 ? count - 1 : 0,
-          type: 'cap_change',
-          detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
-        });
-        wptIdx++;
-        if (wptIdx >= wptQueue.length) lastWptCaptured = true;
-        continue;
-      }
-      // Override heading to point at the active WPT.
-      hdg = bearingDeg({ lat, lon }, { lat: v.lat, lon: v.lon });
-      twaLock = null;
-      break;
-    }
-
-    // Stop the projection once every WPT in the chain has been captured. In
-    // WPT-mode the player explicitly wants the line drawn TO the last
-    // waypoint — extrapolating 5 days past it on a frozen heading produces
-    // a long stale tail with no actionable value. CAP/TWA/no-orders
-    // projections (hadWptOrders=false) still run the full horizon below.
-    if (hadWptOrders && lastWptCaptured) break;
+    // ── WPT chain: drive heading + capture. The post-segment-advance
+    // position may also have crossed a WPT capture radius (segments
+    // partial-advance the boat earlier in this iteration). driveWpt()
+    // handles capture, marker emission, and heading override. Stops the
+    // projection once the chain is exhausted (WPT-mode only — CAP/TWA/no-
+    // orders projections still run the full DAYS_5 horizon).
+    if (driveWpt()) break;
 
     // Get weather at current position/time
     const weather = getWeatherAt(lat, lon, currentMs);
