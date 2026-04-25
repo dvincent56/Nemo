@@ -1,9 +1,10 @@
 // Pure conversion helpers turning a RoutePlan into the OrderEntry[] shape
 // expected by progSlice.replaceOrderQueue. Two output flavors:
-//   - capScheduleToOrders: time-triggered CAP/TWA/SAIL sequence (autopilot mode)
+//   - capScheduleToOrders: time-triggered CAP/TWA sequence (auto-sail mode)
 //   - waypointsToOrders:   AT_WAYPOINT-chained WPT sequence
 // Both prepend a MODE(auto:true) order so the boat is in sail-auto when the
-// schedule starts. No I/O, no side effects — easy to unit-test.
+// schedule starts — the engine then picks the optimal sail itself per polar,
+// so no SAIL orders are emitted. No I/O, no side effects — easy to unit-test.
 
 import type { RoutePlan } from '@nemo/routing';
 import type { OrderEntry } from '@/lib/store/types';
@@ -16,7 +17,9 @@ function uid(prefix: string): string {
 
 export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry[] {
   const orders: OrderEntry[] = [];
-  // Always force sailAuto on first
+  // Always force sailAuto on first — auto-sail mode means the engine selects
+  // the optimal sail from the polar; emitting SAIL orders alongside would be
+  // contradictory (and clutter ProgPanel).
   orders.push({
     id: uid('mode'),
     type: 'MODE',
@@ -26,27 +29,15 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
     committed: true,
   });
 
-  let prevSail: string | null = null;
   for (const entry of plan.capSchedule) {
     const triggerTimeSec = (baseTs + entry.triggerMs) / 1000;
-    if (entry.sail && entry.sail !== prevSail) {
-      orders.push({
-        id: uid('sail'),
-        type: 'SAIL',
-        value: { sail: entry.sail },
-        trigger: { type: 'AT_TIME', time: triggerTimeSec },
-        label: `Voile ${entry.sail}`,
-        committed: true,
-      });
-      prevSail = entry.sail;
-    }
     if (entry.twaLock !== undefined && entry.twaLock !== null) {
       orders.push({
         id: uid('twa'),
         type: 'TWA',
         value: { twa: entry.twaLock },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
-        label: `TWA ${entry.twaLock}°`,
+        label: `TWA ${Math.round(entry.twaLock)}°`,
         committed: true,
       });
     } else {

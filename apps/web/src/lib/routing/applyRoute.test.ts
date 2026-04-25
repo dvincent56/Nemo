@@ -33,19 +33,23 @@ describe('capScheduleToOrders', () => {
     expect(orders.some((o) => o.type === 'TWA' && o.value['twa'] === 50)).toBe(true);
   });
 
-  it('emits SAIL orders when sail changes', () => {
+  it('does not emit SAIL orders (auto-sail mode handles it)', () => {
     const orders = capScheduleToOrders(fakePlan(), baseTs);
-    const sails = orders.filter((o) => o.type === 'SAIL');
-    expect(sails.length).toBeGreaterThanOrEqual(2);
+    expect(orders.filter((o) => o.type === 'SAIL').length).toBe(0);
   });
 
-  it('does not emit redundant SAIL orders for unchanged sail', () => {
-    const orders = capScheduleToOrders(fakePlan(), baseTs);
-    const sails = orders.filter((o) => o.type === 'SAIL');
-    // First entry triggers M0, second keeps M0 (no SAIL emitted), third triggers C0
-    expect(sails.length).toBe(2);
-    expect(sails[0]?.value['sail']).toBe('JIB');
-    expect(sails[1]?.value['sail']).toBe('C0');
+  it('rounds TWA labels to integer degrees', () => {
+    const planWithFractionalTwa: RoutePlan = {
+      ...fakePlan(),
+      capSchedule: [
+        { triggerMs: 0, cap: 60, sail: 'JIB', twaLock: -99.92708293378843 },
+      ],
+    };
+    const orders = capScheduleToOrders(planWithFractionalTwa, baseTs);
+    const twa = orders.find((o) => o.type === 'TWA');
+    expect(twa?.label).toBe('TWA -100°');
+    // Engine still gets the full-precision value
+    expect(twa?.value['twa']).toBe(-99.92708293378843);
   });
 
   it('AT_TIME trigger.time is in seconds (Unix epoch), not milliseconds', () => {
