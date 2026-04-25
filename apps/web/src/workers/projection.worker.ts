@@ -304,43 +304,80 @@ function simulate(input: ProjectionInput): ProjectionResult {
     return false;
   };
 
-  const driveWpt = (prevLat?: number, prevLon?: number): boolean => {
-    while (wptIdx < wptQueue.length) {
-      const w = wptQueue[wptIdx]!;
-      const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
-      const captured = prevLat !== undefined && prevLon !== undefined
-        ? sweptInsideRadius(prevLat, prevLon, lat, lon, v.lat, v.lon, v.captureRadiusNm)
-        : haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm;
-      if (captured) {
-        // Captured — advance the chain. Anchor the marker to the most recent
-        // pushed point (count - 1) so it sits ON the line at the boat's actual
-        // entry into the capture radius. Don't push a synthetic vertex at the
-        // WPT and don't snap the boat to it: doing so (e97b233) jogged the
-        // polyline backward to the WPT and forward again on the next step,
-        // creating a visible "spur" / second line, and at coarse step sizes
-        // (5–30 min after t+1h) the post-snap advance overshot the next WPT
-        // by far more than its capture radius, leaving the boat orbiting it
-        // and clustering auto-sail markers at the orbit point.
-        maneuverMarkers.push({
-          index: count > 0 ? count - 1 : 0,
-          type: 'cap_change',
-          detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
-          // Explicit coords so the renderer places the marker AT the actual
-          // WPT location (visual bend), not at the polyline vertex just
-          // before capture. We deliberately don't push a synthetic vertex
-          // (e97b233 spur bug) — only the marker's anchor is decoupled from
-          // the line geometry.
-          lat: v.lat,
-          lon: v.lon,
-        });
-        wptIdx++;
-        if (wptIdx >= wptQueue.length) lastWptCaptured = true;
-        continue;
-      }
-      // Override heading to point at the active WPT.
+  // Capture at most one WPT per call. Returns true when a capture happened
+  // (caller can re-call to handle WPT chains where the snapped position is
+  // already inside the next WPT's radius). When the chain is exhausted,
+  // returns false and the caller checks `lastWptCaptured` to break the outer
+  // loop. Heading is overridden toward the active WPT on every call where no
+  // capture occurred.
+  const driveWptOnce = (prevLat?: number, prevLon?: number): boolean => {
+    if (wptIdx >= wptQueue.length) return false;
+    const w = wptQueue[wptIdx]!;
+    const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
+    const captured = prevLat !== undefined && prevLon !== undefined
+      ? sweptInsideRadius(prevLat, prevLon, lat, lon, v.lat, v.lon, v.captureRadiusNm)
+      : haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm;
+    if (!captured) {
+      // Override heading toward the active WPT.
       hdg = bearingDeg({ lat, lon }, { lat: v.lat, lon: v.lon });
       twaLock = null;
-      break;
+      return false;
+    }
+    // Captured. Push a synthetic vertex at the WPT's lat/lon so the polyline
+    // bends exactly at the waypoint, and snap the boat to the WPT so the next
+    // step's heading recompute starts cleanly toward the next WPT in the chain.
+    //
+    // Previous attempt (e97b233) reverted because it caused a fly-by oscillation
+    // bug at coarse step sizes (5–30 min): a full advance could cross past the
+    // WPT, leave the boat outside the radius on the far side, and the next iter
+    // would point heading backward — producing a zigzag. That root cause is now
+    // fixed by `sweptInsideRadius` (commit 2a63bcd) which catches fly-bys along
+    // the swept leg, so snapping is safe again and gives a clean visual bend.
+    const wptWeather = getWeatherAt(v.lat, v.lon, currentMs);
+    if (wptWeather) {
+      const wptTwa = twaLock !== null ? twaLock : computeTWA(hdg, wptWeather.twd);
+      const wptBsp = computeBsp(polar, activeSail, wptTwa, wptWeather.tws, condition, effects, maneuver, transition, currentMs, wptWeather, hdg);
+      pushPoint(v.lat, v.lon, currentMs, wptBsp, wptWeather.tws, wptWeather.twd);
+      maneuverMarkers.push({
+        index: count > 0 ? count - 1 : 0,
+        type: 'cap_change',
+        detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+      });
+    } else {
+      // No weather at the WPT (out of GRIB coverage) — anchor the marker via
+      // explicit coords so it still lands at the WPT location. We don't push
+      // a synthetic vertex here since the BSP/TWS/TWD fields would be junk.
+      maneuverMarkers.push({
+        index: count > 0 ? count - 1 : 0,
+        type: 'cap_change',
+        detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+        lat: v.lat,
+        lon: v.lon,
+      });
+    }
+    // Snap so the next iteration's heading recompute / advance starts from
+    // the bend point itself.
+    lat = v.lat;
+    lon = v.lon;
+    wptIdx++;
+    if (wptIdx >= wptQueue.length) lastWptCaptured = true;
+    return true;
+  };
+
+  // Drive the WPT chain: capture as many WPTs as possible from the current
+  // (possibly swept) position, then point heading at the next active WPT.
+  // The loop handles WPT chains where post-snap position is already inside
+  // the next WPT's radius (tight clusters). MAX_CAPTURES_PER_STEP guards
+  // against pathological cases (degenerate chain, all WPTs at same point).
+  // Returns true once the chain is exhausted (caller should break).
+  const MAX_CAPTURES_PER_STEP = 10;
+  const driveWpt = (prevLat?: number, prevLon?: number): boolean => {
+    let captures = 0;
+    // First pass: use the swept leg (if provided) — only for the FIRST capture
+    // since after a snap we're at the WPT itself, no swept leg to consider.
+    while (driveWptOnce(captures === 0 ? prevLat : undefined, captures === 0 ? prevLon : undefined)) {
+      captures++;
+      if (captures >= MAX_CAPTURES_PER_STEP) break;
     }
     return hadWptOrders && lastWptCaptured;
   };
