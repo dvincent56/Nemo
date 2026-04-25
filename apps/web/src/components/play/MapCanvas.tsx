@@ -190,6 +190,15 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         paint: { 'line-color': BOAT_COLOR, 'line-width': 2, 'line-opacity': 0.85 },
       });
 
+      // ── Past-trace line (timeline replay) ──
+      // Combines the persisted server track (track.myPoints) with the live
+      // trail accumulated this session. Drawn under the projection so the
+      // future arc remains visually dominant during replay.
+      map.addSource('past-trace', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+      });
+
       // ── Projection line ──
       // Single LineString + line-gradient: MapLibre rasterises one strip with
       // a 256-sample 1D color texture, much cheaper than rendering N segment
@@ -215,6 +224,19 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           'line-opacity': 0.85,
         },
       });
+
+      // Past-trace line layer — inserted just below the projection so the
+      // future arc renders on top during replay scrubbing.
+      map.addLayer({
+        id: 'past-trace-line',
+        type: 'line',
+        source: 'past-trace',
+        paint: {
+          'line-color': '#1a4d7a',
+          'line-width': 2.5,
+          'line-opacity': 0.9,
+        },
+      }, 'projection-line-layer');
 
       // ── Projection time markers ──
       map.addSource('projection-markers-time', {
@@ -522,6 +544,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         });
       }
 
+      // Keep the timeline past-trace (persisted + live) in sync with the
+      // newly-appended trail point so replay scrubbing reflects the latest
+      // boat position even before the next track-checkpoint arrives.
+      const pastSrc = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
+      if (pastSrc) {
+        const persisted: [number, number][] = s.track.myPoints.map(
+          (p) => [p.lon, p.lat] as [number, number],
+        );
+        pastSrc.setData({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [...persisted, ...trailCoords] },
+          properties: {},
+        });
+      }
+
       if (s.map.isFollowingBoat) {
         map.easeTo({ center: [lon, lat], duration: 500 });
       }
@@ -580,6 +617,36 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       if (s.zones !== prev) {
         prev = s.zones;
         applyZones(s.zones);
+      }
+    });
+  }, []);
+
+  /* ── Past-trace: persisted track + live trail, refreshed on timeline scrub ── */
+  useEffect(() => {
+    const applyPastTrace = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      const src = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      const state = useGameStore.getState();
+      const persisted: [number, number][] = state.track.myPoints.map(
+        (p) => [p.lon, p.lat] as [number, number],
+      );
+      const merged = [...persisted, ...trailCoords];
+      src.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: merged },
+        properties: {},
+      });
+    };
+    applyPastTrace();
+    let prevPoints = useGameStore.getState().track.myPoints;
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    return useGameStore.subscribe((s) => {
+      if (s.track.myPoints !== prevPoints || s.timeline.currentTime !== prevTime) {
+        prevPoints = s.track.myPoints;
+        prevTime = s.timeline.currentTime;
+        applyPastTrace();
       }
     });
   }, []);
