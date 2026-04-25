@@ -8,6 +8,21 @@ import { GameBalance } from '@nemo/game-balance';
 import type { BoatRuntime, TickOutcome } from '@nemo/game-engine-core';
 import { buildFullUpdate } from '../broadcast/payload.js';
 import { CHANNELS, type RedisPair } from '../infra/redis.js';
+import { computeRanks } from './rank.js';
+import { enqueueCheckpoints, type CheckpointInput, type CheckpointRow } from './track-checkpoint.js';
+
+/** Phase 1 : tracé en mémoire dans le manager. Phase 4 basculera vers
+ *  une persistance DB indexée par participant_id quand le seeding
+ *  race_participants sera en place. */
+export interface InMemoryTrackPoint {
+  ts: number;
+  lat: number;
+  lon: number;
+  rank: number;
+}
+
+const TRACK_CHECKPOINT_INTERVAL_MS =
+  Number(process.env['TRACK_CHECKPOINT_INTERVAL_MIN'] ?? 60) * 60_000;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const log = pino({ name: 'tick-manager' });
@@ -33,6 +48,11 @@ export class TickManager {
    *  runtime snapshot (e.g. /api/v1/races/:raceId/runtime/:boatId). */
   private snapshots = new Map<string, BoatSnapshot>();
 
+  /** Track history per boat — populated each tick when a checkpoint is due.
+   *  Phase 1 in-memory ; Phase 4 will swap for DB persistence keyed by
+   *  participant_id. */
+  private trackHistory = new Map<string, InMemoryTrackPoint[]>();
+
   constructor(redis: RedisPair | null = null) {
     this.redis = redis;
   }
@@ -41,6 +61,13 @@ export class TickManager {
    *  been ticked yet (ie. engine is still booting). */
   getBoatSnapshot(boatId: string): BoatSnapshot | null {
     return this.snapshots.get(boatId) ?? null;
+  }
+
+  /** Returns the persisted (in-memory) track points for a boat in
+   *  chronological order. Empty array if the boat hasn't been ticked yet
+   *  or no checkpoint has fired. */
+  getBoatTrack(boatId: string): InMemoryTrackPoint[] {
+    return this.trackHistory.get(boatId) ?? [];
   }
 
   /** Replace the live runtimes in the tick worker and force an immediate
@@ -138,6 +165,52 @@ export class TickManager {
       list.push({ runtime: rt, outcome: oc });
       byRace.set(rt.raceId, list);
     }
+
+    // Track checkpoints — append to in-memory history per boat, then
+    // mutate runtime.lastCheckpointTs in place so the next tick sees it.
+    const nowMs = Date.now();
+    const newCheckpoints: { boatId: string; raceId: string; row: CheckpointRow }[] = [];
+    for (const [, list] of byRace.entries()) {
+      // Phase 1 single-boat assumption: rank = 1 since we don't compute DTF.
+      // Phase 4 will compute DTF + multi-boat ranking via computeRanks.
+      const rankInputs = list.map(({ runtime }) => ({
+        participantId: runtime.boat.id,
+        dtfNm: 0,
+      }));
+      const ranks = computeRanks(rankInputs);
+
+      const checkpointInputs: CheckpointInput[] = list.map(({ runtime }) => ({
+        participantId: runtime.boat.id,
+        lat: runtime.boat.position.lat,
+        lon: runtime.boat.position.lon,
+        lastCheckpointTs: runtime.lastCheckpointTs,
+      }));
+      const forceFor = new Set<string>();
+      for (const { runtime } of list) {
+        if (runtime.lastCheckpointTs === null) forceFor.add(runtime.boat.id);
+      }
+      const checkpoints = enqueueCheckpoints(
+        checkpointInputs,
+        ranks,
+        nowMs,
+        TRACK_CHECKPOINT_INTERVAL_MS,
+        forceFor,
+      );
+      for (const cp of checkpoints) {
+        const points = this.trackHistory.get(cp.participantId) ?? [];
+        points.push({ ts: cp.tsMs, lat: cp.lat, lon: cp.lon, rank: cp.rank });
+        this.trackHistory.set(cp.participantId, points);
+        // mutate runtime so the next tick has the updated lastCheckpointTs
+        const entry = list.find((x) => x.runtime.boat.id === cp.participantId);
+        if (entry) entry.runtime.lastCheckpointTs = cp.tsMs;
+        newCheckpoints.push({ boatId: cp.participantId, raceId: entry!.runtime.raceId, row: cp });
+      }
+    }
+
+    if (newCheckpoints.length > 0) {
+      log.info({ count: newCheckpoints.length }, 'track checkpoints persisted');
+    }
+
     if (!this.redis) return;
     for (const [raceId, list] of byRace.entries()) {
       const payload = list.map(({ runtime, outcome }) =>
