@@ -16,6 +16,7 @@ import { createProgSlice } from './progSlice';
 import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 import { createMapAppearanceSlice } from './mapAppearanceSlice';
+import { createRouterSlice } from './routerSlice';
 import { mergeField } from './pending';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
@@ -30,7 +31,7 @@ function twaColorFromCode(code: number): 'optimal' | 'overlap' | 'neutral' | 'de
   return code === 0 ? 'deadzone' : code === 2 ? 'optimal' : code === 3 ? 'overlap' : 'neutral';
 }
 
-export const useGameStore = create<GameStore>((set) => ({
+export const useGameStore = create<GameStore>((set, get) => ({
   ...createHudSlice(set),
   ...createSailSlice(set),
   ...createMapSlice(set),
@@ -44,6 +45,7 @@ export const useGameStore = create<GameStore>((set) => ({
   ...createPreviewSlice(set),
   ...createZonesSlice(set),
   ...createMapAppearanceSlice(set),
+  ...createRouterSlice(set, get),
 
   boats: new Map(),
   lastTickUnix: null,
