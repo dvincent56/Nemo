@@ -362,13 +362,37 @@ function simulate(input: ProjectionInput): ProjectionResult {
       const w = wptQueue[wptIdx]!;
       const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
       if (haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm) {
-        // Captured — advance the chain. Mark a maneuver marker so the
-        // route-following step is visible to the player.
-        maneuverMarkers.push({
-          index: count,
-          type: 'cap_change',
-          detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
-        });
+        // Captured — advance the chain. Snap to the WPT's coordinates so the
+        // projected line bends exactly at the waypoint (and the marker, anchored
+        // to that same point, sits on the bend rather than a step beyond it).
+        // Without this, the boat captures at the radius edge then advances one
+        // full step toward the next WPT, leaving the marker visibly off the
+        // line's actual bend point.
+        const wptWeather = getWeatherAt(v.lat, v.lon, currentMs);
+        if (wptWeather) {
+          const wptTwa = twaLock !== null ? twaLock : computeTWA(hdg, wptWeather.twd);
+          const wptBsp = computeBsp(polar, activeSail, wptTwa, wptWeather.tws, condition, effects, maneuver, transition, currentMs, wptWeather, hdg);
+          pushPoint(v.lat, v.lon, currentMs, wptBsp, wptWeather.tws, wptWeather.twd);
+          // Mark at the just-pushed point (count - 1 after pushPoint increments).
+          maneuverMarkers.push({
+            index: count - 1,
+            type: 'cap_change',
+            detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+          });
+        } else {
+          // No weather at WPT (out of GRIB coverage) — still place the marker
+          // at the WPT's location by pointing at the next point that will be
+          // pushed; better than dropping the marker entirely.
+          maneuverMarkers.push({
+            index: count,
+            type: 'cap_change',
+            detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+          });
+        }
+        // Snap boat position to the WPT so subsequent heading/distance
+        // calculations start from the bend point itself.
+        lat = v.lat;
+        lon = v.lon;
         wptIdx++;
         continue;
       }
