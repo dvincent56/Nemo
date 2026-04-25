@@ -54,7 +54,20 @@ export interface MyBoatFullUpdate extends FullUpdate {
   maneuverEndMs: number;       // timestamp when tack/gybe ends (0 = none)
 }
 
-export type BroadcastMsg = FullUpdate | DeltaUpdate | GoneUpdate | MyBoatFullUpdate;
+/** Émis quand un checkpoint trace est persisté (~ toutes les heures). Le
+ *  client utilise ce signal pour append au store track sans re-fetch. Phase
+ *  1 : `participantId` est le `boat.id` ; Phase 4 ce sera l'UUID de
+ *  `race_participants(id)`. */
+export interface TrackPointAddedMsg {
+  kind: 'trackPointAdded';
+  participantId: string;
+  ts: number;   // ms epoch
+  lat: number;
+  lon: number;
+  rank: number;
+}
+
+export type BroadcastMsg = FullUpdate | DeltaUpdate | GoneUpdate | MyBoatFullUpdate | TrackPointAddedMsg;
 
 const SAIL_IDS = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as const;
 export type SailCode = 0 | 1 | 2 | 3 | 4 | 5 | 6;

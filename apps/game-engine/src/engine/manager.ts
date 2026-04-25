@@ -7,6 +7,7 @@ import type { OrderEnvelope } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import type { BoatRuntime, TickOutcome } from '@nemo/game-engine-core';
 import { buildFullUpdate } from '../broadcast/payload.js';
+import { buildTrackPointAddedMsg } from '../broadcast/track-event.js';
 import { CHANNELS, type RedisPair } from '../infra/redis.js';
 import { computeRanks } from './rank.js';
 import { enqueueCheckpoints, type CheckpointInput, type CheckpointRow } from './track-checkpoint.js';
@@ -217,6 +218,27 @@ export class TickManager {
         buildFullUpdate(runtime, outcome, msg.seq, true), // isOwner=true pour tous en phase 3
       );
       const buf = encode(payload);
+      await this.redis.pub.publish(CHANNELS.raceTick(raceId), Buffer.from(buf));
+    }
+
+    // Emit a separate batch for track checkpoints (one per boat per
+    // checkpoint event). The client filters by participantId to append
+    // only its own (and Phase 2 selected opponents) to the track store.
+    const eventsByRace = new Map<string, ReturnType<typeof buildTrackPointAddedMsg>[]>();
+    for (const cp of newCheckpoints) {
+      const ev = buildTrackPointAddedMsg({
+        participantId: cp.boatId,
+        tsMs: cp.row.tsMs,
+        lat: cp.row.lat,
+        lon: cp.row.lon,
+        rank: cp.row.rank,
+      });
+      const list = eventsByRace.get(cp.raceId) ?? [];
+      list.push(ev);
+      eventsByRace.set(cp.raceId, list);
+    }
+    for (const [raceId, events] of eventsByRace.entries()) {
+      const buf = encode(events);
       await this.redis.pub.publish(CHANNELS.raceTick(raceId), Buffer.from(buf));
     }
   }
