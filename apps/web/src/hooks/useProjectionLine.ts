@@ -357,6 +357,27 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       });
       return;
     }
+    // Sanity log: if the map ever reports more than one layer for any of the
+    // projection-* ids the duplicate render bug has reappeared. MapLibre's
+    // public API only allows a single layer per id, so this should never
+    // fire — but the log makes regressions visible immediately.
+    if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      const styleLayers = m.getStyle().layers ?? [];
+      const counts: Record<string, number> = {};
+      for (const layer of styleLayers) {
+        if (
+          layer.id === 'projection-line-layer' ||
+          layer.id === 'projection-markers-time-circle' ||
+          layer.id === 'projection-markers-time-label' ||
+          layer.id === 'projection-markers-maneuver-icon'
+        ) {
+          counts[layer.id] = (counts[layer.id] ?? 0) + 1;
+        }
+      }
+      for (const [id, n] of Object.entries(counts)) {
+        if (n > 1) console.warn('[useProjectionLine] DUPLICATE projection layer detected:', id, '×', n);
+      }
+    }
     const map = m;
     const buf = result.pointsBuf;
     const count = result.pointsCount;
