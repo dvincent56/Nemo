@@ -37,6 +37,9 @@ import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
 import type { RouteInput } from '@nemo/routing';
 import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
 import ZoomCompact from '@/components/play/ZoomCompact';
+import { RouteLayer } from '@/components/map/routing/RouteLayer';
+import { IsochroneLayer } from '@/components/map/routing/IsochroneLayer';
+import RouterDestinationMarker from '@/components/map/routing/RouterDestinationMarker';
 import styles from './page.module.css';
 
 // Main-thread GameBalance bootstrap. Workers load their own instance via
@@ -140,6 +143,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
   const routerPhase = useGameStore((s) => s.router.phase);
+  const routerDest = useGameStore((s) => s.router.destination);
+  const routerRoute = useGameStore((s) => s.router.computedRoute);
+  const routerPanelOpen = activePanel === 'router';
 
   useEffect(() => {
     setSession(readClientSession());
@@ -318,6 +324,21 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
         {routerPhase === 'placing' && (
           <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+        )}
+
+        {routerPanelOpen && routerDest && (
+          <RouterDestinationMarker lat={routerDest.lat} lon={routerDest.lon} />
+        )}
+        {routerPanelOpen && routerRoute && (
+          <>
+            <IsochroneLayer plan={routerRoute} color="#3a9fff" />
+            <RouteLayer
+              routes={new Map([['user', routerRoute]])}
+              primaryId="user"
+              colorFor={() => '#c9a227'}
+              nextGfsRunMs={Number.MAX_SAFE_INTEGER}
+            />
+          </>
         )}
 
         {banner && access.kind === 'spectate' && (
