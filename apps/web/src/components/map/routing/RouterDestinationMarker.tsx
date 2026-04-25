@@ -1,86 +1,52 @@
 'use client';
-// Renders a small red circle at the router destination's lat/lon. The
-// component is mounted by PlayClient when the router panel is active *and*
-// a destination is set; toggling either off nulls out lat/lon, which removes
-// the marker. Returns null because all output is side-effect: it adds a
-// MapLibre source + layer directly via the shared `mapInstance`.
+// Renders a gold pin marker at the router destination's lat/lon. Mounted by
+// PlayClient when the router panel is active *and* a destination is set;
+// toggling either off nulls out lat/lon, which removes the marker.
 //
-// We follow the same `mapInstance` import pattern as RouteLayer and
-// IsochroneLayer in this directory.
+// Uses a maplibregl.Marker with a custom HTML element (SVG pin) anchored at
+// the bottom tip. We previously used a circle source/layer (#dc4646) but
+// that looked identical to the "collision avec la côte" projection marker —
+// the pin shape is unambiguously the router destination.
+//
+// Returns null because all output is side-effect.
 
 import { useEffect } from 'react';
+import maplibregl from 'maplibre-gl';
 import { mapInstance } from '@/components/play/MapCanvas';
-
-const SOURCE_ID = 'router-destination';
-const LAYER_ID = 'router-destination-circle';
 
 interface Props {
   lat: number | null;
   lon: number | null;
 }
 
+const PIN_SVG = `
+<svg viewBox="0 0 24 32" width="32" height="40" xmlns="http://www.w3.org/2000/svg" style="display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4))">
+  <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20c0-6.627-5.373-12-12-12z" fill="#c9a227" stroke="#ffffff" stroke-width="2"/>
+  <circle cx="12" cy="12" r="4" fill="#ffffff"/>
+</svg>
+`.trim();
+
 export default function RouterDestinationMarker({ lat, lon }: Props): null {
   useEffect(() => {
     const map = mapInstance;
     if (!map) return;
+    if (lat == null || lon == null) return;
 
-    let cancelled = false;
+    const el = document.createElement('div');
+    el.innerHTML = PIN_SVG;
+    el.style.cursor = 'pointer';
+    el.style.pointerEvents = 'none';
 
-    const install = () => {
-      if (cancelled) return;
-      // Same retry pattern as IsochroneLayer: a single styledata listener
-      // misses the case where the style loaded before this effect ran AND
-      // isStyleLoaded() momentarily reports false (e.g. during a tile fetch).
-      // Polling 200ms until ready is robust and bounded by the consumer
-      // unmounting (cancelled flag).
-      if (!map.isStyleLoaded()) { setTimeout(install, 200); return; }
-      if (lat == null || lon == null) {
-        if (map.getLayer(LAYER_ID)) map.removeLayer(LAYER_ID);
-        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
-        return;
-      }
-      const data: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: [{
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [lon, lat] },
-          properties: {},
-        }],
-      };
-      const src = map.getSource(SOURCE_ID);
-      if (src && 'setData' in src) {
-        (src as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(data);
-      } else {
-        map.addSource(SOURCE_ID, { type: 'geojson', data });
-        map.addLayer({
-          id: LAYER_ID,
-          source: SOURCE_ID,
-          type: 'circle',
-          paint: {
-            'circle-radius': 8,
-            'circle-color': '#dc4646',
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 2,
-          },
-        });
-      }
-      // Ensure the marker draws on top of any layers added after it
-      // (route/iso lines, projection line, zone overlays).
-      if (map.getLayer(LAYER_ID)) {
-        try { map.moveLayer(LAYER_ID); } catch { /* ignore */ }
-      }
-    };
-
-    install();
+    const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([lon, lat])
+      .addTo(map);
 
     return () => {
-      cancelled = true;
-      const m = mapInstance;
-      if (!m) return;
       try {
-        if (m.getLayer(LAYER_ID)) m.removeLayer(LAYER_ID);
-        if (m.getSource(SOURCE_ID)) m.removeSource(SOURCE_ID);
-      } catch { /* ignore teardown race */ }
+        marker.remove();
+      } catch {
+        /* ignore teardown race */
+      }
     };
   }, [lat, lon]);
 
