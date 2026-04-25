@@ -396,6 +396,11 @@
 
 /* ── Router placing mode: crosshair cursor + top banner ──── */
 .mapAreaPlacing { cursor: crosshair; }
+/* Force crosshair on the maplibre canvas — maplibre sets cursor: pointer
+ * inline when hovering interactive features (zones, markers, etc.); CSS
+ * with !important beats those inline styles. */
+.mapAreaPlacing :global(.maplibregl-canvas) { cursor: crosshair !important; }
+.mapAreaPlacing :global(canvas) { cursor: crosshair !important; }
 
 .placingIndicator {
   position: absolute;
