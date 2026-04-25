@@ -30,7 +30,8 @@ import WeatherTimeline from '@/components/play/WeatherTimeline';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
 import { loadPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { Trophy, Sailboat, Route, LocateFixed, Plus, Minus } from 'lucide-react';
+import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
+import ZoomCompact from '@/components/play/ZoomCompact';
 import styles from './page.module.css';
 
 // Main-thread GameBalance bootstrap. Workers load their own instance via
@@ -202,7 +203,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     );
   }
 
-  const handlePanelToggle = (panel: 'ranking' | 'sails' | 'programming') => {
+  const handlePanelToggle = (panel: 'ranking' | 'sails' | 'programming' | 'router') => {
     if (activePanel === panel) {
       useGameStore.getState().closePanel();
     } else {
@@ -232,6 +233,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}
         <CursorTooltip />
+        {canInteract && <ZoomCompact />}
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
@@ -328,28 +330,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   <span>Centrer</span>
                 </button>
               </Tooltip>
-              <div className={styles.zoomGroup}>
-                <Tooltip text="Zoom +" position="bottom">
-                  <button
-                    className={styles.zoomBtn}
-                    type="button"
-                    onClick={() => {
-                      const { center, zoom } = useGameStore.getState().map;
-                      useGameStore.getState().setMapView(center, Math.min(zoom + 1, 18));
-                    }}
-                  ><Plus size={18} strokeWidth={2.5} /></button>
-                </Tooltip>
-                <Tooltip text="Zoom −" position="bottom">
-                  <button
-                    className={styles.zoomBtn}
-                    type="button"
-                    onClick={() => {
-                      const { center, zoom } = useGameStore.getState().map;
-                      useGameStore.getState().setMapView(center, Math.max(zoom - 1, 1));
-                    }}
-                  ><Minus size={18} strokeWidth={2.5} /></button>
-                </Tooltip>
-              </div>
+              <Tooltip text="Routeur" shortcut="R" position="bottom">
+                <button
+                  className={`${styles.actionBtn} ${activePanel === 'router' ? styles.actionBtnActive : ''}`}
+                  onClick={() => handlePanelToggle('router')}
+                  type="button"
+                >
+                  <MapPinned size={18} strokeWidth={2} className={styles.actionBtnIcon} />
+                  <span>Route</span>
+                </button>
+              </Tooltip>
             </div>
             <Compass />
           </div>

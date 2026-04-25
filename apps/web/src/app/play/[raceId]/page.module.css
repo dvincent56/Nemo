@@ -98,27 +98,6 @@
 }
 .actionBtnIcon { font-size: 18px; line-height: 1; flex-shrink: 0; }
 
-.zoomGroup {
-  display: flex;
-  flex-direction: column;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(245, 240, 232, 0.16);
-  background: rgba(12, 20, 36, 0.92);
-}
-.zoomBtn {
-  width: 52px;
-  height: 38px;
-  background: transparent;
-  border: none;
-  color: #f5f0e8;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 150ms;
-}
-.zoomBtn:hover { background: rgba(255, 255, 255, 0.06); }
-.zoomBtn + .zoomBtn { border-top: 1px solid rgba(245, 240, 232, 0.16); }
-
 /* ── Ranking tab (left edge) ─────────────────────────── */
 .rankingTabWrap {
   position: absolute;
@@ -299,7 +278,6 @@
 @media (max-width: 1100px) {
   .actionBtn { width: 46px; height: 46px; font-size: 8px; }
   .actionBtnIcon { font-size: 16px; }
-  .zoomBtn { width: 46px; height: 34px; }
 }
 
 /* Small screens — aligner les marges/gaps gauche ↔ droite pour une grille
@@ -312,7 +290,6 @@
   .actionBtn { width: 42px; height: 42px; gap: 0; }
   .actionBtn > span:not(.actionBtnIcon) { display: none; }
   .actionBtnIcon { font-size: 16px; }
-  .zoomBtn { width: 42px; height: 32px; font-size: 16px; }
   .rankingTab { padding: 12px 8px; }
   .rankingTabLabel { font-size: 9px; }
   .rankingTabRank { font-size: 16px; }
@@ -358,7 +335,6 @@
   }
   .actionButtons { flex-direction: row; justify-content: flex-end; gap: 4px; }
   .actionBtn { width: 38px; height: 38px; }
-  .zoomGroup { display: none; }
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
 }
@@ -372,18 +348,15 @@
   .actionButtons { flex-direction: row; gap: 4px; }
   .actionBtn { width: 38px; height: 38px; gap: 0; }
   .actionBtn > span:not(.actionBtnIcon) { display: none; }
-  .zoomGroup { flex-direction: row; }
-  .zoomBtn + .zoomBtn { border-top: none; border-left: 1px solid rgba(245,240,232,0.16); }
 
   /* Same ranking FAB as portrait mobile */
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
 }
 
-/* Touch devices — hide zoom (pinch-to-zoom), enlarge touch targets */
+/* Touch devices — enlarge touch targets */
 @media (pointer: coarse) {
   .actionBtn { min-height: 44px; min-width: 44px; }
-  .zoomGroup { display: none; }
 }
 
 /* ── Zoom compact (top-right under HUD) ──────────────────── */
