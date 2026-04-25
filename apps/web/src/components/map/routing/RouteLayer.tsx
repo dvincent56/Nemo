@@ -13,7 +13,7 @@
 // reshape it. When the store rotates a new run in, `nextGfsRunMs` jumps
 // forward by 6 h, so previously-stale segments get repainted as fresh.
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { mapInstance } from '@/components/play/MapCanvas';
 import type { RoutePlan, RoutePolylinePoint } from '@nemo/routing';
@@ -74,6 +74,15 @@ function lineFeature(points: RoutePolylinePoint[]): GeoJSON.Feature<GeoJSON.Line
 }
 
 export function RouteLayer({ routes, primaryId, colorFor, nextGfsRunMs }: Props) {
+  // Track the boat IDs this instance has installed layers for. The cleanup
+  // function below uses this ref to remove ONLY layers actually owned by this
+  // instance (instead of sweeping every `sim-route-line-*` on the map). The
+  // previous broad sweep wiped layers on every effect re-run (any time
+  // `colorFor`/`routes`/etc. changed identity) and on the simulator screen,
+  // where fleet ticks re-render the parent on every frame, the cleanup-then-
+  // reinstall race meant the route disappeared during simulation.
+  const installedIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const map = mapInstance;
     if (!map) return;
@@ -138,43 +147,54 @@ export function RouteLayer({ routes, primaryId, colorFor, nextGfsRunMs }: Props)
             map.setPaintProperty(layerId, 'line-width', v.width);
           }
         }
+        installedIdsRef.current.add(id);
       }
 
-      // Remove routes that disappeared
-      const layers = map.getStyle().layers ?? [];
-      for (const layer of layers) {
-        const m = layer.id.match(/^sim-route-line-(fresh|stale)-(.+)$/);
-        if (!m) continue;
-        const id = m[2]!;
+      // Remove routes that this instance previously installed but are no
+      // longer in the routes map. We only touch IDs we own — layers from
+      // other RouteLayer instances or stale sweeps stay untouched.
+      for (const id of Array.from(installedIdsRef.current)) {
         if (seen.has(id)) continue;
-        if (map.getLayer(layer.id)) map.removeLayer(layer.id);
-        const srcId = `sim-route-${m[1]}-${id}`;
-        if (map.getSource(srcId)) map.removeSource(srcId);
+        for (const suffix of ['fresh', 'stale'] as const) {
+          const layerId = `sim-route-line-${suffix}-${id}`;
+          const sourceId = `sim-route-${suffix}-${id}`;
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+          if (map.getSource(sourceId)) map.removeSource(sourceId);
+        }
+        installedIdsRef.current.delete(id);
       }
     };
 
     install();
+    // Effect cleanup runs on every dep change AND on unmount. We do NOT
+    // remove layers here — that would wipe the route on every parent
+    // re-render (e.g. simulator fleet ticks). Per-route diffing happens in
+    // `install()` above; the unmount-only sweep lives in the second effect.
+    return () => { cancelled = true; };
+  }, [routes, primaryId, colorFor, nextGfsRunMs]);
 
+  // Mount-only effect — its cleanup runs ONLY when the component truly
+  // unmounts. That's where we remove the layers this instance installed
+  // (without touching layers owned by other instances). This restores the
+  // "RouteLayer cleans up after itself when the router panel closes"
+  // behaviour from commit 239f941 without the per-render wipe race.
+  useEffect(() => {
     return () => {
-      cancelled = true;
-      // Remove every sim-route layer/source we may have created. Without this
-      // the layers persist on the map after the router panel closes (the
-      // unmount only flipped the `cancelled` flag, leaving previously-installed
-      // sources/layers in place).
       const m = mapInstance;
       if (!m) return;
       try {
-        const layers = m.getStyle().layers ?? [];
-        for (const layer of layers) {
-          const match = layer.id.match(/^sim-route-line-(fresh|stale)-(.+)$/);
-          if (!match) continue;
-          if (m.getLayer(layer.id)) m.removeLayer(layer.id);
-          const srcId = `sim-route-${match[1]}-${match[2]}`;
-          if (m.getSource(srcId)) m.removeSource(srcId);
+        for (const id of installedIdsRef.current) {
+          for (const suffix of ['fresh', 'stale'] as const) {
+            const layerId = `sim-route-line-${suffix}-${id}`;
+            const sourceId = `sim-route-${suffix}-${id}`;
+            if (m.getLayer(layerId)) m.removeLayer(layerId);
+            if (m.getSource(sourceId)) m.removeSource(sourceId);
+          }
         }
+        installedIdsRef.current.clear();
       } catch { /* ignore teardown race */ }
     };
-  }, [routes, primaryId, colorFor, nextGfsRunMs]);
+  }, []);
 
   return null;
 }
