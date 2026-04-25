@@ -259,6 +259,7 @@ export interface GameStore extends RouterActions {
   removeOrder: (id: string) => void;
   reorderQueue: (from: number, to: number) => void;
   commitQueue: () => void;
+  replaceOrderQueue: (orders: OrderEntry[]) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
