@@ -21,6 +21,7 @@ import SlidePanel from '@/components/play/SlidePanel';
 import SailPanel from '@/components/play/SailPanel';
 import ProgPanel from '@/components/play/ProgPanel';
 import RankingPanel from '@/components/play/RankingPanel';
+import RouterPanel from '@/components/play/RouterPanel';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import LayersWidget from '@/components/play/LayersWidget';
@@ -292,6 +293,15 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             </SlidePanel>
             <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()}>
               <ProgPanel />
+            </SlidePanel>
+            <SlidePanel
+              side="right"
+              width={420}
+              title="Routeur"
+              isOpen={activePanel === 'router'}
+              onClose={() => useGameStore.getState().closeRouter()}
+            >
+              <RouterPanel onApply={(_mode) => { /* wired in Phase 9 */ }} />
             </SlidePanel>
           </>
         )}
