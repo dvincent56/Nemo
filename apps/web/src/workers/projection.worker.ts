@@ -265,8 +265,9 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let lastWptCaptured = wptIdx >= wptQueue.length;
 
   // Drive the WPT chain at the boat's CURRENT position: capture any WPTs
-  // we are inside, then point heading at the next active WPT. Returns true
-  // when every WPT in the chain has been captured (caller should stop).
+  // we are inside (or just swept past during the optional prev→curr leg),
+  // then point heading at the next active WPT. Returns true when every WPT
+  // in the chain has been captured (caller should stop).
   //
   // Called both at the top of the outer step AND after each partial advance
   // inside the segment loop. The latter is critical: when a SAIL change
@@ -277,11 +278,40 @@ function simulate(input: ProjectionInput): ProjectionResult {
   // along H_a, P_over → P_new along H_b). Capturing the WPT mid-segment-
   // loop ensures the partial advance for any subsequent segment uses the
   // already-flipped heading toward the next WPT, so no overshoot vertex.
-  const driveWpt = (): boolean => {
+  //
+  // The optional prev{Lat,Lon} args mirror the engine's wptCheckPositions
+  // (tick.ts ~L287): when the step is large (post-t+1h dt is 5–30 min, easy
+  // to cover several NM) a full advance can fly *past* a small-radius WPT,
+  // leaving the boat outside the radius on the far side. Without sampling
+  // along the swept leg we miss the capture; the next iter then sees
+  // dist > captureRadius and points heading BACKWARD at the WPT, producing
+  // a zigzag (forward, then backward, then forward again as the boat
+  // overshoots/undershoots). Sampling 4 intermediate points along the leg
+  // catches the pass-by even when the endpoint is outside the radius.
+  const NUM_SWEEP_SAMPLES = 4;
+  const sweptInsideRadius = (
+    prevLat: number, prevLon: number, curLat: number, curLon: number,
+    wptLat: number, wptLon: number, radiusNm: number,
+  ): boolean => {
+    if (haversinePosNM({ lat: curLat, lon: curLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
+    if (haversinePosNM({ lat: prevLat, lon: prevLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
+    for (let i = 1; i < NUM_SWEEP_SAMPLES; i++) {
+      const t = i / NUM_SWEEP_SAMPLES;
+      const sLat = prevLat + (curLat - prevLat) * t;
+      const sLon = prevLon + (curLon - prevLon) * t;
+      if (haversinePosNM({ lat: sLat, lon: sLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
+    }
+    return false;
+  };
+
+  const driveWpt = (prevLat?: number, prevLon?: number): boolean => {
     while (wptIdx < wptQueue.length) {
       const w = wptQueue[wptIdx]!;
       const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
-      if (haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm) {
+      const captured = prevLat !== undefined && prevLon !== undefined
+        ? sweptInsideRadius(prevLat, prevLon, lat, lon, v.lat, v.lon, v.captureRadiusNm)
+        : haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm;
+      if (captured) {
         // Captured — advance the chain. Anchor the marker to the most recent
         // pushed point (count - 1) so it sits ON the line at the boat's actual
         // entry into the capture radius. Don't push a synthetic vertex at the
@@ -342,6 +372,8 @@ function simulate(input: ProjectionInput): ProjectionResult {
         if (!weather) break;
         const twa = twaLock !== null ? twaLock : computeTWA(hdg, weather.twd);
         const bsp = computeBsp(polar, activeSail, twa, weather.tws, condition, effects, maneuver, transition, currentMs, weather, hdg);
+        const prevLat = lat;
+        const prevLon = lon;
         const newPos = advancePosition({ lat, lon }, hdg, bsp, partialDt);
         lat = newPos.lat;
         lon = newPos.lon;
@@ -356,8 +388,10 @@ function simulate(input: ProjectionInput): ProjectionResult {
         // have crossed into a WPT capture radius. If so, flip heading toward
         // the next WPT BEFORE pushing the segment vertex, so the
         // segment-trigger pushPoint below sits on a clean bend rather than
-        // overshooting along the now-stale heading.
-        if (driveWpt()) {
+        // overshooting along the now-stale heading. Pass prev pos so the
+        // sweep-sample test catches a fly-by even if the endpoint is
+        // outside the radius.
+        if (driveWpt(prevLat, prevLon)) {
           // Chain exhausted mid-step. Push the partial-advance point as the
           // final vertex (so the segment marker has somewhere to anchor) and
           // exit the segment loop; the outer loop's break-on-driveWpt at the
@@ -566,11 +600,23 @@ function simulate(input: ProjectionInput): ProjectionResult {
       }
     }
 
+    const advancePrevLat = lat;
+    const advancePrevLon = lon;
     lat = newPos.lat;
     lon = newPos.lon;
 
     // Advance time
     currentMs += dt * 1000;
+
+    // After the full advance, sample along the swept leg for WPT capture.
+    // Without this, large step sizes (post-t+1h dt is 5–30 min, easily 5+ NM
+    // covered per step) can fly past a small-radius WPT and leave the boat
+    // outside the radius on the far side. The next iter's top driveWpt()
+    // would then point heading BACKWARD at the un-captured WPT, producing a
+    // visible zigzag (forward → backward → forward) in the projection line.
+    // Mirrors tick.ts' wptCheckPositions strategy (capture at every segment
+    // boundary, not just the endpoint).
+    if (driveWpt(advancePrevLat, advancePrevLon)) break;
 
     // Wear progression
     const wearDelta = computeWearDelta(weather, hdg, dt, effects);
