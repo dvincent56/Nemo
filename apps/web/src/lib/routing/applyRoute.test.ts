@@ -4,6 +4,9 @@ import type { RoutePlan } from '@nemo/routing';
 
 const baseTs = 1_000_000_000_000;
 
+// CapScheduleEntry.triggerMs is an ABSOLUTE Unix-ms timestamp (mirrors
+// IsochronePoint.timeMs from the routing core). The fixture seeds entries at
+// baseTs, baseTs+1h, baseTs+2h to reflect that.
 const fakePlan = (): RoutePlan => ({
   reachedGoal: true,
   polyline: [],
@@ -13,9 +16,9 @@ const fakePlan = (): RoutePlan => ({
     { lat: 47, lon: -3 },
   ],
   capSchedule: [
-    { triggerMs: 0, cap: 60, sail: 'JIB' },
-    { triggerMs: 3_600_000, cap: 70, sail: 'JIB' },
-    { triggerMs: 7_200_000, cap: 90, twaLock: 50, sail: 'C0' },
+    { triggerMs: baseTs, cap: 60, sail: 'JIB' },
+    { triggerMs: baseTs + 3_600_000, cap: 70, sail: 'JIB' },
+    { triggerMs: baseTs + 7_200_000, cap: 90, twaLock: 50, sail: 'C0' },
   ],
   isochrones: [],
   totalDistanceNm: 100,

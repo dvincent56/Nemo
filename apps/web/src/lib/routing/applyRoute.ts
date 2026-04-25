@@ -15,7 +15,7 @@ function uid(prefix: string): string {
   return `${prefix}-${Date.now()}-${counter}`;
 }
 
-export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry[] {
+export function capScheduleToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[] {
   const orders: OrderEntry[] = [];
   // Always force sailAuto on first — auto-sail mode means the engine selects
   // the optimal sail from the polar; emitting SAIL orders alongside would be
@@ -30,7 +30,16 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
   });
 
   for (const entry of plan.capSchedule) {
-    const triggerTimeSec = (baseTs + entry.triggerMs) / 1000;
+    // CapScheduleEntry.triggerMs is an *absolute* Unix-ms timestamp (it is
+    // copied from RoutePolylinePoint.timeMs which inherits IsochronePoint
+    // .timeMs, seeded with `input.startTimeMs = Date.now()` and advanced
+    // by `timeStepSec * 1000`). OrderTrigger.time is Unix seconds, so we
+    // just divide. Adding `baseTs` here (a previous attempt to convert a
+    // *relative* offset) doubled the timestamp into year ~4172, pushing
+    // every CAP/TWA segment past the projection's 5-day horizon — the
+    // worker never triggered them and the projection rendered as a
+    // straight line at the initial heading.
+    const triggerTimeSec = entry.triggerMs / 1000;
     if (entry.twaLock !== undefined && entry.twaLock !== null) {
       orders.push({
         id: uid('twa'),
