@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { OrderTrigger } from '@nemo/shared-types';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { isObsolete, validateLeadTime, MIN_LEAD_TIME_MS } from '@/lib/orders/obsolete';
+import { haversinePosNM } from '@/lib/geo';
 import Toast, { type ToastType } from '@/components/ui/Toast';
 import styles from './ProgPanel.module.css';
 
@@ -70,6 +71,87 @@ export default function ProgPanel(): React.ReactElement {
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Auto-removal of executed orders. Heuristic — engine state is canonical, but
+  // for ProgPanel display purposes we sweep the queue every 5 s and drop:
+  //   - AT_TIME triggers whose target is in the past
+  //   - WPT orders whose waypoint has been "captured" (boat within
+  //     captureRadiusNm) — including predecessors in a chained AT_WAYPOINT chain
+  //     when a successor has been captured
+  //   - Committed IMMEDIATE orders that have aged > 5 s
+  //
+  // AFTER_DURATION and SEQUENTIAL are intentionally left alone (no client-side
+  // reliable signal — clientTs is not retained on OrderEntry).
+  useEffect(() => {
+    const tick = () => {
+      const state = useGameStore.getState();
+      const nowMs = Date.now();
+      const lat = state.hud.lat;
+      const lon = state.hud.lon;
+      if (typeof lat !== 'number' || typeof lon !== 'number') return;
+
+      const queue = state.prog.orderQueue;
+      const wptOrders = queue.filter((o) => o.type === 'WPT');
+
+      // Pass 1: WPTs the boat is currently within their capture radius.
+      const capturedIds = new Set<string>();
+      for (const o of wptOrders) {
+        const wptLat = o.value['lat'];
+        const wptLon = o.value['lon'];
+        const radiusRaw = o.value['captureRadiusNm'];
+        const radius = typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.5;
+        if (typeof wptLat === 'number' && typeof wptLon === 'number') {
+          const dNm = haversinePosNM({ lat, lon }, { lat: wptLat, lon: wptLon });
+          if (dNm < radius) capturedIds.add(o.id);
+        }
+      }
+
+      // Pass 2: walk the AT_WAYPOINT chain backwards. If WPT C is captured,
+      // every predecessor (B, A, …) referenced through trigger.waypointOrderId
+      // is also done.
+      for (const o of wptOrders) {
+        if (!capturedIds.has(o.id)) continue;
+        if (o.trigger.type !== 'AT_WAYPOINT') continue;
+        let prevId: string | undefined = o.trigger.waypointOrderId;
+        const guard = new Set<string>(); // cycle guard
+        while (prevId && !guard.has(prevId)) {
+          guard.add(prevId);
+          capturedIds.add(prevId);
+          const prev = wptOrders.find((w) => w.id === prevId);
+          if (!prev || prev.trigger.type !== 'AT_WAYPOINT') break;
+          prevId = prev.trigger.waypointOrderId;
+        }
+      }
+
+      const toRemove: string[] = [];
+      for (const o of queue) {
+        if (o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < nowMs) {
+          toRemove.push(o.id);
+        } else if (o.type === 'WPT' && capturedIds.has(o.id)) {
+          toRemove.push(o.id);
+        } else if (
+          o.trigger.type === 'IMMEDIATE' &&
+          o.committed === true
+        ) {
+          // Estimate age via the trailing timestamp in the order id (uid format
+          // historically `<prefix>-<Date.now()>-<counter>` or `order-<Date.now()>`).
+          const m = /-(\d{10,})(?:-\d+)?$/.exec(o.id);
+          if (m) {
+            const createdMs = parseInt(m[1]!, 10);
+            if (Number.isFinite(createdMs) && nowMs - createdMs > 5_000) {
+              toRemove.push(o.id);
+            }
+          }
+        }
+      }
+
+      for (const id of toRemove) state.removeOrder(id);
+    };
+
+    tick();
+    const interval = setInterval(tick, 5_000);
+    return () => clearInterval(interval);
   }, []);
 
   const currentTrigger: OrderTrigger | null = useMemo(() => {
