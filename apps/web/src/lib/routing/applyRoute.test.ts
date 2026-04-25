@@ -127,4 +127,25 @@ describe('waypointsToOrders', () => {
     expect(wpts[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
     expect(wpts[1]?.trigger.type).toBe('AT_WAYPOINT');
   });
+
+  it('skips waypoints within 1 nm of the boat start (avoids redundant "WP 1" near origin)', () => {
+    // First inflection is ~0.3 nm from the start (lat delta ~0.005° ≈ 0.3 nm)
+    // — should be filtered out. The next one (47, -3) stays.
+    const planWithCloseFirstInflection: RoutePlan = {
+      ...fakePlan(),
+      waypoints: [
+        { lat: 46, lon: -4 },
+        { lat: 46.005, lon: -4.001 }, // ~0.3 nm — skip
+        { lat: 47, lon: -3 },         // ~76 nm — keep
+      ],
+    };
+    const orders = waypointsToOrders(planWithCloseFirstInflection, baseTs, true);
+    const wpts = orders.filter((o) => o.type === 'WPT');
+    // Without the skip we'd have 2 WPTs; with the proximity filter we have 1.
+    expect(wpts.length).toBe(1);
+    expect(wpts[0]?.value['lat']).toBe(47);
+    expect(wpts[0]?.label).toBe('WP 1');
+    // First (and only) WPT remains the IMMEDIATE chain head.
+    expect(wpts[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
+  });
 });

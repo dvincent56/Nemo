@@ -11,6 +11,18 @@
 
 import type { RoutePlan } from '@nemo/routing';
 import type { OrderEntry } from '@/lib/store/types';
+import { haversinePosNM } from '@/lib/geo';
+
+/**
+ * Minimum allowed distance (nautical miles) between an emitted WP and the
+ * boat's current position. RoutePlan.waypoints are inflection points produced
+ * by the router's polyline-to-waypoints reduction — when the very first
+ * inflection is a tiny heading nudge right at the start, it lands within a
+ * fraction of a nm of the boat. Emitting it as "WP 1" surfaces a useless
+ * order (the boat is essentially already there) and pollutes the queue. This
+ * threshold drops any such co-located waypoints up front.
+ */
+const MIN_WP_DISTANCE_NM = 1;
 
 let counter = 0;
 function uid(prefix: string): string {
@@ -100,12 +112,18 @@ export function waypointsToOrders(
       committed: true,
     });
   }
-  // Skip waypoints[0] — that's the boat's start position
+  // Skip waypoints[0] — that's the boat's start position. Also drop any
+  // following waypoint that lies within MIN_WP_DISTANCE_NM of the start
+  // (router inflections occasionally produce a tiny heading nudge a few
+  // hundred metres from the origin that's indistinguishable from the boat
+  // position from the player's POV).
+  const start = plan.waypoints[0];
   let prevId: string | null = null;
   let wpIndex = 0;
   for (let i = 1; i < plan.waypoints.length; i++) {
-    wpIndex += 1;
     const wp = plan.waypoints[i]!;
+    if (start && haversinePosNM(start, wp) < MIN_WP_DISTANCE_NM) continue;
+    wpIndex += 1;
     const id = uid('wpt');
     orders.push({
       id,
