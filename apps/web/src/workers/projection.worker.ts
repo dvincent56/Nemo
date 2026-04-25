@@ -255,6 +255,15 @@ function simulate(input: ProjectionInput): ProjectionResult {
   }
   let segIdx = 0;
 
+  // Whether this projection is driving toward a known WPT chain. When we
+  // had WPTs at start (regardless of pre-pruning), we treat this as
+  // "WPT-mode" routing: once the chain is exhausted there's nothing
+  // meaningful left to project — the player has explicit waypoints and
+  // doesn't want a 5-day extrapolation past the last one. CAP/TWA/no-orders
+  // projections still run the full DAYS_5 horizon.
+  const hadWptOrders = wptQueue.length > 0;
+  let lastWptCaptured = wptIdx >= wptQueue.length;
+
   // Track which time marker hours we've passed
   let nextTimeMarkerIdx = 0;
 
@@ -401,6 +410,7 @@ function simulate(input: ProjectionInput): ProjectionResult {
           detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
         });
         wptIdx++;
+        if (wptIdx >= wptQueue.length) lastWptCaptured = true;
         continue;
       }
       // Override heading to point at the active WPT.
@@ -408,6 +418,13 @@ function simulate(input: ProjectionInput): ProjectionResult {
       twaLock = null;
       break;
     }
+
+    // Stop the projection once every WPT in the chain has been captured. In
+    // WPT-mode the player explicitly wants the line drawn TO the last
+    // waypoint — extrapolating 5 days past it on a frozen heading produces
+    // a long stale tail with no actionable value. CAP/TWA/no-orders
+    // projections (hadWptOrders=false) still run the full horizon below.
+    if (hadWptOrders && lastWptCaptured) break;
 
     // Get weather at current position/time
     const weather = getWeatherAt(lat, lon, currentMs);
