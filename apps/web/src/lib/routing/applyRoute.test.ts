@@ -90,4 +90,11 @@ describe('waypointsToOrders', () => {
     const wpts = orders.filter((o) => o.type === 'WPT');
     expect(wpts[0]?.value['captureRadiusNm']).toBe(0.5);
   });
+
+  it('labels WPT orders sequentially as "WP N" (not lat/lon coords or internal id)', () => {
+    const orders = waypointsToOrders(fakePlan(), baseTs);
+    const wpts = orders.filter((o) => o.type === 'WPT');
+    expect(wpts[0]?.label).toBe('WP 1');
+    expect(wpts[1]?.label).toBe('WP 2');
+  });
 });

@@ -20,14 +20,18 @@ function defaultAtTime(): string {
   return local.toISOString().slice(0, 16);
 }
 
-function formatTrigger(trigger: OrderTrigger): string {
+function formatTrigger(trigger: OrderTrigger, labelById?: Map<string, string>): string {
   switch (trigger.type) {
     case 'AT_TIME':
       return new Date(trigger.time * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     case 'AFTER_DURATION':
       return `Dans ${Math.round(trigger.duration / 60)} min`;
-    case 'AT_WAYPOINT':
-      return `Au waypoint ${trigger.waypointOrderId}`;
+    case 'AT_WAYPOINT': {
+      // Resolve the predecessor's user-facing label (e.g. "WP 1") instead of
+      // surfacing the internal uid like "wpt-1777148215048-27".
+      const ref = labelById?.get(trigger.waypointOrderId) ?? trigger.waypointOrderId;
+      return `Au ${ref}`;
+    }
     case 'IMMEDIATE':
     case 'SEQUENTIAL':
       return trigger.type;
@@ -128,6 +132,14 @@ export default function ProgPanel(): React.ReactElement {
 
   // Pending = orders that "Valider la file" will actually send.
   const pendingCount = orderQueue.filter((o) => !o.committed).length;
+
+  // Lookup so AT_WAYPOINT triggers can display the predecessor's friendly
+  // label ("WP 1") instead of the raw uid stored in waypointOrderId.
+  const labelById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of orderQueue) m.set(o.id, o.label);
+    return m;
+  }, [orderQueue]);
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'cap', label: 'Cap' },
@@ -267,7 +279,7 @@ export default function ProgPanel(): React.ReactElement {
             const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''}`;
             return (
               <div key={o.id} className={cls}>
-                <span className={styles.orderWhen}>{formatTrigger(o.trigger)}</span>
+                <span className={styles.orderWhen}>{formatTrigger(o.trigger, labelById)}</span>
                 <span className={styles.orderWhat}>
                   {o.label}
                   {committed && <span className={styles.orderCommittedBadge}> ✓ envoyé</span>}

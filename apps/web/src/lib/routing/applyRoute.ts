@@ -75,7 +75,9 @@ export function waypointsToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[
   });
   // Skip waypoints[0] — that's the boat's start position
   let prevId: string | null = null;
+  let wpIndex = 0;
   for (let i = 1; i < plan.waypoints.length; i++) {
+    wpIndex += 1;
     const wp = plan.waypoints[i]!;
     const id = uid('wpt');
     orders.push({
@@ -83,7 +85,7 @@ export function waypointsToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[
       type: 'WPT',
       value: { lat: wp.lat, lon: wp.lon, captureRadiusNm: 0.5 },
       trigger: prevId ? { type: 'AT_WAYPOINT', waypointOrderId: prevId } : { type: 'IMMEDIATE' },
-      label: `WPT ${wp.lat.toFixed(2)}°·${wp.lon.toFixed(2)}°`,
+      label: `WP ${wpIndex}`,
       committed: true,
     });
     prevId = id;
