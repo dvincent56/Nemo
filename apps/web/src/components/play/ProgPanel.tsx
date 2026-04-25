@@ -138,22 +138,33 @@ export default function ProgPanel(): React.ReactElement {
       // from current boat state) would miss the heading change because it's
       // still ahead of the engine.
       const lastTickMs = state.lastTickUnix !== null ? state.lastTickUnix * 1000 : 0;
+      // Estimate when the order was created (and thus dispatched to the server)
+      // via the trailing timestamp in the uid: `<prefix>-<Date.now()>-<counter>`
+      // or `order-<Date.now()>`. We only remove an order once a server tick
+      // has been received that is past BOTH the order's trigger AND its
+      // dispatch time — otherwise a router-applied AT_TIME order with a
+      // past trigger (e.g. trigger.time = route compute time, ~30s ago)
+      // would be wiped before the engine has had a chance to ingest it.
+      const orderDispatchMs = (o: { id: string }): number => {
+        const m = /-(\d{10,})(?:-\d+)?$/.exec(o.id);
+        if (!m) return 0;
+        const t = parseInt(m[1]!, 10);
+        return Number.isFinite(t) ? t : 0;
+      };
       const toRemove: string[] = [];
       for (const o of queue) {
-        if (o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < lastTickMs) {
-          toRemove.push(o.id);
-        } else if (
-          o.trigger.type === 'IMMEDIATE' &&
-          o.committed === true
-        ) {
-          // Estimate age via the trailing timestamp in the order id (uid format
-          // historically `<prefix>-<Date.now()>-<counter>` or `order-<Date.now()>`).
-          const m = /-(\d{10,})(?:-\d+)?$/.exec(o.id);
-          if (m) {
-            const createdMs = parseInt(m[1]!, 10);
-            if (Number.isFinite(createdMs) && nowMs - createdMs > 5_000) {
-              toRemove.push(o.id);
-            }
+        if (o.trigger.type === 'AT_TIME') {
+          const triggerMs = o.trigger.time * 1000;
+          const dispatchMs = orderDispatchMs(o);
+          // Require the server to have ticked past whichever is later. This
+          // gives the engine at least one tick to ingest the order before
+          // we drop it locally.
+          const cutoff = Math.max(triggerMs, dispatchMs);
+          if (cutoff > 0 && cutoff < lastTickMs) toRemove.push(o.id);
+        } else if (o.trigger.type === 'IMMEDIATE' && o.committed === true) {
+          const createdMs = orderDispatchMs(o);
+          if (createdMs > 0 && nowMs - createdMs > 5_000) {
+            toRemove.push(o.id);
           }
         }
         // NOTE: WPT orders are intentionally NOT removed here — see comment above.
