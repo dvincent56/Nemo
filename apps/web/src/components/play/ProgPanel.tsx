@@ -348,12 +348,6 @@ export default function ProgPanel(): React.ReactElement {
         File d&apos;ordres{' '}
         <span className={styles.queueCount}>{String(orderQueue.length).padStart(2, '0')} actifs</span>
       </h4>
-      {orderQueue.length > 0 && pendingCount === 0 && (
-        <div className={styles.queueAllSentNote}>
-          Tous les ordres ont été envoyés au serveur.
-        </div>
-      )}
-
       {orderQueue.length === 0 ? (
         <div className={styles.empty}>Aucun ordre programmé</div>
       ) : (

@@ -221,15 +221,6 @@
   margin-left: 6px;
 }
 
-.queueAllSentNote {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  color: rgba(201, 162, 39, 0.72);
-  margin: 0 0 10px;
-  text-transform: uppercase;
-}
-
 .commit {
   margin-top: 18px;
   width: 100%;
