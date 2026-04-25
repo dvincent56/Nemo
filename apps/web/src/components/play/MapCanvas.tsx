@@ -283,6 +283,57 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     mapRef.current = map;
     mapInstance = map;
 
+    // Dev-only debug helper: dump the live MapLibre style state. Lets the
+     // user run `__debugMap()` in the browser console to enumerate every
+     // source + layer currently installed on the map. We need this to confirm
+     // whether the "two projection lines + duplicated markers" report is a
+     // duplicate-layer issue (multiple layer ids), a multiple-source issue,
+     // or something else (e.g. the fallback green gradient never overwritten,
+     // a stale RouteLayer leak, an IsochroneLayer leak, etc.).
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __debugMap?: () => void }).__debugMap = () => {
+        const m = mapRef.current;
+        if (!m) { console.warn('[__debugMap] no map instance'); return; }
+        const style = m.getStyle();
+        const sources = style.sources ?? {};
+        const layers = style.layers ?? [];
+        console.group('[__debugMap] sources (' + Object.keys(sources).length + ')');
+        for (const id of Object.keys(sources)) {
+          const src = (sources as Record<string, unknown>)[id];
+          console.log(id, src);
+        }
+        console.groupEnd();
+        console.group('[__debugMap] layers (' + layers.length + ')');
+        for (const layer of layers) {
+          const src = (layer as { source?: string }).source;
+          const paint = (layer as { paint?: unknown }).paint;
+          console.log(layer.id + ' (type=' + layer.type + ', source=' + (src ?? '<none>') + ')', paint);
+        }
+        console.groupEnd();
+        const projLayers = layers.filter((l) => {
+          const src = (l as { source?: string }).source ?? '';
+          return l.id.startsWith('projection') || src.startsWith('projection');
+        });
+        const simLayers = layers.filter((l) => {
+          const src = (l as { source?: string }).source ?? '';
+          return l.id.startsWith('sim-') || src.startsWith('sim-');
+        });
+        const greenLayers = layers.filter((l) => {
+          const paint = JSON.stringify((l as { paint?: unknown }).paint ?? {});
+          return /#?27ae60|#?2ecc71|#?5cc88c|#?5fc|"green"/i.test(paint);
+        });
+        console.log('[__debugMap] projection layers count:', projLayers.length, projLayers.map((l) => l.id));
+        console.log('[__debugMap] sim-* layers count:', simLayers.length, simLayers.map((l) => l.id));
+        console.log('[__debugMap] layers with GREEN paint:', greenLayers.length, greenLayers.map((l) => l.id));
+        // Also report current paint of the projection-line-layer so we can
+        // tell whether the gradient was ever overwritten by useProjectionLine.
+        if (m.getLayer('projection-line-layer')) {
+          const grad = m.getPaintProperty('projection-line-layer', 'line-gradient');
+          console.log('[__debugMap] projection-line-layer line-gradient:', grad);
+        }
+      };
+    }
+
     map.once('load', () => {
       // ── Exclusion zones (filled polygons + borders) ──
       const initZones = useGameStore.getState().zones;
