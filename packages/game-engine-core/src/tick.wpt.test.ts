@@ -197,6 +197,66 @@ describe('WPT order — capture detection', () => {
 // doesn't fight A within the same tick.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Test 4 — captureRadiusNm validation: malformed values (NaN, 0, negative) are
+// rejected and the default 0.5 NM applies. A crafted order with NaN must not
+// DoS the boat by making capture impossible (NaN <= NaN === false).
+// ---------------------------------------------------------------------------
+
+describe('WPT order — captureRadiusNm validation', () => {
+  test('NaN captureRadiusNm is ignored, default 0.5 NM applies', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Boat at ~0.4 NM south of waypoint (within default 0.5 NM).
+    const startPos: Position = { lat: 46.0, lon: -4.0 };
+    const wpt: Position = { lat: 46 + 0.4 / 60, lon: -4.0 }; // ~0.4 NM north
+    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, NaN);
+    const wptOrderId = wptEnv.order.id;
+    const runtime = await makeRuntime(startPos, [wptEnv]);
+
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // The malformed NaN radius must be rejected; the default 0.5 NM applies,
+    // so the boat (~0.4 NM away) captures the waypoint.
+    const stillThere = out.runtime.orderHistory.find((o) => o.order.id === wptOrderId);
+    assert.equal(
+      stillThere,
+      undefined,
+      `WPT with NaN captureRadiusNm should fall back to default and be captured at 0.4 NM`,
+    );
+  });
+
+  test('custom captureRadiusNm of 2 NM is honored', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Boat ~1.0 NM south of waypoint, with custom radius 2 NM → capturable.
+    const startPos: Position = { lat: 46.0, lon: -4.0 };
+    const wpt: Position = { lat: 46 + 1.0 / 60, lon: -4.0 }; // ~1.0 NM north
+    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, 2);
+    const wptOrderId = wptEnv.order.id;
+    const runtime = await makeRuntime(startPos, [wptEnv]);
+
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    const stillThere = out.runtime.orderHistory.find((o) => o.order.id === wptOrderId);
+    assert.equal(
+      stillThere,
+      undefined,
+      `WPT with captureRadiusNm=2 should be captured when boat is ~1 NM away`,
+    );
+  });
+});
+
 describe('WPT order — sequential waypoints', () => {
   test('after WPT A is captured, WPT B remains in queue', async () => {
     const polar = await loadPolar('CLASS40');

@@ -19,6 +19,7 @@ import type { WeatherProvider } from './weather';
 import { aggregateEffects, type BoatLoadout } from './loadout';
 import { computeBsp } from './speed-model';
 import { haversineNM } from '@nemo/polar-lib/browser';
+import { WPT_DEFAULT_CAPTURE_NM } from './geo';
 
 export interface CoastlineProbe {
   isLoaded(): boolean;
@@ -281,7 +282,6 @@ export function runTick(
   // completed based on the current/end position.
   // Default capture radius mirrors the legacy queue-based engine
   // (apps/game-engine/src/engine/orders.ts WPT_REACHED_NM = 0.5).
-  const DEFAULT_WPT_CAPTURE_NM = 0.5;
   // Use the segments list to test capture at any boundary (start, segment ends),
   // so a fast boat that crosses the capture radius mid-tick is detected.
   const wptCheckPositions: Position[] = [runtime.segmentState.position];
@@ -296,10 +296,13 @@ export function runTick(
     const lon = env.order.value['lon'];
     if (typeof lat !== 'number' || typeof lon !== 'number') continue;
     const radiusRaw = env.order.value['captureRadiusNm'];
-    const captureRadiusNm = typeof radiusRaw === 'number' ? radiusRaw : DEFAULT_WPT_CAPTURE_NM;
+    const captureRadiusNm =
+      typeof radiusRaw === 'number' && Number.isFinite(radiusRaw) && radiusRaw > 0
+        ? radiusRaw
+        : WPT_DEFAULT_CAPTURE_NM;
     const wpt: Position = { lat, lon };
     for (const pos of wptCheckPositions) {
-      if (haversineNM(pos, wpt) <= captureRadiusNm) {
+      if (haversineNM(pos, wpt) < captureRadiusNm) {
         completedWptIds.add(env.order.id);
         break;
       }

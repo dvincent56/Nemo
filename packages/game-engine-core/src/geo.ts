@@ -23,3 +23,7 @@ export function bearingDeg(from: Position, to: Position): number {
   const theta = Math.atan2(y, x);
   return ((theta * RAD_TO_DEG) + 360) % 360;
 }
+
+/** Default capture radius for WPT orders. Boat is considered to have reached
+ *  the waypoint when distance to it is strictly less than this value (NM). */
+export const WPT_DEFAULT_CAPTURE_NM = 0.5;
