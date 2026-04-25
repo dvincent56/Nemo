@@ -385,3 +385,38 @@
   .actionBtn { min-height: 44px; min-width: 44px; }
   .zoomGroup { display: none; }
 }
+
+/* ── Zoom compact (top-right under HUD) ──────────────────── */
+.zoomCompact {
+  position: absolute;
+  top: 52px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  background: rgba(12, 20, 36, 0.88);
+}
+.zoomCompactBtn {
+  width: 34px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #f5f0e8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms;
+}
+.zoomCompactBtn:hover { background: rgba(255, 255, 255, 0.06); }
+.zoomCompactBtn + .zoomCompactBtn {
+  border-top: 1px solid rgba(245, 240, 232, 0.16);
+}
+
+@media (max-width: 640px) {
+  .zoomCompact { top: 50px; right: 8px; }
+  .zoomCompactBtn { width: 30px; height: 26px; }
+}
