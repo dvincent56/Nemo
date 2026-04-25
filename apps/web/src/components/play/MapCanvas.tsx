@@ -598,6 +598,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     }
   }, [zonesVisible]);
 
+  /* ── Router placing mode: capture next map click as the destination ── */
+  const routerPhase = useGameStore((s) => s.router.phase);
+  const setRouterDestination = useGameStore((s) => s.setRouterDestination);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routerPhase !== 'placing') return;
+
+    const handleMapClick = (e: maplibregl.MapMouseEvent): void => {
+      setRouterDestination(e.lngLat.lat, e.lngLat.lng);
+    };
+    map.on('click', handleMapClick);
+    return () => { map.off('click', handleMapClick); };
+  }, [routerPhase, setRouterDestination]);
+
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
   const coastlineVisible = useGameStore((s) => s.layers.coastline);
   const coastFetchedRef = useRef(false);

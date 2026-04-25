@@ -134,6 +134,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
+  const routerPhase = useGameStore((s) => s.router.phase);
 
   useEffect(() => {
     setSession(readClientSession());
@@ -228,13 +229,17 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       </div>
 
       {/* Row 2 — Map + floating elements */}
-      <div className={styles.mapArea}>
+      <div className={`${styles.mapArea} ${routerPhase === 'placing' ? styles.mapAreaPlacing : ''}`}>
         <MapCanvas enableProjection={canInteract} />
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}
         <CursorTooltip />
         {canInteract && <ZoomCompact />}
+
+        {routerPhase === 'placing' && (
+          <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+        )}
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
