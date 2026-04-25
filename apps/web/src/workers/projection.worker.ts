@@ -229,7 +229,30 @@ function simulate(input: ProjectionInput): ProjectionResult {
     if (idx < 0) break; // chain broken — stop accumulating
     wptQueue.push(remaining.splice(idx, 1)[0]!);
   }
+
+  // Skip WPTs the boat has already physically reached. The engine captures
+  // WPTs server-side when the boat enters captureRadiusNm; the order is then
+  // marked completed and dropped from the engine's orderHistory. The client's
+  // prog.orderQueue intentionally keeps captured WPTs (so the AT_WAYPOINT
+  // chain references stay intact for ProgPanel display), so by the time the
+  // boat snapshot arrives here the boat has typically already moved PAST the
+  // chain head's position. If we don't prune, the in-loop override below sets
+  // `hdg = bearingDeg(boat, wp1)` — pointing backward — and the projection
+  // ends up as a straight line / U-turn instead of curving through the
+  // remaining WPs. Tolerance: 2× captureRadius so we don't get stuck just
+  // outside the radius when the boat drifted slightly past the capture point
+  // between the server tick and the client render.
   let wptIdx = 0;
+  while (wptIdx < wptQueue.length) {
+    const w = wptQueue[wptIdx]!;
+    const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
+    const distNm = haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon });
+    if (distNm < v.captureRadiusNm * 2) {
+      wptIdx++;
+      continue;
+    }
+    break;
+  }
   let segIdx = 0;
 
   // Track which time marker hours we've passed
