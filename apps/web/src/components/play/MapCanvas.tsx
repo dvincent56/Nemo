@@ -11,6 +11,7 @@ import {
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
+import { selectGhostPosition } from '@/lib/store/timeline-selectors';
 
 /* ── Country labels (French) rendered as lightweight GeoJSON symbols ── */
 const COUNTRY_LABELS: GeoJSON.FeatureCollection = {
@@ -442,6 +443,13 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         map.easeTo({ center: [initHud.lon, initHud.lat], duration: 0 });
       }
 
+      // Ghost boat source — populated by the timeline subscription effect
+      // when scrubbing past or future. Empty in live mode.
+      map.addSource('ghost-boat', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
       // Load IMOCA silhouette as map icon
       const boatImg = new Image(60, 18);
       boatImg.onload = () => {
@@ -458,6 +466,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
             'icon-rotate': ['-', ['get', 'hdg'], 90],
             'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
+          },
+        });
+        map.addLayer({
+          id: 'ghost-boat-icon',
+          type: 'symbol',
+          source: 'ghost-boat',
+          layout: {
+            'icon-image': 'imoca',
+            'icon-size': 0.6,
+            'icon-rotate': ['-', ['get', 'hdg'], 90],
+            'icon-rotation-alignment': 'map',
+            'icon-allow-overlap': true,
+          },
+          paint: {
+            'icon-opacity': 0.4,
           },
         });
       };
@@ -647,6 +670,55 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         prevPoints = s.track.myPoints;
         prevTime = s.timeline.currentTime;
         applyPastTrace();
+      }
+    });
+  }, []);
+
+  /* ── Ghost boat: interpolated position when scrubbing the timeline ── */
+  useEffect(() => {
+    const applyGhost = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      const src = map.getSource('ghost-boat') as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      const s = useGameStore.getState();
+      const ghost = selectGhostPosition({
+        currentTimeMs: s.timeline.currentTime.getTime(),
+        isLive: s.timeline.isLive,
+        nowMs: Date.now(),
+        track: s.track.myPoints,
+        projection: s.projectionSnapshot?.points ?? null,
+      });
+      if (!ghost) {
+        src.setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+      src.setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [ghost.lon, ghost.lat] },
+          properties: { hdg: ghost.hdg },
+        }],
+      });
+    };
+    applyGhost();
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    let prevLive = useGameStore.getState().timeline.isLive;
+    let prevPoints = useGameStore.getState().track.myPoints;
+    let prevSnap = useGameStore.getState().projectionSnapshot;
+    return useGameStore.subscribe((s) => {
+      if (
+        s.timeline.currentTime !== prevTime ||
+        s.timeline.isLive !== prevLive ||
+        s.track.myPoints !== prevPoints ||
+        s.projectionSnapshot !== prevSnap
+      ) {
+        prevTime = s.timeline.currentTime;
+        prevLive = s.timeline.isLive;
+        prevPoints = s.track.myPoints;
+        prevSnap = s.projectionSnapshot;
+        applyGhost();
       }
     });
   }, []);
