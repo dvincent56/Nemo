@@ -296,7 +296,13 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
 
       let triggerMs = Date.now();
       if (o.trigger.type === 'AT_TIME' && o.trigger.time) {
-        triggerMs = o.trigger.time;
+        // OrderTrigger.time is Unix seconds (matches engine convention
+        // `nowUnix >= trigger.time`); the projection worker expects
+        // millisecond timestamps for triggerMs. Without this conversion the
+        // segment fires "in the past" (~1.7e9 vs currentMs ~1.7e12) and the
+        // worker applies all CAP/TWA orders on the first iteration —
+        // collapsing the projection to a straight line in the last heading.
+        triggerMs = o.trigger.time * 1000;
       }
 
       const seg: ProjectionSegment = { triggerMs, type: o.type as ProjectionSegment['type'], value };
