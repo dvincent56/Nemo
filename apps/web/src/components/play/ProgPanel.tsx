@@ -34,9 +34,11 @@ function formatTrigger(trigger: OrderTrigger, labelById?: Map<string, string>): 
       return `Dans ${Math.round(trigger.duration / 60)} min`;
     case 'AT_WAYPOINT': {
       // Resolve the predecessor's user-facing label (e.g. "WP 1") instead of
-      // surfacing the internal uid like "wpt-1777148215048-27".
-      const ref = labelById?.get(trigger.waypointOrderId) ?? trigger.waypointOrderId;
-      return `Au ${ref}`;
+      // surfacing the internal uid like "wpt-1777148215048-27". If the
+      // predecessor is no longer in the queue (e.g. user removed it manually),
+      // fall back to a neutral "WP ?" rather than leaking the raw uid.
+      const ref = labelById?.get(trigger.waypointOrderId);
+      return ref ? `Au ${ref}` : 'Au WP ?';
     }
     case 'IMMEDIATE':
     case 'SEQUENTIAL':
@@ -65,6 +67,7 @@ export default function ProgPanel(): React.ReactElement {
   const orderQueue = useGameStore((s) => s.prog.orderQueue);
   const addOrder = useGameStore((s) => s.addOrder);
   const removeOrder = useGameStore((s) => s.removeOrder);
+  const [capturedIds, setCapturedIds] = useState<Set<string>>(() => new Set());
 
   // 1 Hz tick so AT_TIME orders get a live "⚠ bientôt obsolète" badge when
   // their lead time drops below 5 min while the panel is open.
@@ -76,10 +79,15 @@ export default function ProgPanel(): React.ReactElement {
   // Auto-removal of executed orders. Heuristic — engine state is canonical, but
   // for ProgPanel display purposes we sweep the queue every 5 s and drop:
   //   - AT_TIME triggers whose target is in the past
-  //   - WPT orders whose waypoint has been "captured" (boat within
-  //     captureRadiusNm) — including predecessors in a chained AT_WAYPOINT chain
-  //     when a successor has been captured
   //   - Committed IMMEDIATE orders that have aged > 5 s
+  //
+  // WPT orders are intentionally NOT removed: they are the predecessors of
+  // chained AT_WAYPOINT triggers, and removing them would (1) dangle the
+  // successor's waypointOrderId reference (label fallback shows raw uid), and
+  // (2) break the AT_WAYPOINT chain in the projection worker, which then
+  // ignores WPT orders and renders a straight line. Captured WPTs are still
+  // detected and surfaced visually via the `capturedIds` state below; the
+  // user can manually remove them if desired.
   //
   // AFTER_DURATION and SEQUENTIAL are intentionally left alone (no client-side
   // reliable signal — clientTs is not retained on OrderEntry).
@@ -95,7 +103,7 @@ export default function ProgPanel(): React.ReactElement {
       const wptOrders = queue.filter((o) => o.type === 'WPT');
 
       // Pass 1: WPTs the boat is currently within their capture radius.
-      const capturedIds = new Set<string>();
+      const captured = new Set<string>();
       for (const o of wptOrders) {
         const wptLat = o.value['lat'];
         const wptLon = o.value['lon'];
@@ -103,7 +111,7 @@ export default function ProgPanel(): React.ReactElement {
         const radius = typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.5;
         if (typeof wptLat === 'number' && typeof wptLon === 'number') {
           const dNm = haversinePosNM({ lat, lon }, { lat: wptLat, lon: wptLon });
-          if (dNm < radius) capturedIds.add(o.id);
+          if (dNm < radius) captured.add(o.id);
         }
       }
 
@@ -111,13 +119,13 @@ export default function ProgPanel(): React.ReactElement {
       // every predecessor (B, A, …) referenced through trigger.waypointOrderId
       // is also done.
       for (const o of wptOrders) {
-        if (!capturedIds.has(o.id)) continue;
+        if (!captured.has(o.id)) continue;
         if (o.trigger.type !== 'AT_WAYPOINT') continue;
         let prevId: string | undefined = o.trigger.waypointOrderId;
         const guard = new Set<string>(); // cycle guard
         while (prevId && !guard.has(prevId)) {
           guard.add(prevId);
-          capturedIds.add(prevId);
+          captured.add(prevId);
           const prev = wptOrders.find((w) => w.id === prevId);
           if (!prev || prev.trigger.type !== 'AT_WAYPOINT') break;
           prevId = prev.trigger.waypointOrderId;
@@ -134,8 +142,6 @@ export default function ProgPanel(): React.ReactElement {
       for (const o of queue) {
         if (o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < lastTickMs) {
           toRemove.push(o.id);
-        } else if (o.type === 'WPT' && capturedIds.has(o.id)) {
-          toRemove.push(o.id);
         } else if (
           o.trigger.type === 'IMMEDIATE' &&
           o.committed === true
@@ -150,9 +156,11 @@ export default function ProgPanel(): React.ReactElement {
             }
           }
         }
+        // NOTE: WPT orders are intentionally NOT removed here — see comment above.
       }
 
       for (const id of toRemove) state.removeOrder(id);
+      setCapturedIds(captured);
     };
 
     tick();
@@ -363,13 +371,15 @@ export default function ProgPanel(): React.ReactElement {
             // Stale only matters for not-yet-sent orders; committed ones are
             // already on the server and out of the user's hands.
             const stale = !committed && isStale(o.trigger, now);
-            const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''}`;
+            const captured = o.type === 'WPT' && capturedIds.has(o.id);
+            const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''} ${captured ? styles.orderCaptured : ''}`;
             return (
               <div key={o.id} className={cls}>
                 <span className={styles.orderWhen}>{formatTrigger(o.trigger, labelById)}</span>
                 <span className={styles.orderWhat}>
                   {o.label}
                   {committed && <span className={styles.orderCommittedBadge}> ✓ envoyé</span>}
+                  {captured && <span className={styles.orderCapturedBadge}> ✓ atteint</span>}
                   {stale && <span className={styles.orderStaleBadge}> ⚠ bientôt obsolète</span>}
                 </span>
                 <button
