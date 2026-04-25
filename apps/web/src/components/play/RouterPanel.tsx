@@ -1,6 +1,7 @@
 'use client';
 import { useGameStore } from '@/lib/store';
 import RouterControls from './RouterControls';
+import { formatDMS } from './formatDMS';
 import styles from './RouterPanel.module.css';
 
 export default function RouterPanel({
@@ -23,15 +24,15 @@ export default function RouterPanel({
   const canRoute = dest !== null && phase === 'idle' && isGridLoaded;
 
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${phase === 'placing' ? styles.panelPlacing : ''}`}>
       {/* DEPART (auto = boat position) */}
       <section className={styles.section}>
         <div className={styles.label}>Point de départ</div>
         <div className={styles.coords}>
           ⚓ Position bateau<br />
           <span className={styles.subCoords}>
-            {typeof lat === 'number' ? `${lat.toFixed(2)}°${lat >= 0 ? 'N' : 'S'}` : '—'} ·{' '}
-            {typeof lon === 'number' ? `${lon.toFixed(2)}°${lon >= 0 ? 'E' : 'W'}` : '—'}
+            {typeof lat === 'number' ? formatDMS(lat, true) : '—'} ·{' '}
+            {typeof lon === 'number' ? formatDMS(lon, false) : '—'}
           </span>
         </div>
       </section>
@@ -49,7 +50,7 @@ export default function RouterPanel({
           </div>
         ) : dest ? (
           <button type="button" className={styles.destBtn} onClick={enterPlacing}>
-            📍 {dest.lat.toFixed(2)}° · {dest.lon.toFixed(2)}°
+            📍 {formatDMS(dest.lat, true)} · {formatDMS(dest.lon, false)}
             <span className={styles.changeHint}>Changer</span>
           </button>
         ) : (

@@ -417,3 +417,29 @@
 @media (max-width: 640px) {
   .placingIndicator { top: 50px; font-size: 10px; padding: 5px 10px; }
 }
+
+/* Map-anchored Annuler button shown when in placing mode. Lets the user
+ * back out without needing the side panel — essential on mobile portrait
+ * where the panel hides itself to expose the map. */
+.placingCancelFab {
+  position: absolute;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 26;
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(245, 240, 232, 0.32);
+  color: #f5f0e8;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.placingCancelFab:hover { background: #0c1424; }
+@media (max-width: 640px) {
+  .placingCancelFab { top: 82px; font-size: 9px; padding: 4px 10px; }
+}

@@ -16,6 +16,7 @@ export function createPanelSlice(set: (fn: (s: GameStore) => Partial<GameStore>)
                 router: {
                   ...s.router,
                   phase: 'idle' as const,
+                  destination: null,
                   computedRoute: null,
                   error: null,
                   calcGenId: s.router.calcGenId + 1,
@@ -32,6 +33,7 @@ export function createPanelSlice(set: (fn: (s: GameStore) => Partial<GameStore>)
               router: {
                 ...s.router,
                 phase: 'idle' as const,
+                destination: null,
                 computedRoute: null,
                 error: null,
                 calcGenId: s.router.calcGenId + 1,

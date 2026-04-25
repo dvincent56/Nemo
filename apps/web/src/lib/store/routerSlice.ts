@@ -29,6 +29,7 @@ export function createRouterSlice(
         router: {
           ...s.router,
           phase: 'idle',
+          destination: null,
           computedRoute: null,
           error: null,
           calcGenId: s.router.calcGenId + 1,

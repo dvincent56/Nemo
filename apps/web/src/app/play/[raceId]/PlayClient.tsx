@@ -361,7 +361,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && <ZoomCompact />}
 
         {routerPhase === 'placing' && (
-          <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+          <>
+            <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+            <button
+              type="button"
+              className={styles.placingCancelFab}
+              onClick={() => useGameStore.getState().exitPlacingMode()}
+            >
+              ✕ Annuler
+            </button>
+          </>
         )}
 
         {routerPanelOpen && routerDest && (
@@ -443,6 +452,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               title="Routeur"
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
+              panelClassName={routerPhase === 'placing' ? 'slidePanelPlacingMobileHide' : ''}
             >
               <RouterPanel onApply={onApply} />
             </SlidePanel>
