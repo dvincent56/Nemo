@@ -164,6 +164,14 @@ export interface OrderEntry {
   trigger: OrderTrigger;
   value: Record<string, unknown>;
   label: string;
+  /**
+   * `true` when the order has already been sent to the server (e.g. orders
+   * applied via the router go straight over WS via `sendOrder`). They remain
+   * visible in ProgPanel for context, but `handleCommit` must skip them so
+   * "Valider la file" cannot re-send and produce duplicates (or — for
+   * CAP/TWA — silently dropped orders by the engine de-dupe).
+   */
+  committed?: boolean;
 }
 
 export interface ProgState {

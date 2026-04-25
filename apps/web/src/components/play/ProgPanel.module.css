@@ -207,6 +207,29 @@
   margin-left: 6px;
 }
 
+.orderCommitted {
+  border-color: rgba(201, 162, 39, 0.32);
+  background: rgba(201, 162, 39, 0.04);
+}
+
+.orderCommittedBadge {
+  color: #c9a227;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  margin-left: 6px;
+}
+
+.queueAllSentNote {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(201, 162, 39, 0.72);
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
 .commit {
   margin-top: 18px;
   width: 100%;

@@ -101,6 +101,10 @@ export default function ProgPanel(): React.ReactElement {
     const sent: string[] = [];
     let skipped = 0;
     for (const order of orderQueue) {
+      // Already-committed orders (e.g. those applied via the router) were
+      // dispatched at apply-time. Re-sending would either duplicate (WPT) or
+      // get silently dropped (CAP/TWA de-dupe in the engine). Skip silently.
+      if (order.committed) continue;
       if (isObsolete(order, nowMs, passedWaypoints)) {
         skipped += 1;
         continue;
@@ -121,6 +125,9 @@ export default function ProgPanel(): React.ReactElement {
       });
     }
   };
+
+  // Pending = orders that "Valider la file" will actually send.
+  const pendingCount = orderQueue.filter((o) => !o.committed).length;
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'cap', label: 'Cap' },
@@ -242,18 +249,28 @@ export default function ProgPanel(): React.ReactElement {
         File d&apos;ordres{' '}
         <span className={styles.queueCount}>{String(orderQueue.length).padStart(2, '0')} actifs</span>
       </h4>
+      {orderQueue.length > 0 && pendingCount === 0 && (
+        <div className={styles.queueAllSentNote}>
+          Tous les ordres ont été envoyés au serveur.
+        </div>
+      )}
 
       {orderQueue.length === 0 ? (
         <div className={styles.empty}>Aucun ordre programmé</div>
       ) : (
         <div className={styles.queue}>
           {orderQueue.map((o) => {
-            const stale = isStale(o.trigger, now);
+            const committed = o.committed === true;
+            // Stale only matters for not-yet-sent orders; committed ones are
+            // already on the server and out of the user's hands.
+            const stale = !committed && isStale(o.trigger, now);
+            const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''}`;
             return (
-              <div key={o.id} className={`${styles.order} ${stale ? styles.orderStale : ''}`}>
+              <div key={o.id} className={cls}>
                 <span className={styles.orderWhen}>{formatTrigger(o.trigger)}</span>
                 <span className={styles.orderWhat}>
                   {o.label}
+                  {committed && <span className={styles.orderCommittedBadge}> ✓ envoyé</span>}
                   {stale && <span className={styles.orderStaleBadge}> ⚠ bientôt obsolète</span>}
                 </span>
                 <button
@@ -270,9 +287,9 @@ export default function ProgPanel(): React.ReactElement {
         </div>
       )}
 
-      {orderQueue.length > 0 && (
+      {pendingCount > 0 && (
         <button type="button" className={styles.commit} onClick={handleCommit}>
-          Valider la file ({orderQueue.length})
+          Valider la file ({pendingCount})
         </button>
       )}
 

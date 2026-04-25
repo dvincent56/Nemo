@@ -23,6 +23,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
     value: { auto: true },
     trigger: { type: 'IMMEDIATE' },
     label: 'Voile auto ON',
+    committed: true,
   });
 
   let prevSail: string | null = null;
@@ -35,6 +36,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
         value: { sail: entry.sail },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `Voile ${entry.sail}`,
+        committed: true,
       });
       prevSail = entry.sail;
     }
@@ -45,6 +47,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
         value: { twa: entry.twaLock },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `TWA ${entry.twaLock}°`,
+        committed: true,
       });
     } else {
       orders.push({
@@ -53,6 +56,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
         value: { cap: entry.cap },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `CAP ${Math.round(entry.cap)}°`,
+        committed: true,
       });
     }
   }
@@ -67,6 +71,7 @@ export function waypointsToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[
     value: { auto: true },
     trigger: { type: 'IMMEDIATE' },
     label: 'Voile auto ON',
+    committed: true,
   });
   // Skip waypoints[0] — that's the boat's start position
   let prevId: string | null = null;
@@ -79,6 +84,7 @@ export function waypointsToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[
       value: { lat: wp.lat, lon: wp.lon, captureRadiusNm: 0.5 },
       trigger: prevId ? { type: 'AT_WAYPOINT', waypointOrderId: prevId } : { type: 'IMMEDIATE' },
       label: `WPT ${wp.lat.toFixed(2)}°·${wp.lon.toFixed(2)}°`,
+      committed: true,
     });
     prevId = id;
   }
