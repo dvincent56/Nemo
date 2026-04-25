@@ -155,7 +155,25 @@ export function RouteLayer({ routes, primaryId, colorFor, nextGfsRunMs }: Props)
 
     install();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // Remove every sim-route layer/source we may have created. Without this
+      // the layers persist on the map after the router panel closes (the
+      // unmount only flipped the `cancelled` flag, leaving previously-installed
+      // sources/layers in place).
+      const m = mapInstance;
+      if (!m) return;
+      try {
+        const layers = m.getStyle().layers ?? [];
+        for (const layer of layers) {
+          const match = layer.id.match(/^sim-route-line-(fresh|stale)-(.+)$/);
+          if (!match) continue;
+          if (m.getLayer(layer.id)) m.removeLayer(layer.id);
+          const srcId = `sim-route-${match[1]}-${match[2]}`;
+          if (m.getSource(srcId)) m.removeSource(srcId);
+        }
+      } catch { /* ignore teardown race */ }
+    };
   }, [routes, primaryId, colorFor, nextGfsRunMs]);
 
   return null;
