@@ -199,6 +199,9 @@ export default function WindOverlay(): React.ReactElement {
   const tileRef = useRef<{ grid: WeatherGrid; bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } } | null>(null);
 
   const windVisible = useGameStore((s) => s.layers.wind);
+  const currentTimeMs = useGameStore((s) => s.timeline.currentTime.getTime());
+  const isLive = useGameStore((s) => s.timeline.isLive);
+  const weatherTimeVisible = isLive || currentTimeMs >= Date.now();
 
   // Consume the grid already loaded by useWeatherPrefetch — single source of
   // truth so HUD, cursor tooltip and projection all agree on TWS/TWD.
@@ -235,7 +238,7 @@ export default function WindOverlay(): React.ReactElement {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !windVisible) {
+    if (!canvas || !windVisible || !weatherTimeVisible) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -469,9 +472,9 @@ export default function WindOverlay(): React.ReactElement {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     };
-  }, [windVisible]);
+  }, [windVisible, weatherTimeVisible]);
 
-  if (!windVisible) return <></>;
+  if (!windVisible || !weatherTimeVisible) return <></>;
 
   return (
     <canvas

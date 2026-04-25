@@ -723,6 +723,30 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     });
   }, []);
 
+  /* ── Projection dimming: dim to 0.4 when scrubbing into the past ── */
+  useEffect(() => {
+    const applyProjectionOpacity = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      if (!map.getLayer('projection-line-layer')) return;
+      const s = useGameStore.getState();
+      const op = s.timeline.isLive
+        ? 1
+        : s.timeline.currentTime.getTime() < Date.now() ? 0.4 : 1;
+      map.setPaintProperty('projection-line-layer', 'line-opacity', op);
+    };
+    applyProjectionOpacity();
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    let prevLive = useGameStore.getState().timeline.isLive;
+    return useGameStore.subscribe((s) => {
+      if (s.timeline.currentTime !== prevTime || s.timeline.isLive !== prevLive) {
+        prevTime = s.timeline.currentTime;
+        prevLive = s.timeline.isLive;
+        applyProjectionOpacity();
+      }
+    });
+  }, []);
+
   /* ── Exclusion zones visibility toggle ── */
   const zonesVisible = useGameStore((s) => s.layers.zones);
   useEffect(() => {
