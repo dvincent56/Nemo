@@ -269,24 +269,44 @@ function toProjectionZone(z: ExclusionZone): ProjectionZone | null {
 }
 
 /**
- * Convert store's orderQueue to ProjectionSegments.
+ * Convert store's orderQueue to ProjectionSegments. Includes WPT orders so
+ * the projection follows the route's waypoints (mirrors the engine tick's
+ * applyOrder WPT case which recomputes heading toward the active waypoint).
+ * AT_WAYPOINT triggers don't carry a time — they cascade — so we record the
+ * predecessor id and let the worker activate WPTs sequentially as they are
+ * captured.
  */
-function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: string; time?: number }; value: Record<string, unknown> }>): ProjectionSegment[] {
+function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: { type: string; time?: number; waypointOrderId?: string }; value: Record<string, unknown> }>): ProjectionSegment[] {
   return queue
-    .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE')
-    .map((o) => {
-      let value: number | string | boolean;
+    .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE' || o.type === 'WPT')
+    .map((o): ProjectionSegment => {
+      let value: ProjectionSegment['value'];
       if (o.type === 'CAP') value = Number(o.value['heading'] ?? o.value['cap'] ?? 0);
       else if (o.type === 'TWA') value = Number(o.value['twa'] ?? 0);
       else if (o.type === 'SAIL') value = String(o.value['sail'] ?? 'JIB');
-      else value = Boolean(o.value['auto'] ?? false);
+      else if (o.type === 'MODE') value = Boolean(o.value['auto'] ?? false);
+      else {
+        // WPT
+        const lat = Number(o.value['lat'] ?? 0);
+        const lon = Number(o.value['lon'] ?? 0);
+        const radiusRaw = Number(o.value['captureRadiusNm']);
+        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.5;
+        value = { lat, lon, captureRadiusNm };
+      }
 
       let triggerMs = Date.now();
       if (o.trigger.type === 'AT_TIME' && o.trigger.time) {
         triggerMs = o.trigger.time;
       }
 
-      return { triggerMs, type: o.type as ProjectionSegment['type'], value };
+      const seg: ProjectionSegment = { triggerMs, type: o.type as ProjectionSegment['type'], value };
+      if (o.type === 'WPT') {
+        seg.id = o.id;
+        if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
+          seg.waypointPredecessorId = o.trigger.waypointOrderId;
+        }
+      }
+      return seg;
     });
 }
 

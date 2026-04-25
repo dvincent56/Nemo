@@ -4,6 +4,7 @@
 import type {
   ProjectionInput,
   ProjectionResult,
+  ProjectionSegment,
   TimeMarker,
   ManeuverMarker,
   WorkerInMessage,
@@ -26,6 +27,23 @@ import { createWindLookup } from '../lib/projection/windLookup';
 import { CoastlineIndex } from '../lib/projection/coastline';
 import { zoneSpeedModulator, segmentEntersZone } from '../lib/projection/zones';
 import { GameBalance } from '@nemo/game-balance/browser';
+import { haversinePosNM } from '../lib/geo';
+
+// ── Geo helpers ──
+// Inline great-circle bearing — mirror of @nemo/game-engine-core/src/geo
+// `bearingDeg`. Kept local to avoid widening engine-core's exports just for
+// the projection worker. Same math, same units.
+const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
+function bearingDeg(from: { lat: number; lon: number }, to: { lat: number; lon: number }): number {
+  const f1 = from.lat * DEG_TO_RAD;
+  const f2 = to.lat * DEG_TO_RAD;
+  const dLon = (to.lon - from.lon) * DEG_TO_RAD;
+  const y = Math.sin(dLon) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dLon);
+  const theta = Math.atan2(y, x);
+  return ((theta * RAD_TO_DEG) + 360) % 360;
+}
 
 // ── Adaptive step config ──
 // Tuned for responsiveness: fine grain where course/manoeuvres matter,
@@ -189,8 +207,29 @@ function simulate(input: ProjectionInput): ProjectionResult {
   let currentMs = startMs;
   const endMs = startMs + DAYS_5 * 1000;
 
-  // Sort segments by trigger time
-  const segments = [...input.segments].sort((a, b) => a.triggerMs - b.triggerMs);
+  // Split orders into:
+  //   - time-triggered "segments" (CAP/TWA/SAIL/MODE) processed at triggerMs
+  //   - WPT chain processed sequentially as previous WPTs are captured.
+  //
+  // The engine tick treats WPT specially: it persists across ticks and on
+  // each application recomputes heading toward the waypoint. We mirror that
+  // here by overriding `hdg` every step while a WPT is active, and
+  // advancing the chain on capture (mirrors tick.ts WPT capture detection
+  // and the orderHistory purge filter that keeps un-captured WPTs alive).
+  const allSegments = [...input.segments].sort((a, b) => a.triggerMs - b.triggerMs);
+  const segments: ProjectionSegment[] = allSegments.filter((s) => s.type !== 'WPT');
+  const wptList: ProjectionSegment[] = allSegments.filter((s) => s.type === 'WPT');
+  // Order WPTs along the chain: a WPT comes AFTER its predecessor. WPTs
+  // with no predecessor (IMMEDIATE) come first. Stable sort by index.
+  const wptQueue: ProjectionSegment[] = [];
+  const remaining = [...wptList];
+  while (remaining.length > 0) {
+    const lastId = wptQueue.length > 0 ? wptQueue[wptQueue.length - 1]!.id : undefined;
+    const idx = remaining.findIndex((w) => (w.waypointPredecessorId ?? undefined) === lastId);
+    if (idx < 0) break; // chain broken — stop accumulating
+    wptQueue.push(remaining.splice(idx, 1)[0]!);
+  }
+  let wptIdx = 0;
   let segIdx = 0;
 
   // Track which time marker hours we've passed
@@ -311,6 +350,32 @@ function simulate(input: ProjectionInput): ProjectionResult {
     if (segmentTriggered) {
       const newElapsed = (currentMs - startMs) / 1000;
       dt = getStepSize(newElapsed);
+    }
+
+    // ── WPT chain: drive heading toward the active waypoint, advance on capture.
+    // Mirrors packages/game-engine-core/src/segments.ts applyOrder WPT case
+    // (heading = bearingDeg(position, wpt), twaLock cleared) and the capture
+    // detection in tick.ts (advance to next when distance < captureRadiusNm).
+    // We check capture before recomputing heading so a boat that has already
+    // reached the WPT immediately steers toward the next.
+    while (wptIdx < wptQueue.length) {
+      const w = wptQueue[wptIdx]!;
+      const v = w.value as { lat: number; lon: number; captureRadiusNm: number };
+      if (haversinePosNM({ lat, lon }, { lat: v.lat, lon: v.lon }) < v.captureRadiusNm) {
+        // Captured — advance the chain. Mark a maneuver marker so the
+        // route-following step is visible to the player.
+        maneuverMarkers.push({
+          index: count,
+          type: 'cap_change',
+          detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+        });
+        wptIdx++;
+        continue;
+      }
+      // Override heading to point at the active WPT.
+      hdg = bearingDeg({ lat, lon }, { lat: v.lat, lon: v.lon });
+      twaLock = null;
+      break;
     }
 
     // Get weather at current position/time

@@ -52,12 +52,22 @@ export interface WindGridHeader {
 }
 
 export interface ProjectionSegment {
-  /** When this order triggers (ms timestamp) */
+  /** When this order triggers (ms timestamp). For WPT orders chained via
+   *  AT_WAYPOINT, this is the projected origin time (Date.now()) — the
+   *  worker activates them sequentially as previous WPTs are captured. */
   triggerMs: number;
   /** Order type */
-  type: 'CAP' | 'TWA' | 'SAIL' | 'MODE';
-  /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for MODE */
-  value: number | string | boolean;
+  type: 'CAP' | 'TWA' | 'SAIL' | 'MODE' | 'WPT';
+  /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for
+   *  MODE, or { lat, lon, captureRadiusNm } for WPT. */
+  value: number | string | boolean | { lat: number; lon: number; captureRadiusNm: number };
+  /** For WPT only: id of the previous WPT in the AT_WAYPOINT chain. The
+   *  worker uses this to activate WPTs sequentially: a WPT becomes the
+   *  active waypoint only after its predecessor is captured. IMMEDIATE-
+   *  triggered WPTs (the first in the chain) leave this undefined. */
+  waypointPredecessorId?: string;
+  /** WPT-only stable id used to resolve waypointPredecessorId. */
+  id?: string;
 }
 
 export interface ProjectionZone {
