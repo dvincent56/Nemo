@@ -22,7 +22,7 @@ export default function RouterDestinationMarker({ lat, lon }: Props): null {
 
     const el = document.createElement('div');
     el.textContent = '📍';
-    el.style.fontSize = '32px';
+    el.style.fontSize = '20px';
     el.style.lineHeight = '1';
     el.style.userSelect = 'none';
     el.style.pointerEvents = 'none';
