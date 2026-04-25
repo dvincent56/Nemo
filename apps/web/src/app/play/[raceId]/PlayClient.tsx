@@ -42,6 +42,7 @@ import ZoomCompact from '@/components/play/ZoomCompact';
 import { RouteLayer } from '@/components/map/routing/RouteLayer';
 import { IsochroneLayer } from '@/components/map/routing/IsochroneLayer';
 import RouterDestinationMarker from '@/components/map/routing/RouterDestinationMarker';
+import { mapInstance } from '@/components/play/MapCanvas';
 import styles from './page.module.css';
 
 // Main-thread GameBalance bootstrap. Workers load their own instance via
@@ -322,6 +323,41 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       setPendingApply(null);
     }
   }, [activePanel, pendingApply]);
+
+  // Defense-in-depth sweep: whenever the computed route becomes null (route
+  // applied + router closed, panel switched, dest cleared, etc.) forcibly
+  // remove every `sim-route-*` and `sim-iso*` layer + source from the map.
+  // RouteLayer/IsochroneLayer already clean themselves up on unmount, but a
+  // stale layer reappeared in practice when applying a route (closeRouter →
+  // unmount cleanup) raced against the parent re-render driven by the
+  // freshly-replaced order queue. Sweeping unconditionally on `routerRoute`
+  // becoming null guarantees the map is clean regardless of unmount timing —
+  // matches the same pattern used by `installProjectionLayers` in MapCanvas.
+  useEffect(() => {
+    if (routerRoute !== null) return;
+    // Walk the live map style on the next animation frame so any in-flight
+    // unmount cleanup of RouteLayer/IsochroneLayer has already landed and we
+    // only sweep what was orphaned.
+    const handle = requestAnimationFrame(() => {
+      const map = mapInstance;
+      if (!map) return;
+      try {
+        const layers = map.getStyle().layers ?? [];
+        for (const layer of layers) {
+          if (layer.id.startsWith('sim-route-') || layer.id.startsWith('sim-iso')) {
+            if (map.getLayer(layer.id)) map.removeLayer(layer.id);
+          }
+        }
+        const sources = map.getStyle().sources ?? {};
+        for (const id of Object.keys(sources)) {
+          if (id.startsWith('sim-route-') || id.startsWith('sim-iso')) {
+            if (map.getSource(id)) map.removeSource(id);
+          }
+        }
+      } catch { /* ignore teardown race */ }
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [routerRoute]);
 
   if (access.kind === 'blocked') {
     return (
