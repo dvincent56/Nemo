@@ -325,6 +325,13 @@ function simulate(input: ProjectionInput): ProjectionResult {
           index: count > 0 ? count - 1 : 0,
           type: 'cap_change',
           detail: `WPT atteint (${v.lat.toFixed(2)}°·${v.lon.toFixed(2)}°)`,
+          // Explicit coords so the renderer places the marker AT the actual
+          // WPT location (visual bend), not at the polyline vertex just
+          // before capture. We deliberately don't push a synthetic vertex
+          // (e97b233 spur bug) — only the marker's anchor is decoupled from
+          // the line geometry.
+          lat: v.lat,
+          lon: v.lon,
         });
         wptIdx++;
         if (wptIdx >= wptQueue.length) lastWptCaptured = true;

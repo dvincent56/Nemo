@@ -115,6 +115,12 @@ export interface ManeuverMarker {
   index: number;
   type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change' | 'grounding' | 'zone_entry';
   detail: string;
+  /** Optional explicit coordinates. When provided, the renderer places the
+   *  marker at (lat, lon) instead of looking up pointsBuf[index]. Used for
+   *  WPT-capture markers so they sit at the actual WPT location (the visual
+   *  bend) rather than the polyline vertex just before capture. */
+  lat?: number;
+  lon?: number;
 }
 
 /**

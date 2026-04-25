@@ -420,14 +420,20 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const timeSrc = map.getSource('projection-markers-time') as maplibregl.GeoJSONSource | undefined;
     timeSrc?.setData({ type: 'FeatureCollection', features: timeFeatures });
 
-    // Maneuver markers source
+    // Maneuver markers source. When the marker carries explicit lat/lon
+    // (currently only WPT-capture markers), use those directly so the marker
+    // sits at the true WPT bend rather than the polyline vertex before it.
+    // Other markers (sail changes, tack/gybe, zone entries…) keep the legacy
+    // pointsBuf[index] lookup.
     const manFeatures: GeoJSON.Feature[] = result.maneuverMarkers
       .map((m) => {
         if (m.index < 0 || m.index >= count) return null;
         const b = m.index * 6;
+        const lat = m.lat ?? buf[b]!;
+        const lon = m.lon ?? buf[b + 1]!;
         return {
           type: 'Feature',
-          geometry: { type: 'Point', coordinates: [buf[b + 1]!, buf[b]!] },
+          geometry: { type: 'Point', coordinates: [lon, lat] },
           properties: {
             type: m.type,
             detail: m.detail,
