@@ -53,12 +53,20 @@ export default function CursorTooltip(): React.ReactElement | null {
     let swellHeight = 0;
     let swellDir = 0;
     let swellPeriod = 0;
-    // Wind: sample from the raw multi-hour decoded grid with temporal interp
-    // at the current wall-clock — mirrors what the engine does each tick, so
-    // the map tooltip stays in sync with the HUD/compass instead of drifting
-    // by ~1 kt as simulation time moves past the moment the snapshot `grid`
-    // was last rebuilt.
-    if (decoded) {
+    // Wind: prefer the 0.25° tactical tile when the cursor is inside it — the
+    // engine reads weather at the boat from the same 0.25° NOAA grid, so
+    // sampling from the global 1° decimated grid here would misalign the HUD
+    // and tooltip by ~1 kt in zones with wind gradient. Fall back to the 1°
+    // grid only when the cursor is outside the tile.
+    const tile = weatherState.tacticalTile;
+    const cursorInTile = tile !== null
+      && lngLat.lat >= tile.bounds.latMin && lngLat.lat <= tile.bounds.latMax
+      && lngLat.lng >= tile.bounds.lonMin && lngLat.lng <= tile.bounds.lonMax;
+    if (cursorInTile && tile) {
+      const wind = sampleDecodedWindAtTime(tile.decoded, lngLat.lat, lngLat.lng);
+      tws = wind.tws;
+      twd = wind.twd;
+    } else if (decoded) {
       const wind = sampleDecodedWindAtTime(decoded, lngLat.lat, lngLat.lng);
       tws = wind.tws;
       twd = wind.twd;

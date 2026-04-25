@@ -161,21 +161,30 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // at the current wall-clock — same formula the engine runs at each tick,
   // so the values match within bilinear rounding. Runs only before the first
   // WS tick lands; after that, server payload takes over.
+  // Prefer the 0.25° tactical tile when loaded — the engine reads weather
+  // from the same 0.25° NOAA grid, so the global 1° decimation would seed
+  // the HUD with a value off by ~1 kt. Re-fires when the tile arrives.
   const decodedGrid = useGameStore((s) => s.weather.decodedGrid);
+  const tacticalTile = useGameStore((s) => s.weather.tacticalTile);
   const boatLat = useGameStore((s) => s.hud.lat);
   const boatLon = useGameStore((s) => s.hud.lon);
   const boatHdg = useGameStore((s) => s.hud.hdg);
   const lastTickUnix = useGameStore((s) => s.lastTickUnix);
   useEffect(() => {
-    if (!decodedGrid || (!boatLat && !boatLon)) return;
+    if (!boatLat && !boatLon) return;
     if (lastTickUnix !== null) return;
-    const wind = sampleDecodedWindAtTime(decodedGrid, boatLat, boatLon);
+    const inTile = tacticalTile
+      && boatLat >= tacticalTile.bounds.latMin && boatLat <= tacticalTile.bounds.latMax
+      && boatLon >= tacticalTile.bounds.lonMin && boatLon <= tacticalTile.bounds.lonMax;
+    const source = inTile && tacticalTile ? tacticalTile.decoded : decodedGrid;
+    if (!source) return;
+    const wind = sampleDecodedWindAtTime(source, boatLat, boatLon);
     if (wind.tws === 0 && wind.twd === 0) return; // out of grid
     const tws = Math.round(wind.tws * 10) / 10;
     const twd = Math.round(wind.twd);
     const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
     useGameStore.getState().setHud({ twd, tws, twa });
-  }, [decodedGrid, boatLat, boatLon, boatHdg, lastTickUnix]);
+  }, [decodedGrid, tacticalTile, boatLat, boatLon, boatHdg, lastTickUnix]);
 
   if (access.kind === 'blocked') {
     return (

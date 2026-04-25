@@ -43,7 +43,7 @@ export function useTacticalTile(): void {
         const { tile, bounds } = await fetchTacticalTile(boat);
         if (cancelled) return;
         currentBoundsRef.current = bounds;
-        setTacticalTile(decodedGridToWeatherGridAtNow(tile), bounds);
+        setTacticalTile(decodedGridToWeatherGridAtNow(tile), tile, bounds);
       } catch {
         // silently ignore — global grid remains active
       } finally {
