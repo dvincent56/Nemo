@@ -147,6 +147,15 @@ function installProjectionLayers(map: maplibregl.Map): void {
     id: 'projection-line-layer',
     type: 'line',
     source: 'projection-line',
+    layout: {
+      // `round` joins/caps prevent miter-overflow spikes at sharp bends —
+      // observed at WPT captures where the heading flips from "toward wpt_i"
+      // to "toward wpt_{i+1}" across a single vertex, producing a visible
+      // spur with the default `miter` join. Round bends look cleaner and
+      // are imperceptible at non-sharp angles.
+      'line-join': 'round',
+      'line-cap': 'round',
+    },
     paint: {
       // Initial fallback gradient — the hook overwrites it on first compute
       // with a per-vertex color ramp keyed on bspRatio along line-progress.
