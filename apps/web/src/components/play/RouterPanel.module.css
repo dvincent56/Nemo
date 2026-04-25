@@ -1,0 +1,131 @@
+.panel { padding: 14px; color: #f5f0e8; font-family: sans-serif; font-size: 11px; }
+.section { margin-bottom: 14px; }
+.label {
+  color: #8fa8c8;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+.coords {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #c9a227;
+}
+.subCoords { color: #8fa8c8; font-size: 9px; }
+.placeBtn, .destBtn {
+  width: 100%;
+  background: #1a3a5c;
+  border: 1px dashed #c9a22788;
+  color: #c9a227;
+  border-radius: 3px;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.changeHint { color: #8fa8c8; font-size: 9px; }
+.placingHint {
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid #c9a22788;
+  border-radius: 3px;
+  padding: 14px;
+  text-align: center;
+  color: #c9a227;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.placingIcon { font-size: 24px; margin-bottom: 6px; }
+.cancelBtn {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid #8fa8c8;
+  color: #8fa8c8;
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.calculating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  color: #c9a227;
+}
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 3px solid rgba(201, 162, 39, 0.2);
+  border-top-color: #c9a227;
+  border-radius: 50%;
+  animation: nemo-spin 1s linear infinite;
+  margin-bottom: 14px;
+}
+@keyframes nemo-spin { to { transform: rotate(360deg); } }
+.calcLabel { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; }
+.calcSub { color: #8fa8c8; font-size: 10px; margin-top: 4px; }
+.routeBtn {
+  width: 100%;
+  background: #c9a227;
+  color: #1a2840;
+  border: none;
+  border-radius: 3px;
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.routeBtnDisabled { background: rgba(255, 255, 255, 0.04); color: #5c6b80; cursor: not-allowed; }
+.routeBtnSub { font-size: 9px; font-weight: 400; margin-top: 4px; }
+.error {
+  margin-top: 10px;
+  background: rgba(220, 70, 70, 0.1);
+  border: 1px solid rgba(220, 70, 70, 0.4);
+  border-radius: 3px;
+  padding: 8px;
+  color: #f08585;
+  font-size: 10px;
+}
+.results {
+  background: rgba(50, 180, 100, 0.06);
+  border: 1px solid rgba(50, 180, 100, 0.4);
+  border-radius: 3px;
+  padding: 12px;
+}
+.resultsHead { color: #5cc88c; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 8px; }
+.resultsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: var(--font-mono); font-size: 10px; margin-bottom: 10px; }
+.metricLabel { color: #8fa8c8; }
+.warning {
+  background: rgba(240, 180, 50, 0.1);
+  border: 1px solid rgba(240, 180, 50, 0.4);
+  color: #ddc270;
+  border-radius: 3px;
+  padding: 6px;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.applyPrimary, .applySecondary, .recalc {
+  width: 100%;
+  border-radius: 3px;
+  padding: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.applyPrimary { background: #c9a227; color: #1a2840; border: none; }
+.applySecondary { background: transparent; color: #c9a227; border: 1px solid #c9a227; }
+.recalc { background: transparent; color: #8fa8c8; border: 1px solid rgba(245, 240, 232, 0.16); }
