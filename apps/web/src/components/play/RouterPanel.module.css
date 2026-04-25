@@ -130,7 +130,7 @@
   font-size: 10px;
   margin-bottom: 10px;
 }
-.applyPrimary, .applySecondary, .recalc {
+.applyPrimary, .applySecondary {
   width: 100%;
   border-radius: 3px;
   padding: 9px;
@@ -143,4 +143,3 @@
 }
 .applyPrimary { background: #c9a227; color: #1a2840; border: none; }
 .applySecondary { background: transparent; color: #c9a227; border: 1px solid #c9a227; }
-.recalc { background: transparent; color: #8fa8c8; border: 1px solid rgba(245, 240, 232, 0.16); }

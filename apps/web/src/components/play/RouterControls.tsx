@@ -47,7 +47,7 @@ export default function RouterControls({ disabled }: Props): React.ReactElement 
       </label>
 
       <div className={styles.coneRow}>
-        <span>Cône <strong>{cone}°</strong> (demi-angle)</span>
+        <span>Cône <strong>{cone}°</strong></span>
         <input
           type="range"
           min={30}

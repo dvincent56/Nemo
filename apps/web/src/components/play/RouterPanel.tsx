@@ -132,11 +132,6 @@ function ResultsBlock({
       <button type="button" className={styles.applySecondary} onClick={() => onApply('CAP')}>
         → CAP SCHEDULE (auto-voile)
       </button>
-      <button
-        type="button"
-        className={styles.recalc}
-        onClick={() => window.dispatchEvent(new CustomEvent('nemo:router:route'))}
-      >↺ Recalculer</button>
     </section>
   );
 }

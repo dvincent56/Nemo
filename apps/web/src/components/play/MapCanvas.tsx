@@ -606,11 +606,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     if (!map) return;
     if (routerPhase !== 'placing') return;
 
+    // MapLibre dynamically writes its own cursor on the canvas element (e.g.
+    // 'grab' / 'pointer'), overriding the wrapper's `cursor: crosshair`. Set
+    // the cursor directly on the canvas via the API for placing-mode.
+    const canvas = map.getCanvas();
+    const prevCursor = canvas.style.cursor;
+    canvas.style.cursor = 'crosshair';
+
     const handleMapClick = (e: maplibregl.MapMouseEvent): void => {
       setRouterDestination(e.lngLat.lat, e.lngLat.lng);
     };
     map.on('click', handleMapClick);
-    return () => { map.off('click', handleMapClick); };
+    return () => {
+      map.off('click', handleMapClick);
+      canvas.style.cursor = prevCursor;
+    };
   }, [routerPhase, setRouterDestination]);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
