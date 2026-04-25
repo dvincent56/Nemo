@@ -124,9 +124,15 @@ export default function ProgPanel(): React.ReactElement {
         }
       }
 
+      // Use the last server tick time as the "engine has processed" baseline.
+      // We only remove AT_TIME orders once the server has confirmed a tick
+      // past the trigger — otherwise the projection (which forward-simulates
+      // from current boat state) would miss the heading change because it's
+      // still ahead of the engine.
+      const lastTickMs = state.lastTickUnix !== null ? state.lastTickUnix * 1000 : 0;
       const toRemove: string[] = [];
       for (const o of queue) {
-        if (o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < nowMs) {
+        if (o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < lastTickMs) {
           toRemove.push(o.id);
         } else if (o.type === 'WPT' && capturedIds.has(o.id)) {
           toRemove.push(o.id);
