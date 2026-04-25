@@ -141,9 +141,13 @@ export interface WeatherState {
    */
   prevDecodedGrid: DecodedWeatherGrid | null;
   gfsStatus: GfsStatus | null;
-  /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional. */
+  /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional.
+   *  `grid` is the 2D snapshot (overlay rendering); `decoded` is the multi-hour
+   *  binary form used for live point sampling at wall-clock time (tooltip),
+   *  matching the engine's interpolation precisely. */
   tacticalTile: {
     grid: WeatherGrid;
+    decoded: DecodedWeatherGrid;
     bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number };
   } | null;
 }
@@ -190,19 +194,19 @@ export interface RouterState {
 }
 
 export interface RouterActions {
-  openRouter(): void;
-  closeRouter(): void;
-  enterPlacingMode(): void;
-  exitPlacingMode(): void;
-  setDestination(lat: number, lon: number): void;
-  setRouterPreset(p: RouterPreset): void;
-  setCoastDetection(v: boolean): void;
-  setConeHalfDeg(deg: number): void;
+  openRouter: () => void;
+  closeRouter: () => void;
+  enterPlacingMode: () => void;
+  exitPlacingMode: () => void;
+  setRouterDestination: (lat: number, lon: number) => void;
+  setRouterPreset: (p: RouterPreset) => void;
+  setRouterCoastDetection: (v: boolean) => void;
+  setRouterConeHalfDeg: (deg: number) => void;
   /** Returns the new calcGenId for the caller to track. */
-  startRouterCalculation(): number;
-  setRouteResult(plan: RoutePlan, genId: number): void;
-  setRouteError(msg: string, genId: number): void;
-  clearRoute(): void;
+  startRouteCalculation: () => number;
+  setRouteResult: (plan: RoutePlan, genId: number) => void;
+  setRouteError: (msg: string, genId: number) => void;
+  clearRoute: () => void;
 }
 
 // Combined store interface — all slices + actions
@@ -249,7 +253,7 @@ export interface GameStore extends RouterActions {
   setWeatherLoading: (loading: boolean) => void;
   setDecodedWeatherGrid: (grid: DecodedWeatherGrid) => void;
   setGfsStatus: (status: GfsStatus) => void;
-  setTacticalTile: (grid: WeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
+  setTacticalTile: (grid: WeatherGrid | null, decoded: DecodedWeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
   setConnection: (s: ConnState) => void;
   addOrder: (order: OrderEntry) => void;
   removeOrder: (id: string) => void;
