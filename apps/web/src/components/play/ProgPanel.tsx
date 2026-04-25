@@ -20,10 +20,15 @@ function defaultAtTime(): string {
   return local.toISOString().slice(0, 16);
 }
 
+const TRIGGER_DATE_FMT = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'short', day: '2-digit', month: 'short',
+  hour: '2-digit', minute: '2-digit',
+});
+
 function formatTrigger(trigger: OrderTrigger, labelById?: Map<string, string>): string {
   switch (trigger.type) {
     case 'AT_TIME':
-      return new Date(trigger.time * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      return TRIGGER_DATE_FMT.format(new Date(trigger.time * 1000));
     case 'AFTER_DURATION':
       return `Dans ${Math.round(trigger.duration / 60)} min`;
     case 'AT_WAYPOINT': {
