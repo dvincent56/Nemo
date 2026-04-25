@@ -18,6 +18,7 @@ import { applyZones, getZonesAtPosition, type IndexedZone } from './zones';
 import type { WeatherProvider } from './weather';
 import { aggregateEffects, type BoatLoadout } from './loadout';
 import { computeBsp } from './speed-model';
+import { haversineNM } from '@nemo/polar-lib/browser';
 
 export interface CoastlineProbe {
   isLoaded(): boolean;
@@ -273,11 +274,56 @@ export function runTick(
   const displayTwa = lastSeg?.twa ?? twaAtStart;
   const risk = deps.coastline.isLoaded() ? deps.coastline.coastRiskLevel(endPosition.lat, endPosition.lon) : 0 as const;
 
+  // --- WPT capture detection ---
+  // A WPT order stays active across many ticks (it persists until the boat
+  // reaches its capture radius — default 0.5 NM). On each tick we check if
+  // any active WPT order whose effectiveTs has elapsed should be marked
+  // completed based on the current/end position.
+  // Default capture radius mirrors the legacy queue-based engine
+  // (apps/game-engine/src/engine/orders.ts WPT_REACHED_NM = 0.5).
+  const DEFAULT_WPT_CAPTURE_NM = 0.5;
+  // Use the segments list to test capture at any boundary (start, segment ends),
+  // so a fast boat that crosses the capture radius mid-tick is detected.
+  const wptCheckPositions: Position[] = [runtime.segmentState.position];
+  for (const seg of segments) wptCheckPositions.push(seg.endPosition);
+
+  const completedWptIds = new Set<string>();
+  for (const env of runtime.orderHistory) {
+    if (env.order.type !== 'WPT') continue;
+    if (env.order.completed) continue;
+    if (env.effectiveTs >= tickEndMs) continue; // not active yet
+    const lat = env.order.value['lat'];
+    const lon = env.order.value['lon'];
+    if (typeof lat !== 'number' || typeof lon !== 'number') continue;
+    const radiusRaw = env.order.value['captureRadiusNm'];
+    const captureRadiusNm = typeof radiusRaw === 'number' ? radiusRaw : DEFAULT_WPT_CAPTURE_NM;
+    const wpt: Position = { lat, lon };
+    for (const pos of wptCheckPositions) {
+      if (haversineNM(pos, wpt) <= captureRadiusNm) {
+        completedWptIds.add(env.order.id);
+        break;
+      }
+    }
+  }
+
   // Purge orders that fell within this tick's window (already processed).
   // Orders with effectiveTs before tickStartMs are "late" — process them once
   // at the START of the next tick, then purge. So only purge orders strictly
   // within [tickStartMs, tickEndMs).
-  const remainingOrders = runtime.orderHistory.filter((o) => o.effectiveTs >= tickEndMs);
+  // EXCEPTION: WPT orders persist until captured (completed=true) — they are
+  // re-applied each tick to recompute the bearing from the new position.
+  const remainingOrders = runtime.orderHistory
+    .map((o) => completedWptIds.has(o.order.id)
+      ? { ...o, order: { ...o.order, completed: true } }
+      : o)
+    .filter((o) => {
+      // Keep future orders.
+      if (o.effectiveTs >= tickEndMs) return true;
+      // Keep active, not-yet-captured WPT orders.
+      if (o.order.type === 'WPT' && !o.order.completed) return true;
+      // Drop everything else (consumed within this tick).
+      return false;
+    });
 
   const updatedRuntime: BoatRuntime = {
     ...runtime,

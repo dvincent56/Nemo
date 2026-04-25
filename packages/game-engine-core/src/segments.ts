@@ -6,6 +6,7 @@ import type {
   WeatherPoint,
 } from '@nemo/shared-types';
 import { advancePosition, computeTWA, getPolarSpeed } from '@nemo/polar-lib/browser';
+import { bearingDeg } from './geo';
 
 /**
  * Modèle événementiel : chaque tick est découpé en segments par les ordres
@@ -92,9 +93,20 @@ function applyOrder(state: SegmentState, envelope: OrderEnvelope, twd: number): 
       break;
     }
     case 'VMG':
-    case 'WPT':
-      // VMG auto / WPT sont résolus par le tick principal (orientation dynamique).
+      // VMG auto résolu par le tick principal (orientation dynamique).
       break;
+    case 'WPT': {
+      // Cap dynamique vers le waypoint, recalculé à chaque application de l'ordre
+      // (i.e. à chaque tick puisque les WPT non complétés sont conservés et
+      // re-snappés à tickStartMs au tick suivant — voir tick.ts).
+      const lat = order.value['lat'];
+      const lon = order.value['lon'];
+      if (typeof lat === 'number' && typeof lon === 'number') {
+        next.heading = bearingDeg(state.position, { lat, lon });
+        next.twaLock = null;
+      }
+      break;
+    }
   }
   return next;
 }
