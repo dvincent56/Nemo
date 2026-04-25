@@ -216,3 +216,19 @@ export const boatInstalledUpgrades = pgTable('boat_installed_upgrades', {
 }, (t) => [
   primaryKey({ columns: [t.boatId, t.slot], name: 'pk_boat_installed_upgrades' }),
 ]);
+
+export const boatTrackPoints = pgTable(
+  'boat_track_points',
+  {
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => raceParticipants.id, { onDelete: 'cascade' }),
+    ts: timestamp('ts', { withTimezone: true }).notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lon: doublePrecision('lon').notNull(),
+    rank: integer('rank').notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.participantId, t.ts] }),
+  }),
+);
