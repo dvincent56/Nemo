@@ -106,6 +106,12 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
+  // Guard against the projection-* layer install running twice on the same
+  // map instance. The defensive `getLayer/removeLayer` loop already handles
+  // it, but pairing the guard with the early-return makes the invariant
+  // ("exactly one projection source + layer set per map") explicit and
+  // trivially enforceable from any future caller.
+  const projectionInstalledRef = useRef<maplibregl.Map | null>(null);
   useProjectionLine(enableProjection ? readyMap : null);
 
   /* ── simTimeMs: override weather grid time for dev simulator ── */
@@ -196,14 +202,26 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       // features. The gradient expression is set per-recompute by the hook
       // via map.setPaintProperty(... 'line-gradient', ...).
       //
-      // Idempotent install: defensively remove any pre-existing
-      // projection-* layer/source before adding. In React StrictMode (dev)
-      // and HMR, the `map.once('load', ...)` callback may fire on a freshly-
-      // recreated map instance whose style was rehydrated from a cached
-      // source list — leading to the original symptom of two parallel
-      // green projection lines + duplicated orange time markers. Removing
-      // before adding makes this load-handler idempotent regardless of
-      // how the style was seeded.
+      // Idempotent install — three layers of defense:
+      //   1. Hard guard via `projectionInstalledRef`: if this same map
+      //      instance already had its projection layers installed, bail.
+      //      Catches the rare case where `map.once('load', ...)` is fired
+      //      twice for the same instance (style hot-swap, source list
+      //      rehydration in HMR).
+      //   2. Defensive removal: still walk the projection-* layer/source
+      //      ids and remove any that exist before adding. Catches the case
+      //      where some other code-path (a future refactor, a sibling layer
+      //      component) already added a projection layer.
+      //   3. The hook (`useProjectionLine`) only uses `setData` — never
+      //      `addSource`/`addLayer`. So the load handler is the SOLE
+      //      installer; the hook is the SOLE updater.
+      // Two of these together guarantee "exactly one projection-* source +
+      // layer set on the map at any time" — fixing the dual green-line bug
+      // even in pathological mount/HMR sequences.
+      if (projectionInstalledRef.current === map) {
+        // Already installed for this map — nothing to do. The hook's
+        // setData path will keep the line up to date.
+      } else {
       const PROJECTION_LAYERS = [
         'projection-line-layer',
         'projection-markers-time-circle',
@@ -305,6 +323,12 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           'circle-stroke-width': 1.5,
         },
       });
+
+      // Mark this map instance as having had projection-* layers installed
+      // — the load-time guard at the top of the install block reads this on
+      // any subsequent `load` event for the same map.
+      projectionInstalledRef.current = map;
+      } // end "if (projectionInstalledRef.current === map)" guard
 
       // ── Maneuver marker tooltip ──
       const maneuverPopup = new maplibregl.Popup({
@@ -505,6 +529,9 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       map.remove();
       mapRef.current = null;
       mapInstance = null;
+      // Clear the install guard so the NEXT map instance (StrictMode
+      // remount, HMR re-creation) installs its own projection layers cleanly.
+      projectionInstalledRef.current = null;
     };
   }, []);
 
