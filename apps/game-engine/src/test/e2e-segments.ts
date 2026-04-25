@@ -72,6 +72,7 @@ async function main(): Promise<void> {
     loadout: resolveBoatLoadout('test-boat', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 
   const out = runTick(runtime, { polar, weather, zones, coastline }, tickStart, tickEnd);

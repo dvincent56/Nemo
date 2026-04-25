@@ -54,6 +54,7 @@ export function createDemoRuntime(): BoatRuntime {
     loadout: resolveBoatLoadout('demo-boat-1', [], 'CRUISER_RACER'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 }
 

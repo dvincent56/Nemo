@@ -252,6 +252,7 @@ export class SimulatorEngine {
         loadout: setup.loadout,
         prevTwa: null,
         maneuver: null,
+        lastCheckpointTs: null,
       };
 
       this.runtimes.set(setup.id, {
