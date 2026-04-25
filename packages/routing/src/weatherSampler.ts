@@ -2,10 +2,11 @@
 // Weather lookup. Math is intentionally byte-identical to
 // apps/web/src/lib/projection/windLookup.ts so the routing engine and
 // the simulator engine see the same TWS/TWD at the same (lat, lon, t).
-// The two had diverged: windLookup interpolates TWD via U/V components
-// weighted by TWS (proper vector interp), while the old sampleWind used
-// unweighted sin/cos of TWD alone. In varying wind fields the mismatch
-// produced a ~2 NM/h drift between router plan and simulated trail.
+// Per-cell layout matches packWindData (6 floats):
+//   [u_kn, v_kn, swh, swellSin, swellCos, swellPeriod]
+// Storing wind as (u, v) and swell direction as (sin, cos) lets every field
+// interpolate linearly — no per-corner trig in the sample path. We pay
+// one atan2 + one sqrt per output sample, never per corner.
 import type { WindGridConfig } from '@nemo/game-engine-core/browser';
 
 export interface WindSample {
@@ -15,8 +16,9 @@ export interface WindSample {
   swellDir: number;
 }
 
-const FIELDS = 5;
+const FIELDS = 6;
 const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
 
 function sampleLayer(
   grid: WindGridConfig,
@@ -52,25 +54,17 @@ function sampleLayer(
   const w01 = (1 - dx) * dy;
   const w11 = dx * dy;
 
-  const tws = data[i00]! * w00 + data[i10]! * w10 + data[i01]! * w01 + data[i11]! * w11;
-
-  // TWD via u/v weighted by TWS — matches createWindLookup exactly.
-  const u = -(
-    Math.sin(data[i00 + 1]! * DEG_TO_RAD) * data[i00]! * w00 +
-    Math.sin(data[i10 + 1]! * DEG_TO_RAD) * data[i10]! * w10 +
-    Math.sin(data[i01 + 1]! * DEG_TO_RAD) * data[i01]! * w01 +
-    Math.sin(data[i11 + 1]! * DEG_TO_RAD) * data[i11]! * w11
-  );
-  const v = -(
-    Math.cos(data[i00 + 1]! * DEG_TO_RAD) * data[i00]! * w00 +
-    Math.cos(data[i10 + 1]! * DEG_TO_RAD) * data[i10]! * w10 +
-    Math.cos(data[i01 + 1]! * DEG_TO_RAD) * data[i01]! * w01 +
-    Math.cos(data[i11 + 1]! * DEG_TO_RAD) * data[i11]! * w11
-  );
-  const twd = ((Math.atan2(-u, -v) / DEG_TO_RAD) + 360) % 360;
+  // Bilinear u/v in knots, then derive TWS/TWD once. TWD is the direction
+  // wind comes FROM, so flip both sign before atan2.
+  const u = data[i00]! * w00 + data[i10]! * w10 + data[i01]! * w01 + data[i11]! * w11;
+  const v = data[i00 + 1]! * w00 + data[i10 + 1]! * w10 + data[i01 + 1]! * w01 + data[i11 + 1]! * w11;
+  const tws = Math.sqrt(u * u + v * v);
+  const twd = ((Math.atan2(-u, -v) * RAD_TO_DEG) + 360) % 360;
 
   const swh = data[i00 + 2]! * w00 + data[i10 + 2]! * w10 + data[i01 + 2]! * w01 + data[i11 + 2]! * w11;
-  const swellDir = data[i00 + 3]! * w00 + data[i10 + 3]! * w10 + data[i01 + 3]! * w01 + data[i11 + 3]! * w11;
+  const sSin = data[i00 + 3]! * w00 + data[i10 + 3]! * w10 + data[i01 + 3]! * w01 + data[i11 + 3]! * w11;
+  const sCos = data[i00 + 4]! * w00 + data[i10 + 4]! * w10 + data[i01 + 4]! * w01 + data[i11 + 4]! * w11;
+  const swellDir = ((Math.atan2(sSin, sCos) * RAD_TO_DEG) + 360) % 360;
 
   return { tws: Math.max(0, tws), twd, swh: Math.max(0, swh), swellDir };
 }

@@ -22,7 +22,13 @@ function loadGameBalance(): unknown {
   return JSON.parse(readFileSync(resolve(repoRoot, 'packages/game-balance/game-balance.json'), 'utf-8'));
 }
 
-// 2x2 grid covering 46..48 N, -4..-2 W, constant 12 kts from north over 48 h.
+// 2x2 grid covering 46..48 N, -4..-2 W, constant 12 kts from south over 48 h.
+// Per-cell layout: [u_kn, v_kn, swh, swellSin, swellCos, swellPeriod] —
+// matches what packWindData emits and what weatherSampler reads.
+// Wind FROM south (twd=180) means the air is BLOWING northward, so v > 0
+// (positive v = wind moving north) and u = 0. With windLookup convention
+// (u, v are wind components blowing TO), the resulting twd via
+// atan2(-u, -v) gives 180° for a pure +v vector.
 function constantWind(): { windGrid: WindGridConfig; windData: Float32Array } {
   const cols = 2, rows = 2;
   const now = 1_700_000_000_000;
@@ -32,15 +38,16 @@ function constantWind(): { windGrid: WindGridConfig; windData: Float32Array } {
     resolution: 2, cols, rows, timestamps,
   };
   const points = cols * rows;
-  const data = new Float32Array(timestamps.length * points * 5);
+  const data = new Float32Array(timestamps.length * points * 6);
   for (let t = 0; t < timestamps.length; t++) {
     for (let i = 0; i < points; i++) {
-      const base = (t * points + i) * 5;
-      data[base + 0] = 12;       // tws
-      data[base + 1] = 180;      // twd (wind blowing from south → heading north gives TWA 0, heading east gives TWA 90)
-      data[base + 2] = 0;
-      data[base + 3] = 0;
-      data[base + 4] = 0;
+      const base = (t * points + i) * 6;
+      data[base + 0] = 0;        // u (knots, blowing east)
+      data[base + 1] = 12;       // v (knots, blowing north) → TWD 180 from south
+      data[base + 2] = 0;        // swh
+      data[base + 3] = 0;        // swellSin
+      data[base + 4] = 1;        // swellCos
+      data[base + 5] = 0;        // swellPeriod
     }
   }
   return { windGrid, windData: data };
