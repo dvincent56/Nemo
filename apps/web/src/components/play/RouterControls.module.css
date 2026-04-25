@@ -1,0 +1,32 @@
+.controls {
+  border-top: 1px solid rgba(245, 240, 232, 0.1);
+  padding-top: 12px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  color: #f5f0e8;
+  font-size: 11px;
+}
+.controls[aria-disabled='true'] { opacity: 0.5; pointer-events: none; }
+.label {
+  color: #8fa8c8;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.presetRow { display: flex; gap: 4px; margin-bottom: 10px; }
+.presetBtn {
+  flex: 1;
+  background: transparent;
+  color: #8fa8c8;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 3px;
+  padding: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  cursor: pointer;
+}
+.presetActive { background: #c9a227; color: #1a2840; border-color: #c9a227; font-weight: 700; }
+.toggle { display: flex; align-items: center; gap: 6px; color: #8fa8c8; margin-bottom: 8px; }
+.coneRow { display: flex; flex-direction: column; gap: 4px; color: #8fa8c8; }
+.coneRow input[type='range'] { width: 100%; }
