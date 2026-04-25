@@ -291,7 +291,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const orders = mode === 'WAYPOINTS'
       ? waypointsToOrders(plan, baseTs)
       : capScheduleToOrders(plan, baseTs);
-    state.replaceOrderQueue(orders);
+    // Clear pending local orders — applying the route replaces any pending plan
+    // the user may have built in ProgPanel. The route orders go straight to the
+    // server via sendOrder; they do NOT need to sit in the local queue (which
+    // would mislead the user into thinking they still have to "Valider la
+    // file"). The ConfirmReplaceProgModal already warns the user before this
+    // wipe when the queue was non-empty.
+    state.replaceOrderQueue([]);
     for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
     state.closeRouter();
   };
