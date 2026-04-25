@@ -195,6 +195,33 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       // a 256-sample 1D color texture, much cheaper than rendering N segment
       // features. The gradient expression is set per-recompute by the hook
       // via map.setPaintProperty(... 'line-gradient', ...).
+      //
+      // Idempotent install: defensively remove any pre-existing
+      // projection-* layer/source before adding. In React StrictMode (dev)
+      // and HMR, the `map.once('load', ...)` callback may fire on a freshly-
+      // recreated map instance whose style was rehydrated from a cached
+      // source list — leading to the original symptom of two parallel
+      // green projection lines + duplicated orange time markers. Removing
+      // before adding makes this load-handler idempotent regardless of
+      // how the style was seeded.
+      const PROJECTION_LAYERS = [
+        'projection-line-layer',
+        'projection-markers-time-circle',
+        'projection-markers-time-label',
+        'projection-markers-maneuver-icon',
+      ];
+      const PROJECTION_SOURCES = [
+        'projection-line',
+        'projection-markers-time',
+        'projection-markers-maneuver',
+      ];
+      for (const id of PROJECTION_LAYERS) {
+        if (map.getLayer(id)) map.removeLayer(id);
+      }
+      for (const id of PROJECTION_SOURCES) {
+        if (map.getSource(id)) map.removeSource(id);
+      }
+
       map.addSource('projection-line', {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
