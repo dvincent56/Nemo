@@ -33,6 +33,8 @@ import { loadPolar, getCachedPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { computeRoute } from '@/lib/routing/client';
 import { packWindData } from '@/lib/projection/fetchWindGrid';
+import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
+import type { RouteInput } from '@nemo/routing';
 import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
 import ZoomCompact from '@/components/play/ZoomCompact';
 import styles from './page.module.css';
@@ -202,9 +204,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const onRoute = async (): Promise<void> => {
       const state = useGameStore.getState();
       const dest = state.router.destination;
-      const polar = boatClass ? getCachedPolar(boatClass) : null;
+      const cls = state.hud.boatClass;
+      const polar = cls ? getCachedPolar(cls) : null;
       if (
-        !dest || !decodedGrid || !polar
+        !dest || !decodedGrid || !polar || !cls
         || typeof state.hud.lat !== 'number'
         || typeof state.hud.lon !== 'number'
         || gbJsonCache === null
@@ -215,26 +218,46 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       try {
         const current = packWindData(decodedGrid);
         const prev = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
-        const input = {
+        // Loadout: the play screen has no installed-upgrades endpoint yet
+        // (fetchMyBoat returns aggregated `effects` but not the items[]
+        // list). Mirror what the game-engine demo does in
+        // `apps/game-engine/src/index.ts`: resolve a SERIE-only loadout for
+        // the current boat class. When the upgrades-installed API lands,
+        // pass the real installed list here. GameBalance is already loaded
+        // at this point (gbJsonCache !== null guard above).
+        const loadout = resolveBoatLoadout('play-boat', [], cls);
+        // Condition: mirror the projection's assembly — wearDetail is the
+        // live per-component wear (hull/rig/sails/electronics), which is
+        // exactly the ConditionState shape the engine reads in computeBsp /
+        // conditionSpeedPenalty.
+        const condition = {
+          hull: state.hud.wearDetail.hull,
+          rig: state.hud.wearDetail.rig,
+          sails: state.hud.wearDetail.sails,
+          electronics: state.hud.wearDetail.electronics,
+        };
+        const input: RouteInput = {
           from: { lat: state.hud.lat, lon: state.hud.lon },
           to: { lat: dest.lat, lon: dest.lon },
           startTimeMs: Date.now(),
-          boatClass: state.hud.boatClass,
+          boatClass: cls,
           polar,
-          // Placeholders — Task 7.3 mirrors the projection's input assembly
-          // to populate loadout and condition from the live boat state.
-          loadout: { items: [] },
-          condition: 1.0,
+          loadout,
+          condition,
           windGrid: current.windGrid,
           windData: new Float32Array(current.windData),
           ...(prev
             ? { prevWindGrid: prev.windGrid, prevWindData: new Float32Array(prev.windData) }
             : {}),
+          // Coastline: the routing worker lazy-loads + indexes the coastline
+          // GeoJSON once at module scope on the first compute, then attaches
+          // it as `coastlineIndex` whenever `coastDetection` is true. We just
+          // forward the toggle — no client-side fetch needed.
           coastDetection: state.router.coastDetection,
           coneHalfDeg: state.router.coneHalfDeg,
           preset: state.router.preset,
         };
-        const plan = await computeRoute(input as never, gbJsonCache);
+        const plan = await computeRoute(input, gbJsonCache);
         useGameStore.getState().setRouteResult(plan, genId);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Erreur de calcul';
