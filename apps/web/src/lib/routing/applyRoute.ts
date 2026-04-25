@@ -4,7 +4,10 @@
 //   - waypointsToOrders:   AT_WAYPOINT-chained WPT sequence
 // Both prepend a MODE(auto:true) order so the boat is in sail-auto when the
 // schedule starts — the engine then picks the optimal sail itself per polar,
-// so no SAIL orders are emitted. No I/O, no side effects — easy to unit-test.
+// so no SAIL orders are emitted. The MODE order is omitted when the boat is
+// already in sail-auto mode (sailAutoAlready=true) to avoid a redundant entry
+// cluttering the order queue/ProgPanel. No I/O, no side effects — easy to
+// unit-test.
 
 import type { RoutePlan } from '@nemo/routing';
 import type { OrderEntry } from '@/lib/store/types';
@@ -15,19 +18,26 @@ function uid(prefix: string): string {
   return `${prefix}-${Date.now()}-${counter}`;
 }
 
-export function capScheduleToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[] {
+export function capScheduleToOrders(
+  plan: RoutePlan,
+  _baseTs: number,
+  sailAutoAlready: boolean,
+): OrderEntry[] {
   const orders: OrderEntry[] = [];
-  // Always force sailAuto on first — auto-sail mode means the engine selects
-  // the optimal sail from the polar; emitting SAIL orders alongside would be
-  // contradictory (and clutter ProgPanel).
-  orders.push({
-    id: uid('mode'),
-    type: 'MODE',
-    value: { auto: true },
-    trigger: { type: 'IMMEDIATE' },
-    label: 'Voile auto ON',
-    committed: true,
-  });
+  // Force sailAuto on first — auto-sail mode means the engine selects the
+  // optimal sail from the polar; emitting SAIL orders alongside would be
+  // contradictory (and clutter ProgPanel). Skip when the boat is already in
+  // auto mode — the redundant order would just bloat the queue.
+  if (!sailAutoAlready) {
+    orders.push({
+      id: uid('mode'),
+      type: 'MODE',
+      value: { auto: true },
+      trigger: { type: 'IMMEDIATE' },
+      label: 'Voile auto ON',
+      committed: true,
+    });
+  }
 
   for (const entry of plan.capSchedule) {
     // CapScheduleEntry.triggerMs is an *absolute* Unix-ms timestamp (it is
@@ -74,16 +84,22 @@ export function capScheduleToOrders(plan: RoutePlan, _baseTs: number): OrderEntr
   return orders;
 }
 
-export function waypointsToOrders(plan: RoutePlan, _baseTs: number): OrderEntry[] {
+export function waypointsToOrders(
+  plan: RoutePlan,
+  _baseTs: number,
+  sailAutoAlready: boolean,
+): OrderEntry[] {
   const orders: OrderEntry[] = [];
-  orders.push({
-    id: uid('mode'),
-    type: 'MODE',
-    value: { auto: true },
-    trigger: { type: 'IMMEDIATE' },
-    label: 'Voile auto ON',
-    committed: true,
-  });
+  if (!sailAutoAlready) {
+    orders.push({
+      id: uid('mode'),
+      type: 'MODE',
+      value: { auto: true },
+      trigger: { type: 'IMMEDIATE' },
+      label: 'Voile auto ON',
+      committed: true,
+    });
+  }
   // Skip waypoints[0] — that's the boat's start position
   let prevId: string | null = null;
   let wpIndex = 0;

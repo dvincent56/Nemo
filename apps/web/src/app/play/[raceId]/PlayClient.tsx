@@ -288,9 +288,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const plan = state.router.computedRoute;
     if (!plan) return;
     const baseTs = Date.now();
+    // Skip the leading MODE(auto:true) order when the boat is already in
+    // sail-auto — otherwise the queue gets a redundant first entry every time
+    // the player applies a route.
+    const sailAutoAlready = state.sail.sailAuto === true;
     const orders = mode === 'WAYPOINTS'
-      ? waypointsToOrders(plan, baseTs)
-      : capScheduleToOrders(plan, baseTs);
+      ? waypointsToOrders(plan, baseTs, sailAutoAlready)
+      : capScheduleToOrders(plan, baseTs, sailAutoAlready);
     // Replace pending local orders with the freshly-applied route. Each order
     // is also dispatched to the server *now* via sendOrder; orders carry a
     // `committed: true` flag (set by applyRoute helpers) so ProgPanel's

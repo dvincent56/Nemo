@@ -29,7 +29,7 @@ const fakePlan = (): RoutePlan => ({
 
 describe('capScheduleToOrders', () => {
   it('emits MODE(auto:true) first, then CAP/TWA/SAIL orders triggered by AT_TIME', () => {
-    const orders = capScheduleToOrders(fakePlan(), baseTs);
+    const orders = capScheduleToOrders(fakePlan(), baseTs, false);
     expect(orders[0]?.type).toBe('MODE');
     expect(orders[0]?.value).toEqual({ auto: true });
     expect(orders.some((o) => o.type === 'CAP' && o.value['heading'] === 60)).toBe(true);
@@ -37,7 +37,7 @@ describe('capScheduleToOrders', () => {
   });
 
   it('does not emit SAIL orders (auto-sail mode handles it)', () => {
-    const orders = capScheduleToOrders(fakePlan(), baseTs);
+    const orders = capScheduleToOrders(fakePlan(), baseTs, false);
     expect(orders.filter((o) => o.type === 'SAIL').length).toBe(0);
   });
 
@@ -48,7 +48,7 @@ describe('capScheduleToOrders', () => {
         { triggerMs: 0, cap: 60, sail: 'JIB', twaLock: -99.92708293378843 },
       ],
     };
-    const orders = capScheduleToOrders(planWithFractionalTwa, baseTs);
+    const orders = capScheduleToOrders(planWithFractionalTwa, baseTs, false);
     const twa = orders.find((o) => o.type === 'TWA');
     expect(twa?.label).toBe('TWA -100°');
     expect(twa?.value['twa']).toBe(-100);
@@ -59,7 +59,7 @@ describe('capScheduleToOrders', () => {
       ...fakePlan(),
       capSchedule: [{ triggerMs: 0, cap: 247.2288638567262, sail: 'JIB' }],
     };
-    const orders = capScheduleToOrders(planWithFractionalCap, baseTs);
+    const orders = capScheduleToOrders(planWithFractionalCap, baseTs, false);
     const cap = orders.find((o) => o.type === 'CAP');
     // Engine reads `value.heading` (segments.ts applyOrder + orders.ts
     // tickOrderQueue) — using the wrong key would silently drop the order.
@@ -68,7 +68,7 @@ describe('capScheduleToOrders', () => {
   });
 
   it('AT_TIME trigger.time is in seconds (Unix epoch), not milliseconds', () => {
-    const orders = capScheduleToOrders(fakePlan(), baseTs);
+    const orders = capScheduleToOrders(fakePlan(), baseTs, false);
     const capOrder = orders.find((o) => o.type === 'CAP');
     expect(capOrder).toBeDefined();
     if (capOrder?.trigger.type === 'AT_TIME') {
@@ -79,11 +79,19 @@ describe('capScheduleToOrders', () => {
       expect(capOrder.trigger.time).toBeLessThan(Date.now());
     }
   });
+
+  it('omits the leading MODE order when sailAutoAlready=true (avoids redundant order)', () => {
+    const orders = capScheduleToOrders(fakePlan(), baseTs, true);
+    expect(orders.some((o) => o.type === 'MODE')).toBe(false);
+    // CAP/TWA orders still emitted as usual
+    expect(orders.some((o) => o.type === 'CAP')).toBe(true);
+    expect(orders.some((o) => o.type === 'TWA')).toBe(true);
+  });
 });
 
 describe('waypointsToOrders', () => {
   it('emits MODE(auto:true) first then a WPT order per inflection waypoint (skipping first = boat pos)', () => {
-    const orders = waypointsToOrders(fakePlan(), baseTs);
+    const orders = waypointsToOrders(fakePlan(), baseTs, false);
     expect(orders[0]?.type).toBe('MODE');
     const wpts = orders.filter((o) => o.type === 'WPT');
     expect(wpts.length).toBe(2); // 3 waypoints, skip first
@@ -91,22 +99,32 @@ describe('waypointsToOrders', () => {
   });
 
   it('chains WPT orders via AT_WAYPOINT trigger', () => {
-    const orders = waypointsToOrders(fakePlan(), baseTs);
+    const orders = waypointsToOrders(fakePlan(), baseTs, false);
     const wpts = orders.filter((o) => o.type === 'WPT');
     expect(wpts[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
     expect(wpts[1]?.trigger.type).toBe('AT_WAYPOINT');
   });
 
   it('captureRadiusNm defaults to 0.5 nm in WPT value payload', () => {
-    const orders = waypointsToOrders(fakePlan(), baseTs);
+    const orders = waypointsToOrders(fakePlan(), baseTs, false);
     const wpts = orders.filter((o) => o.type === 'WPT');
     expect(wpts[0]?.value['captureRadiusNm']).toBe(0.5);
   });
 
   it('labels WPT orders sequentially as "WP N" (not lat/lon coords or internal id)', () => {
-    const orders = waypointsToOrders(fakePlan(), baseTs);
+    const orders = waypointsToOrders(fakePlan(), baseTs, false);
     const wpts = orders.filter((o) => o.type === 'WPT');
     expect(wpts[0]?.label).toBe('WP 1');
     expect(wpts[1]?.label).toBe('WP 2');
+  });
+
+  it('omits the leading MODE order when sailAutoAlready=true; first WPT trigger stays IMMEDIATE', () => {
+    const orders = waypointsToOrders(fakePlan(), baseTs, true);
+    expect(orders.some((o) => o.type === 'MODE')).toBe(false);
+    // The first WPT must remain the IMMEDIATE chain head — its trigger should
+    // not have shifted to AT_WAYPOINT just because MODE was skipped.
+    const wpts = orders.filter((o) => o.type === 'WPT');
+    expect(wpts[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
+    expect(wpts[1]?.trigger.type).toBe('AT_WAYPOINT');
   });
 });
