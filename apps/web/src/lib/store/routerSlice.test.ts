@@ -117,4 +117,28 @@ describe('routerSlice', () => {
     useGameStore.getState().setRouteResult({} as never, gen);
     expect(useGameStore.getState().router.computedRoute).toBe(null);
   });
+
+  it('closePanel from router clears computedRoute and bumps calcGenId', () => {
+    useGameStore.getState().openRouter();
+    const gen = useGameStore.getState().startRouteCalculation();
+    useGameStore.getState().setRouteResult({} as never, gen);
+    expect(useGameStore.getState().router.computedRoute).not.toBeNull();
+
+    useGameStore.getState().closePanel();
+
+    expect(useGameStore.getState().panel.activePanel).toBe(null);
+    expect(useGameStore.getState().router.computedRoute).toBe(null);
+    expect(useGameStore.getState().router.phase).toBe('idle');
+    expect(useGameStore.getState().router.calcGenId).toBeGreaterThan(gen);
+  });
+
+  it('closePanel from non-router does not touch router state', () => {
+    useGameStore.getState().setRouterDestination(46, -4);
+    const beforeGen = useGameStore.getState().router.calcGenId;
+    useGameStore.getState().openPanel('sails');
+    useGameStore.getState().closePanel();
+    // Router state should be preserved (we're not closing router, we're closing sails)
+    expect(useGameStore.getState().router.destination).toEqual({ lat: 46, lon: -4 });
+    expect(useGameStore.getState().router.calcGenId).toBe(beforeGen);
+  });
 });

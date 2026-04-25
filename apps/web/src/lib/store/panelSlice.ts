@@ -24,6 +24,20 @@ export function createPanelSlice(set: (fn: (s: GameStore) => Partial<GameStore>)
             : {}),
         };
       }),
-    closePanel: () => set(() => ({ panel: { activePanel: null } })),
+    closePanel: () =>
+      set((s) => ({
+        panel: { activePanel: null },
+        ...(s.panel.activePanel === 'router'
+          ? {
+              router: {
+                ...s.router,
+                phase: 'idle' as const,
+                computedRoute: null,
+                error: null,
+                calcGenId: s.router.calcGenId + 1,
+              },
+            }
+          : {}),
+      })),
   };
 }
