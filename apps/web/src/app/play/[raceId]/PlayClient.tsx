@@ -297,9 +297,20 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   };
 
   const onApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
-    if (futureOrdersCount > 0) setPendingApply(mode);
+    const count = useGameStore.getState().prog.orderQueue.length;
+    if (count > 0) setPendingApply(mode);
     else performApply(mode);
   };
+
+  // Close the confirm modal if the router panel is closed externally (e.g.
+  // user hits Escape, opens another panel, or the router slice resets) so a
+  // stale "Replace queue?" prompt cannot orphan-apply against an unrelated
+  // computed plan.
+  useEffect(() => {
+    if (activePanel !== 'router' && pendingApply !== null) {
+      setPendingApply(null);
+    }
+  }, [activePanel, pendingApply]);
 
   if (access.kind === 'blocked') {
     return (

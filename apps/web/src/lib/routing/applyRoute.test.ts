@@ -47,6 +47,19 @@ describe('capScheduleToOrders', () => {
     expect(sails[0]?.value['sail']).toBe('JIB');
     expect(sails[1]?.value['sail']).toBe('C0');
   });
+
+  it('AT_TIME trigger.time is in seconds (Unix epoch), not milliseconds', () => {
+    const orders = capScheduleToOrders(fakePlan(), baseTs);
+    const capOrder = orders.find((o) => o.type === 'CAP');
+    expect(capOrder).toBeDefined();
+    if (capOrder?.trigger.type === 'AT_TIME') {
+      // Time should be in seconds — check it's much smaller than ms baseTs
+      // baseTs (ms) = 1_000_000_000_000, so seconds = 1_000_000_000
+      expect(capOrder.trigger.time).toBe(1_000_000_000); // exact
+      // Sanity: less than current ms timestamp
+      expect(capOrder.trigger.time).toBeLessThan(Date.now());
+    }
+  });
 });
 
 describe('waypointsToOrders', () => {

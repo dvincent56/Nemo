@@ -27,13 +27,13 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
 
   let prevSail: string | null = null;
   for (const entry of plan.capSchedule) {
-    const triggerTime = baseTs + entry.triggerMs;
+    const triggerTimeSec = (baseTs + entry.triggerMs) / 1000;
     if (entry.sail && entry.sail !== prevSail) {
       orders.push({
         id: uid('sail'),
         type: 'SAIL',
         value: { sail: entry.sail },
-        trigger: { type: 'AT_TIME', time: triggerTime },
+        trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `Voile ${entry.sail}`,
       });
       prevSail = entry.sail;
@@ -43,7 +43,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
         id: uid('twa'),
         type: 'TWA',
         value: { twa: entry.twaLock },
-        trigger: { type: 'AT_TIME', time: triggerTime },
+        trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `TWA ${entry.twaLock}°`,
       });
     } else {
@@ -51,7 +51,7 @@ export function capScheduleToOrders(plan: RoutePlan, baseTs: number): OrderEntry
         id: uid('cap'),
         type: 'CAP',
         value: { cap: entry.cap },
-        trigger: { type: 'AT_TIME', time: triggerTime },
+        trigger: { type: 'AT_TIME', time: triggerTimeSec },
         label: `CAP ${Math.round(entry.cap)}°`,
       });
     }
