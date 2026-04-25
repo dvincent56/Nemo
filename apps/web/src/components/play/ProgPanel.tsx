@@ -94,7 +94,6 @@ export default function ProgPanel(): React.ReactElement {
   useEffect(() => {
     const tick = () => {
       const state = useGameStore.getState();
-      const nowMs = Date.now();
       const lat = state.hud.lat;
       const lon = state.hud.lon;
       if (typeof lat !== 'number' || typeof lon !== 'number') return;
