@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
 import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
-import { connectRace, useGameStore } from '@/lib/store';
+import { connectRace, sendOrder, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
   type SessionContext,
@@ -22,6 +22,7 @@ import SailPanel from '@/components/play/SailPanel';
 import ProgPanel from '@/components/play/ProgPanel';
 import RankingPanel from '@/components/play/RankingPanel';
 import RouterPanel from '@/components/play/RouterPanel';
+import ConfirmReplaceProgModal from '@/components/play/ConfirmReplaceProgModal';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import LayersWidget from '@/components/play/LayersWidget';
@@ -32,6 +33,7 @@ import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
 import { loadPolar, getCachedPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { computeRoute } from '@/lib/routing/client';
+import { capScheduleToOrders, waypointsToOrders } from '@/lib/routing/applyRoute';
 import { packWindData } from '@/lib/projection/fetchWindGrid';
 import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
 import type { RouteInput } from '@nemo/routing';
@@ -274,6 +276,31 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     return () => window.removeEventListener('nemo:router:route', onRoute);
   }, [decodedGrid, prevDecodedGrid, boatClass]);
 
+  // Router apply flow — convert computed route to orders, replace local
+  // queue, dispatch each over WS, close panel. If the queue already has
+  // future orders, prompt to confirm the replace first.
+  const [pendingApply, setPendingApply] = useState<'WAYPOINTS' | 'CAP' | null>(null);
+  const orderQueue = useGameStore((s) => s.prog.orderQueue);
+  const futureOrdersCount = orderQueue.length;
+
+  const performApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
+    const state = useGameStore.getState();
+    const plan = state.router.computedRoute;
+    if (!plan) return;
+    const baseTs = Date.now();
+    const orders = mode === 'WAYPOINTS'
+      ? waypointsToOrders(plan, baseTs)
+      : capScheduleToOrders(plan, baseTs);
+    state.replaceOrderQueue(orders);
+    for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
+    state.closeRouter();
+  };
+
+  const onApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
+    if (futureOrdersCount > 0) setPendingApply(mode);
+    else performApply(mode);
+  };
+
   if (access.kind === 'blocked') {
     return (
       <div className={styles.blockedShell}>
@@ -406,8 +433,17 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
             >
-              <RouterPanel onApply={(_mode) => { /* wired in Phase 9 */ }} />
+              <RouterPanel onApply={onApply} />
             </SlidePanel>
+            <ConfirmReplaceProgModal
+              isOpen={pendingApply !== null}
+              pendingCount={futureOrdersCount}
+              onCancel={() => setPendingApply(null)}
+              onConfirm={() => {
+                if (pendingApply) performApply(pendingApply);
+                setPendingApply(null);
+              }}
+            />
           </>
         )}
 
