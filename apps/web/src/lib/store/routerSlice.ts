@@ -54,17 +54,45 @@ export function createRouterSlice(
           destination: { lat, lon },
           computedRoute: null,
           error: null,
+          calcGenId: s.router.calcGenId + 1,
         },
       })),
 
     setRouterPreset: (preset: RouterState['preset']) =>
-      set((s) => ({ router: { ...s.router, preset, computedRoute: null } })),
+      set((s) => ({
+        router: {
+          ...s.router,
+          phase: 'idle',
+          preset,
+          computedRoute: null,
+          error: null,
+          calcGenId: s.router.calcGenId + 1,
+        },
+      })),
 
     setRouterCoastDetection: (coastDetection: boolean) =>
-      set((s) => ({ router: { ...s.router, coastDetection, computedRoute: null } })),
+      set((s) => ({
+        router: {
+          ...s.router,
+          phase: 'idle',
+          coastDetection,
+          computedRoute: null,
+          error: null,
+          calcGenId: s.router.calcGenId + 1,
+        },
+      })),
 
     setRouterConeHalfDeg: (coneHalfDeg: number) =>
-      set((s) => ({ router: { ...s.router, coneHalfDeg, computedRoute: null } })),
+      set((s) => ({
+        router: {
+          ...s.router,
+          phase: 'idle',
+          coneHalfDeg,
+          computedRoute: null,
+          error: null,
+          calcGenId: s.router.calcGenId + 1,
+        },
+      })),
 
     startRouteCalculation: (): number => {
       const next = get().router.calcGenId + 1;

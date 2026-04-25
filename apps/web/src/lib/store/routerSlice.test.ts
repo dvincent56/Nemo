@@ -100,4 +100,21 @@ describe('routerSlice', () => {
     useGameStore.getState().openPanel('sails');
     expect(useGameStore.getState().router.computedRoute).toBe(null);
   });
+
+  it('setRouterPreset bumps calcGenId so an in-flight result is dropped', () => {
+    const gen = useGameStore.getState().startRouteCalculation();
+    useGameStore.getState().setRouterPreset('HIGHRES');
+    // The worker (hypothetically) returns with the old genId
+    useGameStore.getState().setRouteResult({} as never, gen);
+    expect(useGameStore.getState().router.computedRoute).toBe(null);
+    expect(useGameStore.getState().router.phase).toBe('idle');
+  });
+
+  it('setRouterDestination bumps calcGenId so an in-flight result is dropped', () => {
+    useGameStore.getState().setRouterDestination(46, -4);
+    const gen = useGameStore.getState().startRouteCalculation();
+    useGameStore.getState().setRouterDestination(47, -5);
+    useGameStore.getState().setRouteResult({} as never, gen);
+    expect(useGameStore.getState().router.computedRoute).toBe(null);
+  });
 });
