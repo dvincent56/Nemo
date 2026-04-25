@@ -161,13 +161,14 @@ export default function ProgPanel(): React.ReactElement {
           // we drop it locally.
           const cutoff = Math.max(triggerMs, dispatchMs);
           if (cutoff > 0 && cutoff < lastTickMs) toRemove.push(o.id);
-        } else if (o.trigger.type === 'IMMEDIATE' && o.committed === true) {
-          const createdMs = orderDispatchMs(o);
-          if (createdMs > 0 && nowMs - createdMs > 5_000) {
-            toRemove.push(o.id);
-          }
         }
-        // NOTE: WPT orders are intentionally NOT removed here — see comment above.
+        // NOTE: IMMEDIATE+committed orders (MODE auto, WPT chain head) are
+        // intentionally NOT removed: the projection worker reads the orderQueue
+        // and uses these orders to set the initial sail-auto state and to
+        // anchor the WPT chain. Removing them mid-projection causes the
+        // forward simulation to lose the auto-sail context (and break the
+        // WPT chain at its head), reverting to a straight-line projection.
+        // WPT orders likewise are NOT removed — see comment above.
       }
 
       for (const id of toRemove) state.removeOrder(id);
