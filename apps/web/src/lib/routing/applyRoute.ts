@@ -41,21 +41,32 @@ export function capScheduleToOrders(plan: RoutePlan, _baseTs: number): OrderEntr
     // straight line at the initial heading.
     const triggerTimeSec = entry.triggerMs / 1000;
     if (entry.twaLock !== undefined && entry.twaLock !== null) {
+      // Round to integer degrees so engine computes on the same value the UI
+      // displays. Same rationale as Compass.tsx — fractional TWA from grid
+      // interpolation otherwise leaks into engine-side calculations.
+      const twa = Math.round(entry.twaLock);
       orders.push({
         id: uid('twa'),
         type: 'TWA',
-        value: { twa: entry.twaLock },
+        value: { twa },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
-        label: `TWA ${Math.round(entry.twaLock)}°`,
+        label: `TWA ${twa}°`,
         committed: true,
       });
     } else {
+      const cap = Math.round(entry.cap);
+      // Engine reads `value.heading` (see segments.ts applyOrder CAP case and
+      // orders.ts tickOrderQueue). Using `cap` here meant the engine silently
+      // dropped every CAP route order — the projection (which accepts either
+      // key) showed the correct trajectory while the boat held its old heading,
+      // so the route appeared to "skip the first cap change" once the AT_TIME
+      // trigger fired and ProgPanel auto-removed the un-applied order.
       orders.push({
         id: uid('cap'),
         type: 'CAP',
-        value: { cap: entry.cap },
+        value: { heading: cap },
         trigger: { type: 'AT_TIME', time: triggerTimeSec },
-        label: `CAP ${Math.round(entry.cap)}°`,
+        label: `CAP ${cap}°`,
         committed: true,
       });
     }

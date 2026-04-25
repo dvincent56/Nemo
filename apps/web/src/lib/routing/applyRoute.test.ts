@@ -32,7 +32,7 @@ describe('capScheduleToOrders', () => {
     const orders = capScheduleToOrders(fakePlan(), baseTs);
     expect(orders[0]?.type).toBe('MODE');
     expect(orders[0]?.value).toEqual({ auto: true });
-    expect(orders.some((o) => o.type === 'CAP' && o.value['cap'] === 60)).toBe(true);
+    expect(orders.some((o) => o.type === 'CAP' && o.value['heading'] === 60)).toBe(true);
     expect(orders.some((o) => o.type === 'TWA' && o.value['twa'] === 50)).toBe(true);
   });
 
@@ -41,7 +41,7 @@ describe('capScheduleToOrders', () => {
     expect(orders.filter((o) => o.type === 'SAIL').length).toBe(0);
   });
 
-  it('rounds TWA labels to integer degrees', () => {
+  it('rounds TWA value AND label to integer degrees (matches Compass.tsx)', () => {
     const planWithFractionalTwa: RoutePlan = {
       ...fakePlan(),
       capSchedule: [
@@ -51,8 +51,20 @@ describe('capScheduleToOrders', () => {
     const orders = capScheduleToOrders(planWithFractionalTwa, baseTs);
     const twa = orders.find((o) => o.type === 'TWA');
     expect(twa?.label).toBe('TWA -100°');
-    // Engine still gets the full-precision value
-    expect(twa?.value['twa']).toBe(-99.92708293378843);
+    expect(twa?.value['twa']).toBe(-100);
+  });
+
+  it('rounds CAP value to integer degrees and stores it under `heading` (engine key)', () => {
+    const planWithFractionalCap: RoutePlan = {
+      ...fakePlan(),
+      capSchedule: [{ triggerMs: 0, cap: 247.2288638567262, sail: 'JIB' }],
+    };
+    const orders = capScheduleToOrders(planWithFractionalCap, baseTs);
+    const cap = orders.find((o) => o.type === 'CAP');
+    // Engine reads `value.heading` (segments.ts applyOrder + orders.ts
+    // tickOrderQueue) — using the wrong key would silently drop the order.
+    expect(cap?.value['heading']).toBe(247);
+    expect(cap?.label).toBe('CAP 247°');
   });
 
   it('AT_TIME trigger.time is in seconds (Unix epoch), not milliseconds', () => {
