@@ -32,6 +32,8 @@ export interface HudState {
   effects: BoatEffects;
   pending: {
     hdg?: PendingField<number>;
+    twa?: PendingField<number>;
+    bsp?: PendingField<number>;
   };
 }
 
@@ -53,6 +55,11 @@ export interface SailSliceState {
       currentSail: SailId;
       transitionStartMs: number;
       transitionEndMs: number;
+    }>;
+    maneuver?: PendingField<{
+      maneuverKind: 0 | 1 | 2;
+      maneuverStartMs: number;
+      maneuverEndMs: number;
     }>;
   };
 }
@@ -193,12 +200,22 @@ export interface GameStore {
 
   setHud: (patch: Partial<HudState>) => void;
   setHudOptimistic: (field: 'hdg', value: number) => void;
+  /** Patch HUD optimistically with one or more numeric fields; each gets a
+   *  pending entry so the next tick's mergeField preserves the optimistic
+   *  value until the server confirms convergence. */
+  applyOptimisticHud: (patch: { hdg?: number; twa?: number; bsp?: number }) => void;
   setSail: (patch: Partial<SailSliceState>) => void;
   setSailOptimistic: (field: 'sailAuto', value: boolean) => void;
   setOptimisticSailChange: (patch: {
     currentSail: SailId;
     transitionStartMs: number;
     transitionEndMs: number;
+  }) => void;
+  /** Patch sail maneuver state optimistically (kind/start/end) with pending. */
+  applyOptimisticManeuver: (patch: {
+    maneuverKind: 0 | 1 | 2;
+    maneuverStartMs: number;
+    maneuverEndMs: number;
   }) => void;
   setMapView: (center: [number, number], zoom: number) => void;
   setMapBounds: (bounds: MapBounds) => void;

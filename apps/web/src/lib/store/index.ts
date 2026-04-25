@@ -93,23 +93,61 @@ export const useGameStore = create<GameStore>((set) => ({
             now,
             (a, b) => a.currentSail === b.currentSail,
           );
+          const maneuverServer = {
+            maneuverKind: (Number(m['maneuverKind'] ?? 0)) as 0 | 1 | 2,
+            maneuverStartMs: Number(m['maneuverStartMs'] ?? 0),
+            maneuverEndMs: Number(m['maneuverEndMs'] ?? 0),
+          };
+          // Convergence test for an optimistic maneuver: same kind is enough.
+          // The server's startMs may differ by a few ms from the optimistic
+          // value (clock skew); kind equality is the meaningful signal that
+          // the server has acknowledged the tack/gybe.
+          const maneuverMerged = mergeField(
+            s.sail.pending.maneuver,
+            maneuverServer,
+            now,
+            (a, b) => a.maneuverKind === b.maneuverKind,
+          );
           // Prefer the authoritative TWA (server's TWD + heading) over the
           // locally-interpolated one, so the displayed TWA matches the engine.
           const derivedTwa = ((hdgMerged.value - twdFromMsg + 540) % 360) - 180;
+          const serverTwa =
+            typeof serverTwaLock === 'number' ? serverTwaLock : derivedTwa;
+          const serverBsp = Number(m['bsp'] ?? s.hud.bsp);
+          // Tolerance for floating-point convergence: 1° for TWA, 0.3 kt for BSP.
+          // Below the tolerance the values are visually identical and we can
+          // release the pending entry. Beyond, keep the optimistic value until
+          // either convergence or the default 60 s timeout in mergeField.
+          const twaMerged = mergeField(
+            s.hud.pending.twa,
+            serverTwa,
+            now,
+            (a, b) => Math.abs(a - b) <= 1,
+          );
+          const bspMerged = mergeField(
+            s.hud.pending.bsp,
+            serverBsp,
+            now,
+            (a, b) => Math.abs(a - b) <= 0.3,
+          );
           nextHud = {
             ...s.hud,
             lat: Number(m['lat'] ?? s.hud.lat),
             lon: Number(m['lon'] ?? s.hud.lon),
             hdg: hdgMerged.value,
-            bsp: Number(m['bsp'] ?? s.hud.bsp),
+            bsp: bspMerged.value,
             twd: twdFromMsg,
             tws: twsFromMsg,
-            twa: typeof serverTwaLock === 'number' ? serverTwaLock : derivedTwa,
+            twa: twaMerged.value,
             twaLock: typeof serverTwaLock === 'number' ? serverTwaLock : null,
             overlapFactor: Number(m['overlapFactor'] ?? s.hud.overlapFactor),
             bspBaseMultiplier: Number(m['bspBaseMultiplier'] ?? s.hud.bspBaseMultiplier),
             twaColor: twaColorFromCode(twaColorCode),
-            pending: hdgMerged.pending ? { hdg: hdgMerged.pending } : {},
+            pending: {
+              ...(hdgMerged.pending ? { hdg: hdgMerged.pending } : {}),
+              ...(twaMerged.pending ? { twa: twaMerged.pending } : {}),
+              ...(bspMerged.pending ? { bsp: bspMerged.pending } : {}),
+            },
           };
           nextSail = {
             ...s.sail,
@@ -118,12 +156,13 @@ export const useGameStore = create<GameStore>((set) => ({
             transitionStartMs: sailChangeMerged.value.transitionStartMs,
             transitionEndMs: sailChangeMerged.value.transitionEndMs,
             sailAuto: sailAutoMerged.value,
-            maneuverKind: (Number(m['maneuverKind'] ?? 0)) as 0 | 1 | 2,
-            maneuverStartMs: Number(m['maneuverStartMs'] ?? 0),
-            maneuverEndMs: Number(m['maneuverEndMs'] ?? 0),
+            maneuverKind: maneuverMerged.value.maneuverKind,
+            maneuverStartMs: maneuverMerged.value.maneuverStartMs,
+            maneuverEndMs: maneuverMerged.value.maneuverEndMs,
             pending: {
               ...(sailAutoMerged.pending ? { sailAuto: sailAutoMerged.pending } : {}),
               ...(sailChangeMerged.pending ? { sailChange: sailChangeMerged.pending } : {}),
+              ...(maneuverMerged.pending ? { maneuver: maneuverMerged.pending } : {}),
             },
           };
         }

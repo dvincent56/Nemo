@@ -6,6 +6,7 @@ import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
+import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
 import { Lock, LockOpen, Check, AlertTriangle } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
@@ -113,6 +114,9 @@ export default function Compass(): React.ReactElement {
   const boatClass = useGameStore((s) => s.hud.boatClass);
   const currentSail = useGameStore((s) => s.sail.currentSail);
   const sailAuto = useGameStore((s) => s.sail.sailAuto);
+  const transitionEndMs = useGameStore((s) => s.sail.transitionEndMs);
+  const maneuverEndMs = useGameStore((s) => s.sail.maneuverEndMs);
+  const maneuverKind = useGameStore((s) => s.sail.maneuverKind);
   const actualBsp = useGameStore((s) => s.hud.bsp);
   const bspBaseMultiplier = useGameStore((s) => s.hud.bspBaseMultiplier);
   const [polarReady, setPolarReady] = useState(() => !!boatClass && !!getCachedPolar(boatClass));
@@ -165,9 +169,6 @@ export default function Compass(): React.ReactElement {
   // empannage > virement > changement de voile (durées & pénalités de vitesse
   // décroissantes). Le message est rendu en absolute au-dessus du compass
   // pour ne pas modifier sa hauteur quand il apparaît/disparaît.
-  // Duration extracted separately so apply() can set the optimistic maneuver
-  // badge without re-computing the hint logic a second time.
-  let pendingManeuverDurSec = 0;
   let pendingHint: { kind: 'gybe' | 'tack' | 'sail'; label: string; className: string } | null = null;
   if (applyActive && polar && boatClass) {
     const sameSign = Math.sign(displayTwa) === Math.sign(twa) || twa === 0;
@@ -179,12 +180,10 @@ export default function Compass(): React.ReactElement {
       const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
       const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
       pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: styles.hintGybe! };
-      pendingManeuverDurSec = dur;
     } else if (isTack) {
       const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
       const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
       pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: styles.hintTack! };
-      pendingManeuverDurSec = dur;
     } else if (sailAuto) {
       const optimal = pickOptimalSail(polar, displayTwa, tws);
       if (optimal !== currentSail) {
@@ -331,6 +330,7 @@ export default function Compass(): React.ReactElement {
   // the engine ends up computing on e.g. 169.70° when the player saw 170°.
   const apply = () => {
     if (!applyActive) return;
+    const store = useGameStore.getState();
     if (twaLocked) {
       const newTwaRaw = targetHdg !== null
         ? ((targetHdg - twd + 540) % 360) - 180
@@ -339,25 +339,46 @@ export default function Compass(): React.ReactElement {
       setLockedTwa(newTwa);
       sendOrder({ type: 'TWA', value: { twa: newTwa } });
       setCommittedTwaLock(newTwa);
-      useGameStore.getState().setPreview({ hdg: null, twaLocked: true, lockedTwa: newTwa });
-      if (targetHdg !== null) useGameStore.getState().setHudOptimistic('hdg', Math.round(targetHdg));
+      store.setPreview({ hdg: null, twaLocked: true, lockedTwa: newTwa });
     } else {
       const heading = Math.round(targetHdg ?? hdg);
       sendOrder({ type: 'CAP', value: { heading } });
       setCommittedTwaLock(null);
-      useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
-      if (targetHdg !== null) useGameStore.getState().setHudOptimistic('hdg', Math.round(targetHdg));
+      store.setPreview({ hdg: null, twaLocked: false });
     }
-    // Optimistic maneuver badge — appears immediately in HudBar without waiting
-    // for the server tick that confirms the tack/gybe.
-    if (pendingHint && pendingManeuverDurSec > 0 &&
-        (pendingHint.kind === 'tack' || pendingHint.kind === 'gybe')) {
-      const startMs = Date.now();
-      useGameStore.getState().setSail({
-        maneuverKind: pendingHint.kind === 'gybe' ? 2 : 1,
-        maneuverStartMs: startMs,
-        maneuverEndMs: startMs + pendingManeuverDurSec * 1000,
+
+    // Optimistic full-state mirror: predict what the server's next tick will
+    // return for hdg, twa, bsp, sail-change and maneuver, and patch the store
+    // immediately. mergeField in the tick handler preserves these optimistic
+    // values until the server confirms convergence.
+    if (targetHdg !== null && polar && boatClass) {
+      const newHdg = Math.round(targetHdg);
+      const patch = predictAfterHdg({
+        newHdg,
+        prevTwa: twa,
+        twd,
+        tws,
+        currentSail,
+        sailAuto,
+        bspBaseMultiplier,
+        transitionEndMs,
+        maneuverEndMs,
+        maneuverKind,
+        polar,
+        boatClass,
+        now: Date.now(),
       });
+      store.applyOptimisticHud(patch.hud);
+      if (patch.sail.maneuver) {
+        store.applyOptimisticManeuver({
+          maneuverKind: patch.sail.maneuver.kind,
+          maneuverStartMs: patch.sail.maneuver.startMs,
+          maneuverEndMs: patch.sail.maneuver.endMs,
+        });
+      }
+      if (patch.sail.sailChange) {
+        store.setOptimisticSailChange(patch.sail.sailChange);
+      }
     }
     setTargetHdg(null);
   };

@@ -32,5 +32,22 @@ export function createHudSlice(set: (fn: (s: GameStore) => Partial<GameStore>) =
           },
         },
       })),
+    applyOptimisticHud: (patch: { hdg?: number; twa?: number; bsp?: number }) =>
+      set((s) => {
+        const now = Date.now();
+        const nextPending = { ...s.hud.pending };
+        if (patch.hdg !== undefined) nextPending.hdg = { expected: patch.hdg, since: now };
+        if (patch.twa !== undefined) nextPending.twa = { expected: patch.twa, since: now };
+        if (patch.bsp !== undefined) nextPending.bsp = { expected: patch.bsp, since: now };
+        return {
+          hud: {
+            ...s.hud,
+            ...(patch.hdg !== undefined ? { hdg: patch.hdg } : {}),
+            ...(patch.twa !== undefined ? { twa: patch.twa } : {}),
+            ...(patch.bsp !== undefined ? { bsp: patch.bsp } : {}),
+            pending: nextPending,
+          },
+        };
+      }),
   };
 }
