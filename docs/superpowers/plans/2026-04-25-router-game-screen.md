@@ -1181,14 +1181,20 @@ function ResultsBlock({
   onApply: (mode: 'WAYPOINTS' | 'CAP') => void;
 }): React.ReactElement {
   const totalNm = plan.totalDistanceNm.toFixed(0);
-  const etaH = Math.floor(plan.eta / 3600);
-  const etaM = Math.floor((plan.eta % 3600) / 60);
+  // RoutePlan.eta is an absolute ms timestamp (arrivalPoint.timeMs), or
+  // +Infinity if the route did not reach the goal. Compute elapsed duration
+  // from the route's start point.
+  const startMs = plan.polyline[0]?.timeMs ?? 0;
+  const elapsedSec = Number.isFinite(plan.eta) ? Math.max(0, (plan.eta - startMs) / 1000) : null;
+  const etaLabel = elapsedSec === null
+    ? '—'
+    : `+${Math.floor(elapsedSec / 3600)}h ${Math.floor((elapsedSec % 3600) / 60)}m`;
   return (
     <section className={styles.results}>
       <div className={styles.resultsHead}>✓ ROUTE CALCULÉE</div>
       <div className={styles.resultsGrid}>
         <div><span className={styles.metricLabel}>Distance</span><br /><strong>{totalNm} nm</strong></div>
-        <div><span className={styles.metricLabel}>ETA</span><br /><strong>+{etaH}h {etaM}m</strong></div>
+        <div><span className={styles.metricLabel}>ETA</span><br /><strong>{etaLabel}</strong></div>
         <div><span className={styles.metricLabel}>Calcul</span><br /><strong>{(plan.computeTimeMs / 1000).toFixed(1)}s</strong></div>
         <div><span className={styles.metricLabel}>Manœuvres</span><br /><strong>{plan.capSchedule.length}</strong></div>
       </div>
