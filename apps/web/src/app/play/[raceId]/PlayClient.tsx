@@ -29,8 +29,10 @@ import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
-import { loadPolar } from '@/lib/polar';
+import { loadPolar, getCachedPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
+import { computeRoute } from '@/lib/routing/client';
+import { packWindData } from '@/lib/projection/fetchWindGrid';
 import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
 import ZoomCompact from '@/components/play/ZoomCompact';
 import styles from './page.module.css';
@@ -39,12 +41,13 @@ import styles from './page.module.css';
 // postMessage; this client-side load is needed for any UI component that
 // reads GameBalance at render (e.g. Compass's maneuver hint).
 let gbBootstrap: Promise<void> | null = null;
+let gbJsonCache: unknown = null;
 function bootstrapGameBalance(): Promise<void> {
-  if (GameBalance.isLoaded) return Promise.resolve();
+  if (GameBalance.isLoaded && gbJsonCache !== null) return Promise.resolve();
   if (gbBootstrap) return gbBootstrap;
   gbBootstrap = fetch('/data/game-balance.json')
     .then((r) => r.json())
-    .then((json) => { GameBalance.load(json); });
+    .then((json) => { gbJsonCache = json; GameBalance.load(json); });
   return gbBootstrap;
 }
 
@@ -188,6 +191,59 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
     useGameStore.getState().setHud({ twd, tws, twa });
   }, [decodedGrid, tacticalTile, boatLat, boatLon, boatHdg, lastTickUnix]);
+
+  // Router invocation — RouterPanel dispatches 'nemo:router:route' on click;
+  // we kick off computeRoute() with the latest store state and post the
+  // result back into the slice with a fresh genId so closeRouter / a newer
+  // click invalidates older in-flight calculations.
+  const prevDecodedGrid = useGameStore((s) => s.weather.prevDecodedGrid);
+  const boatClass = useGameStore((s) => s.hud.boatClass);
+  useEffect(() => {
+    const onRoute = async (): Promise<void> => {
+      const state = useGameStore.getState();
+      const dest = state.router.destination;
+      const polar = boatClass ? getCachedPolar(boatClass) : null;
+      if (
+        !dest || !decodedGrid || !polar
+        || typeof state.hud.lat !== 'number'
+        || typeof state.hud.lon !== 'number'
+        || gbJsonCache === null
+      ) return;
+
+      const genId = state.startRouteCalculation();
+
+      try {
+        const current = packWindData(decodedGrid);
+        const prev = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
+        const input = {
+          from: { lat: state.hud.lat, lon: state.hud.lon },
+          to: { lat: dest.lat, lon: dest.lon },
+          startTimeMs: Date.now(),
+          boatClass: state.hud.boatClass,
+          polar,
+          // Placeholders — Task 7.3 mirrors the projection's input assembly
+          // to populate loadout and condition from the live boat state.
+          loadout: { items: [] },
+          condition: 1.0,
+          windGrid: current.windGrid,
+          windData: new Float32Array(current.windData),
+          ...(prev
+            ? { prevWindGrid: prev.windGrid, prevWindData: new Float32Array(prev.windData) }
+            : {}),
+          coastDetection: state.router.coastDetection,
+          coneHalfDeg: state.router.coneHalfDeg,
+          preset: state.router.preset,
+        };
+        const plan = await computeRoute(input as never, gbJsonCache);
+        useGameStore.getState().setRouteResult(plan, genId);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erreur de calcul';
+        useGameStore.getState().setRouteError(msg, genId);
+      }
+    };
+    window.addEventListener('nemo:router:route', onRoute);
+    return () => window.removeEventListener('nemo:router:route', onRoute);
+  }, [decodedGrid, prevDecodedGrid, boatClass]);
 
   if (access.kind === 'blocked') {
     return (
