@@ -127,15 +127,21 @@ function sampleGrid(
   const a = sampleLayer(grid, data, t0, lat, lon);
   const b = sampleLayer(grid, data, t1, lat, lon);
 
-  const tws = a.tws * (1 - tFrac) + b.tws * tFrac;
-  const swh = a.swh * (1 - tFrac) + b.swh * tFrac;
-
-  // Angle temporal interpolation via u/v weighted by TWS (again same as
-  // createWindLookup — this is what keeps temporal interpolation coherent
-  // when wind direction shifts hard between frames).
+  // Reconstruct each layer's raw (u, v) from its (tws, twd), linearly
+  // combine them across time, and derive *both* TWS and TWD from the
+  // result. Earlier this function averaged a.tws and b.tws as scalars,
+  // which gives a *larger* magnitude than the vector sum whenever wind
+  // direction shifts between frames (Math.sqrt(u² + v²) ≤ |a.tws|+|b.tws|
+  // by triangle inequality). The sim's createWindLookup interpolates raw
+  // u/v in storage and derives TWS via sqrt(u² + v²) once at the end —
+  // routing must match that or the BSP it predicts will be biased high
+  // through every wind rotation, drifting from what the sim actually
+  // delivers tick by tick.
   const u = -(Math.sin(a.twd * DEG_TO_RAD) * a.tws * (1 - tFrac) + Math.sin(b.twd * DEG_TO_RAD) * b.tws * tFrac);
   const v = -(Math.cos(a.twd * DEG_TO_RAD) * a.tws * (1 - tFrac) + Math.cos(b.twd * DEG_TO_RAD) * b.tws * tFrac);
+  const tws = Math.sqrt(u * u + v * v);
   const twd = ((Math.atan2(-u, -v) / DEG_TO_RAD) + 360) % 360;
+  const swh = a.swh * (1 - tFrac) + b.swh * tFrac;
 
   // Swell dir: sin/cos average (simpler, swell is low-magnitude effect).
   const sx = Math.sin(a.swellDir * DEG_TO_RAD) * (1 - tFrac) + Math.sin(b.swellDir * DEG_TO_RAD) * tFrac;
