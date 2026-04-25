@@ -16,13 +16,14 @@ import { createProgSlice } from './progSlice';
 import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 import { createMapAppearanceSlice } from './mapAppearanceSlice';
+import { createTrackSlice } from './trackSlice';
 import { mergeField } from './pending';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
 export type { TimelineState, LayersState, PanelState, WeatherState, MapAppearanceState } from './types';
 export type { ConnectionState, ProgState, OrderEntry, BoatLive } from './types';
 export type { ConnState, PanelName, LayerName, PlaybackSpeed, TwaColor } from './types';
-export type { GfsStatus } from './types';
+export type { GfsStatus, TrackState, TrackPoint } from './types';
 
 const SAIL_CODES = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as const;
 
@@ -44,6 +45,7 @@ export const useGameStore = create<GameStore>((set) => ({
   ...createPreviewSlice(set),
   ...createZonesSlice(set),
   ...createMapAppearanceSlice(set),
+  ...createTrackSlice(set),
 
   boats: new Map(),
   lastTickUnix: null,

@@ -81,6 +81,27 @@ export interface TimelineState {
   currentTime: Date;
   isLive: boolean;
   playbackSpeed: PlaybackSpeed;
+  isPlaying: boolean;
+  raceStartMs: number | null;
+  raceEndMs: number | null;
+  forecastEndMs: number | null;
+}
+
+export interface TrackPoint {
+  ts: number;     // ms epoch
+  lat: number;
+  lon: number;
+  rank: number;
+}
+
+export interface TrackState {
+  myPoints: TrackPoint[];          // sorted ASC by ts
+  isLoading: boolean;
+  error: string | null;
+  /** Phase 1 : valeur = boat.id côté serveur. Phase 4 : UUID du
+   *  race_participants. Le nom est volontairement participant-centric pour
+   *  éviter de renommer ce champ plus tard. */
+  selfParticipantId: string | null;
 }
 
 export type LayerName = 'wind' | 'swell' | 'opponents' | 'zones' | 'coastline';
@@ -190,6 +211,7 @@ export interface GameStore {
   zones: ExclusionZone[];
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
+  track: TrackState;
 
   setHud: (patch: Partial<HudState>) => void;
   setHudOptimistic: (field: 'hdg', value: number) => void;
@@ -208,6 +230,14 @@ export interface GameStore {
   setTime: (t: Date) => void;
   goLive: () => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
+  setIsPlaying: (b: boolean) => void;
+  setRaceContext: (ctx: { startMs: number | null; endMs?: number | null; forecastEndMs: number | null }) => void;
+  setTrack: (points: TrackPoint[]) => void;
+  appendTrackPoint: (p: TrackPoint) => void;
+  clearTrack: () => void;
+  setTrackLoading: (loading: boolean) => void;
+  setTrackError: (error: string | null) => void;
+  setSelfParticipantId: (id: string | null) => void;
   toggleLayer: (layer: LayerName) => void;
   setOceanPreset: (id: string) => void;
   openPanel: (p: PanelName) => void;
