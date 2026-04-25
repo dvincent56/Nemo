@@ -212,6 +212,7 @@ export interface GameStore {
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
   track: TrackState;
+  projectionSnapshot: import('./projectionSnapshotSlice').ProjectionSnapshot | null;
 
   setHud: (patch: Partial<HudState>) => void;
   setHudOptimistic: (field: 'hdg', value: number) => void;
@@ -256,4 +257,5 @@ export interface GameStore {
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
   setZones: (zones: ExclusionZone[]) => void;
+  setProjectionSnapshot: (snap: import('./projectionSnapshotSlice').ProjectionSnapshot | null) => void;
 }

@@ -414,6 +414,18 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         inFlightRef.current = false;
         lastResultRef.current = e.data.result;
         updateMapSources(e.data.result);
+        // Publish a lat/lon/dtMs-only snapshot for downstream consumers
+        // (timeline ghost boat). Drops bsp/tws/twd to keep the snapshot
+        // small — the timeline only needs geometry for interpolation.
+        const result = e.data.result;
+        const buf = result.pointsBuf;
+        const count = result.pointsCount;
+        const points: { dtMs: number; lat: number; lon: number }[] = new Array(count);
+        for (let i = 0; i < count; i++) {
+          const b = i * 6;
+          points[i] = { lat: buf[b]!, lon: buf[b + 1]!, dtMs: buf[b + 2]! };
+        }
+        useGameStore.getState().setProjectionSnapshot({ points });
         // If the user kept dragging while we were computing, fire a fresh
         // compute with the latest store state — no debounce, no stale frame.
         if (pendingRef.current) {
@@ -434,6 +446,9 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     return () => {
       worker.terminate();
       workerRef.current = null;
+      // Clear snapshot so a stale future trajectory doesn't linger after the
+      // hook unmounts (e.g. when leaving the play page).
+      useGameStore.getState().setProjectionSnapshot(null);
     };
   }, [updateMapSources]);
 

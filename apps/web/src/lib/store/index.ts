@@ -17,6 +17,7 @@ import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 import { createMapAppearanceSlice } from './mapAppearanceSlice';
 import { createTrackSlice } from './trackSlice';
+import { createProjectionSnapshotSlice } from './projectionSnapshotSlice';
 import { mergeField } from './pending';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
@@ -46,6 +47,7 @@ export const useGameStore = create<GameStore>((set) => ({
   ...createZonesSlice(set),
   ...createMapAppearanceSlice(set),
   ...createTrackSlice(set),
+  ...createProjectionSnapshotSlice(set),
 
   boats: new Map(),
   lastTickUnix: null,
