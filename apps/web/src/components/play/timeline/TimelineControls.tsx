@@ -32,12 +32,12 @@ export function TimelineControls(): React.ReactElement {
         title={isPlaying ? 'Pause' : 'Lecture'}
       >{isPlaying ? '❚❚' : '▶'}</button>
       <div className={styles.speedGroup}>
-        {[6, 24, 48].map((s) => (
+        {[60, 120, 240].map((s) => (
           <button
             key={s}
             type="button"
             className={`${styles.btn} ${styles.speedBtn} ${playbackSpeed === s ? styles.btnActive : ''}`}
-            onClick={() => setPlaybackSpeed(s as 6 | 24 | 48)}
+            onClick={() => setPlaybackSpeed(s as 60 | 120 | 240)}
             title={`Vitesse ×${s}`}
           >{s}×</button>
         ))}
