@@ -48,5 +48,22 @@ export function createSailSlice(set: (fn: (s: GameStore) => Partial<GameStore>) 
           },
         },
       })),
+    applyOptimisticManeuver: (patch: {
+      maneuverKind: 0 | 1 | 2;
+      maneuverStartMs: number;
+      maneuverEndMs: number;
+    }) =>
+      set((s) => ({
+        sail: {
+          ...s.sail,
+          maneuverKind: patch.maneuverKind,
+          maneuverStartMs: patch.maneuverStartMs,
+          maneuverEndMs: patch.maneuverEndMs,
+          pending: {
+            ...s.sail.pending,
+            maneuver: { expected: patch, since: Date.now() },
+          },
+        },
+      })),
   };
 }
