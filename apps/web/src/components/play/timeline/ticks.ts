@@ -17,16 +17,14 @@ interface BoundsInput {
   nowMs: number;
 }
 
-/** Échelle clairsemée — densifier près de NOW provoquait des chevauchements
- *  illisibles sur écrans larges. On garde les paliers utiles tactiquement. */
+/** Paliers tactiques journaliers, capés à J+5 (au-delà la prévi GFS perd
+ *  de sa précision). Les sub-day offsets ont été retirés car ils
+ *  s'écrasaient mutuellement près de NOW sur des spans longs. */
 const FUTURE_OFFSETS_MS: { off: number; label: string }[] = [
-  { off: 6 * HOUR,  label: '+6h'  },
-  { off: 12 * HOUR, label: '+12h' },
-  { off: 24 * HOUR, label: 'J+1'  },
-  { off: 48 * HOUR, label: 'J+2'  },
-  { off: 72 * HOUR, label: 'J+3'  },
-  { off: 5 * DAY,   label: 'J+5'  },
-  { off: 7 * DAY,   label: 'J+7'  },
+  { off: 24 * HOUR, label: 'J+1' },
+  { off: 48 * HOUR, label: 'J+2' },
+  { off: 72 * HOUR, label: 'J+3' },
+  { off: 5 * DAY,   label: 'J+5' },
 ];
 
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
