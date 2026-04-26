@@ -335,6 +335,14 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const nowMs = Date.now();
     const firesImmediately = (t: typeof orders[number]['trigger']): boolean =>
       t.type === 'IMMEDIATE' || (t.type === 'AT_TIME' && t.time * 1000 <= nowMs);
+    // Predicted bsp from the route's first polyline segment — what the boat
+    // will actually sail at on the new heading. Without this, the HUD vitesse
+    // stays on the old (pre-apply) value until the next server tick lands,
+    // which feels stale right after the heading flips optimistically.
+    const predictedBsp = plan.polyline[0]?.bsp ?? plan.polyline[1]?.bsp;
+    if (typeof predictedBsp === 'number' && predictedBsp > 0) {
+      state.applyOptimisticHud({ bsp: predictedBsp });
+    }
     for (const o of orders) {
       if (!firesImmediately(o.trigger)) continue;
       switch (o.type) {

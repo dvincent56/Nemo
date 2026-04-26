@@ -160,14 +160,26 @@ export default function ProgPanel(): React.ReactElement {
           // we drop it locally.
           const cutoff = Math.max(triggerMs, dispatchMs);
           if (cutoff > 0 && cutoff < lastTickMs) toRemove.push(o.id);
+        } else if (
+          o.trigger.type === 'IMMEDIATE'
+          && o.committed === true
+          && o.type === 'MODE'
+        ) {
+          // MODE orders (e.g. "Voile auto ON" emitted by the router apply
+          // flow) aren't part of any chain — once the server has ticked past
+          // the dispatch time, the engine has already ingested them and the
+          // projection no longer needs the queue entry to recover sail-auto
+          // context (the live `sail.sailAuto` state takes over). Drop so the
+          // queue doesn't accumulate stale "✓ envoyé" entries.
+          const dispatchMs = orderDispatchMs(o);
+          if (dispatchMs > 0 && dispatchMs < lastTickMs) toRemove.push(o.id);
         }
-        // NOTE: IMMEDIATE+committed orders (MODE auto, WPT chain head) are
-        // intentionally NOT removed: the projection worker reads the orderQueue
-        // and uses these orders to set the initial sail-auto state and to
-        // anchor the WPT chain. Removing them mid-projection causes the
-        // forward simulation to lose the auto-sail context (and break the
-        // WPT chain at its head), reverting to a straight-line projection.
-        // WPT orders likewise are NOT removed — see comment above.
+        // NOTE: IMMEDIATE+committed WPT orders are still NOT removed: the
+        // projection worker uses them to anchor the WPT chain. Removing the
+        // chain head mid-projection breaks every AT_WAYPOINT successor and
+        // reverts the forward simulation to a straight line. CAP/TWA
+        // IMMEDIATE+committed orders (rare — router emits them as AT_TIME)
+        // also stay until explicit user removal.
       }
 
       for (const id of toRemove) state.removeOrder(id);
