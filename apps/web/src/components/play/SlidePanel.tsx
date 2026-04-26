@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import styles from './SlidePanel.module.css';
 
 export type SlidePanelMode = 'side' | 'sheet';
@@ -13,13 +13,26 @@ interface SlidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  /**
-   * Layout mode. `side` (default) — slide-in from the side, full-height.
-   * `sheet` — anchored to the bottom, three snap points (peek / mid / full).
-   * Used for portrait phones so the map stays visible above the panel.
-   */
   mode?: SlidePanelMode;
   panelClassName?: string;
+}
+
+const SNAP_PCT: Record<SheetSnap, number> = {
+  peek: 0.10,
+  mid: 0.50,
+  full: 0.90,
+};
+
+function nearestSnap(viewportFrac: number): SheetSnap {
+  // viewportFrac = sheet height as fraction of viewport.
+  // Pick the snap whose target is closest.
+  let best: SheetSnap = 'mid';
+  let bestDist = Infinity;
+  (Object.keys(SNAP_PCT) as SheetSnap[]).forEach((k) => {
+    const d = Math.abs(SNAP_PCT[k] - viewportFrac);
+    if (d < bestDist) { best = k; bestDist = d; }
+  });
+  return best;
 }
 
 export default function SlidePanel({
@@ -27,10 +40,37 @@ export default function SlidePanel({
   mode = 'side', panelClassName,
 }: SlidePanelProps): React.ReactElement {
   const [snap, setSnap] = useState<SheetSnap>('mid');
+  const dragStartRef = useRef<{ y: number; height: number } | null>(null);
 
   const cycleSnap = useCallback(() => {
     setSnap((s) => (s === 'peek' ? 'mid' : s === 'mid' ? 'full' : 'peek'));
   }, []);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const sheet = e.currentTarget.parentElement as HTMLElement | null;
+    if (!sheet) return;
+    dragStartRef.current = { y: e.clientY, height: sheet.getBoundingClientRect().height };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (_e: React.PointerEvent<HTMLButtonElement>) => {
+    // No live resizing — wait for pointer-up and snap to nearest. Keeps the
+    // gesture simple and avoids reflow during drag.
+  };
+  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (!start) return;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dy) < 8) {
+      // Treat as tap — cycle.
+      cycleSnap();
+      return;
+    }
+    const newHeight = Math.max(0, start.height - dy);
+    const frac = newHeight / window.innerHeight;
+    setSnap(nearestSnap(frac));
+  };
 
   if (mode === 'sheet') {
     return (
@@ -42,8 +82,10 @@ export default function SlidePanel({
           <button
             type="button"
             className={styles.sheetHandle}
-            onClick={cycleSnap}
-            aria-label="Cycle panel size"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            aria-label="Redimensionner panneau"
           >
             <span className={styles.sheetHandleBar} />
           </button>
