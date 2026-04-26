@@ -127,18 +127,16 @@ export function runTick(
     aggEffects,
     autoEnableTs ?? Date.now(),
   );
-  // Use newSailState so auto-switch transitions are penalised in the same tick
-  // they start (sailState pre-advance has transitionEndMs=0 when auto-switch fires).
-  const transitionFactor = transitionSpeedFactor(newSailState, tickStartMs, aggEffects);
-
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
   if (runtime.prevTwa !== null) {
     const detected = detectManeuver(runtime.prevTwa, twaAtStart, boat.boatClass, tickStartMs, aggEffects);
     if (detected) maneuver = detected;
   }
-  const manEval = maneuverSpeedFactor(maneuver, tickStartMs);
-  if (manEval.expired) maneuver = null;
+  // Snapshot the maneuver active at tickStart for per-segment evaluation, then
+  // expire it for the runtime continuation if it ends within this tick.
+  const maneuverAtStart = maneuver;
+  if (maneuver !== null && tickStartMs >= maneuver.endMs) maneuver = null;
 
   // Facteur = 1 si une manœuvre est en cours (transition de voile OU
   // virement/empannage) : ces états ont déjà leurs propres pénalités et
@@ -163,11 +161,31 @@ export function runTick(
   // remaining tick-specific transients.
   const coreMultiplier = polarBase > 0 ? coreBsp / polarBase : 1;
 
-  const bspMultiplier = transitionFactor
-    * overlapFactor
+  // Static portion of the multiplier (constant on the whole tick).
+  // The transition (sail change) and maneuver (tack/gybe) penalties are
+  // time-bounded — they may end mid-tick. We evaluate them per segment via
+  // `perSegmentTimeModulator` so a segment that starts AFTER the penalty's end
+  // gets its full BSP, and the broadcast `bsp` (last segment) reflects the
+  // boat's instantaneous post-penalty speed.
+  const bspMultiplier = overlapFactor
     * coreMultiplier
-    * manEval.factor
     * swellFactor;
+
+  // Per-segment time modulator: evaluates transition + maneuver penalties at
+  // the segment's start time. We add transitionEndMs and maneuver.endMs as
+  // implicit segment boundaries so the post-penalty segment exists.
+  const perSegmentTimeModulator = (segStartMs: number): number => {
+    const tFactor = transitionSpeedFactor(newSailState, segStartMs, aggEffects);
+    const mFactor = maneuverSpeedFactor(maneuverAtStart, segStartMs).factor;
+    return tFactor * mFactor;
+  };
+  const extraBoundariesMs: number[] = [];
+  if (newSailState.transitionEndMs > tickStartMs && newSailState.transitionEndMs < tickEndMs) {
+    extraBoundariesMs.push(newSailState.transitionEndMs);
+  }
+  if (maneuverAtStart && maneuverAtStart.endMs > tickStartMs && maneuverAtStart.endMs < tickEndMs) {
+    extraBoundariesMs.push(maneuverAtStart.endMs);
+  }
 
   // --- Modulateur zone par segment : calcule le speedMultiplier cumulé ---
   //     des zones WARN + PENALTY qui couvrent la position de DÉPART du segment.
@@ -199,6 +217,8 @@ export function runTick(
     weather,
     bspMultiplier,
     perSegmentBspModulator: zoneModulator,
+    perSegmentTimeModulator,
+    extraBoundariesMs,
   });
 
   // --- PIP zones à chaque boundary (entrée segment = position de départ) ---

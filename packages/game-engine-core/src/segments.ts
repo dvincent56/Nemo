@@ -51,7 +51,9 @@ export interface BuildSegmentsInput {
   weather: WeatherPoint;             // on considère la météo constante sur le tick (30s)
   /**
    * Multiplicateur scalaire appliqué à la BSP polaire brute de chaque segment.
-   * Inclut conditionFactor × transitionFactor × overlapFactor × maneuverFactor.
+   * Inclut conditionFactor × overlapFactor (facteurs constants sur le tick).
+   * Les facteurs dépendant du temps (transition voile, virement/empannage) sont
+   * ré-évalués par segment via `perSegmentTimeModulator`.
    */
   bspMultiplier: number;
   /**
@@ -60,6 +62,21 @@ export interface BuildSegmentsInput {
    * Défaut 1.0 si omis.
    */
   perSegmentBspModulator?: (segStartPosition: Position) => number;
+  /**
+   * Modulateur par segment basé sur le temps de DÉBUT du segment. Utilisé pour
+   * que les pénalités à durée bornée (transition de voile, manœuvre) ne
+   * s'appliquent qu'aux segments antérieurs à leur fin — un segment qui démarre
+   * APRÈS la fin de transition obtient son facteur 1.0 et donc la BSP pleine.
+   * Défaut 1.0 si omis.
+   */
+  perSegmentTimeModulator?: (segStartMs: number) => number;
+  /**
+   * Frontières temporelles supplémentaires à insérer en plus des `effectiveTs`
+   * d'ordres. Typiquement la fin de transition voile et la fin de manœuvre, pour
+   * que le segment post-pénalité existe et soit broadcast avec la vitesse pleine.
+   * Les valeurs hors [tickStartMs, tickEndMs] sont ignorées.
+   */
+  extraBoundariesMs?: readonly number[];
 }
 
 function applyOrder(state: SegmentState, envelope: OrderEnvelope, twd: number): SegmentState {
@@ -119,7 +136,18 @@ export function buildSegments(input: BuildSegmentsInput): {
   segments: TickSegment[];
   finalState: SegmentState;
 } {
-  const { tickStartMs, tickEndMs, initialState, orders, polar, weather, bspMultiplier, perSegmentBspModulator } = input;
+  const {
+    tickStartMs,
+    tickEndMs,
+    initialState,
+    orders,
+    polar,
+    weather,
+    bspMultiplier,
+    perSegmentBspModulator,
+    perSegmentTimeModulator,
+    extraBoundariesMs,
+  } = input;
 
   // Si un twaLock est actif à l'entrée du tick, on recalcule le heading au
   // TWD courant avant de commencer.
@@ -136,6 +164,11 @@ export function buildSegments(input: BuildSegmentsInput): {
   // Boundaries dédupliqués (plusieurs ordres au même instant = un seul cut).
   const boundarySet = new Set<number>([tickStartMs, tickEndMs]);
   for (const e of events) boundarySet.add(e.effectiveTs);
+  if (extraBoundariesMs) {
+    for (const b of extraBoundariesMs) {
+      if (b > tickStartMs && b < tickEndMs) boundarySet.add(b);
+    }
+  }
   const boundaries = Array.from(boundarySet).sort((a, b) => a - b);
 
   const segments: TickSegment[] = [];
@@ -155,7 +188,8 @@ export function buildSegments(input: BuildSegmentsInput): {
     const twa = computeTWA(state.heading, weather.twd);
     const baseBsp = getPolarSpeed(polar, state.sail, twa, weather.tws);
     const perSegmentFactor = perSegmentBspModulator ? perSegmentBspModulator(state.position) : 1.0;
-    const bsp = baseBsp * bspMultiplier * perSegmentFactor;
+    const timeFactor = perSegmentTimeModulator ? perSegmentTimeModulator(segStart) : 1.0;
+    const bsp = baseBsp * bspMultiplier * perSegmentFactor * timeFactor;
 
     const durationSec = (segEnd - segStart) / 1000;
     const endPos = advancePosition(state.position, state.heading, bsp, durationSec);
