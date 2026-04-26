@@ -327,16 +327,32 @@
 
 /* Phone */
 @media (max-width: 600px) {
-  .app { --hud-h: 44px; --timeline-h: 88px; }   /* 2-row stack: header+controls / track */
+  .app { --hud-h: 44px; --timeline-h: 96px; }
   .leftStack { left: 8px; bottom: 8px; gap: 4px; }
   .rightStack {
     bottom: 8px; right: 8px;
-    gap: 4px;
+    width: 132px;
+    gap: 6px;
+    align-items: stretch;
   }
-  .actionButtons { flex-direction: row; justify-content: flex-end; gap: 4px; }
-  .actionBtn { width: 38px; height: 38px; }
+  .actionButtons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    flex-direction: row;
+    gap: 4px;
+    height: 36px;
+  }
+  .actionBtn {
+    width: auto;
+    height: 36px;
+    flex-direction: row;
+    justify-content: center;
+  }
+  .actionBtn > span:not(.actionBtnIcon) { display: none; }
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
+
+  /* Zoom rules from Task 3 — preserved */
   .zoomCompact {
     top: 8px;
     right: 8px;
@@ -349,19 +365,34 @@
   }
 }
 
-/* Landscape with small height — idem : marge et gap identiques des deux
- * côtés pour que le layout panel descende au même niveau que le compass. */
+/* Landscape with small height */
 @media (max-height: 500px) {
   .app { --hud-h: 44px; --timeline-h: 76px; }
-  .leftStack { left: 6px; bottom: 6px; gap: 4px; }
-  .rightStack { bottom: 6px; right: 6px; gap: 4px; }
-  .actionButtons { flex-direction: row; gap: 4px; }
-  .actionBtn { width: 38px; height: 38px; gap: 0; }
+  .leftStack { left: 8px; bottom: 8px; gap: 4px; }
+  .rightStack {
+    bottom: 8px; right: 8px;
+    width: 132px;
+    gap: 6px;
+    align-items: stretch;
+  }
+  .actionButtons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    flex-direction: row;
+    gap: 4px;
+    height: 36px;
+  }
+  .actionBtn {
+    width: auto;
+    height: 36px;
+    flex-direction: row;
+    justify-content: center;
+  }
   .actionBtn > span:not(.actionBtnIcon) { display: none; }
-
-  /* Same ranking FAB as portrait mobile */
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
+
+  /* Zoom rules from Task 3 — preserved */
   .zoomCompact {
     top: 8px;
     right: 8px;
