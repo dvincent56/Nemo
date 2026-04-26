@@ -361,11 +361,22 @@ export default function SwellOverlay(): React.ReactElement {
     };
     window.addEventListener('resize', onResize);
 
+    // When the tab is hidden then becomes visible again, browsers may drop
+    // the queued rAF callback, breaking the self-perpetuating loop. Restart
+    // the loop fresh on every visibility return.
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(animate);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       cancelAnimationFrame(animRef.current);
       animRef.current = 0;
       particlesRef.current = [];
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', handleVisibility);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     };
