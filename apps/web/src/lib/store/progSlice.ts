@@ -19,5 +19,7 @@ export function createProgSlice(set: (fn: (s: GameStore) => Partial<GameStore>) 
       }),
     commitQueue: () =>
       set((s) => ({ prog: { ...s.prog, serverQueue: [...s.prog.orderQueue] } })),
+    replaceOrderQueue: (orders: OrderEntry[]) =>
+      set((s) => ({ prog: { ...s.prog, orderQueue: orders } })),
   };
 }

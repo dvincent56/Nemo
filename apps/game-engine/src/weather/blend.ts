@@ -1,6 +1,6 @@
 import type { WeatherPoint } from '@nemo/shared-types';
 import { getForecastAt, type WeatherGridUV } from './grid.js';
-import { lerp, recomposeAngle } from './grid-uv.js';
+import { lerp, recomposeAngle, round3 } from './grid-uv.js';
 
 export const BLEND_DURATION_MS = 3_600_000; // 1 hour
 
@@ -47,8 +47,8 @@ export function blendGridForecast(
   const mwdCos = lerp(Math.cos(mwdRadA), Math.cos(mwdRadB), alpha);
 
   return {
-    tws,
-    twd,
+    tws: round3(tws),
+    twd: round3(twd),
     swh: lerp(pointA.swh, pointB.swh, alpha),
     mwd: recomposeAngle(mwdSin, mwdCos),
     mwp: lerp(pointA.mwp, pointB.mwp, alpha),

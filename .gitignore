@@ -95,3 +95,6 @@ apps/game-engine/fixtures/*.grib2
 apps/game-engine/fixtures/*.nc
 .superpowers/
 .worktrees/
+
+# Worktrees
+.worktrees/

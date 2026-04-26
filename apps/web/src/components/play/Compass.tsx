@@ -138,11 +138,12 @@ export default function Compass(): React.ReactElement {
   const vmgGlow = isInVmgZone(displayTwa);
 
   const polar = (polarReady && boatClass) ? getCachedPolar(boatClass) : null;
-  // At rest: show actual server BSP (matches HUD exactly, includes all factors).
-  // During drag: show polar estimate at the target heading (predictive mode).
-  const isDragging = targetHdg !== null && targetHdg !== hdg;
-  const displayBsp = isDragging
-    ? (polar ? getPolarSpeed(polar, currentSail, displayTwa, tws) * bspBaseMultiplier : 0)
+  // Vitesse estimée d'après la polaire (TWS, TWA affiché, voile courante) × multiplicateur
+  // de base. Exclut volontairement les pénalités transitoires (transition de voile,
+  // manœuvre, zone) : le HUD montre déjà la vitesse réelle réduite, le compass sert
+  // de référence "régime établi" pour la voile/cap actuels (et le cap cible en drag).
+  const displayBsp = polar
+    ? getPolarSpeed(polar, currentSail, displayTwa, tws) * bspBaseMultiplier
     : actualBsp;
 
   // Efficacité : compare la voile active à la meilleure voile au même TWA/TWS.

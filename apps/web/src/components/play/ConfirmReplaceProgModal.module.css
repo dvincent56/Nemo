@@ -1,0 +1,32 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.dialog {
+  background: #0c1424;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 6px;
+  padding: 24px;
+  max-width: 400px;
+  color: #f5f0e8;
+  font-family: sans-serif;
+}
+.title { font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: 0.1em; margin: 0 0 12px; color: #c9a227; }
+.body { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.cancel, .confirm {
+  padding: 8px 14px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.cancel { background: transparent; color: #8fa8c8; border: 1px solid rgba(245, 240, 232, 0.16); }
+.confirm { background: #c9a227; color: #1a2840; border: none; }

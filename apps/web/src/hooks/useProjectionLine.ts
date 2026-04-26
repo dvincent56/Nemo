@@ -269,24 +269,50 @@ function toProjectionZone(z: ExclusionZone): ProjectionZone | null {
 }
 
 /**
- * Convert store's orderQueue to ProjectionSegments.
+ * Convert store's orderQueue to ProjectionSegments. Includes WPT orders so
+ * the projection follows the route's waypoints (mirrors the engine tick's
+ * applyOrder WPT case which recomputes heading toward the active waypoint).
+ * AT_WAYPOINT triggers don't carry a time — they cascade — so we record the
+ * predecessor id and let the worker activate WPTs sequentially as they are
+ * captured.
  */
-function orderQueueToSegments(queue: Array<{ type: string; trigger: { type: string; time?: number }; value: Record<string, unknown> }>): ProjectionSegment[] {
+function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: { type: string; time?: number; waypointOrderId?: string }; value: Record<string, unknown> }>): ProjectionSegment[] {
   return queue
-    .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE')
-    .map((o) => {
-      let value: number | string | boolean;
+    .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE' || o.type === 'WPT')
+    .map((o): ProjectionSegment => {
+      let value: ProjectionSegment['value'];
       if (o.type === 'CAP') value = Number(o.value['heading'] ?? o.value['cap'] ?? 0);
       else if (o.type === 'TWA') value = Number(o.value['twa'] ?? 0);
       else if (o.type === 'SAIL') value = String(o.value['sail'] ?? 'JIB');
-      else value = Boolean(o.value['auto'] ?? false);
+      else if (o.type === 'MODE') value = Boolean(o.value['auto'] ?? false);
+      else {
+        // WPT
+        const lat = Number(o.value['lat'] ?? 0);
+        const lon = Number(o.value['lon'] ?? 0);
+        const radiusRaw = Number(o.value['captureRadiusNm']);
+        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.5;
+        value = { lat, lon, captureRadiusNm };
+      }
 
       let triggerMs = Date.now();
       if (o.trigger.type === 'AT_TIME' && o.trigger.time) {
-        triggerMs = o.trigger.time;
+        // OrderTrigger.time is Unix seconds (matches engine convention
+        // `nowUnix >= trigger.time`); the projection worker expects
+        // millisecond timestamps for triggerMs. Without this conversion the
+        // segment fires "in the past" (~1.7e9 vs currentMs ~1.7e12) and the
+        // worker applies all CAP/TWA orders on the first iteration —
+        // collapsing the projection to a straight line in the last heading.
+        triggerMs = o.trigger.time * 1000;
       }
 
-      return { triggerMs, type: o.type as ProjectionSegment['type'], value };
+      const seg: ProjectionSegment = { triggerMs, type: o.type as ProjectionSegment['type'], value };
+      if (o.type === 'WPT') {
+        seg.id = o.id;
+        if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
+          seg.waypointPredecessorId = o.trigger.waypointOrderId;
+        }
+      }
+      return seg;
     });
 }
 
@@ -331,6 +357,27 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       });
       return;
     }
+    // Sanity log: if the map ever reports more than one layer for any of the
+    // projection-* ids the duplicate render bug has reappeared. MapLibre's
+    // public API only allows a single layer per id, so this should never
+    // fire — but the log makes regressions visible immediately.
+    if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      const styleLayers = m.getStyle().layers ?? [];
+      const counts: Record<string, number> = {};
+      for (const layer of styleLayers) {
+        if (
+          layer.id === 'projection-line-layer' ||
+          layer.id === 'projection-markers-time-circle' ||
+          layer.id === 'projection-markers-time-label' ||
+          layer.id === 'projection-markers-maneuver-icon'
+        ) {
+          counts[layer.id] = (counts[layer.id] ?? 0) + 1;
+        }
+      }
+      for (const [id, n] of Object.entries(counts)) {
+        if (n > 1) console.warn('[useProjectionLine] DUPLICATE projection layer detected:', id, '×', n);
+      }
+    }
     const map = m;
     const buf = result.pointsBuf;
     const count = result.pointsCount;
@@ -373,14 +420,20 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const timeSrc = map.getSource('projection-markers-time') as maplibregl.GeoJSONSource | undefined;
     timeSrc?.setData({ type: 'FeatureCollection', features: timeFeatures });
 
-    // Maneuver markers source
+    // Maneuver markers source. When the marker carries explicit lat/lon
+    // (currently only WPT-capture markers), use those directly so the marker
+    // sits at the true WPT bend rather than the polyline vertex before it.
+    // Other markers (sail changes, tack/gybe, zone entries…) keep the legacy
+    // pointsBuf[index] lookup.
     const manFeatures: GeoJSON.Feature[] = result.maneuverMarkers
       .map((m) => {
         if (m.index < 0 || m.index >= count) return null;
         const b = m.index * 6;
+        const lat = m.lat ?? buf[b]!;
+        const lon = m.lon ?? buf[b + 1]!;
         return {
           type: 'Feature',
-          geometry: { type: 'Point', coordinates: [buf[b + 1]!, buf[b]!] },
+          geometry: { type: 'Point', coordinates: [lon, lat] },
           properties: {
             type: m.type,
             detail: m.detail,

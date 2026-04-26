@@ -34,11 +34,15 @@ export function createWeatherSlice(set: (fn: (s: GameStore) => Partial<GameStore
       }),
     setGfsStatus: (status: GfsStatus) =>
       set((s) => ({ weather: { ...s.weather, gfsStatus: status } })),
-    setTacticalTile: (grid: WeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) =>
+    setTacticalTile: (
+      grid: WeatherGrid | null,
+      decoded: DecodedWeatherGrid | null,
+      bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null,
+    ) =>
       set((s) => ({
         weather: {
           ...s.weather,
-          tacticalTile: (grid && bounds) ? { grid, bounds } : null,
+          tacticalTile: (grid && decoded && bounds) ? { grid, decoded, bounds } : null,
         },
       })),
   };

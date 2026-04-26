@@ -7,7 +7,7 @@ test('browser entry does not drag node:fs or node:path', async () => {
   const files = [
     'src/browser.ts', 'src/index.ts', 'src/tick.ts', 'src/sails.ts',
     'src/segments.ts', 'src/wear.ts', 'src/bands.ts', 'src/zones.ts',
-    'src/loadout.ts', 'src/coastline.ts', 'src/weather.ts',
+    'src/loadout.ts', 'src/coastline.ts', 'src/weather.ts', 'src/geo.ts',
   ];
   for (const rel of files) {
     const content = readFileSync(resolve(rel), 'utf-8');

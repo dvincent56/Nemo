@@ -699,8 +699,8 @@
             0
           ],
           "speedByTws": [
-            -0.03,
-            0.0,
+            -0.01,
+            0.03,
             0.04
           ],
           "wearMul": {
@@ -709,11 +709,13 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 8
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.03,
+              0.02,
               0,
               0
             ]
@@ -740,8 +742,8 @@
             0.05
           ],
           "speedByTws": [
-            -0.05,
-            0.01,
+            -0.02,
+            0.06,
             0.1
           ],
           "wearMul": {
@@ -750,12 +752,14 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 10
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.05,
-              -0.02,
+              0,
+              -0.01,
               0
             ]
           }
@@ -784,8 +788,8 @@
             0.1
           ],
           "speedByTws": [
-            -0.07,
-            0.02,
+            -0.03,
+            0.08,
             0.14
           ],
           "wearMul": {
@@ -794,12 +798,14 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.08,
-              -0.04,
+              -0.01,
+              -0.01,
               0
             ]
           }
@@ -1284,8 +1290,8 @@
             0.02
           ],
           "speedByTws": [
-            -0.02,
-            0.0,
+            0,
+            0.03,
             0.02
           ],
           "wearMul": {
@@ -1294,11 +1300,13 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 8
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.02,
+              0.01,
               0,
               0
             ]
@@ -1449,8 +1457,8 @@
             0.04
           ],
           "speedByTws": [
-            -0.03,
-            0.01,
+            -0.01,
+            0.06,
             0.04
           ],
           "wearMul": {
@@ -1459,11 +1467,13 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 10
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.04,
+              0,
               0,
               0
             ]
@@ -1745,8 +1755,8 @@
             0.1
           ],
           "speedByTws": [
-            -0.03,
-            0.02,
+            -0.02,
+            0.08,
             0.1
           ],
           "wearMul": {
@@ -1755,12 +1765,14 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 12
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.06,
-              -0.02,
+              -0.01,
+              -0.01,
               0
             ]
           }
@@ -1910,8 +1922,8 @@
             0
           ],
           "speedByTws": [
-            -0.02,
-            0.0,
+            -0.01,
+            0.02,
             0.02
           ],
           "wearMul": {
@@ -1920,11 +1932,13 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
+          "activation": {
+            "minTws": 8
+          },
           "groundingLossMul": null,
           "passiveEffects": {
             "speedByTws": [
-              -0.02,
+              0.01,
               0,
               0
             ]
@@ -2136,15 +2150,15 @@
         "cost": 45000,
         "effects": {
           "speedByTwa": [
-            0,
-            0,
-            0,
-            0,
-            0
+            -0.02,
+            -0.01,
+            0.06,
+            0.12,
+            0.05
           ],
           "speedByTws": [
-            -0.03,
-            0.01,
+            -0.01,
+            0.05,
             0.07
           ],
           "wearMul": {
@@ -2152,8 +2166,17 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
-          "groundingLossMul": null
+          "activation": {
+            "minTws": 8
+          },
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [
+              0.02,
+              0,
+              0
+            ]
+          }
         }
       },
       {
@@ -2169,15 +2192,15 @@
         "cost": 80000,
         "effects": {
           "speedByTwa": [
-            0,
-            0,
-            0,
-            0,
-            0
+            -0.03,
+            -0.02,
+            0.10,
+            0.22,
+            0.10
           ],
           "speedByTws": [
-            -0.06,
-            0.02,
+            -0.03,
+            0.08,
             0.12
           ],
           "wearMul": {
@@ -2185,8 +2208,17 @@
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {},
-          "groundingLossMul": null
+          "activation": {
+            "minTws": 10
+          },
+          "groundingLossMul": null,
+          "passiveEffects": {
+            "speedByTws": [
+              0,
+              0,
+              0
+            ]
+          }
         }
       }
     ]

@@ -31,6 +31,13 @@ export function useHotkeys(canInteract: boolean): void {
           if (store.panel.activePanel === 'programming') store.closePanel();
           else store.openPanel('programming');
           break;
+        case 'r':
+        case 'R': {
+          e.preventDefault();
+          if (store.panel.activePanel === 'router') store.closePanel();
+          else store.openPanel('router');
+          break;
+        }
         case 'c':
         case 'C':
           e.preventDefault();

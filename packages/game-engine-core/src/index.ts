@@ -69,3 +69,5 @@ export { bandFor } from './bands';
 export type { WeatherProvider, WeatherPoint, WindGridConfig } from './weather';
 
 export { CoastlineIndex, type CoastGeometry } from './coastline';
+
+export { supersedeWaypointsByCapTwa } from './orderHistory';

@@ -129,19 +129,19 @@ export interface RouterState {
 }
 
 export interface RouterActions {
-  openRouter(): void;
-  closeRouter(): void;
-  enterPlacingMode(): void;
-  exitPlacingMode(): void;
-  setDestination(lat: number, lon: number): void;
-  setRouterPreset(p: RouterPreset): void;
-  setCoastDetection(v: boolean): void;
-  setConeHalfDeg(deg: number): void;
+  openRouter: () => void;
+  closeRouter: () => void;
+  enterPlacingMode: () => void;
+  exitPlacingMode: () => void;
+  setRouterDestination: (lat: number, lon: number) => void;
+  setRouterPreset: (p: RouterPreset) => void;
+  setRouterCoastDetection: (v: boolean) => void;
+  setRouterConeHalfDeg: (deg: number) => void;
   /** Returns the new calcGenId for the caller to track. */
-  startRouterCalculation(): number;
-  setRouteResult(plan: RoutePlan, genId: number): void;
-  setRouteError(msg: string, genId: number): void;
-  clearRoute(): void;
+  startRouteCalculation: () => number;
+  setRouteResult: (plan: RoutePlan, genId: number) => void;
+  setRouteError: (msg: string, genId: number) => void;
+  clearRoute: () => void;
 }
 ```
 
@@ -222,43 +222,43 @@ describe('routerSlice', () => {
     expect(useGameStore.getState().router.phase).toBe('placing');
   });
 
-  it('setDestination returns to idle and stores coords', () => {
+  it('setRouterDestination returns to idle and stores coords', () => {
     useGameStore.getState().enterPlacingMode();
-    useGameStore.getState().setDestination(46.5, -4.2);
+    useGameStore.getState().setRouterDestination(46.5, -4.2);
     const { phase, destination } = useGameStore.getState().router;
     expect(phase).toBe('idle');
     expect(destination).toEqual({ lat: 46.5, lon: -4.2 });
   });
 
-  it('startRouterCalculation increments calcGenId and switches phase', () => {
-    const genA = useGameStore.getState().startRouterCalculation();
+  it('startRouteCalculation increments calcGenId and switches phase', () => {
+    const genA = useGameStore.getState().startRouteCalculation();
     expect(useGameStore.getState().router.phase).toBe('calculating');
     expect(useGameStore.getState().router.calcGenId).toBe(genA);
-    const genB = useGameStore.getState().startRouterCalculation();
+    const genB = useGameStore.getState().startRouteCalculation();
     expect(genB).toBe(genA + 1);
   });
 
   it('setRouteResult only applies if genId matches current calcGenId', () => {
-    const gen = useGameStore.getState().startRouterCalculation();
+    const gen = useGameStore.getState().startRouteCalculation();
     useGameStore.getState().setRouteResult({} as never, gen);
     expect(useGameStore.getState().router.phase).toBe('results');
 
     // Stale result (lower genId) is ignored
-    useGameStore.getState().startRouterCalculation();
+    useGameStore.getState().startRouteCalculation();
     useGameStore.getState().setRouteResult({ stale: true } as never, gen);
     expect(useGameStore.getState().router.phase).toBe('calculating');
   });
 
   it('setRouteError applies only if genId matches', () => {
-    const gen = useGameStore.getState().startRouterCalculation();
+    const gen = useGameStore.getState().startRouteCalculation();
     useGameStore.getState().setRouteError('boom', gen);
     expect(useGameStore.getState().router.phase).toBe('idle');
     expect(useGameStore.getState().router.error).toBe('boom');
   });
 
   it('clearRoute removes computedRoute without changing phase or destination', () => {
-    useGameStore.getState().setDestination(46, -4);
-    const gen = useGameStore.getState().startRouterCalculation();
+    useGameStore.getState().setRouterDestination(46, -4);
+    const gen = useGameStore.getState().startRouteCalculation();
     useGameStore.getState().setRouteResult({} as never, gen);
     useGameStore.getState().clearRoute();
     expect(useGameStore.getState().router.computedRoute).toBe(null);
@@ -266,8 +266,8 @@ describe('routerSlice', () => {
   });
 
   it('opening another panel closes router and clears its route', () => {
-    useGameStore.getState().setDestination(46, -4);
-    const gen = useGameStore.getState().startRouterCalculation();
+    useGameStore.getState().setRouterDestination(46, -4);
+    const gen = useGameStore.getState().startRouteCalculation();
     useGameStore.getState().setRouteResult({} as never, gen);
     useGameStore.getState().openRouter();
     useGameStore.getState().openPanel('sails');
@@ -325,19 +325,19 @@ export function createRouterSlice(
     exitPlacingMode: () =>
       set((s) => ({ router: { ...s.router, phase: s.router.phase === 'placing' ? 'idle' : s.router.phase } })),
 
-    setDestination: (lat: number, lon: number) =>
+    setRouterDestination: (lat: number, lon: number) =>
       set((s) => ({ router: { ...s.router, phase: 'idle', destination: { lat, lon }, computedRoute: null, error: null } })),
 
     setRouterPreset: (preset: RouterState['preset']) =>
       set((s) => ({ router: { ...s.router, preset, computedRoute: null } })),
 
-    setCoastDetection: (coastDetection: boolean) =>
+    setRouterCoastDetection: (coastDetection: boolean) =>
       set((s) => ({ router: { ...s.router, coastDetection, computedRoute: null } })),
 
-    setConeHalfDeg: (coneHalfDeg: number) =>
+    setRouterConeHalfDeg: (coneHalfDeg: number) =>
       set((s) => ({ router: { ...s.router, coneHalfDeg, computedRoute: null } })),
 
-    startRouterCalculation: (): number => {
+    startRouteCalculation: (): number => {
       const next = get().router.calcGenId + 1;
       set((s) => ({ router: { ...s.router, phase: 'calculating', error: null, calcGenId: next } }));
       return next;
@@ -964,8 +964,8 @@ export default function RouterControls({ disabled }: Props): React.ReactElement 
   const coast = useGameStore((s) => s.router.coastDetection);
   const cone = useGameStore((s) => s.router.coneHalfDeg);
   const setPreset = useGameStore((s) => s.setRouterPreset);
-  const setCoast = useGameStore((s) => s.setCoastDetection);
-  const setCone = useGameStore((s) => s.setConeHalfDeg);
+  const setCoast = useGameStore((s) => s.setRouterCoastDetection);
+  const setCone = useGameStore((s) => s.setRouterConeHalfDeg);
 
   return (
     <div className={styles.controls} aria-disabled={disabled}>
@@ -1181,14 +1181,20 @@ function ResultsBlock({
   onApply: (mode: 'WAYPOINTS' | 'CAP') => void;
 }): React.ReactElement {
   const totalNm = plan.totalDistanceNm.toFixed(0);
-  const etaH = Math.floor(plan.eta / 3600);
-  const etaM = Math.floor((plan.eta % 3600) / 60);
+  // RoutePlan.eta is an absolute ms timestamp (arrivalPoint.timeMs), or
+  // +Infinity if the route did not reach the goal. Compute elapsed duration
+  // from the route's start point.
+  const startMs = plan.polyline[0]?.timeMs ?? 0;
+  const elapsedSec = Number.isFinite(plan.eta) ? Math.max(0, (plan.eta - startMs) / 1000) : null;
+  const etaLabel = elapsedSec === null
+    ? '—'
+    : `+${Math.floor(elapsedSec / 3600)}h ${Math.floor((elapsedSec % 3600) / 60)}m`;
   return (
     <section className={styles.results}>
       <div className={styles.resultsHead}>✓ ROUTE CALCULÉE</div>
       <div className={styles.resultsGrid}>
         <div><span className={styles.metricLabel}>Distance</span><br /><strong>{totalNm} nm</strong></div>
-        <div><span className={styles.metricLabel}>ETA</span><br /><strong>+{etaH}h {etaM}m</strong></div>
+        <div><span className={styles.metricLabel}>ETA</span><br /><strong>{etaLabel}</strong></div>
         <div><span className={styles.metricLabel}>Calcul</span><br /><strong>{(plan.computeTimeMs / 1000).toFixed(1)}s</strong></div>
         <div><span className={styles.metricLabel}>Manœuvres</span><br /><strong>{plan.capSchedule.length}</strong></div>
       </div>
@@ -1427,7 +1433,7 @@ In `MapCanvas.tsx`, near the other `map.on()` registrations, add:
 
 ```tsx
 const routerPhase = useGameStore((s) => s.router.phase);
-const setDestination = useGameStore((s) => s.setDestination);
+const setRouterDestination = useGameStore((s) => s.setRouterDestination);
 
 useEffect(() => {
   const map = (window as unknown as { mapInstance?: maplibregl.Map }).mapInstance;
@@ -1435,11 +1441,11 @@ useEffect(() => {
   if (routerPhase !== 'placing') return;
 
   const handleMapClick = (e: maplibregl.MapMouseEvent) => {
-    setDestination(e.lngLat.lat, e.lngLat.lng);
+    setRouterDestination(e.lngLat.lat, e.lngLat.lng);
   };
   map.on('click', handleMapClick);
   return () => { map.off('click', handleMapClick); };
-}, [routerPhase, setDestination]);
+}, [routerPhase, setRouterDestination]);
 ```
 
 (Adjust the `mapInstance` access pattern to whatever the file currently uses — `useRef`, global, etc.)
@@ -1606,7 +1612,7 @@ useEffect(() => {
     const polar = boatClass ? getCachedPolar(boatClass) : null;
     if (!dest || !decodedGrid || !polar) return;
 
-    const genId = state.startRouterCalculation();
+    const genId = state.startRouteCalculation();
 
     try {
       const input = {

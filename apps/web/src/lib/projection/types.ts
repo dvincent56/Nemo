@@ -52,12 +52,22 @@ export interface WindGridHeader {
 }
 
 export interface ProjectionSegment {
-  /** When this order triggers (ms timestamp) */
+  /** When this order triggers (ms timestamp). For WPT orders chained via
+   *  AT_WAYPOINT, this is the projected origin time (Date.now()) — the
+   *  worker activates them sequentially as previous WPTs are captured. */
   triggerMs: number;
   /** Order type */
-  type: 'CAP' | 'TWA' | 'SAIL' | 'MODE';
-  /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for MODE */
-  value: number | string | boolean;
+  type: 'CAP' | 'TWA' | 'SAIL' | 'MODE' | 'WPT';
+  /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for
+   *  MODE, or { lat, lon, captureRadiusNm } for WPT. */
+  value: number | string | boolean | { lat: number; lon: number; captureRadiusNm: number };
+  /** For WPT only: id of the previous WPT in the AT_WAYPOINT chain. The
+   *  worker uses this to activate WPTs sequentially: a WPT becomes the
+   *  active waypoint only after its predecessor is captured. IMMEDIATE-
+   *  triggered WPTs (the first in the chain) leave this undefined. */
+  waypointPredecessorId?: string;
+  /** WPT-only stable id used to resolve waypointPredecessorId. */
+  id?: string;
 }
 
 export interface ProjectionZone {
@@ -105,6 +115,12 @@ export interface ManeuverMarker {
   index: number;
   type: 'tack' | 'gybe' | 'sail_change' | 'cap_change' | 'twa_change' | 'grounding' | 'zone_entry';
   detail: string;
+  /** Optional explicit coordinates. When provided, the renderer places the
+   *  marker at (lat, lon) instead of looking up pointsBuf[index]. Used for
+   *  WPT-capture markers so they sit at the actual WPT location (the visual
+   *  bend) rather than the polyline vertex just before capture. */
+  lat?: number;
+  lon?: number;
 }
 
 /**

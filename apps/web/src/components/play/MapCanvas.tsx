@@ -89,6 +89,155 @@ const trailCoords: [number, number][] = [];
 /** Expose the MapLibre map instance for other components (WindOverlay) */
 export let mapInstance: maplibregl.Map | null = null;
 
+const PROJECTION_LAYER_IDS = [
+  'projection-line-layer',
+  'projection-markers-time-circle',
+  'projection-markers-time-label',
+  'projection-markers-maneuver-icon',
+] as const;
+const PROJECTION_SOURCE_IDS = [
+  'projection-line',
+  'projection-markers-time',
+  'projection-markers-maneuver',
+] as const;
+
+/**
+ * Idempotent (un)installer for the projection-* sources + layers. Removes
+ * any pre-existing instance of each id (layers before sources, since layers
+ * hold references to sources) before re-adding. Safe to call repeatedly on
+ * the same map: the result is always exactly one projection-* set.
+ *
+ * The earlier "bail if already installed" guard didn't survive in practice —
+ * something we couldn't reliably reproduce was leaving stale layers behind
+ * (StrictMode double-mount, style hot-swap, sibling code re-adding via a
+ * cached `mapInstance` reference). Sweeping unconditionally is the only
+ * defensible fix; it costs ~6 getLayer calls + 0 add calls when a clean
+ * install just happened, and a full sweep + re-add when something was
+ * stale — both cheap.
+ */
+function installProjectionLayers(map: maplibregl.Map): void {
+  // Detect-and-log duplicates so we can confirm the fix in dev console. If
+  // a layer/source already exists, we know SOMETHING re-entered the install
+  // path — the sweep below will neutralise it but the log makes it visible.
+  for (const id of PROJECTION_LAYER_IDS) {
+    if (map.getLayer(id)) {
+      console.warn('[MapCanvas] projection layer already exists, sweeping:', id);
+    }
+  }
+  for (const id of PROJECTION_SOURCE_IDS) {
+    if (map.getSource(id)) {
+      console.warn('[MapCanvas] projection source already exists, sweeping:', id);
+    }
+  }
+
+  // Layers first — removing a source while a layer references it throws.
+  for (const id of PROJECTION_LAYER_IDS) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  for (const id of PROJECTION_SOURCE_IDS) {
+    if (map.getSource(id)) map.removeSource(id);
+  }
+
+  map.addSource('projection-line', {
+    type: 'geojson',
+    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+    lineMetrics: true,
+  });
+  map.addLayer({
+    id: 'projection-line-layer',
+    type: 'line',
+    source: 'projection-line',
+    layout: {
+      // `round` joins/caps prevent miter-overflow spikes at sharp bends —
+      // observed at WPT captures where the heading flips from "toward wpt_i"
+      // to "toward wpt_{i+1}" across a single vertex, producing a visible
+      // spur with the default `miter` join. Round bends look cleaner and
+      // are imperceptible at non-sharp angles.
+      'line-join': 'round',
+      'line-cap': 'round',
+    },
+    paint: {
+      // Initial fallback gradient — the hook overwrites it on first compute
+      // with a per-vertex color ramp keyed on bspRatio along line-progress.
+      'line-gradient': [
+        'interpolate', ['linear'], ['line-progress'],
+        0, '#27ae60', 1, '#27ae60',
+      ],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
+      'line-opacity': 0.85,
+    },
+  });
+
+  map.addSource('projection-markers-time', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'projection-markers-time-circle',
+    type: 'circle',
+    source: 'projection-markers-time',
+    paint: {
+      'circle-radius': [
+        'case', ['==', ['get', 'label'], ''], 2, 4,
+      ],
+      'circle-color': '#f5f0e8',
+      'circle-stroke-color': '#1a2744',
+      'circle-stroke-width': [
+        'case', ['==', ['get', 'label'], ''], 0.5, 1.5,
+      ],
+      'circle-opacity': [
+        'case', ['==', ['get', 'label'], ''], 0.6, 1,
+      ],
+    },
+  });
+  map.addLayer({
+    id: 'projection-markers-time-label',
+    type: 'symbol',
+    source: 'projection-markers-time',
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-size': 11,
+      'text-offset': [0, -1.2],
+      'text-allow-overlap': true,
+    },
+    paint: {
+      'text-color': '#f5f0e8',
+      'text-halo-color': 'rgba(10, 22, 40, 0.8)',
+      'text-halo-width': 1,
+    },
+  });
+
+  map.addSource('projection-markers-maneuver', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'projection-markers-maneuver-icon',
+    type: 'circle',
+    source: 'projection-markers-maneuver',
+    paint: {
+      'circle-radius': [
+        'case', ['==', ['get', 'type'], 'grounding'], 7, 5,
+      ],
+      'circle-color': [
+        'case', ['==', ['get', 'type'], 'grounding'], '#c0392b', '#c9a84c',
+      ],
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 1.5,
+    },
+  });
+}
+
+/**
+ * Public sweep — used by `useProjectionLine` if it ever observes that a
+ * projection-* source has somehow disappeared (post-style-reload, etc.) so
+ * the sweep+install can re-run from outside the load handler. Currently
+ * unused but kept ready for the recovery path.
+ */
+export function sweepAndReinstallProjectionLayers(map: maplibregl.Map): void {
+  installProjectionLayers(map);
+}
+
 /** Flag to avoid zoom feedback loop (map move → store → map zoom) */
 let _syncingFromMap = false;
 
@@ -106,6 +255,13 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [readyMap, setReadyMap] = useState<maplibregl.Map | null>(null);
+  // Bookkeeping ref: tracks which map instance owns the currently-installed
+  // projection-* layers. The install function itself sweeps unconditionally
+  // (so it doesn't need this ref to stay correct), but cleanup uses it to
+  // distinguish "never installed" from "installed on this map instance"
+  // — and the `useProjectionLine` recovery path could read it to decide
+  // whether a reinstall is needed.
+  const projectionInstalledRef = useRef<maplibregl.Map | null>(null);
   useProjectionLine(enableProjection ? readyMap : null);
 
   /* ── simTimeMs: override weather grid time for dev simulator ── */
@@ -135,6 +291,57 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     });
     mapRef.current = map;
     mapInstance = map;
+
+    // Dev-only debug helper: dump the live MapLibre style state. Lets the
+     // user run `__debugMap()` in the browser console to enumerate every
+     // source + layer currently installed on the map. We need this to confirm
+     // whether the "two projection lines + duplicated markers" report is a
+     // duplicate-layer issue (multiple layer ids), a multiple-source issue,
+     // or something else (e.g. the fallback green gradient never overwritten,
+     // a stale RouteLayer leak, an IsochroneLayer leak, etc.).
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __debugMap?: () => void }).__debugMap = () => {
+        const m = mapRef.current;
+        if (!m) { console.warn('[__debugMap] no map instance'); return; }
+        const style = m.getStyle();
+        const sources = style.sources ?? {};
+        const layers = style.layers ?? [];
+        console.group('[__debugMap] sources (' + Object.keys(sources).length + ')');
+        for (const id of Object.keys(sources)) {
+          const src = (sources as Record<string, unknown>)[id];
+          console.log(id, src);
+        }
+        console.groupEnd();
+        console.group('[__debugMap] layers (' + layers.length + ')');
+        for (const layer of layers) {
+          const src = (layer as { source?: string }).source;
+          const paint = (layer as { paint?: unknown }).paint;
+          console.log(layer.id + ' (type=' + layer.type + ', source=' + (src ?? '<none>') + ')', paint);
+        }
+        console.groupEnd();
+        const projLayers = layers.filter((l) => {
+          const src = (l as { source?: string }).source ?? '';
+          return l.id.startsWith('projection') || src.startsWith('projection');
+        });
+        const simLayers = layers.filter((l) => {
+          const src = (l as { source?: string }).source ?? '';
+          return l.id.startsWith('sim-') || src.startsWith('sim-');
+        });
+        const greenLayers = layers.filter((l) => {
+          const paint = JSON.stringify((l as { paint?: unknown }).paint ?? {});
+          return /#?27ae60|#?2ecc71|#?5cc88c|#?5fc|"green"/i.test(paint);
+        });
+        console.log('[__debugMap] projection layers count:', projLayers.length, projLayers.map((l) => l.id));
+        console.log('[__debugMap] sim-* layers count:', simLayers.length, simLayers.map((l) => l.id));
+        console.log('[__debugMap] layers with GREEN paint:', greenLayers.length, greenLayers.map((l) => l.id));
+        // Also report current paint of the projection-line-layer so we can
+        // tell whether the gradient was ever overwritten by useProjectionLine.
+        if (m.getLayer('projection-line-layer')) {
+          const grad = m.getPaintProperty('projection-line-layer', 'line-gradient');
+          console.log('[__debugMap] projection-line-layer line-gradient:', grad);
+        }
+      };
+    }
 
     map.once('load', () => {
       // ── Exclusion zones (filled polygons + borders) ──
@@ -195,89 +402,16 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       // a 256-sample 1D color texture, much cheaper than rendering N segment
       // features. The gradient expression is set per-recompute by the hook
       // via map.setPaintProperty(... 'line-gradient', ...).
-      map.addSource('projection-line', {
-        type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
-        lineMetrics: true,
-      });
-      map.addLayer({
-        id: 'projection-line-layer',
-        type: 'line',
-        source: 'projection-line',
-        paint: {
-          // Initial fallback gradient — the hook overwrites it on first compute
-          // with a per-vertex color ramp keyed on bspRatio along line-progress.
-          'line-gradient': [
-            'interpolate', ['linear'], ['line-progress'],
-            0, '#27ae60', 1, '#27ae60',
-          ],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
-          'line-opacity': 0.85,
-        },
-      });
-
-      // ── Projection time markers ──
-      map.addSource('projection-markers-time', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-      map.addLayer({
-        id: 'projection-markers-time-circle',
-        type: 'circle',
-        source: 'projection-markers-time',
-        paint: {
-          // Major markers (with a label) are bigger; minor (unlabelled) dots
-          // give density between major checkpoints so curves are readable.
-          'circle-radius': [
-            'case', ['==', ['get', 'label'], ''], 2, 4,
-          ],
-          'circle-color': '#f5f0e8',
-          'circle-stroke-color': '#1a2744',
-          'circle-stroke-width': [
-            'case', ['==', ['get', 'label'], ''], 0.5, 1.5,
-          ],
-          'circle-opacity': [
-            'case', ['==', ['get', 'label'], ''], 0.6, 1,
-          ],
-        },
-      });
-      map.addLayer({
-        id: 'projection-markers-time-label',
-        type: 'symbol',
-        source: 'projection-markers-time',
-        layout: {
-          'text-field': ['get', 'label'],
-          'text-size': 11,
-          'text-offset': [0, -1.2],
-          'text-allow-overlap': true,
-        },
-        paint: {
-          'text-color': '#f5f0e8',
-          'text-halo-color': 'rgba(10, 22, 40, 0.8)',
-          'text-halo-width': 1,
-        },
-      });
-
-      // ── Projection maneuver markers ──
-      map.addSource('projection-markers-maneuver', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-      map.addLayer({
-        id: 'projection-markers-maneuver-icon',
-        type: 'circle',
-        source: 'projection-markers-maneuver',
-        paint: {
-          'circle-radius': [
-            'case', ['==', ['get', 'type'], 'grounding'], 7, 5,
-          ],
-          'circle-color': [
-            'case', ['==', ['get', 'type'], 'grounding'], '#c0392b', '#c9a84c',
-          ],
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1.5,
-        },
-      });
+      //
+      // Paranoid install: ALWAYS sweep the projection-* ids first (layers
+      // before sources, since layers reference sources), THEN add. Earlier
+      // attempts used a bail-on-already-installed guard, but that left
+      // duplicates whenever a stale layer/source slipped past the guard
+      // (style hot-swap, sibling code, future refactor adding another
+      // installer). Sweeping unconditionally guarantees "exactly one
+      // projection-* source + layer set" no matter the entry conditions.
+      installProjectionLayers(map);
+      projectionInstalledRef.current = map;
 
       // ── Maneuver marker tooltip ──
       const maneuverPopup = new maplibregl.Popup({
@@ -478,6 +612,9 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       map.remove();
       mapRef.current = null;
       mapInstance = null;
+      // Clear the install guard so the NEXT map instance (StrictMode
+      // remount, HMR re-creation) installs its own projection layers cleanly.
+      projectionInstalledRef.current = null;
     };
   }, []);
 
@@ -597,6 +734,31 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       map.setLayoutProperty('exclusion-zones-outline', 'visibility', vis);
     }
   }, [zonesVisible]);
+
+  /* ── Router placing mode: capture next map click as the destination ── */
+  const routerPhase = useGameStore((s) => s.router.phase);
+  const setRouterDestination = useGameStore((s) => s.setRouterDestination);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (routerPhase !== 'placing') return;
+
+    // MapLibre dynamically writes its own cursor on the canvas element (e.g.
+    // 'grab' / 'pointer'), overriding the wrapper's `cursor: crosshair`. Set
+    // the cursor directly on the canvas via the API for placing-mode.
+    const canvas = map.getCanvas();
+    const prevCursor = canvas.style.cursor;
+    canvas.style.cursor = 'crosshair';
+
+    const handleMapClick = (e: maplibregl.MapMouseEvent): void => {
+      setRouterDestination(e.lngLat.lat, e.lngLat.lng);
+    };
+    map.on('click', handleMapClick);
+    return () => {
+      map.off('click', handleMapClick);
+      canvas.style.cursor = prevCursor;
+    };
+  }, [routerPhase, setRouterDestination]);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
   const coastlineVisible = useGameStore((s) => s.layers.coastline);

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
 import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
-import { connectRace, useGameStore } from '@/lib/store';
+import { connectRace, sendOrder, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
   type SessionContext,
@@ -21,6 +21,8 @@ import SlidePanel from '@/components/play/SlidePanel';
 import SailPanel from '@/components/play/SailPanel';
 import ProgPanel from '@/components/play/ProgPanel';
 import RankingPanel from '@/components/play/RankingPanel';
+import RouterPanel from '@/components/play/RouterPanel';
+import ConfirmReplaceProgModal from '@/components/play/ConfirmReplaceProgModal';
 import WindOverlay from '@/components/play/WindOverlay';
 import SwellOverlay from '@/components/play/SwellOverlay';
 import LayersWidget from '@/components/play/LayersWidget';
@@ -28,21 +30,32 @@ import CursorTooltip from '@/components/play/CursorTooltip';
 import WindLegend from '@/components/play/WindLegend';
 import WeatherTimeline from '@/components/play/WeatherTimeline';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
-import { loadPolar } from '@/lib/polar';
+import { loadPolar, getCachedPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { Trophy, Sailboat, Route, LocateFixed, Plus, Minus } from 'lucide-react';
+import { computeRoute } from '@/lib/routing/client';
+import { capScheduleToOrders, waypointsToOrders } from '@/lib/routing/applyRoute';
+import { packWindData } from '@/lib/projection/fetchWindGrid';
+import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
+import type { RouteInput } from '@nemo/routing';
+import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
+import ZoomCompact from '@/components/play/ZoomCompact';
+import { RouteLayer } from '@/components/map/routing/RouteLayer';
+import { IsochroneLayer } from '@/components/map/routing/IsochroneLayer';
+import RouterDestinationMarker from '@/components/map/routing/RouterDestinationMarker';
+import { mapInstance } from '@/components/play/MapCanvas';
 import styles from './page.module.css';
 
 // Main-thread GameBalance bootstrap. Workers load their own instance via
 // postMessage; this client-side load is needed for any UI component that
 // reads GameBalance at render (e.g. Compass's maneuver hint).
 let gbBootstrap: Promise<void> | null = null;
+let gbJsonCache: unknown = null;
 function bootstrapGameBalance(): Promise<void> {
-  if (GameBalance.isLoaded) return Promise.resolve();
+  if (GameBalance.isLoaded && gbJsonCache !== null) return Promise.resolve();
   if (gbBootstrap) return gbBootstrap;
   gbBootstrap = fetch('/data/game-balance.json')
     .then((r) => r.json())
-    .then((json) => { GameBalance.load(json); });
+    .then((json) => { gbJsonCache = json; GameBalance.load(json); });
   return gbBootstrap;
 }
 
@@ -132,6 +145,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
   const activePanel = useGameStore((s) => s.panel.activePanel);
   const rank = useGameStore((s) => s.hud.rank);
+  const routerPhase = useGameStore((s) => s.router.phase);
+  const routerDest = useGameStore((s) => s.router.destination);
+  const routerRoute = useGameStore((s) => s.router.computedRoute);
+  const routerPanelOpen = activePanel === 'router';
 
   useEffect(() => {
     setSession(readClientSession());
@@ -161,21 +178,186 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // at the current wall-clock — same formula the engine runs at each tick,
   // so the values match within bilinear rounding. Runs only before the first
   // WS tick lands; after that, server payload takes over.
+  // Prefer the 0.25° tactical tile when loaded — the engine reads weather
+  // from the same 0.25° NOAA grid, so the global 1° decimation would seed
+  // the HUD with a value off by ~1 kt. Re-fires when the tile arrives.
   const decodedGrid = useGameStore((s) => s.weather.decodedGrid);
+  const tacticalTile = useGameStore((s) => s.weather.tacticalTile);
   const boatLat = useGameStore((s) => s.hud.lat);
   const boatLon = useGameStore((s) => s.hud.lon);
   const boatHdg = useGameStore((s) => s.hud.hdg);
   const lastTickUnix = useGameStore((s) => s.lastTickUnix);
   useEffect(() => {
-    if (!decodedGrid || (!boatLat && !boatLon)) return;
+    if (!boatLat && !boatLon) return;
     if (lastTickUnix !== null) return;
-    const wind = sampleDecodedWindAtTime(decodedGrid, boatLat, boatLon);
+    const inTile = tacticalTile
+      && boatLat >= tacticalTile.bounds.latMin && boatLat <= tacticalTile.bounds.latMax
+      && boatLon >= tacticalTile.bounds.lonMin && boatLon <= tacticalTile.bounds.lonMax;
+    const source = inTile && tacticalTile ? tacticalTile.decoded : decodedGrid;
+    if (!source) return;
+    const wind = sampleDecodedWindAtTime(source, boatLat, boatLon);
     if (wind.tws === 0 && wind.twd === 0) return; // out of grid
     const tws = Math.round(wind.tws * 10) / 10;
     const twd = Math.round(wind.twd);
     const twa = Math.round(((boatHdg - twd + 540) % 360) - 180);
     useGameStore.getState().setHud({ twd, tws, twa });
-  }, [decodedGrid, boatLat, boatLon, boatHdg, lastTickUnix]);
+  }, [decodedGrid, tacticalTile, boatLat, boatLon, boatHdg, lastTickUnix]);
+
+  // Router invocation — RouterPanel dispatches 'nemo:router:route' on click;
+  // we kick off computeRoute() with the latest store state and post the
+  // result back into the slice with a fresh genId so closeRouter / a newer
+  // click invalidates older in-flight calculations.
+  const prevDecodedGrid = useGameStore((s) => s.weather.prevDecodedGrid);
+  const boatClass = useGameStore((s) => s.hud.boatClass);
+  useEffect(() => {
+    const onRoute = async (): Promise<void> => {
+      const state = useGameStore.getState();
+      const dest = state.router.destination;
+      const cls = state.hud.boatClass;
+      const polar = cls ? getCachedPolar(cls) : null;
+      if (
+        !dest || !decodedGrid || !polar || !cls
+        || typeof state.hud.lat !== 'number'
+        || typeof state.hud.lon !== 'number'
+        || gbJsonCache === null
+      ) return;
+
+      const genId = state.startRouteCalculation();
+
+      try {
+        const current = packWindData(decodedGrid);
+        const prev = prevDecodedGrid ? packWindData(prevDecodedGrid) : null;
+        // Loadout: the play screen has no installed-upgrades endpoint yet
+        // (fetchMyBoat returns aggregated `effects` but not the items[]
+        // list). Mirror what the game-engine demo does in
+        // `apps/game-engine/src/index.ts`: resolve a SERIE-only loadout for
+        // the current boat class. When the upgrades-installed API lands,
+        // pass the real installed list here. GameBalance is already loaded
+        // at this point (gbJsonCache !== null guard above).
+        const loadout = resolveBoatLoadout('play-boat', [], cls);
+        // Condition: mirror the projection's assembly — wearDetail is the
+        // live per-component wear (hull/rig/sails/electronics), which is
+        // exactly the ConditionState shape the engine reads in computeBsp /
+        // conditionSpeedPenalty.
+        const condition = {
+          hull: state.hud.wearDetail.hull,
+          rig: state.hud.wearDetail.rig,
+          sails: state.hud.wearDetail.sails,
+          electronics: state.hud.wearDetail.electronics,
+        };
+        const input: RouteInput = {
+          from: { lat: state.hud.lat, lon: state.hud.lon },
+          to: { lat: dest.lat, lon: dest.lon },
+          startTimeMs: Date.now(),
+          boatClass: cls,
+          polar,
+          loadout,
+          condition,
+          windGrid: current.windGrid,
+          windData: new Float32Array(current.windData),
+          ...(prev
+            ? { prevWindGrid: prev.windGrid, prevWindData: new Float32Array(prev.windData) }
+            : {}),
+          // Coastline: the routing worker lazy-loads + indexes the coastline
+          // GeoJSON once at module scope on the first compute, then attaches
+          // it as `coastlineIndex` whenever `coastDetection` is true. We just
+          // forward the toggle — no client-side fetch needed.
+          coastDetection: state.router.coastDetection,
+          coneHalfDeg: state.router.coneHalfDeg,
+          preset: state.router.preset,
+        };
+        const plan = await computeRoute(input, gbJsonCache);
+        useGameStore.getState().setRouteResult(plan, genId);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erreur de calcul';
+        useGameStore.getState().setRouteError(msg, genId);
+      }
+    };
+    window.addEventListener('nemo:router:route', onRoute);
+    return () => window.removeEventListener('nemo:router:route', onRoute);
+  }, [decodedGrid, prevDecodedGrid, boatClass]);
+
+  // Router apply flow — convert computed route to orders, replace local
+  // queue, dispatch each over WS, close panel. If the queue already has
+  // future orders, prompt to confirm the replace first.
+  const [pendingApply, setPendingApply] = useState<'WAYPOINTS' | 'CAP' | null>(null);
+  const orderQueue = useGameStore((s) => s.prog.orderQueue);
+  const futureOrdersCount = orderQueue.length;
+
+  const performApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
+    const state = useGameStore.getState();
+    const plan = state.router.computedRoute;
+    if (!plan) return;
+    const baseTs = Date.now();
+    // Skip the leading MODE(auto:true) order when the boat is already in
+    // sail-auto — otherwise the queue gets a redundant first entry every time
+    // the player applies a route.
+    const sailAutoAlready = state.sail.sailAuto === true;
+    const orders = mode === 'WAYPOINTS'
+      ? waypointsToOrders(plan, baseTs, sailAutoAlready)
+      : capScheduleToOrders(plan, baseTs, sailAutoAlready);
+    // Replace pending local orders with the freshly-applied route. Each order
+    // is also dispatched to the server *now* via sendOrder; orders carry a
+    // `committed: true` flag (set by applyRoute helpers) so ProgPanel's
+    // "Valider la file" handler skips them and we avoid double-send. Keeping
+    // them in the queue gives the user immediate visibility into what was
+    // applied. The ConfirmReplaceProgModal already warns before clobbering a
+    // non-empty queue.
+    for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
+    state.replaceOrderQueue(orders);
+    state.closeRouter();
+  };
+
+  const onApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
+    const count = useGameStore.getState().prog.orderQueue.length;
+    if (count > 0) setPendingApply(mode);
+    else performApply(mode);
+  };
+
+  // Close the confirm modal if the router panel is closed externally (e.g.
+  // user hits Escape, opens another panel, or the router slice resets) so a
+  // stale "Replace queue?" prompt cannot orphan-apply against an unrelated
+  // computed plan.
+  useEffect(() => {
+    if (activePanel !== 'router' && pendingApply !== null) {
+      setPendingApply(null);
+    }
+  }, [activePanel, pendingApply]);
+
+  // Defense-in-depth sweep: whenever the computed route becomes null (route
+  // applied + router closed, panel switched, dest cleared, etc.) forcibly
+  // remove every `sim-route-*` and `sim-iso*` layer + source from the map.
+  // RouteLayer/IsochroneLayer already clean themselves up on unmount, but a
+  // stale layer reappeared in practice when applying a route (closeRouter →
+  // unmount cleanup) raced against the parent re-render driven by the
+  // freshly-replaced order queue. Sweeping unconditionally on `routerRoute`
+  // becoming null guarantees the map is clean regardless of unmount timing —
+  // matches the same pattern used by `installProjectionLayers` in MapCanvas.
+  useEffect(() => {
+    if (routerRoute !== null) return;
+    // Walk the live map style on the next animation frame so any in-flight
+    // unmount cleanup of RouteLayer/IsochroneLayer has already landed and we
+    // only sweep what was orphaned.
+    const handle = requestAnimationFrame(() => {
+      const map = mapInstance;
+      if (!map) return;
+      try {
+        const layers = map.getStyle().layers ?? [];
+        for (const layer of layers) {
+          if (layer.id.startsWith('sim-route-') || layer.id.startsWith('sim-iso')) {
+            if (map.getLayer(layer.id)) map.removeLayer(layer.id);
+          }
+        }
+        const sources = map.getStyle().sources ?? {};
+        for (const id of Object.keys(sources)) {
+          if (id.startsWith('sim-route-') || id.startsWith('sim-iso')) {
+            if (map.getSource(id)) map.removeSource(id);
+          }
+        }
+      } catch { /* ignore teardown race */ }
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [routerRoute]);
 
   if (access.kind === 'blocked') {
     return (
@@ -193,7 +375,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     );
   }
 
-  const handlePanelToggle = (panel: 'ranking' | 'sails' | 'programming') => {
+  const handlePanelToggle = (panel: 'ranking' | 'sails' | 'programming' | 'router') => {
     if (activePanel === panel) {
       useGameStore.getState().closePanel();
     } else {
@@ -217,12 +399,45 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       </div>
 
       {/* Row 2 — Map + floating elements */}
-      <div className={styles.mapArea}>
+      <div className={`${styles.mapArea} ${routerPhase === 'placing' ? styles.mapAreaPlacing : ''}`}>
         <MapCanvas enableProjection={canInteract} />
         <WindOverlay />
         <SwellOverlay />
         {canInteract && <CoordsDisplay />}
         <CursorTooltip />
+        {canInteract && <ZoomCompact />}
+
+        {routerPhase === 'placing' && (
+          <>
+            <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+            <button
+              type="button"
+              className={styles.placingCancelFab}
+              onClick={() => useGameStore.getState().exitPlacingMode()}
+            >
+              ✕ Annuler
+            </button>
+          </>
+        )}
+
+        {routerPanelOpen && routerDest && (
+          <RouterDestinationMarker lat={routerDest.lat} lon={routerDest.lon} />
+        )}
+        {routerPanelOpen && routerRoute && (
+          <>
+            <IsochroneLayer plan={routerRoute} color="#3a9fff" />
+            <RouteLayer
+              routes={new Map([['user', routerRoute]])}
+              primaryId="user"
+              colorFor={() => '#c9a227'}
+              nextGfsRunMs={
+                decodedGrid?.header?.nextRunExpectedUtc
+                  ? decodedGrid.header.nextRunExpectedUtc * 1000
+                  : Number.MAX_SAFE_INTEGER
+              }
+            />
+          </>
+        )}
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
@@ -282,6 +497,25 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()}>
               <ProgPanel />
             </SlidePanel>
+            <SlidePanel
+              side="right"
+              width={420}
+              title="Routeur"
+              isOpen={activePanel === 'router'}
+              onClose={() => useGameStore.getState().closeRouter()}
+              panelClassName={routerPhase === 'placing' ? 'slidePanelPlacingMobileHide' : ''}
+            >
+              <RouterPanel onApply={onApply} />
+            </SlidePanel>
+            <ConfirmReplaceProgModal
+              isOpen={pendingApply !== null}
+              pendingCount={futureOrdersCount}
+              onCancel={() => setPendingApply(null)}
+              onConfirm={() => {
+                if (pendingApply) performApply(pendingApply);
+                setPendingApply(null);
+              }}
+            />
           </>
         )}
 
@@ -319,28 +553,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                   <span>Centrer</span>
                 </button>
               </Tooltip>
-              <div className={styles.zoomGroup}>
-                <Tooltip text="Zoom +" position="bottom">
-                  <button
-                    className={styles.zoomBtn}
-                    type="button"
-                    onClick={() => {
-                      const { center, zoom } = useGameStore.getState().map;
-                      useGameStore.getState().setMapView(center, Math.min(zoom + 1, 18));
-                    }}
-                  ><Plus size={18} strokeWidth={2.5} /></button>
-                </Tooltip>
-                <Tooltip text="Zoom −" position="bottom">
-                  <button
-                    className={styles.zoomBtn}
-                    type="button"
-                    onClick={() => {
-                      const { center, zoom } = useGameStore.getState().map;
-                      useGameStore.getState().setMapView(center, Math.max(zoom - 1, 1));
-                    }}
-                  ><Minus size={18} strokeWidth={2.5} /></button>
-                </Tooltip>
-              </div>
+              <Tooltip text="Routeur" shortcut="R" position="bottom">
+                <button
+                  className={`${styles.actionBtn} ${activePanel === 'router' ? styles.actionBtnActive : ''}`}
+                  onClick={() => handlePanelToggle('router')}
+                  type="button"
+                >
+                  <MapPinned size={18} strokeWidth={2} className={styles.actionBtnIcon} />
+                  <span>Route</span>
+                </button>
+              </Tooltip>
             </div>
             <Compass />
           </div>

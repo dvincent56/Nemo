@@ -207,6 +207,33 @@
   margin-left: 6px;
 }
 
+.orderCommitted {
+  border-color: rgba(201, 162, 39, 0.32);
+  background: rgba(201, 162, 39, 0.04);
+}
+
+.orderCommittedBadge {
+  color: #c9a227;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  margin-left: 6px;
+}
+
+.orderCaptured {
+  opacity: 0.5;
+}
+
+.orderCapturedBadge {
+  color: #5cc88c;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  margin-left: 6px;
+}
+
 .commit {
   margin-top: 18px;
   width: 100%;

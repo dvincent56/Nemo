@@ -47,9 +47,9 @@ export const PRESETS: Preset[] = [
     id: 'imoca60-foiler',
     name: 'IMOCA60 Foiler Proto',
     boatClass: 'IMOCA60',
-    description: 'Foils proto grande envergure — traînée marquée sous 12 kts, fusée au-delà.',
+    description: 'Foils proto grande envergure + voiles polyvalentes light-air — fusée au reaching et au portant dès 10 kts.',
     initialSail: 'JIB',
-    upgradeIds: ['foils-imoca60-proto'],
+    upgradeIds: ['foils-imoca60-proto', 'sails-imoca60-light-air'],
   },
 ];
 

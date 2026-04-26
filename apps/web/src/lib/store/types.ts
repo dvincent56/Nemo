@@ -1,6 +1,7 @@
 'use client';
 
 import type { SailId, OrderTrigger, BoatClass, ExclusionZone } from '@nemo/shared-types';
+import type { RoutePlan } from '@nemo/routing';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { BoatEffects } from '@/lib/api';
 import type { PendingField } from './pending';
@@ -97,7 +98,7 @@ export interface MapAppearanceState {
   oceanPresetId: string;
 }
 
-export type PanelName = 'ranking' | 'sails' | 'programming';
+export type PanelName = 'ranking' | 'sails' | 'programming' | 'router';
 
 export interface PanelState {
   activePanel: PanelName | null;
@@ -140,9 +141,13 @@ export interface WeatherState {
    */
   prevDecodedGrid: DecodedWeatherGrid | null;
   gfsStatus: GfsStatus | null;
-  /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional. */
+  /** Tactical 0.25° tile centered on the boat, t=0..24h. Optional.
+   *  `grid` is the 2D snapshot (overlay rendering); `decoded` is the multi-hour
+   *  binary form used for live point sampling at wall-clock time (tooltip),
+   *  matching the engine's interpolation precisely. */
   tacticalTile: {
     grid: WeatherGrid;
+    decoded: DecodedWeatherGrid;
     bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number };
   } | null;
 }
@@ -159,6 +164,14 @@ export interface OrderEntry {
   trigger: OrderTrigger;
   value: Record<string, unknown>;
   label: string;
+  /**
+   * `true` when the order has already been sent to the server (e.g. orders
+   * applied via the router go straight over WS via `sendOrder`). They remain
+   * visible in ProgPanel for context, but `handleCommit` must skip them so
+   * "Valider la file" cannot re-send and produce duplicates (or — for
+   * CAP/TWA — silently dropped orders by the engine de-dupe).
+   */
+  committed?: boolean;
 }
 
 export interface ProgState {
@@ -173,8 +186,39 @@ export interface BoatLive {
   sail: number; tickSeq: number;
 }
 
+export type RouterPhase = 'idle' | 'placing' | 'calculating' | 'results';
+export type RouterPreset = 'FAST' | 'BALANCED' | 'HIGHRES';
+
+export interface RouterState {
+  phase: RouterPhase;
+  destination: { lat: number; lon: number } | null;
+  preset: RouterPreset;
+  coastDetection: boolean;
+  coneHalfDeg: number;
+  computedRoute: RoutePlan | null;
+  error: string | null;
+  /** Increments on every calculation start; results with stale id are dropped. */
+  calcGenId: number;
+}
+
+export interface RouterActions {
+  openRouter: () => void;
+  closeRouter: () => void;
+  enterPlacingMode: () => void;
+  exitPlacingMode: () => void;
+  setRouterDestination: (lat: number, lon: number) => void;
+  setRouterPreset: (p: RouterPreset) => void;
+  setRouterCoastDetection: (v: boolean) => void;
+  setRouterConeHalfDeg: (deg: number) => void;
+  /** Returns the new calcGenId for the caller to track. */
+  startRouteCalculation: () => number;
+  setRouteResult: (plan: RoutePlan, genId: number) => void;
+  setRouteError: (msg: string, genId: number) => void;
+  clearRoute: () => void;
+}
+
 // Combined store interface — all slices + actions
-export interface GameStore {
+export interface GameStore extends RouterActions {
   hud: HudState;
   sail: SailSliceState;
   map: MapState;
@@ -187,6 +231,7 @@ export interface GameStore {
   connection: ConnectionState;
   prog: ProgState;
   preview: import('./previewSlice').PreviewState;
+  router: RouterState;
   zones: ExclusionZone[];
   boats: Map<string, BoatLive>;
   lastTickUnix: number | null;
@@ -216,12 +261,13 @@ export interface GameStore {
   setWeatherLoading: (loading: boolean) => void;
   setDecodedWeatherGrid: (grid: DecodedWeatherGrid) => void;
   setGfsStatus: (status: GfsStatus) => void;
-  setTacticalTile: (grid: WeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
+  setTacticalTile: (grid: WeatherGrid | null, decoded: DecodedWeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
   setConnection: (s: ConnState) => void;
   addOrder: (order: OrderEntry) => void;
   removeOrder: (id: string) => void;
   reorderQueue: (from: number, to: number) => void;
   commitQueue: () => void;
+  replaceOrderQueue: (orders: OrderEntry[]) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
