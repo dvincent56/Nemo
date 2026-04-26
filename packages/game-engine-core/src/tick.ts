@@ -13,7 +13,7 @@ import {
   type SailRuntimeState,
 } from './sails';
 import type { SailId } from '@nemo/shared-types';
-import { buildSegments, type SegmentState, type TickSegment } from './segments';
+import { activeWaypointId, buildSegments, type SegmentState, type TickSegment } from './segments';
 import { applyZones, getZonesAtPosition, type IndexedZone } from './zones';
 import type { WeatherProvider } from './weather';
 import { aggregateEffects, type BoatLoadout } from './loadout';
@@ -308,11 +308,17 @@ export function runTick(
   const wptCheckPositions: Position[] = [runtime.segmentState.position];
   for (const seg of segments) wptCheckPositions.push(seg.endPosition);
 
+  // Only the chain-active WPT may be captured this tick. A WPT whose
+  // AT_WAYPOINT predecessor is not yet completed is dormant — its
+  // capture radius must NOT trigger completion (otherwise the boat
+  // could "skip" intermediate waypoints just by passing near them).
+  const activeWptForCapture = activeWaypointId(runtime.orderHistory);
   const completedWptIds = new Set<string>();
   for (const env of runtime.orderHistory) {
     if (env.order.type !== 'WPT') continue;
     if (env.order.completed) continue;
     if (env.effectiveTs >= tickEndMs) continue; // not active yet
+    if (env.order.id !== activeWptForCapture) continue; // not the chain head
     const lat = env.order.value['lat'];
     const lon = env.order.value['lon'];
     if (typeof lat !== 'number' || typeof lon !== 'number') continue;

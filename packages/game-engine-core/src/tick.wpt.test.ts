@@ -5,6 +5,7 @@ import type { Boat, OrderEnvelope, Position, WeatherPoint } from '@nemo/shared-t
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
 import {
+  activeWaypointId,
   buildZoneIndex,
   CoastlineIndex,
   resolveBoatLoadout,
@@ -572,3 +573,166 @@ describe('WPT order — scheduled future CAP superseded by later WPT does not fi
     assert.equal(capStillThere, undefined, 'superseded future CAP should be purged from orderHistory');
   });
 });
+
+// ---------------------------------------------------------------------------
+// AT_WAYPOINT chain — only the active head drives heading on a tick.
+// Reproduces the bug where a router-applied chain of 16 WPTs all shared the
+// same effectiveTs (≈now) and the LAST one in the chain won the heading,
+// pushing the boat toward the final WPT instead of the first.
+// ---------------------------------------------------------------------------
+
+/** Build a WPT envelope wired with an AT_WAYPOINT trigger pointing at `predId`. */
+function makeChainedWptEnvelope(
+  lat: number,
+  lon: number,
+  effectiveTs: number,
+  seq: number,
+  predId: string,
+): OrderEnvelope {
+  return {
+    order: {
+      id: randomUUID(),
+      type: 'WPT',
+      value: { lat, lon, captureRadiusNm: 0.5 },
+      trigger: { type: 'AT_WAYPOINT', waypointOrderId: predId },
+    },
+    clientTs: effectiveTs,
+    clientSeq: seq,
+    trustedTs: effectiveTs,
+    effectiveTs,
+    receivedAt: effectiveTs,
+    connectionId: 'test-wpt-chain',
+  };
+}
+
+describe('activeWaypointId — AT_WAYPOINT chain selection', () => {
+  test('returns the chain head when no WPT is yet completed', () => {
+    const wp1 = makeWptEnvelope(46, -3.5, 1_000, 1); // IMMEDIATE
+    const wp2 = makeChainedWptEnvelope(46, -3.0, 1_001, 2, wp1.order.id);
+    const wp3 = makeChainedWptEnvelope(46, -2.5, 1_002, 3, wp2.order.id);
+    assert.equal(activeWaypointId([wp1, wp2, wp3]), wp1.order.id);
+  });
+
+  test('returns the next link once the head is completed', () => {
+    const wp1 = { ...makeWptEnvelope(46, -3.5, 1_000, 1) };
+    wp1.order = { ...wp1.order, completed: true };
+    const wp2 = makeChainedWptEnvelope(46, -3.0, 1_001, 2, wp1.order.id);
+    const wp3 = makeChainedWptEnvelope(46, -2.5, 1_002, 3, wp2.order.id);
+    assert.equal(activeWaypointId([wp1, wp2, wp3]), wp2.order.id);
+  });
+
+  test('returns null when every WPT is completed', () => {
+    const wp1 = { ...makeWptEnvelope(46, -3.5, 1_000, 1) };
+    wp1.order = { ...wp1.order, completed: true };
+    const wp2_ = makeChainedWptEnvelope(46, -3.0, 1_001, 2, wp1.order.id);
+    const wp2 = { ...wp2_, order: { ...wp2_.order, completed: true } };
+    assert.equal(activeWaypointId([wp1, wp2]), null);
+  });
+
+  test('skips dormant WPT whose AT_WAYPOINT predecessor is not completed', () => {
+    // Two independent IMMEDIATE chain heads are unusual, but a chained WPT
+    // whose predecessor is not present and not completed must be skipped.
+    const orphanPred = randomUUID(); // never present in history
+    const dormant = makeChainedWptEnvelope(46, -3.0, 1_000, 1, orphanPred);
+    // Per safety rule (predecessor introuvable → activate orphan), this is
+    // active. But once a real predecessor exists and is NOT completed, the
+    // dormant link must NOT be selected.
+    const realPred = makeWptEnvelope(46, -4.0, 999, 99); // IMMEDIATE, not completed
+    const dormantWithRealPred = makeChainedWptEnvelope(46, -3.0, 1_001, 2, realPred.order.id);
+    assert.equal(activeWaypointId([realPred, dormantWithRealPred]), realPred.order.id);
+    // sanity: orphan-only case still resolves
+    assert.equal(activeWaypointId([dormant]), dormant.order.id);
+  });
+});
+
+describe('WPT order — AT_WAYPOINT chain heading is the active head, not the tail', () => {
+  test('boat with 3-WPT chain heads toward WP_1 (250°), not WP_3 (211°)', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Boat at (46, -4). Three WPTs:
+    //  - WP_1 due WSW (~250°): lat 45.85, lon -4.5  → bearing ~245-250°
+    //  - WP_2 further south
+    //  - WP_3 due SSW (~210°): lat 45.0, lon -4.5
+    const startPos: Position = { lat: 46, lon: -4 };
+    const wp1 = makeWptEnvelope(45.85, -4.5, tickStartMs, 1);
+    const wp2 = makeChainedWptEnvelope(45.4, -4.5, tickStartMs, 2, wp1.order.id);
+    const wp3 = makeChainedWptEnvelope(45.0, -4.5, tickStartMs, 3, wp2.order.id);
+
+    const runtime = await makeRuntime(startPos, [wp1, wp2, wp3]);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // The first segment heading should match the bearing toward WP_1, not
+    // toward WP_3. Bearing from (46,-4) to (45.85,-4.5) is ~245-250°; bearing
+    // toward (45.0,-4.5) is ~210°. They differ by ~40° — well-separated.
+    const firstSegHeading = out.segments[0]!.heading;
+    const deltaToWp1 = Math.abs(((firstSegHeading - 247 + 540) % 360) - 180);
+    const deltaToWp3 = Math.abs(((firstSegHeading - 211 + 540) % 360) - 180);
+    assert.ok(
+      deltaToWp1 < deltaToWp3,
+      `first segment heading ${firstSegHeading} should be closer to WP_1 (~247°) than to WP_3 (~211°)`,
+    );
+    assert.ok(deltaToWp1 < 10, `first segment heading should be ~247° toward WP_1, got ${firstSegHeading}`);
+  });
+
+  test('after WP_1 capture, WP_2 becomes the active head on next tick', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Place boat already on WP_1 so it captures within the first tick.
+    const startPos: Position = { lat: 46, lon: -4 };
+    const wp1 = makeWptEnvelope(46.0001, -4.0, tickStartMs, 1); // ~0.006 NM north
+    // WP_2 due east of WP_1 (well outside capture radius from start).
+    const wp2 = makeChainedWptEnvelope(46.0, -3.0, tickStartMs, 2, wp1.order.id);
+
+    const runtime = await makeRuntime(startPos, [wp1, wp2]);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // WP_1 captured — gone from history.
+    assert.equal(
+      out.runtime.orderHistory.find((o) => o.order.id === wp1.order.id),
+      undefined,
+      'WP_1 should be captured and purged',
+    );
+    // WP_2 still present and is now the chain head (predecessor was wp1 and
+    // wp1 is now completed/purged → orphan-pred safety activates wp2).
+    const wp2After = out.runtime.orderHistory.find((o) => o.order.id === wp2.order.id);
+    assert.ok(wp2After !== undefined, 'WP_2 must remain in history');
+    assert.equal(activeWaypointId(out.runtime.orderHistory), wp2.order.id);
+  });
+
+  test('dormant WPT in a chain is NOT captured even if the boat is within its radius', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Boat sits inside WP_2's capture radius, but WP_1 (head) is far away.
+    // Without chain-aware capture, WP_2 would be wrongly captured first.
+    const startPos: Position = { lat: 46, lon: -4 };
+    const wp1 = makeWptEnvelope(46.0, -3.0, tickStartMs, 1); // ~41 NM east, far from boat
+    const wp2 = makeChainedWptEnvelope(46.0001, -4.0, tickStartMs, 2, wp1.order.id); // boat is on it
+
+    const runtime = await makeRuntime(startPos, [wp1, wp2]);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // WP_2 must NOT be captured (its predecessor WP_1 is not completed).
+    const wp2After = out.runtime.orderHistory.find((o) => o.order.id === wp2.order.id);
+    assert.ok(wp2After !== undefined, 'WP_2 should still be in history (dormant)');
+    assert.notEqual(wp2After?.order.completed, true, 'dormant WP_2 must not be marked completed');
+    // WP_1 is far away → not captured this tick, still active head.
+    const wp1After = out.runtime.orderHistory.find((o) => o.order.id === wp1.order.id);
+    assert.ok(wp1After !== undefined, 'WP_1 should still be active');
+  });
+});
+

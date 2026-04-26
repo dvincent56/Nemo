@@ -26,6 +26,7 @@ export {
 } from './loadout';
 
 export {
+  activeWaypointId,
   buildSegments,
   type SegmentState,
   type TickSegment,

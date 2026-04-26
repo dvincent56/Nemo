@@ -79,6 +79,49 @@ export interface BuildSegmentsInput {
   extraBoundariesMs?: readonly number[];
 }
 
+/**
+ * Sélectionne l'unique WPT "actif" dans une chaîne AT_WAYPOINT — c'est-à-dire
+ * le premier (par ordre d'effectiveTs croissant) WPT non complété dont le
+ * prédécesseur AT_WAYPOINT est complété (ou qui n'a pas de prédécesseur :
+ * IMMEDIATE / SEQUENTIAL).
+ *
+ * Sans ce filtrage, `buildSegments` appliquait TOUS les WPT non complétés à
+ * `tickStartMs` (snap des ordres "late" via le filtre `effectiveTs <
+ * tickEndMs`). Le routeur émet des chaînes WPT avec `trigger: AT_WAYPOINT`
+ * mais le gateway/ingest met `effectiveTs = trustedTs ≈ now` pour TOUS les
+ * WPT (cf. apps/ws-gateway/src/index.ts L167-169 et
+ * apps/game-engine/src/engine/orders-ingest.ts L48-53). Conséquence : les 16
+ * WPT d'une route arrivaient avec le même effectiveTs et `applyOrder`
+ * s'exécutait pour chacun à la même boundary — le DERNIER écrasait le heading
+ * de tous les précédents, et le bateau partait vers le WP final au lieu du
+ * WP_1.
+ *
+ * La logique de capture (`tick.ts`) vérifie tous les WPT actifs à chaque
+ * tick — quand WP_1 est capturé (`completed: true`), `activeWaypointId`
+ * retourne WP_2 au tick suivant (son prédécesseur est complété), et ainsi de
+ * suite le long de la chaîne.
+ */
+export function activeWaypointId(orders: readonly OrderEnvelope[]): string | null {
+  // Les ordres sont déjà triés par effectiveTs croissant (orders-ingest.ts L109).
+  for (const env of orders) {
+    if (env.order.type !== 'WPT') continue;
+    if (env.order.completed) continue;
+    const trigger = env.order.trigger;
+    if (trigger.type !== 'AT_WAYPOINT') {
+      // IMMEDIATE / SEQUENTIAL / AT_TIME / AFTER_DURATION → tête de chaîne.
+      return env.order.id;
+    }
+    const predId = trigger.waypointOrderId;
+    const pred = orders.find((x) => x.order.id === predId);
+    // Prédécesseur introuvable → on traite comme orphelin et on l'active
+    // (sécurité : ne jamais bloquer un WPT à cause d'un id manquant).
+    if (!pred || pred.order.completed === true) {
+      return env.order.id;
+    }
+  }
+  return null;
+}
+
 function applyOrder(state: SegmentState, envelope: OrderEnvelope, twd: number): SegmentState {
   const next: SegmentState = { ...state };
   const order = envelope.order;
@@ -160,8 +203,14 @@ export function buildSegments(input: BuildSegmentsInput): {
   // Completed orders are skipped: a CAP/TWA marked completed by a later WPT
   // (or a WPT marked completed by a later CAP/TWA) must NOT influence
   // segment heading anymore. See `orderHistory.ts` for supersession rules.
+  // WPT chain filtering: in a chain of WPT orders linked by AT_WAYPOINT,
+  // only the active one (head whose predecessor is completed) drives the
+  // heading on this tick. The rest are dormant until their predecessor
+  // captures. See `activeWaypointId` rationale.
+  const activeWptId = activeWaypointId(orders);
   const events = orders
     .filter((o) => !o.order.completed && o.effectiveTs < tickEndMs)
+    .filter((o) => o.order.type !== 'WPT' || o.order.id === activeWptId)
     .map((o) => o.effectiveTs < tickStartMs ? { ...o, effectiveTs: tickStartMs } : o);
 
   // Boundaries dédupliqués (plusieurs ordres au même instant = un seul cut).
