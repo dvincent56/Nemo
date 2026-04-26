@@ -651,6 +651,12 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           properties: { hdg: s.hud.hdg },
         }],
       });
+      // Optimistic-only updates (e.g. applyOptimisticHud → new hdg with same
+      // lat/lon) change feature properties without changing geometry. Some
+      // MapLibre paths don't repaint symbol layers unless geometry shifts or
+      // the next animation frame is forced; this guarantees the icon-rotate
+      // expression re-evaluates immediately.
+      map.triggerRepaint();
 
       trailCoords.push([lon, lat]);
       if (trailCoords.length > 1) {
