@@ -435,11 +435,14 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         weekday: 'short', day: '2-digit', month: 'short',
         hour: '2-digit', minute: '2-digit',
       });
+      // fr-FR inserts a comma between date and time ("dim. 26 avr., 18:49");
+      // we want "dim. 26 avr. 18:49" to match the ProgPanel formatting.
+      const formatDate = (d: Date): string => DATE_FMT.format(d).replace(', ', ' ');
 
       const maneuverHtml = (type: string, detail: string, timestamp: number | undefined): string => {
         const label = MANEUVER_LABEL[type] ?? type;
         const accent = type === 'grounding' ? '#c0392b' : '#c9a84c';
-        const when = timestamp ? DATE_FMT.format(new Date(timestamp)) : '';
+        const when = timestamp ? formatDate(new Date(timestamp)) : '';
         const whenLine = when ? `<div style="color:#aab2c0;font-size:11px;margin-top:2px;">${when}</div>` : '';
         return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:${accent};">${label}</strong><br/>${detail}${whenLine}</div>`;
       };

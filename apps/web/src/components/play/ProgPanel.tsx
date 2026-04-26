@@ -26,10 +26,17 @@ const TRIGGER_DATE_FMT = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit', minute: '2-digit',
 });
 
+/** fr-FR's default formatter inserts a comma between the date and time
+ * fields ("dim. 26 avr., 18:49"). Designs prefer no comma — strip the
+ * separator so the rendered string reads "dim. 26 avr. 18:49". */
+function formatTriggerDate(date: Date): string {
+  return TRIGGER_DATE_FMT.format(date).replace(', ', ' ');
+}
+
 function formatTrigger(trigger: OrderTrigger, labelById?: Map<string, string>): string {
   switch (trigger.type) {
     case 'AT_TIME':
-      return TRIGGER_DATE_FMT.format(new Date(trigger.time * 1000));
+      return formatTriggerDate(new Date(trigger.time * 1000));
     case 'AFTER_DURATION':
       return `Dans ${Math.round(trigger.duration / 60)} min`;
     case 'AT_WAYPOINT': {
