@@ -153,20 +153,24 @@
 }
 
 @media (max-width: 768px) {
-  /* phone : the track is on its own row inside the wrapper grid, so it
-   * gets the full width and we can keep tick labels visible */
-  .track { height: 32px; }
+  .track { height: 44px; }
   .cursorHandle {
     width: 18px;
     height: 18px;
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
+  .zone { grid-template-rows: 14px 1fr 14px; }
 }
 
-@media (max-width: 480px) {
-  /* very narrow : drop the past row to save vertical space, future ticks
-   * still tell the player what's ahead */
-  .zone { grid-template-rows: 12px auto 0; }
-  .tickRowBelow { display: none; }
+@media (max-height: 500px) {
+  .track { height: 44px; }
+  .cursorHandle {
+    width: 18px;
+    height: 18px;
+    box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
+  }
+  .tickLabel { font-size: 8px; }
+  .zone { grid-template-rows: 14px 1fr 14px; }
 }
+

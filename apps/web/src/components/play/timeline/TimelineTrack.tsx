@@ -4,6 +4,7 @@ import type * as React from 'react';
 import { useGameStore } from '@/lib/store';
 import { selectTimelineBounds, type RaceStatus } from '@/lib/store/timeline-selectors';
 import { buildTicks, type Tick } from './ticks';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import styles from './TimelineTrack.module.css';
 
 const HOUR = 3_600_000;
@@ -22,12 +23,14 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
     return () => window.clearInterval(id);
   }, []);
 
+  const isMobile = useMediaQuery('(max-width: 600px), (max-height: 500px)');
+
   const bounds = selectTimelineBounds({ raceStartMs, raceEndMs, forecastEndMs, status: raceStatus, nowMs });
   const span = Math.max(1, bounds.maxMs - bounds.minMs);
   const cursorPct = clampPct(((currentTime.getTime() - bounds.minMs) / span) * 100);
   const nowPct = clampPct(((nowMs - bounds.minMs) / span) * 100);
 
-  const ticks: Tick[] = buildTicks({ ...bounds, nowMs });
+  const ticks: Tick[] = buildTicks({ ...bounds, nowMs, compactPast: isMobile });
 
   const onPointerJump = useCallback((clientX: number) => {
     const el = trackRef.current;
@@ -68,12 +71,12 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
 
   return (
     <div className={styles.zone}>
-      {/* Future tick labels — above the rail */}
+      {/* Past tick labels — above the rail */}
       <div className={styles.tickRowAbove} aria-hidden>
-        {ticks.filter((t) => t.kind === 'future' || t.kind === 'now').map((t) => (
+        {ticks.filter((t) => t.kind === 'past').map((t) => (
           <span
             key={`a-${t.ts}`}
-            className={`${styles.tickLabel} ${t.kind === 'now' ? styles.tickNow : styles.tickFuture}`}
+            className={`${styles.tickLabel} ${styles.tickPast}`}
             style={{ left: `${t.pctX}%` }}
           >
             {t.label}
@@ -117,12 +120,13 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
         </div>
       </div>
 
-      {/* Past tick labels — below the rail */}
+      {/* Future tick labels — below the rail. NOW intentionally omitted: the
+          gold cursor disc already materialises the present. */}
       <div className={styles.tickRowBelow} aria-hidden>
-        {ticks.filter((t) => t.kind === 'past').map((t) => (
+        {ticks.filter((t) => t.kind === 'future').map((t) => (
           <span
             key={`b-${t.ts}`}
-            className={`${styles.tickLabel} ${styles.tickPast}`}
+            className={`${styles.tickLabel} ${styles.tickFuture}`}
             style={{ left: `${t.pctX}%` }}
           >
             {t.label}
