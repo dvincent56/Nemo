@@ -55,7 +55,11 @@ describe('useMediaQuery', () => {
   });
   afterEach(() => { vi.restoreAllMocks(); });
 
-  it('returns false on first render when matchMedia is not yet evaluated (SSR-safe default)', () => {
+  // The SSR path (`typeof window === 'undefined'`) cannot be exercised in jsdom —
+  // `renderHook` always mounts and runs the effect synchronously. We rely on the
+  // `useState(false)` initialiser to provide the SSR-safe default, and these
+  // tests only cover post-mount behaviour.
+  it('reflects matchMedia.matches as false when the query does not match', () => {
     const { result } = renderHook(() => useMediaQuery('(max-width: 600px)'));
     expect(result.current).toBe(false);
   });
