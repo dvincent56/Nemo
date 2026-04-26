@@ -21,8 +21,11 @@ export function TimelineHeader(): React.ReactElement {
       ? Math.floor((currentTime.getTime() - raceStartMs) / (24 * HOUR))
       : null;
 
-  const timeStr = currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = currentTime.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const hh = String(currentTime.getHours()).padStart(2, '0');
+  const mm = String(currentTime.getMinutes()).padStart(2, '0');
+  const day = currentTime.getDate();
+  const months = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
+  const monthLabel = months[currentTime.getMonth()] ?? '';
   const dayLabel =
     dayOffset === null
       ? ''
@@ -35,8 +38,8 @@ export function TimelineHeader(): React.ReactElement {
   return (
     <div className={styles.header}>
       <div className={styles.time}>
-        <span className={styles.timeMain}>{timeStr}</span>
-        <span className={styles.timeSub}>{dayLabel ? `${dayLabel} · ${dateStr}` : dateStr}</span>
+        {dayLabel && <span className={styles.timeMain}>{dayLabel}</span>}
+        <span className={styles.timeSub}>{hh}h{mm} · {day} {monthLabel}</span>
       </div>
       <div className={styles.spacer} />
       <button

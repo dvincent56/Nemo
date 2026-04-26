@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: var(--hud-h, 56px) 1fr var(--timeline-h, 64px);
+  grid-template-rows: var(--hud-h, 56px) 1fr var(--timeline-h, 88px);
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   background: var(--navy-deeper, #060b18);
@@ -26,7 +26,7 @@
   border-top: 1px solid rgba(245, 240, 232, 0.16);
   display: flex;
   align-items: center;
-  min-height: var(--timeline-h, 64px);
+  min-height: var(--timeline-h, 88px);
 }
 .timelinePlaceholder {
   font-family: var(--font-mono);

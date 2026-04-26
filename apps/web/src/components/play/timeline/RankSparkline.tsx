@@ -5,7 +5,7 @@ import { useGameStore } from '@/lib/store';
 import { selectRankSparklineNormalized } from '@/lib/store/timeline-selectors';
 import styles from './RankSparkline.module.css';
 
-const SPARK_HEIGHT = 20;
+const SPARK_HEIGHT = 14;
 
 export function RankSparkline({ widthPx }: { widthPx: number }): React.ReactElement | null {
   const points = useGameStore((s) => s.track.myPoints);

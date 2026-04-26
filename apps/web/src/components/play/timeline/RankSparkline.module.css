@@ -5,18 +5,18 @@
 
 .line {
   fill: none;
-  stroke: var(--open);
+  stroke: rgba(126, 159, 195, 0.85);
   stroke-width: 1.2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .fill {
-  fill: var(--open-soft);
+  fill: rgba(126, 159, 195, 0.18);
   stroke: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .spark {
     display: none;
   }
