@@ -36,6 +36,8 @@ import { computeRoute } from '@/lib/routing/client';
 import { capScheduleToOrders, waypointsToOrders } from '@/lib/routing/applyRoute';
 import { packWindData } from '@/lib/projection/fetchWindGrid';
 import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
+import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
+import { haversinePosNM } from '@/lib/geo';
 import type { RouteInput } from '@nemo/routing';
 import { Trophy, Sailboat, Route, LocateFixed, MapPinned } from 'lucide-react';
 import ZoomCompact from '@/components/play/ZoomCompact';
@@ -335,69 +337,147 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const nowMs = Date.now();
     const firesImmediately = (t: typeof orders[number]['trigger']): boolean =>
       t.type === 'IMMEDIATE' || (t.type === 'AT_TIME' && t.time * 1000 <= nowMs);
-    // Predicted bsp from the route's polyline — what the boat will actually
-    // sail at on the new heading. Without this, the HUD vitesse stays on the
-    // old (pre-apply) value until the next server tick lands, which feels
-    // stale right after the heading flips optimistically.
-    //
-    // polyline[0] is always the start point and is initialized with bsp: 0
-    // in isochrones.ts (the boat hasn't moved yet at that node). The previous
-    // `polyline[0]?.bsp ?? polyline[1]?.bsp` fallback never fired the
-    // alternative branch because `?? ` only falls through on null/undefined,
-    // not 0 — so predictedBsp was always 0 and the `> 0` guard rejected it.
-    // Scan forward for the first node with a positive bsp instead.
-    let predictedBsp = 0;
-    for (let i = 1; i < plan.polyline.length; i++) {
-      const b = plan.polyline[i]?.bsp;
-      if (typeof b === 'number' && b > 0) { predictedBsp = b; break; }
-    }
-    if (predictedBsp > 0) {
-      state.applyOptimisticHud({ bsp: predictedBsp });
-    }
+
+    // First pass: pick the *effective* new heading. For WPT mode we must
+    // mirror the engine's WPT chain advance — the boat may already be inside
+    // the capture radius of WP_1 at apply time, in which case the engine
+    // skips it and points at WP_2. The previous "first WPT order in queue"
+    // logic produced a heading toward WP_1 that the engine then immediately
+    // discarded, leaving the optimistic HUD pointing one waypoint behind the
+    // server-side reality (boat sailed in crab until next tick).
+    let optimisticHdg: number | null = null;
+    let modeAutoFires = false;
     for (const o of orders) {
       if (!firesImmediately(o.trigger)) continue;
-      switch (o.type) {
-        case 'MODE': {
-          const auto = (o.value as { auto?: unknown }).auto;
-          if (typeof auto === 'boolean') {
-            state.setSailOptimistic('sailAuto', auto);
-          }
-          break;
-        }
-        case 'CAP': {
-          const heading = (o.value as { heading?: unknown }).heading;
-          if (typeof heading === 'number') {
-            state.applyOptimisticHud({ hdg: heading });
-          }
-          break;
-        }
-        case 'TWA': {
-          const twa = (o.value as { twa?: unknown }).twa;
-          if (typeof twa === 'number') {
-            state.applyOptimisticHud({ twa });
-          }
-          break;
-        }
-        case 'WPT': {
-          const lat = (o.value as { lat?: unknown }).lat;
-          const lon = (o.value as { lon?: unknown }).lon;
-          if (
-            typeof lat === 'number' && typeof lon === 'number'
-            && typeof state.hud.lat === 'number' && typeof state.hud.lon === 'number'
-          ) {
-            const heading = Math.round(
-              bearingDeg({ lat: state.hud.lat, lon: state.hud.lon }, { lat, lon }),
-            );
-            state.applyOptimisticHud({ hdg: heading });
-          }
-          break;
-        }
-        // SAIL: capScheduleToOrders / waypointsToOrders rely on auto-sail and
-        // don't emit SAIL orders, so nothing to do here.
-        default:
-          break;
+      if (o.type === 'MODE') {
+        const auto = (o.value as { auto?: unknown }).auto;
+        if (auto === true) modeAutoFires = true;
+      }
+      if (o.type === 'CAP' && optimisticHdg === null) {
+        const heading = (o.value as { heading?: unknown }).heading;
+        if (typeof heading === 'number') optimisticHdg = heading;
       }
     }
+    // Walk emitted WPT orders in chain order; skip any already within capture
+    // radius (the engine's tick sets `completed` for those at the start of
+    // the next tick — replicate that here so the optimistic heading aims at
+    // the first *uncaptured* waypoint).
+    if (optimisticHdg === null) {
+      const wptOrders = orders.filter((o) => o.type === 'WPT');
+      const boatLatLocal = state.hud.lat;
+      const boatLonLocal = state.hud.lon;
+      if (
+        typeof boatLatLocal === 'number'
+        && typeof boatLonLocal === 'number'
+      ) {
+        for (const o of wptOrders) {
+          const lat = (o.value as { lat?: unknown }).lat;
+          const lon = (o.value as { lon?: unknown }).lon;
+          if (typeof lat !== 'number' || typeof lon !== 'number') continue;
+          const radiusRaw = (o.value as { captureRadiusNm?: unknown }).captureRadiusNm;
+          const radius =
+            typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.5;
+          const d = haversinePosNM(
+            { lat: boatLatLocal, lon: boatLonLocal },
+            { lat, lon },
+          );
+          if (d < radius) continue; // already captured at apply time, skip
+          optimisticHdg = Math.round(
+            bearingDeg(
+              { lat: boatLatLocal, lon: boatLonLocal },
+              { lat, lon },
+            ),
+          );
+          break;
+        }
+      }
+    }
+
+    // Optimistic sailAuto flip — independent of heading prediction. mergeField
+    // preserves until the server confirms.
+    for (const o of orders) {
+      if (!firesImmediately(o.trigger)) continue;
+      if (o.type === 'MODE') {
+        const auto = (o.value as { auto?: unknown }).auto;
+        if (typeof auto === 'boolean') state.setSailOptimistic('sailAuto', auto);
+      }
+      if (o.type === 'TWA') {
+        const twa = (o.value as { twa?: unknown }).twa;
+        if (typeof twa === 'number') state.applyOptimisticHud({ twa });
+      }
+    }
+
+    // Predicted-bsp fallback from the route's polyline — used only when we
+    // can't run the full predictAfterHdg path (no polar / no boatClass / no
+    // heading change). The polyline node is the route's own forecast at
+    // (sail, twa, tws, multipliers) so it remains a sensible HUD seed.
+    let polylineBsp = 0;
+    for (let i = 1; i < plan.polyline.length; i++) {
+      const b = plan.polyline[i]?.bsp;
+      if (typeof b === 'number' && b > 0) { polylineBsp = b; break; }
+    }
+
+    // Full optimistic mirror — same path Compass.tsx uses on Valider.
+    // predictAfterHdg replays the engine's CAP/TWA tick step: it computes the
+    // new TWA, detects a tack/gybe, evaluates auto-mode sail change with
+    // hysteresis, applies the transition penalty to BSP, and returns the
+    // patches needed for HUD + sail slice. The auto-mode flag passed in must
+    // reflect the post-apply state — if the route includes a MODE auto:true
+    // order firing now, the engine will be in auto by the time the heading
+    // change is processed, even if the boat was in manual at apply time.
+    const cls = state.hud.boatClass;
+    const polar = cls ? getCachedPolar(cls) : null;
+    const sailAutoAfterApply = modeAutoFires ? true : state.sail.sailAuto;
+
+    // When a MODE auto:true order fires alongside no heading change (rare —
+    // typically only happens if the route-derived heading equals current),
+    // we still want to predict an auto-mode sail switch. predictAfterHdg
+    // re-runs the auto-switch detection unconditionally on the supplied
+    // heading, so passing the *current* heading triggers the same logic the
+    // engine will run on its next tick once auto:true lands.
+    const headingForPrediction =
+      optimisticHdg !== null ? optimisticHdg : state.hud.hdg;
+    const shouldPredict =
+      (optimisticHdg !== null || (modeAutoFires && !state.sail.sailAuto))
+      && polar !== null
+      && cls !== null
+      && GameBalance.isLoaded;
+
+    if (shouldPredict && polar && cls) {
+      const patch = predictAfterHdg({
+        newHdg: headingForPrediction,
+        prevTwa: state.hud.twa,
+        twd: state.hud.twd,
+        tws: state.hud.tws,
+        currentSail: state.sail.currentSail,
+        sailAuto: sailAutoAfterApply,
+        bspBaseMultiplier: state.hud.bspBaseMultiplier,
+        transitionEndMs: state.sail.transitionEndMs,
+        maneuverEndMs: state.sail.maneuverEndMs,
+        maneuverKind: state.sail.maneuverKind,
+        polar,
+        boatClass: cls,
+        now: nowMs,
+      });
+      state.applyOptimisticHud(patch.hud);
+      if (patch.sail.maneuver) {
+        state.applyOptimisticManeuver({
+          maneuverKind: patch.sail.maneuver.kind,
+          maneuverStartMs: patch.sail.maneuver.startMs,
+          maneuverEndMs: patch.sail.maneuver.endMs,
+        });
+      }
+      if (patch.sail.sailChange) {
+        state.setOptimisticSailChange(patch.sail.sailChange);
+      }
+    } else {
+      // Best-effort fallback: at minimum apply the heading + polyline bsp.
+      if (optimisticHdg !== null) state.applyOptimisticHud({ hdg: optimisticHdg });
+      if (polylineBsp > 0) state.applyOptimisticHud({ bsp: polylineBsp });
+    }
+
+    // SAIL: capScheduleToOrders / waypointsToOrders rely on auto-sail and
+    // don't emit SAIL orders, so no separate SAIL handling here.
 
     state.closeRouter();
   };
