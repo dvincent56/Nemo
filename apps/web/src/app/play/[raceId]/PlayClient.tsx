@@ -14,6 +14,7 @@ import { useHotkeys } from '@/lib/useHotkeys';
 import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import { useTacticalTile } from '@/hooks/useTacticalTile';
 import { useTrackHydration } from '@/hooks/useTrackHydration';
+import { useWeatherTimeSync } from '@/hooks/useWeatherTimeSync';
 import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
@@ -200,6 +201,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // race_participants seeding is in place.
   const myBoatId = process.env['NEXT_PUBLIC_DEMO_BOAT_ID'] ?? 'demo-boat-1';
   useTrackHydration(race.id, canInteract ? myBoatId : null);
+
+  // Resample weather grid as the user scrubs the timeline so wind/swell
+  // overlays preview future GFS slices instead of staying frozen at NOW.
+  useWeatherTimeSync();
 
   // Seed race context for the timeline bounds. forecastEnd is refreshed
   // every 5 min so J+7 keeps sliding forward as wall time advances.

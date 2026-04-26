@@ -1,11 +1,10 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
 import type * as React from 'react';
 import type { RaceStatus } from '@/lib/store/timeline-selectors';
 import { useTimelinePlayback } from '@/hooks/useTimelinePlayback';
 import { TimelineHeader } from './timeline/TimelineHeader';
-import { RankSparkline } from './timeline/RankSparkline';
 import { TimelineTrack } from './timeline/TimelineTrack';
+import { TimelineControls } from './timeline/TimelineControls';
 import styles from './WeatherTimeline.module.css';
 
 interface WeatherTimelineProps {
@@ -17,22 +16,11 @@ interface WeatherTimelineProps {
 export default function WeatherTimeline({ raceStatus = 'LIVE' }: WeatherTimelineProps): React.ReactElement {
   useTimelinePlayback(raceStatus);
 
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
-    ro.observe(el);
-    setWidth(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-
   return (
-    <div ref={wrapperRef} className={styles.wrapper}>
+    <div className={styles.wrapper}>
       <TimelineHeader />
-      <RankSparkline widthPx={Math.max(0, width - 32)} />
       <TimelineTrack raceStatus={raceStatus} />
+      <TimelineControls />
     </div>
   );
 }

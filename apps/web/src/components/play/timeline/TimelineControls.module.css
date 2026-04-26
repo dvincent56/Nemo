@@ -1,0 +1,118 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  font-family: var(--font-mono);
+  user-select: none;
+}
+
+.btn {
+  height: 28px;
+  min-width: 32px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  color: rgba(245, 240, 232, 0.72);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+
+.btn:hover:not(:disabled) {
+  color: #f5f0e8;
+  border-color: rgba(245, 240, 232, 0.28);
+  background: rgba(245, 240, 232, 0.04);
+}
+
+.btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.btnActive {
+  background: #c9a227;
+  color: #1a2840;
+  border-color: #c9a227;
+}
+
+.btnActive:hover:not(:disabled) {
+  background: #c9a227;
+  color: #1a2840;
+}
+
+.step {
+  font-variant-numeric: tabular-nums;
+}
+
+.speedGroup {
+  display: inline-flex;
+  gap: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.speedGroup .speedBtn {
+  border-radius: 0;
+  border-right-width: 0;
+  min-width: 30px;
+  padding: 0 6px;
+}
+
+.speedGroup .speedBtn:first-child {
+  border-radius: 3px 0 0 3px;
+}
+
+.speedGroup .speedBtn:last-child {
+  border-radius: 0 3px 3px 0;
+  border-right-width: 1px;
+}
+
+.live {
+  height: 28px;
+  padding: 0 12px;
+  background: transparent;
+  border: 1px solid #c9a227;
+  color: #c9a227;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: background 150ms, color 150ms;
+}
+
+.live:hover {
+  background: rgba(201, 162, 39, 0.10);
+}
+
+.liveActive {
+  background: #6cd28a;
+  border-color: #6cd28a;
+  color: #1a2840;
+}
+
+.liveActive:hover {
+  background: #6cd28a;
+}
+
+@media (max-width: 860px) {
+  .controls { gap: 3px; }
+  .btn { height: 26px; min-width: 28px; padding: 0 6px; font-size: 9px; }
+  .speedGroup .speedBtn { min-width: 26px; padding: 0 4px; }
+  .live { height: 26px; padding: 0 10px; font-size: 9px; }
+}
+
+@media (max-width: 600px) {
+  .step { display: none; }
+  .controls { gap: 2px; }
+  .btn { min-width: 26px; padding: 0 5px; }
+}

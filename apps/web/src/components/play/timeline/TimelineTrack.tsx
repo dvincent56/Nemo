@@ -3,31 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type * as React from 'react';
 import { useGameStore } from '@/lib/store';
 import { selectTimelineBounds, type RaceStatus } from '@/lib/store/timeline-selectors';
-import { computeTicks, buildTickPositions, type TickScale } from './ticks';
+import { buildTicks, type Tick } from './ticks';
 import styles from './TimelineTrack.module.css';
 
 const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-
-function formatLabel(ts: number, scale: TickScale, nowMs: number): string {
-  const d = new Date(ts);
-  if (scale.format === 'HH:00') {
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  }
-  if (scale.format === 'DD MMM') {
-    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  }
-  // 'HH:00 · J+N'
-  const dayOffset = Math.floor((ts - nowMs) / DAY);
-  const offsetLabel =
-    dayOffset === 0 ? 'Auj.' : dayOffset > 0 ? `J+${dayOffset}` : `J${dayOffset}`;
-  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  return `${time} · ${offsetLabel}`;
-}
-
-function formatBookend(ts: number): string {
-  return new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
 
 export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React.ReactElement {
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -45,13 +24,10 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
 
   const bounds = selectTimelineBounds({ raceStartMs, raceEndMs, forecastEndMs, status: raceStatus, nowMs });
   const span = Math.max(1, bounds.maxMs - bounds.minMs);
-  const cursorPctRaw = ((currentTime.getTime() - bounds.minMs) / span) * 100;
-  const cursorPct = Math.max(0, Math.min(100, cursorPctRaw));
-  const nowPctRaw = ((nowMs - bounds.minMs) / span) * 100;
-  const nowPct = Math.max(0, Math.min(100, nowPctRaw));
+  const cursorPct = clampPct(((currentTime.getTime() - bounds.minMs) / span) * 100);
+  const nowPct = clampPct(((nowMs - bounds.minMs) / span) * 100);
 
-  const tickScale = computeTicks({ ...bounds, nowMs });
-  const ticks = buildTickPositions(tickScale, { ...bounds, nowMs }, formatLabel);
+  const ticks: Tick[] = buildTicks({ ...bounds, nowMs });
 
   const onPointerJump = useCallback((clientX: number) => {
     const el = trackRef.current;
@@ -65,7 +41,7 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
   const draggingRef = useRef(false);
   const onPointerDown = (e: React.PointerEvent) => {
     draggingRef.current = true;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     onPointerJump(e.clientX);
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -73,7 +49,7 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
   };
   const onPointerUp = (e: React.PointerEvent) => {
     draggingRef.current = false;
-    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -91,8 +67,21 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
   };
 
   return (
-    <div className={styles.row}>
-      <span className={styles.bookend}>{formatBookend(bounds.minMs)}</span>
+    <div className={styles.zone}>
+      {/* Future tick labels — above the rail */}
+      <div className={styles.tickRowAbove} aria-hidden>
+        {ticks.filter((t) => t.kind === 'future' || t.kind === 'now').map((t) => (
+          <span
+            key={`a-${t.ts}`}
+            className={`${styles.tickLabel} ${t.kind === 'now' ? styles.tickNow : styles.tickFuture}`}
+            style={{ left: `${t.pctX}%` }}
+          >
+            {t.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Rail itself — interactive */}
       <div
         ref={trackRef}
         className={styles.track}
@@ -107,21 +96,44 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
       >
-        <div className={styles.trackPast} style={{ width: `${nowPct}%` }} />
-        <div className={styles.trackFuture} style={{ left: `${nowPct}%`, width: `${100 - nowPct}%` }} />
-        <div className={styles.nowLine} style={{ left: `${nowPct}%` }}>
-          <span className={styles.nowLabel}>NOW</span>
-        </div>
-        <div className={styles.cursor} style={{ left: `${cursorPct}%` }} />
-        <div className={styles.tickLabels}>
-          {ticks.map((t) => (
-            <span key={t.ts} className={styles.tickLabel} style={{ left: `${t.pctX}%` }}>
-              {t.label}
-            </span>
-          ))}
+        <div className={styles.rail} />
+        <div className={styles.pastFill} style={{ width: `${nowPct}%` }} />
+        <div className={styles.futureFill} style={{ left: `${nowPct}%`, width: `${100 - nowPct}%` }} />
+        {/* tick marks (small vertical strokes) */}
+        {ticks.map((t) => (
+          <span
+            key={`m-${t.ts}`}
+            className={`${styles.tickMark} ${
+              t.kind === 'now' ? styles.tickMarkNow
+                : t.kind === 'future' ? styles.tickMarkFuture
+                : styles.tickMarkPast
+            }`}
+            style={{ left: `${t.pctX}%` }}
+          />
+        ))}
+        <div className={styles.cursor} style={{ left: `${cursorPct}%` }}>
+          <span className={styles.cursorStem} />
+          <span className={styles.cursorHandle} />
         </div>
       </div>
-      <span className={`${styles.bookend} ${styles.rowGold}`}>{formatBookend(bounds.maxMs)}</span>
+
+      {/* Past tick labels — below the rail */}
+      <div className={styles.tickRowBelow} aria-hidden>
+        {ticks.filter((t) => t.kind === 'past').map((t) => (
+          <span
+            key={`b-${t.ts}`}
+            className={`${styles.tickLabel} ${styles.tickPast}`}
+            style={{ left: `${t.pctX}%` }}
+          >
+            {t.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
+}
+
+function clampPct(p: number): number {
+  if (Number.isNaN(p)) return 0;
+  return Math.max(0, Math.min(100, p));
 }

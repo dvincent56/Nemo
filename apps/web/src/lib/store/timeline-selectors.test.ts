@@ -3,7 +3,6 @@ import {
   selectTimelineBounds,
   selectGhostPosition,
   selectWeatherLayerVisible,
-  selectRankSparklineNormalized,
 } from './timeline-selectors';
 
 const baseTrack = [
@@ -101,25 +100,3 @@ describe('selectWeatherLayerVisible', () => {
   });
 });
 
-describe('selectRankSparklineNormalized', () => {
-  it('normalizes Y to [0,1] over min/max rank, inverted (rank 1 = top)', () => {
-    const out = selectRankSparklineNormalized(baseTrack);
-    // ranks 100,80,60 → min=60, max=100 → yNorm = 1 - (rank - 60) / 40
-    expect(out[0]!.yNorm).toBeCloseTo(0, 5);   // rank 100 (worst)
-    expect(out[1]!.yNorm).toBeCloseTo(0.5, 5); // rank 80
-    expect(out[2]!.yNorm).toBeCloseTo(1, 5);   // rank 60 (best)
-  });
-  it('returns empty when fewer than 2 points', () => {
-    expect(selectRankSparklineNormalized([baseTrack[0]!])).toEqual([]);
-    expect(selectRankSparklineNormalized([])).toEqual([]);
-  });
-  it('handles all-same rank by mapping to a flat line at yNorm=1', () => {
-    const flat = [
-      { ts: 1, lat: 0, lon: 0, rank: 5 },
-      { ts: 2, lat: 0, lon: 0, rank: 5 },
-    ];
-    const out = selectRankSparklineNormalized(flat);
-    expect(out[0]!.yNorm).toBe(1);
-    expect(out[1]!.yNorm).toBe(1);
-  });
-});

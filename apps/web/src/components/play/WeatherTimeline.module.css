@@ -2,23 +2,24 @@
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  padding: 4px clamp(12px, 2vw, 24px);
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 6px clamp(12px, 2vw, 24px);
   color: #f5f0e8;
   min-width: 0;
 }
 
 @media (max-width: 860px) {
   .wrapper {
-    padding: 4px 10px;
-    gap: 2px;
+    padding: 5px 10px;
+    gap: 8px;
   }
 }
 
 @media (max-width: 600px) {
   .wrapper {
-    padding: 3px 8px;
+    padding: 4px 8px;
+    gap: 6px;
   }
 }

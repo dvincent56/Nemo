@@ -141,31 +141,3 @@ export function selectWeatherLayerVisible(i: { currentTimeMs: number; nowMs: num
   return i.currentTimeMs >= i.nowMs;
 }
 
-export interface SparklinePoint {
-  ts: number;
-  rank: number;
-  /** 0..1 ; 1 = meilleur rang (rang 1), 0 = pire rang de la fenêtre. */
-  yNorm: number;
-}
-
-/**
- * Normalise les points de rang de la trace en y∈[0,1] proportionnellement
- * à la plage observée (pas de log scale). yNorm est inversé : un meilleur
- * rang (faible chiffre) donne yNorm proche de 1, ce qui rend le tracé
- * "monte = mieux" lisible directement.
- */
-export function selectRankSparklineNormalized(track: readonly TrackPoint[]): SparklinePoint[] {
-  if (track.length < 2) return [];
-  let min = Infinity;
-  let max = -Infinity;
-  for (const p of track) {
-    if (p.rank < min) min = p.rank;
-    if (p.rank > max) max = p.rank;
-  }
-  const span = max - min;
-  return track.map((p) => ({
-    ts: p.ts,
-    rank: p.rank,
-    yNorm: span === 0 ? 1 : 1 - (p.rank - min) / span,
-  }));
-}

@@ -3,7 +3,7 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-rows: var(--hud-h, 56px) 1fr var(--timeline-h, 88px);
+  grid-template-rows: var(--hud-h, 56px) 1fr var(--timeline-h, 72px);
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   background: var(--navy-deeper, #060b18);
@@ -26,7 +26,7 @@
   border-top: 1px solid rgba(245, 240, 232, 0.16);
   display: flex;
   align-items: center;
-  min-height: var(--timeline-h, 88px);
+  min-height: var(--timeline-h, 72px);
 }
 .timelinePlaceholder {
   font-family: var(--font-mono);
@@ -327,7 +327,7 @@
 
 /* Phone */
 @media (max-width: 600px) {
-  .app { --hud-h: 44px; --timeline-h: 52px; }
+  .app { --hud-h: 44px; --timeline-h: 56px; }
   .leftStack { left: 8px; bottom: 8px; gap: 4px; }
   .rightStack {
     bottom: 8px; right: 8px;
@@ -342,7 +342,7 @@
 /* Landscape with small height — idem : marge et gap identiques des deux
  * côtés pour que le layout panel descende au même niveau que le compass. */
 @media (max-height: 500px) {
-  .app { --hud-h: 44px; --timeline-h: 44px; }
+  .app { --hud-h: 44px; --timeline-h: 50px; }
   .leftStack { left: 6px; bottom: 6px; gap: 4px; }
   .rightStack { bottom: 6px; right: 6px; gap: 4px; }
   .actionButtons { flex-direction: row; gap: 4px; }
