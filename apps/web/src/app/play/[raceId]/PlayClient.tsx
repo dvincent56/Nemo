@@ -459,7 +459,15 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         boatClass: cls,
         now: nowMs,
       });
-      state.applyOptimisticHud(patch.hud);
+      // ORDER MATTERS — sail change FIRST, then maneuver, then hud (bsp).
+      // patch.hud.bsp is already computed using the predicted new sail's polar
+      // (with transition penalty), but downstream subscribers might re-derive
+      // bsp from (sail, polar) at any moment — applying the sail change first
+      // means a re-derive sees the new sail and arrives at the same bsp value,
+      // avoiding a flicker back to the old sail's polar bsp.
+      if (patch.sail.sailChange) {
+        state.setOptimisticSailChange(patch.sail.sailChange);
+      }
       if (patch.sail.maneuver) {
         state.applyOptimisticManeuver({
           maneuverKind: patch.sail.maneuver.kind,
@@ -467,9 +475,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           maneuverEndMs: patch.sail.maneuver.endMs,
         });
       }
-      if (patch.sail.sailChange) {
-        state.setOptimisticSailChange(patch.sail.sailChange);
-      }
+      state.applyOptimisticHud(patch.hud);
     } else {
       // Best-effort fallback: at minimum apply the heading + polyline bsp.
       if (optimisticHdg !== null) state.applyOptimisticHud({ hdg: optimisticHdg });
