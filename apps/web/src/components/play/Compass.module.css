@@ -283,25 +283,39 @@
   .actionBtn { min-height: 32px; font-size: 8px; padding: 6px 4px; }
 }
 
-@media (max-height: 420px) {
+@media (max-height: 480px) {
   .wrapper {
-    width: clamp(160px, 24vw, 200px);
-    padding: 8px;
-    gap: 6px;
+    width: clamp(120px, 24vw, 168px);
+    padding: 6px 8px 7px;
+    gap: 5px;
   }
-  .readouts { display: none; }
+  .readoutLabel { font-size: 6.5px; letter-spacing: 0.14em; }
+  .readoutValue { font-size: 10px; }
+  .readoutValue small { font-size: 7px; }
+  .readouts { padding-bottom: 4px; }
+  .stage { max-width: 60px; margin: 0 auto; }
+  .actions { gap: 4px; padding-top: 4px; }
+  .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
+}
+
+@media (max-height: 360px) {
+  .stage { max-width: 48px; }
 }
 
 /* Phone width */
 @media (max-width: 600px) {
   .wrapper {
-    width: clamp(160px, 42vw, 200px);
-    padding: 8px;
-    gap: 6px;
+    width: clamp(120px, 38vw, 168px);
+    padding: 6px 8px 7px;
+    gap: 5px;
   }
-  .readouts { display: none; }
-  .actions { gap: 4px; padding-top: 6px; }
-  .actionBtn { min-height: 30px; font-size: 8px; padding: 4px 3px; gap: 3px; }
+  .readoutLabel { font-size: 6.5px; letter-spacing: 0.14em; }
+  .readoutValue { font-size: 10px; }
+  .readoutValue small { font-size: 7px; }
+  .readouts { padding-bottom: 4px; }
+  .stage { max-width: 60px; margin: 0 auto; }
+  .actions { gap: 4px; padding-top: 4px; }
+  .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
 }
 
 /* Very small phone */
