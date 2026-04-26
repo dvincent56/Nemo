@@ -73,6 +73,15 @@
   .header { flex-basis: auto; gap: 8px; }
 }
 
-@media (max-width: 480px) {
-  .timestamp { display: none; }
+@media (max-width: 600px) {
+  .header { flex-basis: auto; gap: 6px; }
+  .offset { font-size: 9px; padding: 4px 8px; min-width: 0; gap: 4px; }
+  .timestamp { font-size: 9px; }
+  .sep { display: none; }
+}
+
+@media (max-height: 500px) {
+  .header { flex-basis: auto; gap: 6px; }
+  .offset { font-size: 9px; padding: 4px 8px; min-width: 0; gap: 4px; }
+  .timestamp { font-size: 9px; }
 }
