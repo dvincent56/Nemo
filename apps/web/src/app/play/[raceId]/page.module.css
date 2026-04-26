@@ -362,7 +362,7 @@
 /* ── Zoom compact (top-right under HUD) ──────────────────── */
 .zoomCompact {
   position: absolute;
-  top: 52px;
+  top: 16px;
   right: 16px;
   z-index: 20;
   display: flex;
