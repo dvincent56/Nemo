@@ -15,6 +15,7 @@ import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import { useTacticalTile } from '@/hooks/useTacticalTile';
 import { useTrackHydration } from '@/hooks/useTrackHydration';
 import { useWeatherTimeSync } from '@/hooks/useWeatherTimeSync';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
@@ -205,6 +206,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // Resample weather grid as the user scrubs the timeline so wind/swell
   // overlays preview future GFS slices instead of staying frozen at NOW.
   useWeatherTimeSync();
+
+  const isPortraitPhone = useMediaQuery('(max-width: 600px) and (orientation: portrait)');
+  const panelMode = isPortraitPhone ? 'sheet' : 'side';
 
   // Seed race context for the timeline bounds. forecastEnd is refreshed
   // every 5 min so J+5 keeps sliding forward as wall time advances.
@@ -700,16 +704,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         </button>
 
         {/* Slide-out panels */}
-        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()}>
+        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
           <RankingPanel />
         </SlidePanel>
 
         {canInteract && (
           <>
-            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()}>
+            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <SailPanel />
             </SlidePanel>
-            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()}>
+            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <ProgPanel />
             </SlidePanel>
             <SlidePanel
@@ -719,6 +723,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
               panelClassName={routerPhase === 'placing' ? 'slidePanelPlacingMobileHide' : ''}
+              mode={panelMode}
             >
               <RouterPanel onApply={onApply} />
             </SlidePanel>
