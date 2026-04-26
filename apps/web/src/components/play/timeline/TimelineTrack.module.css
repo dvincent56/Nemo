@@ -57,7 +57,7 @@
 
 .track:focus-visible {
   box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.30);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 /* The rail — a single thin baseline running the whole width */
@@ -71,17 +71,16 @@
   transform: translateY(-50%);
 }
 
-/* Past fill — solid gold strap above the baseline */
+/* Past fill — solid gold strap, no glow */
 .pastFill {
   position: absolute;
   top: 50%;
-  height: 3px;
+  height: 2px;
   left: 0;
-  background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0.95) 100%);
-  border-radius: 1.5px;
+  background: #c9a227;
+  border-radius: 1px;
   transform: translateY(-50%);
   pointer-events: none;
-  box-shadow: 0 0 6px rgba(201, 162, 39, 0.20);
 }
 
 /* Future fill — dashed cool-ivory hint */
@@ -89,8 +88,8 @@
   position: absolute;
   top: calc(50% - 0.5px);
   height: 1px;
-  background-image: linear-gradient(90deg, rgba(245, 240, 232, 0.55) 50%, transparent 50%);
-  background-size: 6px 1px;
+  background-image: linear-gradient(90deg, rgba(245, 240, 232, 0.45) 50%, transparent 50%);
+  background-size: 5px 1px;
   background-repeat: repeat-x;
   pointer-events: none;
 }
@@ -119,10 +118,9 @@
   width: 2px;
   height: 14px;
   background: #f5f0e8;
-  box-shadow: 0 0 4px rgba(245, 240, 232, 0.8);
 }
 
-/* Cursor — a glowing gold disc anchored to the rail */
+/* Cursor — gold disc, subtle halo (no neon) */
 .cursor {
   position: absolute;
   top: 50%;
@@ -143,8 +141,8 @@
   border: 2px solid #1a2840;
   border-radius: 50%;
   box-shadow:
-    0 0 0 2px #c9a227,
-    0 0 10px rgba(201, 162, 39, 0.65);
+    0 0 0 1px #c9a227,
+    0 0 4px rgba(201, 162, 39, 0.30);
 }
 
 /* Responsive */
@@ -158,7 +156,11 @@
   /* phone : the track is on its own row inside the wrapper grid, so it
    * gets the full width and we can keep tick labels visible */
   .track { height: 32px; }
-  .cursorHandle { width: 18px; height: 18px; box-shadow: 0 0 0 2px #c9a227, 0 0 12px rgba(201, 162, 39, 0.7); }
+  .cursorHandle {
+    width: 18px;
+    height: 18px;
+    box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
+  }
   .tickLabel { font-size: 8px; }
 }
 

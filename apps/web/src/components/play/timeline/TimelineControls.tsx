@@ -26,17 +26,17 @@ export function TimelineControls(): React.ReactElement {
       >−6h</button>
       <button
         type="button"
-        className={`${styles.btn} ${isPlaying ? styles.btnActive : ''}`}
+        className={`${styles.btn} ${styles.play} ${isPlaying ? styles.btnActive : ''}`}
         onClick={() => setIsPlaying(!isPlaying)}
         aria-label={isPlaying ? 'pause' : 'lecture'}
         title={isPlaying ? 'Pause' : 'Lecture'}
       >{isPlaying ? '❚❚' : '▶'}</button>
-      <div className={styles.speedGroup}>
+      <div className={styles.speedGroup} role="group" aria-label="Vitesse de lecture">
         {[60, 120, 240].map((s) => (
           <button
             key={s}
             type="button"
-            className={`${styles.btn} ${styles.speedBtn} ${playbackSpeed === s ? styles.btnActive : ''}`}
+            className={`${styles.speedBtn} ${playbackSpeed === s ? styles.speedBtnActive : ''}`}
             onClick={() => setPlaybackSpeed(s as 60 | 120 | 240)}
             title={`Vitesse ×${s}`}
           >{s}×</button>

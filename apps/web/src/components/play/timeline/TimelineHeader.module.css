@@ -2,7 +2,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  flex: 0 0 210px;          /* pinned width — track never shifts when label grows */
+  flex: 0 0 220px;          /* pinned width — track never shifts when label grows */
   font-family: var(--font-mono);
   user-select: none;
   overflow: hidden;
@@ -12,23 +12,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 64px;          /* pinned so LIVE/T+3h/J-12 share the same slot */
-  font-size: 11px;
+  gap: 6px;
+  min-width: 70px;
+  font-family: var(--font-mono);
   font-weight: 700;
-  letter-spacing: 0.10em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: #c9a227;
-  padding: 3px 7px;
+  padding: 5px 10px;
   border: 1px solid rgba(201, 162, 39, 0.40);
-  border-radius: 2px;
-  background: rgba(201, 162, 39, 0.06);
+  border-radius: 4px;
+  background: rgba(201, 162, 39, 0.10);
   flex-shrink: 0;
 }
 
 .offsetLive {
   color: #6cd28a;
   border-color: rgba(108, 210, 138, 0.45);
-  background: rgba(108, 210, 138, 0.08);
+  background: rgba(108, 210, 138, 0.10);
 }
 
 .dot {
@@ -36,31 +38,33 @@
   height: 6px;
   background: #6cd28a;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgba(108, 210, 138, 0.8);
   animation: pulse 1.6s ease-in-out infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  50% { opacity: 0.4; }
 }
 
 .timestamp {
+  font-family: var(--font-mono);
+  font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.06em;
   color: rgba(245, 240, 232, 0.78);
-  text-transform: uppercase;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .sep {
   margin: 0 6px;
-  color: rgba(245, 240, 232, 0.30);
+  color: rgba(245, 240, 232, 0.28);
+  font-weight: 400;
 }
 
 @media (max-width: 860px) {
-  .header { flex-basis: 180px; gap: 6px; }
-  .offset { font-size: 10px; padding: 2px 5px; min-width: 56px; }
+  .header { flex-basis: 190px; gap: 6px; }
+  .offset { font-size: 9px; padding: 4px 8px; min-width: 60px; gap: 5px; }
   .timestamp { font-size: 10px; }
 }
 

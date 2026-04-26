@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Weather Timeline — harmonisation v1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ivory:        #f5f0e8;
+      --ivory-78:     rgba(245, 240, 232, 0.78);
+      --ivory-72:     rgba(245, 240, 232, 0.72);
+      --ivory-42:     rgba(245, 240, 232, 0.42);
+      --ivory-36:     rgba(245, 240, 232, 0.36);
+      --ivory-line:   rgba(245, 240, 232, 0.16);
+      --navy:         #1a2840;
+      --navy-bg:      #1a2840;
+      --gold:         #c9a227;
+      --gold-soft:    rgba(201, 162, 39, 0.12);
+      --gold-line:    rgba(201, 162, 39, 0.40);
+      --green:        #6cd28a;
+      --r-md:         4px;
+
+      --font-display: "Bebas Neue", Impact, sans-serif;
+      --font-body:    "Space Grotesk", system-ui, sans-serif;
+      --font-mono:    "Space Mono", ui-monospace, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0a1628;
+      color: var(--ivory);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 32px 16px 64px;
+    }
+
+    .stage {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .heading {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 0.06em;
+    }
+    .sub {
+      margin: 4px 0 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+    }
+
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+    .tag-before { background: rgba(158, 42, 42, 0.18); color: #f08585; }
+    .tag-after  { background: rgba(50, 180, 100, 0.14); color: #5cc88c; }
+
+    /* ============================================================
+       Timeline strip — full-width row mounted at bottom of play screen
+       Background = #1a2840, top border ivory-line.
+       ============================================================ */
+    .timeline-row {
+      width: 100%;
+      background: var(--navy-bg);
+      border-top: 1px solid var(--ivory-line);
+      padding: 0;
+    }
+
+    .timeline-wrap {
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas: "header track controls";
+      align-items: center;
+      column-gap: 14px;
+      padding: 6px clamp(12px, 2vw, 24px);
+      color: var(--ivory);
+      min-width: 0;
+      height: 88px;
+    }
+    .tl-header { grid-area: header; }
+    .tl-track  { grid-area: track; min-width: 0; }
+    .tl-ctrls  { grid-area: controls; }
+
+    /* ============================================================
+       HEADER — offset chip + timestamp
+       ============================================================ */
+    .tl-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex: 0 0 210px;
+      font-family: var(--font-mono);
+      user-select: none;
+    }
+    /* AVANT */
+    .v1 .tl-offset {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      min-width: 64px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      color: var(--gold);
+      padding: 3px 7px;
+      border: 1px solid var(--gold-line);
+      border-radius: 2px;
+      background: var(--gold-soft);
+    }
+    .v1 .tl-offset.is-live {
+      color: var(--green);
+      border-color: rgba(108, 210, 138, 0.45);
+      background: rgba(108, 210, 138, 0.08);
+    }
+    .v1 .tl-timestamp {
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      color: var(--ivory-78);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .v1 .tl-sep { margin: 0 6px; color: rgba(245, 240, 232, 0.30); }
+
+    /* APRÈS */
+    .v2 .tl-offset {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 70px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      padding: 5px 10px;
+      border: 1px solid var(--gold-line);
+      border-radius: var(--r-md);
+      background: var(--gold-soft);
+    }
+    .v2 .tl-offset.is-live {
+      color: var(--green);
+      border-color: rgba(108, 210, 138, 0.45);
+      background: rgba(108, 210, 138, 0.10);
+    }
+    .v2 .tl-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+    .v2 .tl-timestamp {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--ivory-78);
+      white-space: nowrap;
+    }
+    .v2 .tl-sep { margin: 0 6px; color: rgba(245, 240, 232, 0.28); font-weight: 400; }
+
+    /* ============================================================
+       TRACK — rail + ticks + cursor
+       ============================================================ */
+    .tl-track {
+      flex: 1;
+      position: relative;
+      display: grid;
+      grid-template-rows: 14px 28px 14px;
+      align-items: center;
+    }
+
+    .tick-row {
+      position: relative;
+      height: 14px;
+    }
+    .tick-label {
+      position: absolute;
+      transform: translateX(-50%);
+      top: 0;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      pointer-events: none;
+      line-height: 1;
+    }
+    .tick-future { color: rgba(201, 162, 39, 0.85); font-weight: 700; }
+    .tick-past   { color: var(--ivory-36); font-weight: 500; text-transform: uppercase; }
+    .tick-now    {
+      color: rgba(245, 240, 232, 0.92);
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      font-size: 8px;
+    }
+
+    .rail-wrap {
+      position: relative;
+      height: 28px;
+      cursor: pointer;
+    }
+    .rail {
+      position: absolute;
+      top: 50%; left: 0; right: 0;
+      height: 1px;
+      background: var(--ivory-line);
+      transform: translateY(-50%);
+    }
+
+    /* AVANT — past-fill avec gradient + glow + radius */
+    .v1 .rail-past {
+      position: absolute;
+      top: 50%;
+      height: 3px;
+      left: 0;
+      background: linear-gradient(90deg, rgba(201, 162, 39, 0.45) 0%, rgba(201, 162, 39, 0.95) 100%);
+      border-radius: 1.5px;
+      transform: translateY(-50%);
+      box-shadow: 0 0 6px rgba(201, 162, 39, 0.20);
+    }
+    .v1 .rail-future {
+      position: absolute;
+      top: calc(50% - 0.5px);
+      height: 1px;
+      background-image: linear-gradient(90deg, rgba(245, 240, 232, 0.55) 50%, transparent 50%);
+      background-size: 6px 1px;
+      background-repeat: repeat-x;
+    }
+
+    /* APRÈS — past-fill solide, plus discret */
+    .v2 .rail-past {
+      position: absolute;
+      top: 50%;
+      height: 2px;
+      left: 0;
+      background: var(--gold);
+      border-radius: 1px;
+      transform: translateY(-50%);
+    }
+    .v2 .rail-future {
+      position: absolute;
+      top: calc(50% - 0.5px);
+      height: 1px;
+      background-image: linear-gradient(90deg, rgba(245, 240, 232, 0.45) 50%, transparent 50%);
+      background-size: 5px 1px;
+      background-repeat: repeat-x;
+    }
+
+    .tick-mark {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .tick-mark-past   { width: 1px; height: 8px;  background: rgba(245, 240, 232, 0.40); }
+    .tick-mark-future { width: 1px; height: 10px; background: rgba(201, 162, 39, 0.65); }
+
+    /* AVANT — NOW avec halo ivoire */
+    .v1 .tick-mark-now {
+      width: 2px; height: 14px;
+      background: var(--ivory);
+      box-shadow: 0 0 4px rgba(245, 240, 232, 0.8);
+    }
+
+    /* APRÈS — NOW pin propre, sans halo */
+    .v2 .tick-mark-now {
+      width: 2px; height: 14px;
+      background: var(--ivory);
+    }
+
+    .cursor {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 3;
+    }
+    /* AVANT — cursor avec double halo + outer ring */
+    .v1 .cursor-handle {
+      display: block;
+      width: 14px; height: 14px;
+      background: var(--gold);
+      border: 2px solid var(--navy);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 2px var(--gold),
+        0 0 10px rgba(201, 162, 39, 0.65);
+    }
+    /* APRÈS — cursor net, halo très atténué */
+    .v2 .cursor-handle {
+      display: block;
+      width: 14px; height: 14px;
+      background: var(--gold);
+      border: 2px solid var(--navy);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 1px var(--gold),
+        0 0 4px rgba(201, 162, 39, 0.30);
+    }
+
+    /* ============================================================
+       CONTROLS
+       ============================================================ */
+    .tl-ctrls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+    }
+
+    /* AVANT */
+    .v1 .ctrl-btn {
+      height: 28px;
+      min-width: 32px;
+      padding: 0 8px;
+      background: transparent;
+      border: 1px solid var(--ivory-line);
+      color: var(--ivory-72);
+      border-radius: 3px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 150ms, color 150ms, border-color 150ms;
+      font-family: var(--font-mono);
+    }
+    .v1 .ctrl-btn:hover { color: var(--ivory); border-color: rgba(245, 240, 232, 0.28); background: rgba(245, 240, 232, 0.04); }
+    .v1 .ctrl-btn-active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+    .v1 .ctrl-btn-active:hover { background: var(--gold); color: var(--navy); }
+
+    .v1 .ctrl-speed-group {
+      display: inline-flex;
+      gap: 0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .v1 .ctrl-speed-group .ctrl-btn { border-radius: 0; border-right-width: 0; min-width: 30px; padding: 0 6px; }
+    .v1 .ctrl-speed-group .ctrl-btn:first-child { border-radius: 3px 0 0 3px; }
+    .v1 .ctrl-speed-group .ctrl-btn:last-child  { border-radius: 0 3px 3px 0; border-right-width: 1px; }
+
+    .v1 .ctrl-live {
+      height: 28px;
+      padding: 0 12px;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: background 150ms, color 150ms;
+    }
+    .v1 .ctrl-live:hover { background: rgba(201, 162, 39, 0.10); }
+    .v1 .ctrl-live-active { background: var(--green); border-color: var(--green); color: var(--navy); }
+
+    /* APRÈS */
+    .v2 .ctrl-btn {
+      height: 30px;
+      min-width: 34px;
+      padding: 0 10px;
+      background: transparent;
+      border: 1px solid var(--ivory-line);
+      color: var(--ivory-72);
+      border-radius: var(--r-md);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      cursor: pointer;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .v2 .ctrl-btn:hover {
+      color: var(--ivory);
+      border-color: rgba(245, 240, 232, 0.32);
+      background: rgba(245, 240, 232, 0.04);
+    }
+    .v2 .ctrl-btn-active,
+    .v2 .ctrl-btn-active:hover {
+      background: var(--gold);
+      color: var(--navy);
+      border-color: var(--gold);
+    }
+    .v2 .ctrl-step { font-variant-numeric: tabular-nums; }
+    .v2 .ctrl-play { min-width: 38px; font-size: 11px; }
+
+    /* Segmented speed group — same pattern as SailPanel.modeToggle */
+    .v2 .ctrl-speed-group {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2px;
+      padding: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+      height: 30px;
+    }
+    .v2 .ctrl-speed-group .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--ivory-72);
+      padding: 0 8px;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: background 150ms, color 150ms;
+      min-width: 32px;
+    }
+    .v2 .ctrl-speed-group .seg-btn:hover:not(.seg-btn-active) { color: var(--ivory); }
+    .v2 .ctrl-speed-group .seg-btn-active,
+    .v2 .ctrl-speed-group .seg-btn-active:hover {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .v2 .ctrl-live {
+      height: 30px;
+      padding: 0 14px;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: var(--r-md);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 150ms, color 150ms;
+    }
+    .v2 .ctrl-live:hover { background: var(--gold); color: var(--navy); }
+    .v2 .ctrl-live-active,
+    .v2 .ctrl-live-active:hover {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--navy);
+    }
+
+    /* ============================================================
+       Reference panel snippet (SailPanel modeToggle for comparison)
+       ============================================================ */
+    .ref-block {
+      max-width: 320px;
+      padding: 18px 20px;
+      background: rgba(12, 20, 36, 0.97);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+    }
+    .ref-label {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+      margin-bottom: 8px;
+    }
+    .ref-mode-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+    }
+    .ref-mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--ivory-72);
+      padding: 10px 12px;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .ref-mode-btn-active {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ivory-42);
+      letter-spacing: 0.08em;
+      line-height: 1.7;
+      max-width: 880px;
+    }
+    .footer-note strong { color: var(--ivory); font-weight: 700; }
+    .footer-note code   { font-family: var(--font-mono); color: var(--ivory-72); }
+
+    .ref-row {
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .ref-col h3 {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+      margin: 0 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div>
+      <h1 class="heading">Weather Timeline — harmonisation</h1>
+      <p class="sub">Avant / Après · alignement avec ProgPanel · SailPanel · RouterPanel</p>
+    </div>
+
+    <!-- ============================================================
+         AVANT
+         ============================================================ -->
+    <section class="v1">
+      <span class="tag tag-before">Avant</span>
+
+      <div class="timeline-row">
+        <div class="timeline-wrap">
+          <div class="tl-header">
+            <span class="tl-offset is-live">
+              <span class="tl-dot"></span>LIVE
+            </span>
+            <span class="tl-timestamp">14h32<span class="tl-sep">·</span>26 avr</span>
+          </div>
+
+          <div class="tl-track">
+            <div class="tick-row" aria-hidden>
+              <span class="tick-label tick-now"  style="left: 32%;">NOW</span>
+              <span class="tick-label tick-future" style="left: 50%;">J+1</span>
+              <span class="tick-label tick-future" style="left: 67%;">J+2</span>
+              <span class="tick-label tick-future" style="left: 83%;">J+3</span>
+              <span class="tick-label tick-future" style="left: 99%;">J+4</span>
+            </div>
+            <div class="rail-wrap">
+              <div class="rail"></div>
+              <div class="rail-past" style="width: 32%;"></div>
+              <div class="rail-future" style="left: 32%; width: 68%;"></div>
+              <span class="tick-mark tick-mark-past"   style="left: 4%;"></span>
+              <span class="tick-mark tick-mark-past"   style="left: 18%;"></span>
+              <span class="tick-mark tick-mark-now"    style="left: 32%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 50%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 67%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 83%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 99%;"></span>
+              <div class="cursor" style="left: 32%;">
+                <span class="cursor-handle"></span>
+              </div>
+            </div>
+            <div class="tick-row" aria-hidden>
+              <span class="tick-label tick-past" style="left: 4%;">J-2</span>
+              <span class="tick-label tick-past" style="left: 18%;">J-1</span>
+            </div>
+          </div>
+
+          <div class="tl-ctrls">
+            <button class="ctrl-btn ctrl-step">−6h</button>
+            <button class="ctrl-btn">▶</button>
+            <div class="ctrl-speed-group">
+              <button class="ctrl-btn ctrl-btn-active">60×</button>
+              <button class="ctrl-btn">120×</button>
+              <button class="ctrl-btn">240×</button>
+            </div>
+            <button class="ctrl-btn ctrl-step">+6h</button>
+            <button class="ctrl-live ctrl-live-active">LIVE</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         APRÈS
+         ============================================================ -->
+    <section class="v2">
+      <span class="tag tag-after">Après</span>
+
+      <div class="timeline-row">
+        <div class="timeline-wrap">
+          <div class="tl-header">
+            <span class="tl-offset is-live">
+              <span class="tl-dot"></span>Live
+            </span>
+            <span class="tl-timestamp">14h32<span class="tl-sep">·</span>26 avr</span>
+          </div>
+
+          <div class="tl-track">
+            <div class="tick-row" aria-hidden>
+              <span class="tick-label tick-now"  style="left: 32%;">NOW</span>
+              <span class="tick-label tick-future" style="left: 50%;">J+1</span>
+              <span class="tick-label tick-future" style="left: 67%;">J+2</span>
+              <span class="tick-label tick-future" style="left: 83%;">J+3</span>
+              <span class="tick-label tick-future" style="left: 99%;">J+4</span>
+            </div>
+            <div class="rail-wrap">
+              <div class="rail"></div>
+              <div class="rail-past" style="width: 32%;"></div>
+              <div class="rail-future" style="left: 32%; width: 68%;"></div>
+              <span class="tick-mark tick-mark-past"   style="left: 4%;"></span>
+              <span class="tick-mark tick-mark-past"   style="left: 18%;"></span>
+              <span class="tick-mark tick-mark-now"    style="left: 32%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 50%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 67%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 83%;"></span>
+              <span class="tick-mark tick-mark-future" style="left: 99%;"></span>
+              <div class="cursor" style="left: 32%;">
+                <span class="cursor-handle"></span>
+              </div>
+            </div>
+            <div class="tick-row" aria-hidden>
+              <span class="tick-label tick-past" style="left: 4%;">J-2</span>
+              <span class="tick-label tick-past" style="left: 18%;">J-1</span>
+            </div>
+          </div>
+
+          <div class="tl-ctrls">
+            <button class="ctrl-btn ctrl-step">−6h</button>
+            <button class="ctrl-btn ctrl-play ctrl-btn-active">❚❚</button>
+            <div class="ctrl-speed-group">
+              <button class="seg-btn seg-btn-active">60×</button>
+              <button class="seg-btn">120×</button>
+              <button class="seg-btn">240×</button>
+            </div>
+            <button class="ctrl-btn ctrl-step">+6h</button>
+            <button class="ctrl-live ctrl-live-active">Live</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="footer-note">
+        <strong>Diff principales :</strong>
+        radius <code>3 → 4 px</code> partout ·
+        speed group enveloppé en <code>seg-toggle</code> (fond + bordure ivoire, padding 3 px) façon <code>SailPanel.modeToggle</code> ·
+        boutons <code>28 → 30 px</code> avec padding <code>10 px</code> et <code>letter-spacing 0.10em</code> uniforme ·
+        play/pause utilise l'état <em>actif</em> doré ·
+        chip offset radius 4 + uppercase + letter-spacing <code>0.16em</code> ·
+        cursor halo réduit (sans double ring néon, conforme à la règle <em>no-neon</em>) ·
+        rail past en or solide 2 px (vs gradient + glow).
+      </p>
+
+      <div class="ref-row" style="margin-top: 24px;">
+        <div class="ref-col">
+          <h3>Référence — SailPanel.modeToggle</h3>
+          <div class="ref-block">
+            <div class="ref-label">Mode</div>
+            <div class="ref-mode-toggle">
+              <button class="ref-mode-btn ref-mode-btn-active">Manuel</button>
+              <button class="ref-mode-btn">Auto</button>
+            </div>
+          </div>
+        </div>
+        <div class="ref-col">
+          <h3>Adaptation timeline (compact)</h3>
+          <div style="background: var(--navy-bg); border: 1px solid var(--ivory-line); padding: 12px; border-radius: var(--r-md);">
+            <div class="ref-label">Vitesse</div>
+            <div class="ctrl-speed-group" style="display: grid; grid-template-columns: 1fr 1fr 1fr;">
+              <button class="seg-btn seg-btn-active">60×</button>
+              <button class="seg-btn">120×</button>
+              <button class="seg-btn">240×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
