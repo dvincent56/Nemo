@@ -11,6 +11,7 @@ import {
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
+import { selectGhostPosition } from '@/lib/store/timeline-selectors';
 
 /* ── Country labels (French) rendered as lightweight GeoJSON symbols ── */
 const COUNTRY_LABELS: GeoJSON.FeatureCollection = {
@@ -397,6 +398,15 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         paint: { 'line-color': BOAT_COLOR, 'line-width': 2, 'line-opacity': 0.85 },
       });
 
+      // ── Past-trace line (timeline replay) ──
+      // Combines the persisted server track (track.myPoints) with the live
+      // trail accumulated this session. Drawn under the projection so the
+      // future arc remains visually dominant during replay.
+      map.addSource('past-trace', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+      });
+
       // ── Projection line ──
       // Single LineString + line-gradient: MapLibre rasterises one strip with
       // a 256-sample 1D color texture, much cheaper than rendering N segment
@@ -412,6 +422,20 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       // projection-* source + layer set" no matter the entry conditions.
       installProjectionLayers(map);
       projectionInstalledRef.current = map;
+
+      // Past-trace line layer — inserted just below the projection so the
+      // future arc renders on top during replay scrubbing. The past-trace
+      // source is added earlier in the load handler.
+      map.addLayer({
+        id: 'past-trace-line',
+        type: 'line',
+        source: 'past-trace',
+        paint: {
+          'line-color': '#1a4d7a',
+          'line-width': 2.5,
+          'line-opacity': 0.9,
+        },
+      }, 'projection-line-layer');
 
       // ── Maneuver marker tooltip ──
       const maneuverPopup = new maplibregl.Popup({
@@ -557,6 +581,13 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         map.easeTo({ center: [initHud.lon, initHud.lat], duration: 0 });
       }
 
+      // Ghost boat source — populated by the timeline subscription effect
+      // when scrubbing past or future. Empty in live mode.
+      map.addSource('ghost-boat', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
       // Load IMOCA silhouette as map icon
       const boatImg = new Image(60, 18);
       boatImg.onload = () => {
@@ -573,6 +604,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
             'icon-rotate': ['-', ['get', 'hdg'], 90],
             'icon-rotation-alignment': 'map',
             'icon-allow-overlap': true,
+          },
+        });
+        map.addLayer({
+          id: 'ghost-boat-icon',
+          type: 'symbol',
+          source: 'ghost-boat',
+          layout: {
+            'icon-image': 'imoca',
+            'icon-size': 0.6,
+            'icon-rotate': ['-', ['get', 'hdg'], 90],
+            'icon-rotation-alignment': 'map',
+            'icon-allow-overlap': true,
+          },
+          paint: {
+            'icon-opacity': 0.4,
           },
         });
       };
@@ -668,6 +714,21 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         });
       }
 
+      // Keep the timeline past-trace (persisted + live) in sync with the
+      // newly-appended trail point so replay scrubbing reflects the latest
+      // boat position even before the next track-checkpoint arrives.
+      const pastSrc = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
+      if (pastSrc) {
+        const persisted: [number, number][] = s.track.myPoints.map(
+          (p) => [p.lon, p.lat] as [number, number],
+        );
+        pastSrc.setData({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [...persisted, ...trailCoords] },
+          properties: {},
+        });
+      }
+
       if (s.map.isFollowingBoat) {
         map.easeTo({ center: [lon, lat], duration: 500 });
       }
@@ -726,6 +787,109 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       if (s.zones !== prev) {
         prev = s.zones;
         applyZones(s.zones);
+      }
+    });
+  }, []);
+
+  /* ── Past-trace: persisted track + live trail, refreshed on timeline scrub ── */
+  useEffect(() => {
+    const applyPastTrace = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      const src = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      const state = useGameStore.getState();
+      const persisted: [number, number][] = state.track.myPoints.map(
+        (p) => [p.lon, p.lat] as [number, number],
+      );
+      const merged = [...persisted, ...trailCoords];
+      src.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: merged },
+        properties: {},
+      });
+    };
+    applyPastTrace();
+    let prevPoints = useGameStore.getState().track.myPoints;
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    return useGameStore.subscribe((s) => {
+      if (s.track.myPoints !== prevPoints || s.timeline.currentTime !== prevTime) {
+        prevPoints = s.track.myPoints;
+        prevTime = s.timeline.currentTime;
+        applyPastTrace();
+      }
+    });
+  }, []);
+
+  /* ── Ghost boat: interpolated position when scrubbing the timeline ── */
+  useEffect(() => {
+    const applyGhost = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      const src = map.getSource('ghost-boat') as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      const s = useGameStore.getState();
+      const ghost = selectGhostPosition({
+        currentTimeMs: s.timeline.currentTime.getTime(),
+        isLive: s.timeline.isLive,
+        nowMs: Date.now(),
+        track: s.track.myPoints,
+        projection: s.projectionSnapshot?.points ?? null,
+      });
+      if (!ghost) {
+        src.setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+      src.setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [ghost.lon, ghost.lat] },
+          properties: { hdg: ghost.hdg },
+        }],
+      });
+    };
+    applyGhost();
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    let prevLive = useGameStore.getState().timeline.isLive;
+    let prevPoints = useGameStore.getState().track.myPoints;
+    let prevSnap = useGameStore.getState().projectionSnapshot;
+    return useGameStore.subscribe((s) => {
+      if (
+        s.timeline.currentTime !== prevTime ||
+        s.timeline.isLive !== prevLive ||
+        s.track.myPoints !== prevPoints ||
+        s.projectionSnapshot !== prevSnap
+      ) {
+        prevTime = s.timeline.currentTime;
+        prevLive = s.timeline.isLive;
+        prevPoints = s.track.myPoints;
+        prevSnap = s.projectionSnapshot;
+        applyGhost();
+      }
+    });
+  }, []);
+
+  /* ── Projection dimming: dim to 0.4 when scrubbing into the past ── */
+  useEffect(() => {
+    const applyProjectionOpacity = (): void => {
+      const map = mapRef.current;
+      if (!map) return;
+      if (!map.getLayer('projection-line-layer')) return;
+      const s = useGameStore.getState();
+      const op = s.timeline.isLive
+        ? 1
+        : s.timeline.currentTime.getTime() < Date.now() ? 0.4 : 1;
+      map.setPaintProperty('projection-line-layer', 'line-opacity', op);
+    };
+    applyProjectionOpacity();
+    let prevTime = useGameStore.getState().timeline.currentTime;
+    let prevLive = useGameStore.getState().timeline.isLive;
+    return useGameStore.subscribe((s) => {
+      if (s.timeline.currentTime !== prevTime || s.timeline.isLive !== prevLive) {
+        prevTime = s.timeline.currentTime;
+        prevLive = s.timeline.isLive;
+        applyProjectionOpacity();
       }
     });
   }, []);

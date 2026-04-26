@@ -17,6 +17,7 @@ import { createFixtureProvider, createNoaaProvider, type WeatherProvider, type R
 import { registerWeatherRoutes } from './routes/weather.js';
 import { registerRuntimeRoutes } from './api/runtime.js';
 import { registerDevRoutes } from './api/dev.js';
+import { registerTrackRoutes } from './api/track.js';
 
 const log = pino({ name: 'game-engine' });
 
@@ -54,6 +55,7 @@ export function createDemoRuntime(): BoatRuntime {
     loadout: resolveBoatLoadout('demo-boat-1', [], 'CRUISER_RACER'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 }
 
@@ -143,6 +145,7 @@ async function main() {
   const redis = connectRedis();
   const tick = new TickManager(redis);
   registerRuntimeRoutes(app, tick);
+  registerTrackRoutes(app, tick);
   if (process.env['NEMO_DEV_ROUTES'] !== '0') {
     registerDevRoutes(app, tick, createDemoRuntime);
     log.info('dev routes enabled — POST /api/v1/dev/reset-demo available');

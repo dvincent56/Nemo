@@ -1,0 +1,23 @@
+.spark {
+  display: block;
+  cursor: pointer;
+}
+
+.line {
+  fill: none;
+  stroke: var(--open);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.fill {
+  fill: var(--open-soft);
+  stroke: none;
+}
+
+@media (max-width: 768px) {
+  .spark {
+    display: none;
+  }
+}

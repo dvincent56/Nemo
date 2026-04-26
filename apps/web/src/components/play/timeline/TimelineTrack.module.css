@@ -1,0 +1,95 @@
+.track {
+  position: relative;
+  height: 24px;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+  margin-top: var(--sp-3);
+}
+
+.trackPast {
+  position: absolute;
+  top: 8px;
+  height: 8px;
+  left: 0;
+  background: var(--open-soft);
+  border-radius: var(--r-pill) 0 0 var(--r-pill);
+}
+
+.trackFuture {
+  position: absolute;
+  top: 8px;
+  height: 8px;
+  background: var(--gold-soft);
+  border-radius: 0 var(--r-pill) var(--r-pill) 0;
+}
+
+.nowLine {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--t1);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.nowLabel {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+}
+
+.cursor {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--gold);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+  pointer-events: none;
+}
+
+.tickLabels {
+  position: absolute;
+  top: 24px;
+  width: 100%;
+  height: 14px;
+  pointer-events: none;
+}
+
+.tickLabel {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--t3);
+  white-space: nowrap;
+}
+
+.bookend {
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.rowGold {
+  color: var(--gold);
+}
+
+@media (max-width: 768px) {
+  .tickLabels { display: none; }
+}

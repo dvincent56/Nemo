@@ -161,10 +161,13 @@ export default function SwellOverlay(): React.ReactElement {
   const particlesRef = useRef<SwellParticle[]>([]);
 
   const swellVisible = useGameStore((s) => s.layers.swell);
+  const currentTimeMs = useGameStore((s) => s.timeline.currentTime.getTime());
+  const isLive = useGameStore((s) => s.timeline.isLive);
+  const weatherTimeVisible = isLive || currentTimeMs >= Date.now();
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !swellVisible) {
+    if (!canvas || !swellVisible || !weatherTimeVisible) {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       return;
     }
@@ -380,9 +383,9 @@ export default function SwellOverlay(): React.ReactElement {
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     };
-  }, [swellVisible]);
+  }, [swellVisible, weatherTimeVisible]);
 
-  if (!swellVisible) return <></>;
+  if (!swellVisible || !weatherTimeVisible) return <></>;
 
   return (
     <canvas

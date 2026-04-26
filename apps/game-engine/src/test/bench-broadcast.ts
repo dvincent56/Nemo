@@ -46,6 +46,7 @@ function buildRuntime(i: number, raceId: string): BoatRuntime {
     loadout: resolveBoatLoadout(`bench-boat-${i}`, [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 }
 

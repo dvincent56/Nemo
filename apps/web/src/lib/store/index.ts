@@ -17,13 +17,15 @@ import { createPreviewSlice } from './previewSlice';
 import { createZonesSlice } from './zonesSlice';
 import { createMapAppearanceSlice } from './mapAppearanceSlice';
 import { createRouterSlice } from './routerSlice';
+import { createTrackSlice } from './trackSlice';
+import { createProjectionSnapshotSlice } from './projectionSnapshotSlice';
 import { mergeField } from './pending';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
 export type { TimelineState, LayersState, PanelState, WeatherState, MapAppearanceState } from './types';
 export type { ConnectionState, ProgState, OrderEntry, BoatLive } from './types';
 export type { ConnState, PanelName, LayerName, PlaybackSpeed, TwaColor } from './types';
-export type { GfsStatus } from './types';
+export type { GfsStatus, TrackState, TrackPoint } from './types';
 
 const SAIL_CODES = ['JIB', 'LJ', 'SS', 'C0', 'SPI', 'HG', 'LG'] as const;
 
@@ -46,6 +48,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...createZonesSlice(set),
   ...createMapAppearanceSlice(set),
   ...createRouterSlice(set, get),
+  ...createTrackSlice(set),
+  ...createProjectionSnapshotSlice(set),
 
   boats: new Map(),
   lastTickUnix: null,
@@ -55,9 +59,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const nextBoats = new Map(s.boats);
       let nextHud = s.hud;
       let nextSail = s.sail;
+      let nextTrack = s.track;
       const ownBoatId = process.env['NEXT_PUBLIC_DEMO_BOAT_ID'] ?? 'demo-boat-1';
+      const ownParticipantId = s.track.selfParticipantId;
 
       for (const m of msgs) {
+        // Track checkpoint event — append to own track only.
+        if (m['kind'] === 'trackPointAdded') {
+          const participantId = String(m['participantId'] ?? '');
+          if (!participantId || participantId !== ownParticipantId) continue;
+          const tsRaw = m['ts'];
+          const tsMs = typeof tsRaw === 'number' ? tsRaw : Date.parse(String(tsRaw));
+          if (Number.isNaN(tsMs)) continue;
+          if (nextTrack.myPoints.some((x) => x.ts === tsMs)) continue;
+          const newPoint = {
+            ts: tsMs,
+            lat: Number(m['lat']),
+            lon: Number(m['lon']),
+            rank: Number(m['rank']),
+          };
+          nextTrack = {
+            ...nextTrack,
+            myPoints: [...nextTrack.myPoints, newPoint].sort((a, b) => a.ts - b.ts),
+          };
+          continue;
+        }
+
         const boatId = String(m['boatId'] ?? '');
         if (!boatId) continue;
         nextBoats.set(boatId, {
@@ -174,6 +201,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         boats: nextBoats,
         hud: nextHud,
         sail: nextSail,
+        track: nextTrack,
         lastTickUnix: Math.floor(Date.now() / 1000),
       };
     }),

@@ -38,6 +38,9 @@ export interface BoatRuntime {
   loadout: BoatLoadout;
   prevTwa: number | null;
   maneuver: ManeuverPenaltyState | null;
+  /** Wall-clock ms du dernier checkpoint trace persisté en base.
+   *  null tant qu'aucun checkpoint n'a encore été écrit. */
+  lastCheckpointTs: number | null;
 }
 
 export interface TickOutcome {

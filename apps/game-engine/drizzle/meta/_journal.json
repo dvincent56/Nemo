@@ -15,6 +15,13 @@
       "when": 1776379649871,
       "tag": "0001_marina_upgrades_phase_a",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777131229813,
+      "tag": "0002_cloudy_carnage",
+      "breakpoints": true
     }
   ]
 }

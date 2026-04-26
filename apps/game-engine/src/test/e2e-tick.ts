@@ -48,6 +48,7 @@ async function main(): Promise<void> {
     loadout: resolveBoatLoadout('demo-boat-1', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 
   const zones = buildZoneIndex([]);

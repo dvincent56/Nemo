@@ -13,6 +13,7 @@ import {
 import { useHotkeys } from '@/lib/useHotkeys';
 import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import { useTacticalTile } from '@/hooks/useTacticalTile';
+import { useTrackHydration } from '@/hooks/useTrackHydration';
 import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
@@ -193,6 +194,33 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   useWeatherPrefetch({ phase2: true });
   // Lazily fetch a high-res 0.25° tactical tile around the boat position.
   useTacticalTile();
+
+  // Hydrate persisted track + subscribe to checkpoint events. Phase 1 uses
+  // the demo boat id ; Phase 4 will swap to the real participant UUID once
+  // race_participants seeding is in place.
+  const myBoatId = process.env['NEXT_PUBLIC_DEMO_BOAT_ID'] ?? 'demo-boat-1';
+  useTrackHydration(race.id, canInteract ? myBoatId : null);
+
+  // Seed race context for the timeline bounds. forecastEnd is refreshed
+  // every 5 min so J+7 keeps sliding forward as wall time advances.
+  useEffect(() => {
+    const startMs = Date.parse(race.startsAt);
+    const endMs = race.status === 'FINISHED' ? null : null; // raceEnd unknown in current API
+    const setRaceContext = useGameStore.getState().setRaceContext;
+    setRaceContext({
+      startMs: Number.isFinite(startMs) ? startMs : null,
+      endMs,
+      forecastEndMs: Date.now() + 7 * 24 * 3_600_000,
+    });
+    const id = window.setInterval(() => {
+      useGameStore.getState().setRaceContext({
+        startMs: Number.isFinite(startMs) ? startMs : null,
+        endMs,
+        forecastEndMs: Date.now() + 7 * 24 * 3_600_000,
+      });
+    }, 5 * 60_000);
+    return () => window.clearInterval(id);
+  }, [race.startsAt, race.status]);
 
   // Seed HUD wind from the multi-hour decoded GFS grid with temporal interp
   // at the current wall-clock — same formula the engine runs at each tick,
@@ -751,7 +779,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
       {/* Row 3 — Weather timeline */}
       <div className={styles.timelineRow}>
-        <WeatherTimeline />
+        <WeatherTimeline raceStatus={race.status} />
       </div>
     </div>
   );
