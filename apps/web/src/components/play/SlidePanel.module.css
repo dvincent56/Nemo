@@ -77,8 +77,15 @@
 
 /* Phone — cap panel width to screen */
 @media (max-width: 600px) {
-  .panel { max-width: calc(100vw - 48px); }
-  .head { padding: 12px 14px 10px; }
+  .panel { max-width: min(360px, calc(100vw - 48px)); }
+  .head { padding: 10px 14px; }
+  .title { font-size: 18px; }
+  .body { padding: 12px 14px; }
+}
+
+@media (max-height: 500px) {
+  .panel { max-width: min(360px, calc(100vw - 48px)); }
+  .head { padding: 10px 14px; }
   .title { font-size: 18px; }
   .body { padding: 12px 14px; }
 }
