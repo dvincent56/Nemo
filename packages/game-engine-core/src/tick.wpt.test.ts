@@ -9,6 +9,8 @@ import {
   CoastlineIndex,
   resolveBoatLoadout,
   runTick,
+  supersedeCapTwaByWaypoint,
+  supersedeHeadingIntent,
   supersedeWaypointsByCapTwa,
   type BoatRuntime,
   type WeatherProvider,
@@ -404,5 +406,169 @@ describe('WPT order — sequential waypoints', () => {
     assert.equal(aStillThere, undefined, 'WPT A should be consumed after capture');
     assert.ok(bStillThere !== undefined, 'WPT B should remain in orderHistory');
     assert.notEqual(bStillThere?.order.completed, true, 'WPT B should not be marked completed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Symmetric supersession — a new WPT must mark scheduled-future CAP / TWA
+// orders as completed. Without this, the bug-3 scenario reproduces: user
+// applies a CAP route (with AT_TIME futures), then applies a WPT route,
+// the future CAP fires at its scheduled tick and overrides the WPT heading.
+// ---------------------------------------------------------------------------
+
+describe('orderHistory — supersedeCapTwaByWaypoint', () => {
+  test('a WPT order marks future CAP orders as completed', () => {
+    const cap1: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'AT_TIME', time: 5 } },
+      clientTs: 1_000, clientSeq: 1, trustedTs: 1_000,
+      effectiveTs: 5_000, // future
+      receivedAt: 1_000, connectionId: 'test',
+    };
+    const cap2: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 180 }, trigger: { type: 'AT_TIME', time: 10 } },
+      clientTs: 1_000, clientSeq: 2, trustedTs: 1_000,
+      effectiveTs: 10_000, // further future
+      receivedAt: 1_000, connectionId: 'test',
+    };
+    const wpt = makeWptEnvelope(46, -3, 2_000, 3); // earlier than both CAPs
+
+    const updated = supersedeCapTwaByWaypoint([cap1, cap2], wpt);
+
+    assert.equal(updated[0]?.order.completed, true, 'future CAP1 should be superseded by new WPT');
+    assert.equal(updated[1]?.order.completed, true, 'future CAP2 should be superseded by new WPT');
+  });
+
+  test('a WPT order marks future TWA orders as completed', () => {
+    const twa: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'TWA', value: { twa: 60 }, trigger: { type: 'AT_TIME', time: 5 } },
+      clientTs: 1_000, clientSeq: 1, trustedTs: 1_000,
+      effectiveTs: 5_000, receivedAt: 1_000, connectionId: 'test',
+    };
+    const wpt = makeWptEnvelope(46, -3, 2_000, 2);
+
+    const updated = supersedeCapTwaByWaypoint([twa], wpt);
+    assert.equal(updated[0]?.order.completed, true, 'future TWA should be superseded by new WPT');
+  });
+
+  test('a WPT order does NOT mark earlier CAP orders as completed', () => {
+    // CAP at t=1000 (already in the past relative to WPT at t=2000) was
+    // applied at its tick and is no longer in history in practice; the
+    // function still skips it gracefully without marking it completed.
+    const oldCap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 1_000, clientSeq: 1, trustedTs: 1_000,
+      effectiveTs: 1_000, receivedAt: 1_000, connectionId: 'test',
+    };
+    const wpt = makeWptEnvelope(46, -3, 2_000, 2);
+
+    const updated = supersedeCapTwaByWaypoint([oldCap], wpt);
+    assert.notEqual(updated[0]?.order.completed, true, 'past CAP must not be marked completed');
+  });
+
+  test('a CAP order at the same instant as the WPT is superseded (cutoff inclusive)', () => {
+    const sameInstantCap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'AT_TIME', time: 2 } },
+      clientTs: 2_000, clientSeq: 1, trustedTs: 2_000,
+      effectiveTs: 2_000, receivedAt: 2_000, connectionId: 'test',
+    };
+    const wpt = makeWptEnvelope(46, -3, 2_000, 2);
+
+    const updated = supersedeCapTwaByWaypoint([sameInstantCap], wpt);
+    assert.equal(updated[0]?.order.completed, true, 'same-instant CAP must be superseded by WPT');
+  });
+
+  test('a non-WPT incoming order is a no-op for supersedeCapTwaByWaypoint', () => {
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 1_000, clientSeq: 1, trustedTs: 1_000,
+      effectiveTs: 5_000, receivedAt: 1_000, connectionId: 'test',
+    };
+    const incomingCap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 180 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 2_000, clientSeq: 2, trustedTs: 2_000,
+      effectiveTs: 2_000, receivedAt: 2_000, connectionId: 'test',
+    };
+
+    const updated = supersedeCapTwaByWaypoint([cap], incomingCap);
+    assert.notEqual(updated[0]?.order.completed, true, 'non-WPT incoming must not trigger CAP supersession');
+  });
+});
+
+describe('orderHistory — supersedeHeadingIntent dispatcher', () => {
+  test('CAP incoming → supersedes earlier WPTs', () => {
+    const wpt = makeWptEnvelope(46, -3, 1_000, 1);
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 240 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 2_000, clientSeq: 2, trustedTs: 2_000,
+      effectiveTs: 2_000, receivedAt: 2_000, connectionId: 'test',
+    };
+    const updated = supersedeHeadingIntent([wpt], cap);
+    assert.equal(updated[0]?.order.completed, true);
+  });
+
+  test('WPT incoming → supersedes future CAP/TWAs', () => {
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'AT_TIME', time: 5 } },
+      clientTs: 1_000, clientSeq: 1, trustedTs: 1_000,
+      effectiveTs: 5_000, receivedAt: 1_000, connectionId: 'test',
+    };
+    const wpt = makeWptEnvelope(46, -3, 2_000, 2);
+    const updated = supersedeHeadingIntent([cap], wpt);
+    assert.equal(updated[0]?.order.completed, true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// End-to-end: a future scheduled CAP that has been superseded by a newer WPT
+// must NOT influence heading at its scheduled tick. The boat must keep
+// heading toward the WPT instead of flipping to the CAP heading.
+// ---------------------------------------------------------------------------
+
+describe('WPT order — scheduled future CAP superseded by later WPT does not fire', () => {
+  test('boat heads toward WPT even at the tick when superseded CAP would have fired', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    const startPos: Position = { lat: 46, lon: -4 };
+    // Scheduled future CAP @ 212° (SSW) — would flip the heading away from WPT.
+    const futureCap: OrderEnvelope = {
+      order: {
+        id: randomUUID(),
+        type: 'CAP',
+        value: { heading: 212 },
+        trigger: { type: 'AT_TIME', time: Math.floor((tickStartMs + 10_000) / 1000) },
+      },
+      clientTs: tickStartMs - 60_000,
+      clientSeq: 1,
+      trustedTs: tickStartMs - 60_000,
+      effectiveTs: tickStartMs + 10_000, // mid-tick, would normally fire
+      receivedAt: tickStartMs - 60_000,
+      connectionId: 'test',
+    };
+    // WPT due NW (heading ≈ 315°) applied just before the tick.
+    const wpt = makeWptEnvelope(46.5, -4.5, tickStartMs - 5_000, 2);
+    // Apply symmetric supersession (worker.ts ingest path).
+    const history = supersedeHeadingIntent([futureCap], wpt);
+    history.push(wpt);
+
+    const runtime = await makeRuntime(startPos, history);
+
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // Final heading should reflect the WPT bearing (~315°), not the CAP (212°).
+    const finalHeading = out.runtime.boat.heading;
+    const deltaToCap = Math.abs(((finalHeading - 212 + 540) % 360) - 180);
+    const deltaToWpt = Math.abs(((finalHeading - 315 + 540) % 360) - 180);
+    assert.ok(
+      deltaToWpt < deltaToCap,
+      `final heading ${finalHeading} should be closer to WPT bearing (315°) than to superseded CAP (212°)`,
+    );
+    // And the future CAP must have been dropped from history (purge dropped it).
+    const capStillThere = out.runtime.orderHistory.find((o) => o.order.id === futureCap.order.id);
+    assert.equal(capStillThere, undefined, 'superseded future CAP should be purged from orderHistory');
   });
 });

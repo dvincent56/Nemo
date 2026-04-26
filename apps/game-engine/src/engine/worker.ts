@@ -4,7 +4,7 @@ import pino from 'pino';
 import type { OrderEnvelope, Polar } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { buildZoneIndex, runTick, supersedeWaypointsByCapTwa, type BoatRuntime, type CoastlineProbe, type IndexedZone, type TickOutcome } from '@nemo/game-engine-core';
+import { buildZoneIndex, runTick, supersedeHeadingIntent, type BoatRuntime, type CoastlineProbe, type IndexedZone, type TickOutcome } from '@nemo/game-engine-core';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider } from '../weather/provider.js';
 import {
   loadCoastline,
@@ -91,11 +91,15 @@ async function main() {
         (o) => o.connectionId === msg.envelope.connectionId && o.clientSeq === msg.envelope.clientSeq,
       );
       if (already) return; // dédup idempotent
-      // Heading-intent supersession : un CAP / TWA neuf marque tous les WPT
-      // antérieurs non complétés comme `completed`. Sans ça, les WPT
-      // persistants écrasent le cap aux ticks suivants une fois le CAP
-      // consommé et purgé. Voir `orderHistory.ts` pour la rationale.
-      const supersededHistory = supersedeWaypointsByCapTwa(rt.orderHistory, msg.envelope);
+      // Heading-intent supersession (symétrique) :
+      //   - CAP / TWA neuf marque les WPT antérieurs non complétés.
+      //   - WPT neuf marque les CAP / TWA postérieurs / simultanés non
+      //     complétés (typiquement des AT_TIME planifiés laissés par une
+      //     route CAP précédente qui sinon écraseraient le heading WPT au
+      //     moment de leur tick d'échéance).
+      // Sans ça, le bateau "saute" entre les deux intentions selon l'ordre
+      // d'arrivée des ticks. Voir `orderHistory.ts` pour la rationale.
+      const supersededHistory = supersedeHeadingIntent(rt.orderHistory, msg.envelope);
       const insertAt = supersededHistory.findIndex((o) => o.effectiveTs > msg.envelope.effectiveTs);
       const history = supersededHistory.slice();
       if (insertAt === -1) history.push(msg.envelope);

@@ -156,9 +156,12 @@ export function buildSegments(input: BuildSegmentsInput): {
     state.heading = ((weather.twd + state.twaLock) + 360) % 360;
   }
 
-  // Late orders (effectiveTs < tickStartMs) → snap to tickStartMs
+  // Late orders (effectiveTs < tickStartMs) → snap to tickStartMs.
+  // Completed orders are skipped: a CAP/TWA marked completed by a later WPT
+  // (or a WPT marked completed by a later CAP/TWA) must NOT influence
+  // segment heading anymore. See `orderHistory.ts` for supersession rules.
   const events = orders
-    .filter((o) => o.effectiveTs < tickEndMs)
+    .filter((o) => !o.order.completed && o.effectiveTs < tickEndMs)
     .map((o) => o.effectiveTs < tickStartMs ? { ...o, effectiveTs: tickStartMs } : o);
 
   // Boundaries dédupliqués (plusieurs ordres au même instant = un seul cut).

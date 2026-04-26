@@ -104,6 +104,7 @@ export function runTick(
   let autoEnableTs: number | undefined;
   for (const env of runtime.orderHistory) {
     if (env.effectiveTs >= tickEndMs) continue;
+    if (env.order.completed) continue;
     if (env.order.type === 'SAIL') {
       const target = env.order.value['sail'];
       if (typeof target === 'string' && target !== sailState.active && !sailState.pending) {
@@ -340,10 +341,17 @@ export function runTick(
       ? { ...o, order: { ...o.order, completed: true } }
       : o)
     .filter((o) => {
+      // Drop completed orders unconditionally — they have been superseded
+      // (WPT captured, or CAP/TWA superseded by a later WPT, or vice versa)
+      // and should never influence subsequent ticks. Without this, a future
+      // CAP marked completed by a freshly-applied WPT route would survive
+      // the purge (effectiveTs >= tickEndMs) and re-fire at its scheduled
+      // tick, overriding the WPT heading.
+      if (o.order.completed) return false;
       // Keep future orders.
       if (o.effectiveTs >= tickEndMs) return true;
       // Keep active, not-yet-captured WPT orders.
-      if (o.order.type === 'WPT' && !o.order.completed) return true;
+      if (o.order.type === 'WPT') return true;
       // Drop everything else (consumed within this tick).
       return false;
     });
