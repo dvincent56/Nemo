@@ -402,13 +402,18 @@ export default function ProgPanel(): React.ReactElement {
             // already on the server and out of the user's hands.
             const stale = !committed && isStale(o.trigger, now);
             const captured = o.type === 'WPT' && capturedIds.has(o.id);
-            const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''} ${captured ? styles.orderCaptured : ''}`;
+            // Past = AT_TIME order whose trigger has elapsed client-side.
+            // The store still holds it until the server tick confirms processing,
+            // but visually we grey it out so the user knows it's already executed.
+            const past = o.trigger.type === 'AT_TIME' && o.trigger.time * 1000 < now;
+            const cls = `${styles.order} ${stale ? styles.orderStale : ''} ${committed ? styles.orderCommitted : ''} ${captured ? styles.orderCaptured : ''} ${past ? styles.orderCaptured : ''}`;
             return (
               <div key={o.id} className={cls}>
                 <span className={styles.orderWhen}>{formatTrigger(o.trigger, labelById)}</span>
                 <span className={styles.orderWhat}>
                   {o.label}
-                  {committed && <span className={styles.orderCommittedBadge}> ✓ envoyé</span>}
+                  {committed && !past && <span className={styles.orderCommittedBadge}> ✓ envoyé</span>}
+                  {past && <span className={styles.orderCapturedBadge}> ✓ exécuté</span>}
                   {captured && <span className={styles.orderCapturedBadge}> ✓ atteint</span>}
                   {stale && <span className={styles.orderStaleBadge}> ⚠ bientôt obsolète</span>}
                 </span>
