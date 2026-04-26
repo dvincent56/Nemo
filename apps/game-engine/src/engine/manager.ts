@@ -76,6 +76,14 @@ export class TickManager {
    *  seed. Used by /api/v1/dev/reset-demo — without the forced tick the
    *  client would see bsp=0 for up to tickIntervalSeconds after reset. */
   async replaceRuntimes(runtimes: BoatRuntime[]): Promise<void> {
+    // Clear the in-memory track history for the replaced boats so the
+    // forced first checkpoint after reset doesn't leave a zigzag from the
+    // previous (older) position to the fresh start. lastCheckpointTs on
+    // the new runtime is null, so the next tick will force a checkpoint
+    // at the reset start position.
+    for (const rt of runtimes) {
+      this.trackHistory.delete(rt.boat.id);
+    }
     this.seedSnapshots(runtimes);
     if (!this.worker) return;
     this.worker.postMessage({ kind: 'setRuntimes', runtimes });
