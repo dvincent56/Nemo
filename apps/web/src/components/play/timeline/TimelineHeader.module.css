@@ -2,16 +2,18 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  flex-shrink: 0;
-  min-width: 130px;
+  flex: 0 0 210px;          /* pinned width — track never shifts when label grows */
   font-family: var(--font-mono);
   user-select: none;
+  overflow: hidden;
 }
 
 .offset {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
+  min-width: 64px;          /* pinned so LIVE/T+3h/J-12 share the same slot */
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.10em;
@@ -20,6 +22,7 @@
   border: 1px solid rgba(201, 162, 39, 0.40);
   border-radius: 2px;
   background: rgba(201, 162, 39, 0.06);
+  flex-shrink: 0;
 }
 
 .offsetLive {
@@ -56,12 +59,16 @@
 }
 
 @media (max-width: 860px) {
-  .header { min-width: 110px; gap: 6px; }
-  .offset { font-size: 10px; padding: 2px 5px; }
+  .header { flex-basis: 180px; gap: 6px; }
+  .offset { font-size: 10px; padding: 2px 5px; min-width: 56px; }
   .timestamp { font-size: 10px; }
 }
 
-@media (max-width: 600px) {
-  .header { min-width: 0; }
+@media (max-width: 768px) {
+  /* phone : header lives on its own row alongside controls — let it size to content */
+  .header { flex-basis: auto; gap: 8px; }
+}
+
+@media (max-width: 480px) {
   .timestamp { display: none; }
 }

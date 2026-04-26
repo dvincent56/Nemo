@@ -17,9 +17,9 @@ interface BoundsInput {
   nowMs: number;
 }
 
+/** Échelle clairsemée — densifier près de NOW provoquait des chevauchements
+ *  illisibles sur écrans larges. On garde les paliers utiles tactiquement. */
 const FUTURE_OFFSETS_MS: { off: number; label: string }[] = [
-  { off: 1 * HOUR,  label: '+1h'  },
-  { off: 3 * HOUR,  label: '+3h'  },
   { off: 6 * HOUR,  label: '+6h'  },
   { off: 12 * HOUR, label: '+12h' },
   { off: 24 * HOUR, label: 'J+1'  },

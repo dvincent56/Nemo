@@ -5,16 +5,16 @@ const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
 describe('buildTicks — futur', () => {
-  it('emits relative offsets +1h … J+7 inside maxMs', () => {
+  it('emits relative offsets +6h … J+7 inside maxMs', () => {
     const ticks = buildTicks({ minMs: 0, maxMs: 7 * DAY, nowMs: 0 });
     const fut = ticks.filter((t) => t.kind === 'future');
-    expect(fut.map((t) => t.label)).toEqual(['+1h', '+3h', '+6h', '+12h', 'J+1', 'J+2', 'J+3', 'J+5', 'J+7']);
+    expect(fut.map((t) => t.label)).toEqual(['+6h', '+12h', 'J+1', 'J+2', 'J+3', 'J+5', 'J+7']);
   });
 
   it('clips future offsets that exceed maxMs', () => {
     const ticks = buildTicks({ minMs: 0, maxMs: 12 * HOUR, nowMs: 0 });
     const fut = ticks.filter((t) => t.kind === 'future');
-    expect(fut.map((t) => t.label)).toEqual(['+1h', '+3h', '+6h', '+12h']);
+    expect(fut.map((t) => t.label)).toEqual(['+6h', '+12h']);
   });
 });
 

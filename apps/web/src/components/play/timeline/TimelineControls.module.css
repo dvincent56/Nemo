@@ -111,7 +111,7 @@
   .live { height: 26px; padding: 0 10px; font-size: 9px; }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   .step { display: none; }
   .controls { gap: 2px; }
   .btn { min-width: 26px; padding: 0 5px; }

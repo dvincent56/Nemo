@@ -37,7 +37,16 @@ export function createTimelineSlice(set: (fn: (s: GameStore) => Partial<GameStor
       set((s) => ({ timeline: { ...s.timeline, playbackSpeed: speed } })),
 
     setIsPlaying: (b: boolean) =>
-      set((s) => ({ timeline: { ...s.timeline, isPlaying: b } })),
+      set((s) => {
+        // Pressing Play from LIVE exits LIVE and snapshots wall-clock as the
+        // starting cursor position. Otherwise it just toggles the flag.
+        if (b && s.timeline.isLive) {
+          return {
+            timeline: { ...s.timeline, isPlaying: true, isLive: false, currentTime: new Date() },
+          };
+        }
+        return { timeline: { ...s.timeline, isPlaying: b } };
+      }),
 
     setRaceContext: (ctx: { startMs: number | null; endMs?: number | null; forecastEndMs: number | null }) =>
       set((s) => ({

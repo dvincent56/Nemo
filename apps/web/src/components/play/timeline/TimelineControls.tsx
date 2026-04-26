@@ -28,7 +28,6 @@ export function TimelineControls(): React.ReactElement {
         type="button"
         className={`${styles.btn} ${isPlaying ? styles.btnActive : ''}`}
         onClick={() => setIsPlaying(!isPlaying)}
-        disabled={isLive}
         aria-label={isPlaying ? 'pause' : 'lecture'}
         title={isPlaying ? 'Pause' : 'Lecture'}
       >{isPlaying ? '❚❚' : '▶'}</button>

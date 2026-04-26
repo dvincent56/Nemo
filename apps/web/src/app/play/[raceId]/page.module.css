@@ -327,7 +327,7 @@
 
 /* Phone */
 @media (max-width: 600px) {
-  .app { --hud-h: 44px; --timeline-h: 56px; }
+  .app { --hud-h: 44px; --timeline-h: 88px; }   /* 2-row stack: header+controls / track */
   .leftStack { left: 8px; bottom: 8px; gap: 4px; }
   .rightStack {
     bottom: 8px; right: 8px;
@@ -342,7 +342,7 @@
 /* Landscape with small height — idem : marge et gap identiques des deux
  * côtés pour que le layout panel descende au même niveau que le compass. */
 @media (max-height: 500px) {
-  .app { --hud-h: 44px; --timeline-h: 50px; }
+  .app { --hud-h: 44px; --timeline-h: 76px; }
   .leftStack { left: 6px; bottom: 6px; gap: 4px; }
   .rightStack { bottom: 6px; right: 6px; gap: 4px; }
   .actionButtons { flex-direction: row; gap: 4px; }

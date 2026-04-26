@@ -16,7 +16,6 @@ export function useTimelinePlayback(raceStatus: RaceStatus): void {
   const raceStartMs = useGameStore((s) => s.timeline.raceStartMs);
   const raceEndMs = useGameStore((s) => s.timeline.raceEndMs);
   const forecastEndMs = useGameStore((s) => s.timeline.forecastEndMs);
-  const setTime = useGameStore((s) => s.setTime);
   const setIsPlaying = useGameStore((s) => s.setIsPlaying);
   const goLive = useGameStore((s) => s.goLive);
 
@@ -30,6 +29,9 @@ export function useTimelinePlayback(raceStatus: RaceStatus): void {
   }, [isLive, goLive]);
 
   // Play loop — advance currentTime in real time × playbackSpeed.
+  // We bypass the public `setTime` action because that one intentionally
+  // resets isPlaying=false (drag-stops-play semantics). Inside the rAF loop
+  // we only mutate `currentTime` directly via setState.
   const lastFrameRef = useRef<number>(0);
   useEffect(() => {
     if (!isPlaying || isLive) {
@@ -54,7 +56,10 @@ export function useTimelinePlayback(raceStatus: RaceStatus): void {
         goLive();
         return;
       }
-      setTime(new Date(next));
+      // Direct set: don't touch isPlaying / isLive (the action `setTime` would).
+      useGameStore.setState((s) => ({
+        timeline: { ...s.timeline, currentTime: new Date(next) },
+      }));
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
@@ -62,5 +67,5 @@ export function useTimelinePlayback(raceStatus: RaceStatus): void {
       window.cancelAnimationFrame(raf);
       lastFrameRef.current = 0;
     };
-  }, [isPlaying, isLive, playbackSpeed, raceStartMs, raceEndMs, forecastEndMs, raceStatus, setTime, setIsPlaying, goLive]);
+  }, [isPlaying, isLive, playbackSpeed, raceStartMs, raceEndMs, forecastEndMs, raceStatus, setIsPlaying, goLive]);
 }
