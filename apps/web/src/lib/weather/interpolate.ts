@@ -69,7 +69,10 @@ export function interpolateWind(
 
   const twd = ((Math.atan2(-u, -v) / toRad) + 360) % 360;
 
-  return { tws, twd, u, v };
+  // Round to 3 decimals: float arithmetic carries a meaningless mantissa, and
+  // GFS source resolution is ~0.5 kt. u/v stay full-precision because they
+  // feed rendering (particles, anim) where sub-decimal motion matters.
+  return { tws: Math.round(tws * 1000) / 1000, twd: Math.round(twd * 1000) / 1000, u, v };
 }
 
 /** Bilinear interpolation of swell at a specific lat/lon */

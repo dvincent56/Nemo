@@ -19,13 +19,20 @@ export interface TwsTwdPoint {
  *  polars, wear thresholds, and loadout activation bands). */
 export const MS_TO_KNOTS = 1.94384;
 
+/** Round to 3 decimal places. Wind values from float arithmetic carry a full
+ *  float64 mantissa that is meaningless beyond the 3rd decimal — GFS native
+ *  resolution is ~0.5 kt — so we cap precision at the conversion boundary. */
+export function round3(x: number): number {
+  return Math.round(x * 1000) / 1000;
+}
+
 /** Convert U/V components (m/s) to TWS (**knots**) and TWD (degrees compass).
  *  The whole engine treats TWS as knots downstream (polar lookup, wear, bands),
  *  so we convert once at the U/V boundary rather than spraying factors later. */
 export function uvToTwsTwd(u: number, v: number): TwsTwdPoint {
   const tws = Math.sqrt(u * u + v * v) * MS_TO_KNOTS;
   const twd = ((Math.atan2(-u, -v) * 180) / Math.PI + 360) % 360;
-  return { tws, twd };
+  return { tws: round3(tws), twd: round3(twd) };
 }
 
 /** Convert TWS/TWD to U/V components. */
