@@ -89,3 +89,47 @@
   .title { font-size: 18px; }
   .body { padding: 12px 14px; }
 }
+
+/* ── Bottom sheet variant (mobile portrait only) ───────────── */
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(12, 20, 36, 0.97);
+  border-top: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  z-index: 28;
+  transition: transform 220ms ease, height 220ms ease;
+  /* default = peek so we can animate up to mid/full */
+  transform: translateY(100%);
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet_peek { height: 64px; }
+.sheet_mid { height: min(50vh, 360px); }
+.sheet_full { height: min(90vh, calc(100vh - 56px)); }
+
+.sheetHandle {
+  background: transparent;
+  border: none;
+  width: 100%;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sheetHandleBar {
+  width: 36px;
+  height: 4px;
+  background: rgba(245, 240, 232, 0.35);
+  border-radius: 2px;
+  transition: background 150ms;
+}
+.sheetHandle:hover .sheetHandleBar { background: rgba(245, 240, 232, 0.55); }
