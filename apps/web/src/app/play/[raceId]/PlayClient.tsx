@@ -59,6 +59,24 @@ function bootstrapGameBalance(): Promise<void> {
   return gbBootstrap;
 }
 
+// Inline great-circle bearing — mirror of @nemo/game-engine-core/src/geo
+// `bearingDeg`. Kept local to avoid widening engine-core's public exports for a
+// single optimistic-UI use site (same pattern as projection.worker.ts).
+const DEG_TO_RAD_PC = Math.PI / 180;
+const RAD_TO_DEG_PC = 180 / Math.PI;
+function bearingDeg(
+  from: { lat: number; lon: number },
+  to: { lat: number; lon: number },
+): number {
+  const f1 = from.lat * DEG_TO_RAD_PC;
+  const f2 = to.lat * DEG_TO_RAD_PC;
+  const dLon = (to.lon - from.lon) * DEG_TO_RAD_PC;
+  const y = Math.sin(dLon) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dLon);
+  const theta = Math.atan2(y, x);
+  return ((theta * RAD_TO_DEG_PC) + 360) % 360;
+}
+
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
   ssr: false,
   loading: () => (
@@ -305,6 +323,63 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     // non-empty queue.
     for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
     state.replaceOrderQueue(orders);
+
+    // Optimistic UI: any order that fires *now* (IMMEDIATE or AT_TIME with a
+    // past timestamp — capScheduleToOrders emits the first CAP/TWA at
+    // `Date.now()` which has already drifted into the past by the time we get
+    // here) won't visibly affect the HUD until the next server tick lands. We
+    // mirror the manual-control pattern (SailPanel toggleAuto, Compass apply)
+    // by patching the store immediately so heading / sailAuto / sail flip
+    // without waiting. mergeField in the tick handler preserves these
+    // optimistic values until the server confirms convergence.
+    const nowMs = Date.now();
+    const firesImmediately = (t: typeof orders[number]['trigger']): boolean =>
+      t.type === 'IMMEDIATE' || (t.type === 'AT_TIME' && t.time * 1000 <= nowMs);
+    for (const o of orders) {
+      if (!firesImmediately(o.trigger)) continue;
+      switch (o.type) {
+        case 'MODE': {
+          const auto = (o.value as { auto?: unknown }).auto;
+          if (typeof auto === 'boolean') {
+            state.setSailOptimistic('sailAuto', auto);
+          }
+          break;
+        }
+        case 'CAP': {
+          const heading = (o.value as { heading?: unknown }).heading;
+          if (typeof heading === 'number') {
+            state.applyOptimisticHud({ hdg: heading });
+          }
+          break;
+        }
+        case 'TWA': {
+          const twa = (o.value as { twa?: unknown }).twa;
+          if (typeof twa === 'number') {
+            state.applyOptimisticHud({ twa });
+          }
+          break;
+        }
+        case 'WPT': {
+          const lat = (o.value as { lat?: unknown }).lat;
+          const lon = (o.value as { lon?: unknown }).lon;
+          if (
+            typeof lat === 'number' && typeof lon === 'number'
+            && typeof state.hud.lat === 'number' && typeof state.hud.lon === 'number'
+          ) {
+            const heading = Math.round(
+              bearingDeg({ lat: state.hud.lat, lon: state.hud.lon }, { lat, lon }),
+            );
+            state.applyOptimisticHud({ hdg: heading });
+          }
+          break;
+        }
+        // SAIL: capScheduleToOrders / waypointsToOrders rely on auto-sail and
+        // don't emit SAIL orders, so nothing to do here.
+        default:
+          break;
+      }
+    }
+
     state.closeRouter();
   };
 
