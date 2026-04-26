@@ -335,12 +335,23 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     const nowMs = Date.now();
     const firesImmediately = (t: typeof orders[number]['trigger']): boolean =>
       t.type === 'IMMEDIATE' || (t.type === 'AT_TIME' && t.time * 1000 <= nowMs);
-    // Predicted bsp from the route's first polyline segment — what the boat
-    // will actually sail at on the new heading. Without this, the HUD vitesse
-    // stays on the old (pre-apply) value until the next server tick lands,
-    // which feels stale right after the heading flips optimistically.
-    const predictedBsp = plan.polyline[0]?.bsp ?? plan.polyline[1]?.bsp;
-    if (typeof predictedBsp === 'number' && predictedBsp > 0) {
+    // Predicted bsp from the route's polyline — what the boat will actually
+    // sail at on the new heading. Without this, the HUD vitesse stays on the
+    // old (pre-apply) value until the next server tick lands, which feels
+    // stale right after the heading flips optimistically.
+    //
+    // polyline[0] is always the start point and is initialized with bsp: 0
+    // in isochrones.ts (the boat hasn't moved yet at that node). The previous
+    // `polyline[0]?.bsp ?? polyline[1]?.bsp` fallback never fired the
+    // alternative branch because `?? ` only falls through on null/undefined,
+    // not 0 — so predictedBsp was always 0 and the `> 0` guard rejected it.
+    // Scan forward for the first node with a positive bsp instead.
+    let predictedBsp = 0;
+    for (let i = 1; i < plan.polyline.length; i++) {
+      const b = plan.polyline[i]?.bsp;
+      if (typeof b === 'number' && b > 0) { predictedBsp = b; break; }
+    }
+    if (predictedBsp > 0) {
       state.applyOptimisticHud({ bsp: predictedBsp });
     }
     for (const o of orders) {

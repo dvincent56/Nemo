@@ -264,8 +264,22 @@ export default function ProgPanel(): React.ReactElement {
   // Pending = orders that "Valider la file" will actually send.
   const pendingCount = orderQueue.filter((o) => !o.committed).length;
 
+  // IMMEDIATE orders are dispatched the moment they enter the queue (router
+  // apply, voile-auto toggle, manual cap commit, …). By the time the user
+  // could interact with them they have already fired on the server, so the
+  // queue should never display them. We still build the label map from the
+  // FULL orderQueue below so AT_WAYPOINT chains can resolve the IMMEDIATE
+  // chain head (typically the first WPT) by uid.
+  const visibleOrders = useMemo(
+    () => orderQueue.filter((o) => o.trigger.type !== 'IMMEDIATE'),
+    [orderQueue],
+  );
+
   // Lookup so AT_WAYPOINT triggers can display the predecessor's friendly
   // label ("WP 1") instead of the raw uid stored in waypointOrderId.
+  // Built from the full queue (including IMMEDIATE orders) so chained
+  // AT_WAYPOINT successors can still resolve their chain head's label even
+  // though the head itself is hidden from the rendered list.
   const labelById = useMemo(() => {
     const m = new Map<string, string>();
     for (const o of orderQueue) m.set(o.id, o.label);
@@ -390,13 +404,13 @@ export default function ProgPanel(): React.ReactElement {
       {/* Order queue */}
       <h4 className={styles.queueTitle}>
         File d&apos;ordres{' '}
-        <span className={styles.queueCount}>{String(orderQueue.length).padStart(2, '0')} actifs</span>
+        <span className={styles.queueCount}>{String(visibleOrders.length).padStart(2, '0')} actifs</span>
       </h4>
-      {orderQueue.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <div className={styles.empty}>Aucun ordre programmé</div>
       ) : (
         <div className={styles.queue}>
-          {orderQueue.map((o) => {
+          {visibleOrders.map((o) => {
             const committed = o.committed === true;
             // Stale only matters for not-yet-sent orders; committed ones are
             // already on the server and out of the user's hands.
