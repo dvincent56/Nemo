@@ -15,6 +15,8 @@ interface BoundsInput {
   minMs: number;
   maxMs: number;
   nowMs: number;
+  /** When true, past dates are formatted as "DD/M" instead of "DD mois". */
+  compactPast?: boolean;
 }
 
 /** Paliers tactiques journaliers, capés à J+5 (au-delà la prévi GFS perd
@@ -29,8 +31,9 @@ const FUTURE_OFFSETS_MS: { off: number; label: string }[] = [
 
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'];
 
-function formatDate(ts: number): string {
+function formatDate(ts: number, compact: boolean): string {
   const d = new Date(ts);
+  if (compact) return `${d.getDate()}/${d.getMonth() + 1}`;
   return `${d.getDate()} ${MONTHS_FR[d.getMonth()] ?? ''}`;
 }
 
@@ -81,7 +84,7 @@ export function buildTicks(b: BoundsInput): Tick[] {
       out.push({
         ts: t,
         pctX: ((t - b.minMs) / span) * 100,
-        label: formatDate(t),
+        label: formatDate(t, b.compactPast === true),
         kind: 'past',
       });
     }

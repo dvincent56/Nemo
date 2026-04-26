@@ -78,3 +78,31 @@ describe('buildTicks — edge cases', () => {
     expect(buildTicks({ minMs: 100, maxMs: 100, nowMs: 100 })).toEqual([]);
   });
 });
+
+describe('buildTicks — compactPast', () => {
+  it('formats past ticks as "DD/M" when compactPast is true', () => {
+    const now = 7 * DAY;
+    const ticks = buildTicks({
+      minMs: 0,
+      maxMs: 14 * DAY,
+      nowMs: now,
+      compactPast: true,
+    });
+    const past = ticks.filter((t) => t.kind === 'past');
+    expect(past.length).toBeGreaterThan(0);
+    for (const p of past) {
+      expect(p.label).toMatch(/^\d{1,2}\/\d{1,2}$/);
+    }
+  });
+
+  it('uses long format ("12 jan") when compactPast is false or omitted', () => {
+    const now = 7 * DAY;
+    const ticks = buildTicks({ minMs: 0, maxMs: 14 * DAY, nowMs: now });
+    const past = ticks.filter((t) => t.kind === 'past');
+    expect(past.length).toBeGreaterThan(0);
+    for (const p of past) {
+      // "8 jan", "6 fév", "10 aoû" — accent characters in MONTHS_FR.
+      expect(p.label).toMatch(/^\d{1,2}\s.{3}$/);
+    }
+  });
+});
