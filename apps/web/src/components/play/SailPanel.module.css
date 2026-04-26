@@ -237,3 +237,13 @@
   letter-spacing: 0.14em;
   cursor: pointer;
 }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .modeToggle { margin-bottom: 12px; padding: 3px; gap: 4px; }
+  .modeBtn { padding: 8px 10px; font-size: 9px; letter-spacing: 0.12em; }
+  .sailRow {
+    grid-template-columns: 30px 1fr;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+}

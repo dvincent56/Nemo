@@ -299,3 +299,11 @@
   border: 1px solid #c9a227;
 }
 .applySecondary:hover { background: #c9a227; color: #1a2840; }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .section { margin-bottom: 12px; }
+  .fieldLabel { font-size: 8.5px; margin-bottom: 6px; }
+  .card { padding: 10px 12px; gap: 10px; }
+  .cardTitle { font-size: 14px; }
+  .cardMeta { font-size: 10px; }
+}
