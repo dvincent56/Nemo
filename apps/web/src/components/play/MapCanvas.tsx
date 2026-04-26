@@ -714,20 +714,12 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         });
       }
 
-      // Keep the timeline past-trace (persisted + live) in sync with the
-      // newly-appended trail point so replay scrubbing reflects the latest
-      // boat position even before the next track-checkpoint arrives.
-      const pastSrc = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
-      if (pastSrc) {
-        const persisted: [number, number][] = s.track.myPoints.map(
-          (p) => [p.lon, p.lat] as [number, number],
-        );
-        pastSrc.setData({
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: [...persisted, ...trailCoords] },
-          properties: {},
-        });
-      }
+      // Past-trace (persisted hourly checkpoints) is updated by the
+      // dedicated effect that subscribes to track.myPoints — we don't
+      // merge trailCoords here anymore. Reason: the volatile trail is
+      // already drawn by `my-trail-line`, and merging it with the
+      // persisted track produced visible zigzags whenever the live trail
+      // started before the first checkpoint had been recorded.
 
       if (s.map.isFollowingBoat) {
         map.easeTo({ center: [lon, lat], duration: 500 });
@@ -791,7 +783,12 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     });
   }, []);
 
-  /* ── Past-trace: persisted track + live trail, refreshed on timeline scrub ── */
+  /* ── Past-trace: persisted hourly checkpoints only.
+   *
+   * Live wake (per-tick movement) is already drawn by `my-trail-line`.
+   * Merging trailCoords here introduced zigzags at session start when the
+   * live trail's first samples didn't line up with the first persisted
+   * checkpoint. */
   useEffect(() => {
     const applyPastTrace = (): void => {
       const map = mapRef.current;
@@ -799,23 +796,20 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       const src = map.getSource('past-trace') as maplibregl.GeoJSONSource | undefined;
       if (!src) return;
       const state = useGameStore.getState();
-      const persisted: [number, number][] = state.track.myPoints.map(
+      const coords: [number, number][] = state.track.myPoints.map(
         (p) => [p.lon, p.lat] as [number, number],
       );
-      const merged = [...persisted, ...trailCoords];
       src.setData({
         type: 'Feature',
-        geometry: { type: 'LineString', coordinates: merged },
+        geometry: { type: 'LineString', coordinates: coords },
         properties: {},
       });
     };
     applyPastTrace();
     let prevPoints = useGameStore.getState().track.myPoints;
-    let prevTime = useGameStore.getState().timeline.currentTime;
     return useGameStore.subscribe((s) => {
-      if (s.track.myPoints !== prevPoints || s.timeline.currentTime !== prevTime) {
+      if (s.track.myPoints !== prevPoints) {
         prevPoints = s.track.myPoints;
-        prevTime = s.timeline.currentTime;
         applyPastTrace();
       }
     });

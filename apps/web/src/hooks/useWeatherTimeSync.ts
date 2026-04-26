@@ -3,24 +3,22 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 
-const RESAMPLE_THROTTLE_GAME_MS = 60_000;     // 1 min de jeu mini entre 2 resamples
-const RESAMPLE_THROTTLE_WALL_MS = 350;        // au plus 1 resample / 350 ms wall-clock
+const RESAMPLE_THROTTLE_GAME_MS = 5 * 60_000;  // 5 min de jeu mini entre 2 resamples
 const FIVE_MIN = 5 * 60_000;
 
 /**
  * Resample la grille météo (`weather.gridData`) à `timeline.currentTime`
- * dès que le scrub déplace l'instant de plus d'une minute. Permet aux
+ * dès que le scrub déplace l'instant de plus de 5 min de jeu. Permet aux
  * couches WindOverlay/SwellOverlay (qui consomment `gridData`) de
  * pré-visualiser la météo future quand on avance la timeline.
  *
- * Double throttle :
- *  - GAME-TIME : on saute si le delta de jeu est sous la minute (sinon
- *    chaque pixel de drag relancerait le resample)
- *  - WALL-CLOCK (debounce trailing) : on attend 350 ms d'inactivité pour
- *    réellement resample, ce qui évite de saturer le worker projection
- *    pendant un drag rapide ou une lecture 24×.
+ * Le throttle est en TEMPS DE JEU (pas wall-clock) — ça borne naturellement
+ * la fréquence : un drag rapide ou une lecture 24× ne tape la grille que
+ * tous les 5 min de scrubbed time, ce qui est largement suffisant pour
+ * ressentir l'évolution météo (qui change à granularité horaire de toute façon).
  *
- * En LIVE on laisse aussi un timer 5 min pour absorber les nouveaux runs GFS.
+ * En LIVE on laisse aussi un timer 5 min wall-clock pour absorber les
+ * nouveaux runs GFS quand l'onglet est revenu actif.
  */
 export function useWeatherTimeSync(): void {
   const decodedGrid = useGameStore((s) => s.weather.decodedGrid);
@@ -35,14 +33,10 @@ export function useWeatherTimeSync(): void {
     if (!decodedGrid) return;
     const targetMs = isLive ? Date.now() : currentTime.getTime();
     if (Math.abs(targetMs - lastSampleGameMsRef.current) < RESAMPLE_THROTTLE_GAME_MS) return;
-
-    const t = window.setTimeout(() => {
-      const grid = decodedGridToWeatherGridAtNow(decodedGrid, targetMs);
-      setWeatherGrid(grid, new Date(targetMs + 6 * 3_600_000));
-      lastSampleGameMsRef.current = targetMs;
-      lastWallClockMsRef.current = Date.now();
-    }, RESAMPLE_THROTTLE_WALL_MS);
-    return () => window.clearTimeout(t);
+    const grid = decodedGridToWeatherGridAtNow(decodedGrid, targetMs);
+    setWeatherGrid(grid, new Date(targetMs + 6 * 3_600_000));
+    lastSampleGameMsRef.current = targetMs;
+    lastWallClockMsRef.current = Date.now();
   }, [decodedGrid, currentTime, isLive, setWeatherGrid]);
 
   // LIVE-mode safety net : also resample every 5 wall-clock minutes so the

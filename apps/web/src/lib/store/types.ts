@@ -83,7 +83,7 @@ export interface SelectionState {
   selectedBoatIds: Set<string>;
 }
 
-export type PlaybackSpeed = 1 | 6 | 24;
+export type PlaybackSpeed = 6 | 24 | 48;
 
 export interface TimelineState {
   currentTime: Date;

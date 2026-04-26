@@ -207,21 +207,23 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   useWeatherTimeSync();
 
   // Seed race context for the timeline bounds. forecastEnd is refreshed
-  // every 5 min so J+7 keeps sliding forward as wall time advances.
+  // every 5 min so J+5 keeps sliding forward as wall time advances.
+  // Cap is J+5 (not J+7) since GFS reliability degrades past day 5.
   useEffect(() => {
     const startMs = Date.parse(race.startsAt);
     const endMs = race.status === 'FINISHED' ? null : null; // raceEnd unknown in current API
+    const FIVE_DAYS_MS = 5 * 24 * 3_600_000;
     const setRaceContext = useGameStore.getState().setRaceContext;
     setRaceContext({
       startMs: Number.isFinite(startMs) ? startMs : null,
       endMs,
-      forecastEndMs: Date.now() + 7 * 24 * 3_600_000,
+      forecastEndMs: Date.now() + FIVE_DAYS_MS,
     });
     const id = window.setInterval(() => {
       useGameStore.getState().setRaceContext({
         startMs: Number.isFinite(startMs) ? startMs : null,
         endMs,
-        forecastEndMs: Date.now() + 7 * 24 * 3_600_000,
+        forecastEndMs: Date.now() + FIVE_DAYS_MS,
       });
     }, 5 * 60_000);
     return () => window.clearInterval(id);

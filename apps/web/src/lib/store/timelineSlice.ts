@@ -6,7 +6,7 @@ import type { TimelineState, PlaybackSpeed, GameStore } from './types';
 export const INITIAL_TIMELINE: TimelineState = {
   currentTime: new Date(0),
   isLive: true,
-  playbackSpeed: 1,
+  playbackSpeed: 6,
   isPlaying: false,
   raceStartMs: null,
   raceEndMs: null,
@@ -29,7 +29,7 @@ export function createTimelineSlice(set: (fn: (s: GameStore) => Partial<GameStor
           currentTime: new Date(),
           isLive: true,
           isPlaying: false,
-          playbackSpeed: 1,
+          playbackSpeed: 6,
         },
       })),
 
