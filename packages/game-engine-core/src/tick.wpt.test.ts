@@ -9,6 +9,7 @@ import {
   CoastlineIndex,
   resolveBoatLoadout,
   runTick,
+  supersedeWaypointsByCapTwa,
   type BoatRuntime,
   type WeatherProvider,
 } from './index.js';
@@ -253,6 +254,127 @@ describe('WPT order — captureRadiusNm validation', () => {
       stillThere,
       undefined,
       `WPT with captureRadiusNm=2 should be captured when boat is ~1 NM away`,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test 5 — heading-intent supersession: when a CAP order is ingested AFTER
+// existing WPT orders, the WPTs must be marked completed so they no longer
+// override heading on subsequent ticks. Reproduces the WPT-then-CAP route
+// regression where the boat held the bearing-to-last-WPT instead of CAP°.
+// ---------------------------------------------------------------------------
+
+describe('orderHistory — supersedeWaypointsByCapTwa', () => {
+  test('a CAP order marks earlier non-completed WPTs as completed', () => {
+    const wptA = makeWptEnvelope(46, -3, 1_000, 1);
+    const wptB = makeWptEnvelope(46.5, -2, 1_001, 2);
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 240 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 2_000,
+      clientSeq: 3,
+      trustedTs: 2_000,
+      effectiveTs: 2_000,
+      receivedAt: 2_000,
+      connectionId: 'test',
+    };
+
+    const updated = supersedeWaypointsByCapTwa([wptA, wptB], cap);
+
+    assert.equal(updated[0]?.order.completed, true, 'WPT A should be superseded');
+    assert.equal(updated[1]?.order.completed, true, 'WPT B should be superseded');
+  });
+
+  test('a TWA order marks earlier non-completed WPTs as completed', () => {
+    const wptA = makeWptEnvelope(46, -3, 1_000, 1);
+    const twa: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'TWA', value: { twa: 60 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 2_000,
+      clientSeq: 2,
+      trustedTs: 2_000,
+      effectiveTs: 2_000,
+      receivedAt: 2_000,
+      connectionId: 'test',
+    };
+
+    const updated = supersedeWaypointsByCapTwa([wptA], twa);
+    assert.equal(updated[0]?.order.completed, true, 'WPT should be superseded by TWA');
+  });
+
+  test('a SAIL or MODE order does NOT mark WPTs as completed', () => {
+    const wptA = makeWptEnvelope(46, -3, 1_000, 1);
+    const mode: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'MODE', value: { auto: true }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 2_000,
+      clientSeq: 2,
+      trustedTs: 2_000,
+      effectiveTs: 2_000,
+      receivedAt: 2_000,
+      connectionId: 'test',
+    };
+
+    const updated = supersedeWaypointsByCapTwa([wptA], mode);
+    assert.notEqual(updated[0]?.order.completed, true, 'MODE must not supersede WPT');
+  });
+
+  test('CAP does NOT supersede WPTs whose effectiveTs is later than the CAP', () => {
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 240 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: 1_000,
+      clientSeq: 1,
+      trustedTs: 1_000,
+      effectiveTs: 1_000,
+      receivedAt: 1_000,
+      connectionId: 'test',
+    };
+    // Existing history: a WPT at t=500 (will be superseded) and a WPT at t=2000 (newer than CAP, kept).
+    const oldWpt = makeWptEnvelope(46, -3, 500, 1);
+    const newWpt = makeWptEnvelope(47, -2, 2_000, 2);
+
+    const updated = supersedeWaypointsByCapTwa([oldWpt, newWpt], cap);
+
+    assert.equal(updated[0]?.order.completed, true, 'older WPT superseded');
+    assert.notEqual(updated[1]?.order.completed, true, 'newer WPT kept');
+  });
+});
+
+describe('WPT order — CAP arrives after WPTs and wins heading on subsequent ticks', () => {
+  test('boat holds CAP heading after WPT route is superseded by CAP order', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    const startPos: Position = { lat: 46, lon: -4 };
+    // Two WPTs: due east. If they win, heading would be ~90°.
+    const wptA = makeWptEnvelope(46, -3.5, tickStartMs - 35_000, 1);
+    const wptB = makeWptEnvelope(46, -3.0, tickStartMs - 35_000, 2);
+    // Then a CAP @ 180° (due south) arrives later.
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 180 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: tickStartMs - 30_000,
+      clientSeq: 3,
+      trustedTs: tickStartMs - 30_000,
+      effectiveTs: tickStartMs - 30_000,
+      receivedAt: tickStartMs - 30_000,
+      connectionId: 'test',
+    };
+    // Apply the same supersession logic the worker uses on ingest.
+    const history = supersedeWaypointsByCapTwa([wptA, wptB], cap);
+    history.push(cap);
+
+    const runtime = await makeRuntime(startPos, history);
+
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    // Final heading should reflect the CAP (~180°), not the bearing toward WPT B (~90°).
+    const finalHeading = out.runtime.boat.heading;
+    const deltaToCap = Math.abs(((finalHeading - 180 + 540) % 360) - 180);
+    assert.ok(
+      deltaToCap < 5,
+      `final heading should be ~180° (CAP wins after supersession), got ${finalHeading}`,
     );
   });
 });

@@ -4,7 +4,7 @@ import pino from 'pino';
 import type { OrderEnvelope, Polar } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
 import { loadPolar } from '@nemo/polar-lib';
-import { buildZoneIndex, runTick, type BoatRuntime, type CoastlineProbe, type IndexedZone, type TickOutcome } from '@nemo/game-engine-core';
+import { buildZoneIndex, runTick, supersedeWaypointsByCapTwa, type BoatRuntime, type CoastlineProbe, type IndexedZone, type TickOutcome } from '@nemo/game-engine-core';
 import { createFixtureProvider, createNoaaProvider, type WeatherProvider } from '../weather/provider.js';
 import {
   loadCoastline,
@@ -91,8 +91,13 @@ async function main() {
         (o) => o.connectionId === msg.envelope.connectionId && o.clientSeq === msg.envelope.clientSeq,
       );
       if (already) return; // dédup idempotent
-      const insertAt = rt.orderHistory.findIndex((o) => o.effectiveTs > msg.envelope.effectiveTs);
-      const history = rt.orderHistory.slice();
+      // Heading-intent supersession : un CAP / TWA neuf marque tous les WPT
+      // antérieurs non complétés comme `completed`. Sans ça, les WPT
+      // persistants écrasent le cap aux ticks suivants une fois le CAP
+      // consommé et purgé. Voir `orderHistory.ts` pour la rationale.
+      const supersededHistory = supersedeWaypointsByCapTwa(rt.orderHistory, msg.envelope);
+      const insertAt = supersededHistory.findIndex((o) => o.effectiveTs > msg.envelope.effectiveTs);
+      const history = supersededHistory.slice();
       if (insertAt === -1) history.push(msg.envelope);
       else history.splice(insertAt, 0, msg.envelope);
       runtimes[idx] = { ...rt, orderHistory: history };
