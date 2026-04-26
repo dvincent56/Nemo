@@ -76,19 +76,23 @@ function buildLineGradient(
   if (total <= 0) return null;
 
   const expr: unknown[] = ['interpolate', ['linear'], ['line-progress']];
+  // MapLibre requires strictly increasing stops. We skip duplicates entirely:
+  // if a vertex is at the same line-progress as the previous one (zero-length
+  // segment, e.g. when the WPT capture path pushed a synthetic vertex right
+  // at a point already in the buffer), the previous stop's color still applies
+  // up to the next valid stop. The first stop is always emitted.
   let lastT = -1;
   for (let i = 0; i < count; i++) {
     let t = dist[i]! / total;
-    // MapLibre requires strictly increasing stops. Nudge duplicates forward
-    // by a tiny epsilon — degenerate cases (zero-distance segments) are rare
-    // but possible when the projection records two points at the same spot.
-    if (t <= lastT) t = lastT + 1e-7;
     if (t > 1) t = 1;
+    if (i > 0 && t <= lastT) continue;
     lastT = t;
     const bsp = buf[i * 6 + 3]!;
     const ratio = bspMax > 0 ? bsp / bspMax : 0;
     expr.push(t, bspRatioToRgb(ratio));
   }
+  // Defensive: if dedup left fewer than 2 stops, return null (no gradient).
+  if (expr.length < 7) return null; // 'interpolate' + ['linear'] + ['line-progress'] + 2 stops = 7 entries
   return expr;
 }
 
