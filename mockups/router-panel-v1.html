@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Router Panel — harmonisation v1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ivory:        #f5f0e8;
+      --ivory-72:     rgba(245, 240, 232, 0.72);
+      --ivory-42:     rgba(245, 240, 232, 0.42);
+      --ivory-line:   rgba(245, 240, 232, 0.16);
+      --ivory-faint:  rgba(245, 240, 232, 0.10);
+      --navy:         #1a2840;
+      --navy-deep:    rgba(12, 20, 36, 0.97);
+      --gold:         #c9a227;
+      --gold-hover:   #d8b03a;
+      --gold-soft:    rgba(201, 162, 39, 0.12);
+      --green:        #5cc88c;
+      --green-soft:   rgba(50, 180, 100, 0.06);
+      --green-line:   rgba(50, 180, 100, 0.4);
+      --warn:         #ddc270;
+      --warn-soft:    rgba(240, 180, 50, 0.1);
+      --warn-line:    rgba(240, 180, 50, 0.4);
+      --r-md:         4px;
+
+      --font-display: "Bebas Neue", Impact, sans-serif;
+      --font-body:    "Space Grotesk", system-ui, sans-serif;
+      --font-mono:    "Space Mono", ui-monospace, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0a1322;
+      color: var(--ivory);
+      font-family: var(--font-body);
+      font-size: 14px;
+      padding: 32px 24px 64px;
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(201, 162, 39, 0.05), transparent 55%),
+        radial-gradient(circle at 80% 90%, rgba(26, 40, 64, 0.4), transparent 60%);
+    }
+
+    .stage {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .stage { grid-template-columns: 1fr; }
+    }
+
+    .heading {
+      grid-column: 1 / -1;
+      margin: 0 0 8px;
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 0.06em;
+      color: var(--ivory);
+    }
+    .sub {
+      grid-column: 1 / -1;
+      margin: 0 0 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+    }
+
+    /* --------------------------------------------------------------
+       Panel shell — mimics SlidePanel.module.css
+       -------------------------------------------------------------- */
+    .slide {
+      background: var(--navy-deep);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+      width: 100%;
+      max-width: 380px;
+      margin-inline: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+    .slide-head {
+      padding: 18px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--ivory-line);
+    }
+    .slide-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      color: var(--ivory);
+      margin: 0;
+    }
+    .slide-close {
+      background: transparent;
+      border: 1px solid var(--ivory-line);
+      color: var(--ivory-72);
+      width: 28px; height: 28px;
+      border-radius: var(--r-md);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px; cursor: pointer;
+      transition: background 150ms;
+    }
+    .slide-close:hover { background: rgba(255, 255, 255, 0.06); }
+    .slide-body {
+      padding: 18px 20px;
+      color: var(--ivory);
+      font-size: 11px;
+    }
+
+    /* --------------------------------------------------------------
+       Field label — shared across panels
+       -------------------------------------------------------------- */
+    .field-label {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+      margin-bottom: 8px;
+    }
+
+    /* --------------------------------------------------------------
+       Section spacing
+       -------------------------------------------------------------- */
+    .section { margin-bottom: 18px; }
+    .section:last-child { margin-bottom: 0; }
+
+    /* --------------------------------------------------------------
+       Coords card — used for "Point de départ" + filled destination
+       Same vocabulary as SailPanel rows / ProgPanel orders.
+       -------------------------------------------------------------- */
+    .card {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+    }
+    .card-icon {
+      font-size: 16px;
+      color: var(--gold);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-main {
+      min-width: 0;
+    }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 0.04em;
+      color: var(--ivory);
+      line-height: 1;
+    }
+    .card-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--ivory-72);
+      margin-top: 4px;
+    }
+    .card-aside {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      transition: color 150ms;
+    }
+    .card-aside:hover { color: var(--gold); }
+
+    /* --------------------------------------------------------------
+       "Définir le point d'arrivée" — empty state CTA
+       (matches ProgPanel .submit dimensions but outline variant)
+       -------------------------------------------------------------- */
+    .place-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed rgba(201, 162, 39, 0.55);
+      color: var(--gold);
+      border-radius: var(--r-md);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 150ms, border-color 150ms;
+    }
+    .place-btn:hover {
+      background: var(--gold-soft);
+      border-color: var(--gold);
+    }
+    .place-btn .plus {
+      font-family: var(--font-display);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* --------------------------------------------------------------
+       Placing state hint (mobile-friendly card)
+       -------------------------------------------------------------- */
+    .placing-hint {
+      background: var(--gold-soft);
+      border: 1px solid rgba(201, 162, 39, 0.45);
+      border-radius: var(--r-md);
+      padding: 18px 16px;
+      text-align: center;
+      color: var(--gold);
+    }
+    .placing-icon { font-size: 26px; margin-bottom: 8px; }
+    .placing-msg {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ivory);
+      letter-spacing: 0.06em;
+      line-height: 1.5;
+    }
+    .placing-cancel {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--ivory-line);
+      color: var(--ivory-72);
+      border-radius: var(--r-md);
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 150ms;
+    }
+    .placing-cancel:hover { background: rgba(255, 255, 255, 0.06); }
+
+    /* --------------------------------------------------------------
+       Configuration block — segmented toggle + checkbox + slider
+       Matches SailPanel.modeToggle dimensions.
+       -------------------------------------------------------------- */
+    .config { margin-bottom: 18px; }
+
+    .seg-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--ivory-line);
+      border-radius: var(--r-md);
+      margin-bottom: 14px;
+    }
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--ivory-72);
+      padding: 10px 12px;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+      transition: background 150ms, color 150ms;
+    }
+    .seg-btn:hover { color: var(--ivory); }
+    .seg-btn-active {
+      background: var(--gold);
+      color: var(--navy);
+    }
+    .seg-btn-active:hover { color: var(--navy); }
+
+    /* checkbox — custom, ivory tint */
+    .check-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      user-select: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--ivory-72);
+    }
+    .check-row input { display: none; }
+    .check-box {
+      width: 16px; height: 16px;
+      border: 1px solid var(--ivory-line);
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 120ms, background 120ms;
+    }
+    .check-row:hover .check-box { border-color: rgba(245, 240, 232, 0.32); }
+    .check-row input:checked ~ .check-box {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+    .check-row input:checked ~ .check-box::after {
+      content: "✓";
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    /* cone slider — gold thumb on ivory rail */
+    .cone-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cone-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--ivory-72);
+    }
+    .cone-head strong {
+      font-family: var(--font-mono);
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .cone-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(245, 240, 232, 0.16);
+      border-radius: 999px;
+      outline: none;
+    }
+    .cone-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--navy);
+      cursor: pointer;
+      transition: transform 120ms;
+    }
+    .cone-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+    .cone-slider::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid var(--navy);
+      cursor: pointer;
+    }
+
+    /* --------------------------------------------------------------
+       Primary action — ROUTER (matches ProgPanel .submit exactly)
+       -------------------------------------------------------------- */
+    .primary {
+      width: 100%;
+      background: var(--gold);
+      color: var(--navy);
+      border: none;
+      padding: 14px 16px;
+      border-radius: var(--r-md);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 150ms;
+    }
+    .primary:hover { background: var(--gold-hover); }
+    .primary:disabled,
+    .primary.is-disabled {
+      background: rgba(245, 240, 232, 0.06);
+      color: var(--ivory-42);
+      cursor: not-allowed;
+    }
+    .primary-sub {
+      display: block;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    .secondary {
+      width: 100%;
+      padding: 14px 16px;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      border-radius: var(--r-md);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 150ms, color 150ms;
+    }
+    .secondary:hover { background: var(--gold); color: var(--navy); }
+
+    /* --------------------------------------------------------------
+       Results block (post-calc)
+       -------------------------------------------------------------- */
+    .results {
+      margin-top: 18px;
+      background: var(--green-soft);
+      border: 1px solid var(--green-line);
+      border-radius: var(--r-md);
+      padding: 14px;
+    }
+    .results-head {
+      color: var(--green);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      margin-bottom: 14px;
+    }
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ivory-42);
+      display: block;
+      margin-bottom: 2px;
+    }
+    .metric-value {
+      font-family: var(--font-display);
+      font-size: 20px;
+      letter-spacing: 0.04em;
+      color: var(--ivory);
+      line-height: 1;
+    }
+    .metric-value .unit {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--ivory-72);
+      letter-spacing: 0.06em;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+    .results .secondary { margin-top: 8px; }
+
+    .warning {
+      background: var(--warn-soft);
+      border: 1px solid var(--warn-line);
+      color: var(--warn);
+      border-radius: var(--r-md);
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+      display: flex; gap: 6px;
+    }
+
+    /* --------------------------------------------------------------
+       Calculating state
+       -------------------------------------------------------------- */
+    .calc {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 22px 0 6px;
+      color: var(--gold);
+    }
+    .spinner {
+      width: 42px; height: 42px;
+      border: 3px solid rgba(201, 162, 39, 0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .calc-label {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .calc-sub {
+      color: var(--ivory-42);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      margin-top: 6px;
+    }
+
+    /* --------------------------------------------------------------
+       Tag for "before / after" labels
+       -------------------------------------------------------------- */
+    .tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 2px;
+      margin-bottom: 10px;
+    }
+    .tag-before { background: rgba(158, 42, 42, 0.18); color: #f08585; }
+    .tag-after  { background: rgba(50, 180, 100, 0.14); color: var(--green); }
+    .tag-ref    { background: rgba(245, 240, 232, 0.08); color: var(--ivory-72); }
+
+    .col-heading {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 0.06em;
+      color: var(--ivory);
+      margin: 0 0 8px;
+    }
+    .col-note {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ivory-42);
+      letter-spacing: 0.06em;
+      margin-bottom: 14px;
+    }
+
+    /* --------------------------------------------------------------
+       Misc
+       -------------------------------------------------------------- */
+    .stack-2 { display: flex; flex-direction: column; gap: 8px; }
+
+    .footer-note {
+      grid-column: 1 / -1;
+      margin-top: 20px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--ivory-42);
+      letter-spacing: 0.08em;
+      line-height: 1.6;
+      max-width: 680px;
+    }
+    .footer-note strong { color: var(--ivory); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <h1 class="heading">Router Panel — harmonisation</h1>
+    <p class="sub">Avant / Après · références : ProgPanel + SailPanel</p>
+
+    <!-- ============================================================
+         COL 1 — AVANT (état actuel)
+         ============================================================ -->
+    <section>
+      <span class="tag tag-before">Avant</span>
+      <h2 class="col-heading">Routeur — actuel</h2>
+      <p class="col-note">Border-radius 3 px, boutons 10 px, bordures dorées pointillées, segments compacts (6 px).</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">ROUTEUR</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body" style="font-size: 11px;">
+          <div style="margin-bottom: 14px;">
+            <div style="color: #8fa8c8; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Point de départ</div>
+            <div style="background: rgba(255,255,255,0.04); border-radius: 3px; padding: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--gold);">
+              ⚓ Position bateau<br />
+              <span style="color: #8fa8c8; font-size: 9px;">45°43.87'N · 5°50.70'O</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <div style="color: #8fa8c8; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">Point d'arrivée</div>
+            <button style="width: 100%; background: #1a3a5c; border: 1px dashed #c9a22788; color: var(--gold); border-radius: 3px; padding: 10px; font-family: var(--font-mono); font-size: 10px; cursor: pointer;">
+              + Définir le point d'arrivée
+            </button>
+          </div>
+
+          <div style="border-top: 1px solid rgba(245, 240, 232, 0.1); padding-top: 12px; margin-top: 14px;">
+            <div style="color: #8fa8c8; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Configuration</div>
+            <div style="display: flex; gap: 4px; margin-bottom: 10px;">
+              <button style="flex: 1; background: var(--gold); color: var(--navy); border: 1px solid var(--gold); border-radius: 3px; padding: 6px; font-family: var(--font-mono); font-size: 9px; font-weight: 700;">FAST</button>
+              <button style="flex: 1; background: transparent; color: #8fa8c8; border: 1px solid rgba(245, 240, 232, 0.16); border-radius: 3px; padding: 6px; font-family: var(--font-mono); font-size: 9px;">EQUIL.</button>
+              <button style="flex: 1; background: transparent; color: #8fa8c8; border: 1px solid rgba(245, 240, 232, 0.16); border-radius: 3px; padding: 6px; font-family: var(--font-mono); font-size: 9px;">HI-RES</button>
+            </div>
+            <label style="display: flex; align-items: center; gap: 6px; color: #8fa8c8; margin-bottom: 8px; font-family: var(--font-mono); font-size: 11px;">
+              <input type="checkbox" /> Détection des côtes
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 4px; color: #8fa8c8; font-family: var(--font-mono); font-size: 11px;">
+              <span>Cône <strong style="color: var(--ivory);">60°</strong></span>
+              <input type="range" min="30" max="180" value="60" style="width: 100%;" />
+            </div>
+          </div>
+
+          <button style="width: 100%; margin-top: 16px; background: rgba(255,255,255,0.04); color: #5c6b80; border: none; border-radius: 3px; padding: 10px; font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: 0.1em; cursor: not-allowed;">
+            ROUTER
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         COL 2 — APRÈS (harmonisé)
+         ============================================================ -->
+    <section>
+      <span class="tag tag-after">Après</span>
+      <h2 class="col-heading">Routeur — harmonisé</h2>
+      <p class="col-note">Border-radius 4 px, boutons 14 px, segments 10 × 12 px, tokens ivoire alignés sur Prog/Sail.</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">ROUTEUR</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+
+        <div class="slide-body">
+          <!-- ÉTAT IDLE -->
+          <section class="section">
+            <div class="field-label">Point de départ</div>
+            <div class="card">
+              <span class="card-icon">⚓</span>
+              <div class="card-main">
+                <div class="card-title">Position bateau</div>
+                <div class="card-meta">45°43.87'N · 5°50.70'O</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="field-label">Point d'arrivée</div>
+            <button type="button" class="place-btn">
+              <span class="plus">+</span> Définir l'arrivée
+            </button>
+          </section>
+
+          <section class="config">
+            <div class="field-label">Configuration</div>
+
+            <div class="seg-toggle" role="tablist" aria-label="Préréglage">
+              <button class="seg-btn seg-btn-active" type="button">Fast</button>
+              <button class="seg-btn" type="button">Équilibré</button>
+              <button class="seg-btn" type="button">Hi-Res</button>
+            </div>
+
+            <label class="check-row">
+              <input type="checkbox" />
+              <span class="check-box"></span>
+              <span>Détection des côtes</span>
+            </label>
+
+            <div class="cone-row">
+              <div class="cone-head">
+                <span>Cône</span>
+                <strong>60°</strong>
+              </div>
+              <input class="cone-slider" type="range" min="30" max="180" value="60" />
+            </div>
+          </section>
+
+          <button type="button" class="primary is-disabled" disabled>
+            Router
+            <span class="primary-sub">Définir l'arrivée pour calculer</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         COL 3 — RÉFÉRENCES Prog + Sail (extraits)
+         ============================================================ -->
+    <section>
+      <span class="tag tag-ref">Référence</span>
+      <h2 class="col-heading">Prog + Voiles (extraits)</h2>
+      <p class="col-note">Mêmes tokens : segments 10 × 12 px, primaire 14 × 16 px, bordure ivory-line, radius 4 px.</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">PROGRAMMATION</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--ivory-line); margin-bottom: 16px;">
+            <button style="background: transparent; border: none; color: var(--gold); padding: 12px 8px; font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; border-bottom: 2px solid var(--gold); margin-bottom: -1px; cursor: pointer;">CAP</button>
+            <button style="background: transparent; border: none; color: var(--ivory-72); padding: 12px 8px; font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;">VOILE</button>
+            <button style="background: transparent; border: none; color: var(--ivory-72); padding: 12px 8px; font-family: var(--font-mono); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;">WPT</button>
+          </div>
+
+          <div class="section">
+            <div class="field-label">Quand</div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--ivory-line); color: var(--ivory); padding: 10px 12px; border-radius: 4px; font-family: var(--font-mono); font-size: 14px; font-weight: 700;">+ 0h 30m</div>
+          </div>
+
+          <button class="primary">Programmer</button>
+        </div>
+      </div>
+
+      <div style="height: 18px;"></div>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">VOILES</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body">
+          <div class="seg-toggle" style="margin-bottom: 16px;">
+            <button class="seg-btn seg-btn-active" type="button">Manuel</button>
+            <button class="seg-btn" type="button">Auto</button>
+          </div>
+
+          <div class="card" style="margin-bottom: 6px;">
+            <span class="card-icon" style="color: var(--gold);">▲</span>
+            <div class="card-main">
+              <div class="card-title" style="color: var(--gold);">J2</div>
+              <div class="card-meta">Génois moyen</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 12px; color: var(--gold);">12.4 kn</div>
+          </div>
+          <div class="card" style="margin-bottom: 6px;">
+            <span class="card-icon" style="color: var(--ivory-72);">▲</span>
+            <div class="card-main">
+              <div class="card-title">SP</div>
+              <div class="card-meta">Spi asymétrique</div>
+            </div>
+            <div style="font-family: var(--font-mono); font-weight: 700; font-size: 12px; color: var(--ivory-72);">8.1 kn</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         BLOCS COMPLÉMENTAIRES — états du Routeur
+         ============================================================ -->
+    <h2 class="heading" style="margin-top: 24px;">États supplémentaires du Routeur</h2>
+    <p class="sub">Calculating · Results · Placing</p>
+
+    <!-- Calculating -->
+    <section>
+      <span class="tag tag-after">Calculating</span>
+      <h2 class="col-heading">En cours</h2>
+      <p class="col-note">Spinner doré, label mono uppercase, sous-texte ivoire 42.</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">ROUTEUR</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body">
+          <section class="section">
+            <div class="field-label">Point de départ</div>
+            <div class="card">
+              <span class="card-icon">⚓</span>
+              <div class="card-main">
+                <div class="card-title">Position bateau</div>
+                <div class="card-meta">45°43.87'N · 5°50.70'O</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="field-label">Point d'arrivée</div>
+            <div class="card">
+              <span class="card-icon">📍</span>
+              <div class="card-main">
+                <div class="card-title">Arrivée</div>
+                <div class="card-meta">46°12.40'N · 4°08.10'O</div>
+              </div>
+              <button class="card-aside" type="button">Modifier</button>
+            </div>
+          </section>
+
+          <div class="calc">
+            <div class="spinner"></div>
+            <div class="calc-label">Calcul en cours…</div>
+            <div class="calc-sub">Fermer le panneau pour annuler</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section>
+      <span class="tag tag-after">Results</span>
+      <h2 class="col-heading">Route calculée</h2>
+      <p class="col-note">Métriques en Bebas (display) sur unité mono. Boutons primaire + secondaire alignés.</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">ROUTEUR</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body">
+          <section class="section">
+            <div class="field-label">Point de départ</div>
+            <div class="card">
+              <span class="card-icon">⚓</span>
+              <div class="card-main">
+                <div class="card-title">Position bateau</div>
+                <div class="card-meta">45°43.87'N · 5°50.70'O</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="field-label">Point d'arrivée</div>
+            <div class="card">
+              <span class="card-icon">📍</span>
+              <div class="card-main">
+                <div class="card-title">Arrivée</div>
+                <div class="card-meta">46°12.40'N · 4°08.10'O</div>
+              </div>
+              <button class="card-aside" type="button">Modifier</button>
+            </div>
+          </section>
+
+          <section class="results">
+            <div class="results-head">✓ Route calculée</div>
+            <div class="results-grid">
+              <div>
+                <span class="metric-label">Distance</span>
+                <span class="metric-value">128<span class="unit">nm</span></span>
+              </div>
+              <div>
+                <span class="metric-label">ETA</span>
+                <span class="metric-value">+18h<span class="unit">42m</span></span>
+              </div>
+              <div>
+                <span class="metric-label">Calcul</span>
+                <span class="metric-value">2.3<span class="unit">s</span></span>
+              </div>
+              <div>
+                <span class="metric-label">Manœuvres</span>
+                <span class="metric-value">7</span>
+              </div>
+            </div>
+
+            <div class="warning">⚠ Route incomplète : météo limitée à J+7</div>
+
+            <div class="stack-2">
+              <button class="primary" type="button">→ Points de contrôle</button>
+              <button class="secondary" type="button">→ Programmation de cap</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- Placing -->
+    <section>
+      <span class="tag tag-after">Placing</span>
+      <h2 class="col-heading">Placement actif</h2>
+      <p class="col-note">Sur mobile portrait, ce panneau est masqué (cf. logique existante).</p>
+
+      <div class="slide">
+        <div class="slide-head">
+          <h3 class="slide-title">ROUTEUR</h3>
+          <button class="slide-close" aria-label="Fermer">×</button>
+        </div>
+        <div class="slide-body">
+          <section class="section">
+            <div class="field-label">Point de départ</div>
+            <div class="card">
+              <span class="card-icon">⚓</span>
+              <div class="card-main">
+                <div class="card-title">Position bateau</div>
+                <div class="card-meta">45°43.87'N · 5°50.70'O</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="field-label">Point d'arrivée</div>
+            <div class="placing-hint">
+              <div class="placing-icon">📍</div>
+              <div class="placing-msg">Cliquez (ou tapez) sur la carte<br/>pour placer l'arrivée</div>
+              <button class="placing-cancel" type="button">Annuler</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">
+      <strong>Tokens partagés</strong> avec ProgPanel / SailPanel : radius <code>4 px</code>, bordure <code>rgba(245, 240, 232, 0.16)</code>,
+      label mono <code>9 px / 0.16em uppercase</code>, segment toggle <code>10 × 12 px / 0.16em</code>, primaire <code>14 × 16 px / 0.18em</code>,
+      transitions <code>150 ms</code>. — <strong>Cards</strong> ⚓ / 📍 reprennent la grammaire <code>SailPanel.sailRow</code> (icône · titre Bebas · meta mono).
+    </p>
+  </div>
+</body>
+</html>

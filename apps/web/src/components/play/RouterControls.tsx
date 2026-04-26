@@ -3,9 +3,9 @@ import { useGameStore } from '@/lib/store';
 import styles from './RouterControls.module.css';
 
 const PRESETS: Array<{ value: 'FAST' | 'BALANCED' | 'HIGHRES'; label: string }> = [
-  { value: 'FAST', label: 'FAST' },
-  { value: 'BALANCED', label: 'EQUIL.' },
-  { value: 'HIGHRES', label: 'HI-RES' },
+  { value: 'FAST', label: 'Fast' },
+  { value: 'BALANCED', label: 'Équilibré' },
+  { value: 'HIGHRES', label: 'Hi-Res' },
 ];
 
 interface Props {
@@ -22,33 +22,40 @@ export default function RouterControls({ disabled }: Props): React.ReactElement 
 
   return (
     <div className={styles.controls} aria-disabled={disabled}>
-      <div className={styles.label}>Configuration</div>
+      <div className={styles.fieldLabel}>Configuration</div>
 
-      <div className={styles.presetRow}>
+      <div className={styles.segToggle} role="tablist" aria-label="Préréglage du routeur">
         {PRESETS.map((p) => (
           <button
             key={p.value}
             type="button"
             disabled={disabled}
-            className={`${styles.presetBtn} ${preset === p.value ? styles.presetActive : ''}`}
+            className={`${styles.segBtn} ${preset === p.value ? styles.segBtnActive : ''}`}
             onClick={() => setPreset(p.value)}
-          >{p.label}</button>
+          >
+            {p.label}
+          </button>
         ))}
       </div>
 
-      <label className={styles.toggle}>
+      <label className={styles.checkRow}>
         <input
           type="checkbox"
           disabled={disabled}
           checked={coast}
           onChange={(e) => setCoast(e.target.checked)}
         />
+        <span className={styles.checkBox} />
         <span>Détection des côtes</span>
       </label>
 
       <div className={styles.coneRow}>
-        <span>Cône <strong>{cone}°</strong></span>
+        <div className={styles.coneHead}>
+          <span>Cône</span>
+          <strong className={styles.coneValue}>{cone}°</strong>
+        </div>
         <input
+          className={styles.coneSlider}
           type="range"
           min={30}
           max={180}

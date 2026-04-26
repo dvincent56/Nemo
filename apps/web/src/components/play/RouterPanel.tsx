@@ -27,35 +27,48 @@ export default function RouterPanel({
     <div className={`${styles.panel} ${phase === 'placing' ? styles.panelPlacing : ''}`}>
       {/* DEPART (auto = boat position) */}
       <section className={styles.section}>
-        <div className={styles.label}>Point de départ</div>
-        <div className={styles.coords}>
-          ⚓ Position bateau<br />
-          <span className={styles.subCoords}>
-            {typeof lat === 'number' ? formatDMS(lat, true) : '—'} ·{' '}
-            {typeof lon === 'number' ? formatDMS(lon, false) : '—'}
-          </span>
+        <div className={styles.fieldLabel}>Point de départ</div>
+        <div className={styles.card}>
+          <span className={styles.cardIcon}>⚓</span>
+          <div className={styles.cardMain}>
+            <div className={styles.cardTitle}>Position bateau</div>
+            <div className={styles.cardMeta}>
+              {typeof lat === 'number' ? formatDMS(lat, true) : '—'} ·{' '}
+              {typeof lon === 'number' ? formatDMS(lon, false) : '—'}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ARRIVAL */}
       <section className={styles.section}>
-        <div className={styles.label}>Point d&apos;arrivée</div>
+        <div className={styles.fieldLabel}>Point d&apos;arrivée</div>
         {phase === 'placing' ? (
           <div className={styles.placingHint}>
             <div className={styles.placingIcon}>📍</div>
-            <div>Cliquez (ou tapez) sur la carte<br />pour placer l&apos;arrivée</div>
+            <div className={styles.placingMsg}>
+              Cliquez (ou tapez) sur la carte<br />pour placer l&apos;arrivée
+            </div>
             <button type="button" className={styles.cancelBtn} onClick={exitPlacing}>
               Annuler
             </button>
           </div>
         ) : dest ? (
-          <button type="button" className={styles.destBtn} onClick={enterPlacing}>
-            📍 {formatDMS(dest.lat, true)} · {formatDMS(dest.lon, false)}
-            <span className={styles.changeHint}>Changer</span>
-          </button>
+          <div className={styles.card}>
+            <span className={styles.cardIcon}>📍</span>
+            <div className={styles.cardMain}>
+              <div className={styles.cardTitle}>Arrivée</div>
+              <div className={styles.cardMeta}>
+                {formatDMS(dest.lat, true)} · {formatDMS(dest.lon, false)}
+              </div>
+            </div>
+            <button type="button" className={styles.cardAside} onClick={enterPlacing}>
+              Modifier
+            </button>
+          </div>
         ) : (
           <button type="button" className={styles.placeBtn} onClick={enterPlacing}>
-            + Définir le point d&apos;arrivée
+            <span className={styles.placeBtnPlus}>+</span> Définir l&apos;arrivée
           </button>
         )}
       </section>
@@ -66,7 +79,7 @@ export default function RouterPanel({
       {phase === 'calculating' && (
         <section className={styles.calculating}>
           <div className={styles.spinner} />
-          <div className={styles.calcLabel}>CALCUL EN COURS…</div>
+          <div className={styles.calcLabel}>Calcul en cours…</div>
           <div className={styles.calcSub}>Fermer le panneau pour annuler</div>
         </section>
       )}
@@ -74,7 +87,7 @@ export default function RouterPanel({
       {phase === 'results' && route && <ResultsBlock plan={route} onApply={onApply} />}
 
       {phase === 'idle' && (
-        <RouteButton canRoute={canRoute} isGridLoaded={isGridLoaded} />
+        <RouteButton canRoute={canRoute} isGridLoaded={isGridLoaded} hasDest={dest !== null} />
       )}
 
       {error && <div className={styles.error}>{error}</div>}
@@ -82,7 +95,20 @@ export default function RouterPanel({
   );
 }
 
-function RouteButton({ canRoute, isGridLoaded }: { canRoute: boolean; isGridLoaded: boolean }): React.ReactElement {
+function RouteButton({
+  canRoute,
+  isGridLoaded,
+  hasDest,
+}: {
+  canRoute: boolean;
+  isGridLoaded: boolean;
+  hasDest: boolean;
+}): React.ReactElement {
+  const hint = !hasDest
+    ? 'Définir l’arrivée pour calculer'
+    : !isGridLoaded
+    ? 'Météo en chargement…'
+    : null;
   return (
     <button
       type="button"
@@ -90,8 +116,8 @@ function RouteButton({ canRoute, isGridLoaded }: { canRoute: boolean; isGridLoad
       disabled={!canRoute}
       onClick={() => window.dispatchEvent(new CustomEvent('nemo:router:route'))}
     >
-      ROUTER
-      {!isGridLoaded && <div className={styles.routeBtnSub}>Météo en chargement…</div>}
+      Router
+      {hint && <span className={styles.routeBtnSub}>{hint}</span>}
     </button>
   );
 }
@@ -113,24 +139,45 @@ function ResultsBlock({
   const etaM = durationSec !== null ? Math.floor((durationSec % 3600) / 60) : 0;
   return (
     <section className={styles.results}>
-      <div className={styles.resultsHead}>✓ ROUTE CALCULÉE</div>
+      <div className={styles.resultsHead}>✓ Route calculée</div>
       <div className={styles.resultsGrid}>
-        <div><span className={styles.metricLabel}>Distance</span><br /><strong>{totalNm} nm</strong></div>
         <div>
-          <span className={styles.metricLabel}>ETA</span><br />
-          <strong>{durationSec !== null ? `+${etaH}h ${etaM}m` : '—'}</strong>
+          <span className={styles.metricLabel}>Distance</span>
+          <span className={styles.metricValue}>
+            {totalNm}<span className={styles.metricUnit}>nm</span>
+          </span>
         </div>
-        <div><span className={styles.metricLabel}>Calcul</span><br /><strong>{(plan.computeTimeMs / 1000).toFixed(1)}s</strong></div>
-        <div><span className={styles.metricLabel}>Manœuvres</span><br /><strong>{plan.capSchedule.length}</strong></div>
+        <div>
+          <span className={styles.metricLabel}>ETA</span>
+          <span className={styles.metricValue}>
+            {durationSec !== null ? (
+              <>
+                +{etaH}h<span className={styles.metricUnit}>{etaM}m</span>
+              </>
+            ) : (
+              '—'
+            )}
+          </span>
+        </div>
+        <div>
+          <span className={styles.metricLabel}>Calcul</span>
+          <span className={styles.metricValue}>
+            {(plan.computeTimeMs / 1000).toFixed(1)}<span className={styles.metricUnit}>s</span>
+          </span>
+        </div>
+        <div>
+          <span className={styles.metricLabel}>Manœuvres</span>
+          <span className={styles.metricValue}>{plan.capSchedule.length}</span>
+        </div>
       </div>
       {!plan.reachedGoal && (
         <div className={styles.warning}>⚠ Route incomplète : météo limitée à J+7</div>
       )}
       <button type="button" className={styles.applyPrimary} onClick={() => onApply('WAYPOINTS')}>
-        → POINTS DE CONTRÔLE (auto-voile)
+        → Points de contrôle
       </button>
       <button type="button" className={styles.applySecondary} onClick={() => onApply('CAP')}>
-        → PROGRAMMATION DE CAP (auto-voile)
+        → Programmation de cap
       </button>
     </section>
   );

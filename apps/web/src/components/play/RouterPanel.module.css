@@ -1,4 +1,4 @@
-.panel { padding: 14px; color: #f5f0e8; font-family: sans-serif; font-size: 11px; }
+.panel { color: #f5f0e8; font-family: var(--font-body); font-size: 11px; }
 
 /* Mobile portrait + placing : free up the map so the user can tap their
  * destination. The placing hint + cancel button are mirrored on the map
@@ -6,73 +6,141 @@
  * RouterPanel body AND the surrounding SlidePanel (via the global marker
  * class set by PlayClient when phase === 'placing'). */
 @media (max-width: 640px) and (orientation: portrait) {
-  .panelPlacing {
-    display: none;
-  }
-  :global(.slidePanelPlacingMobileHide) {
-    display: none !important;
-  }
+  .panelPlacing { display: none; }
+  :global(.slidePanelPlacingMobileHide) { display: none !important; }
 }
-.section { margin-bottom: 14px; }
-.label {
-  color: #8fa8c8;
+
+.section { margin-bottom: 18px; }
+.section:last-child { margin-bottom: 0; }
+
+.fieldLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
   font-size: 9px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 6px;
+  color: rgba(245, 240, 232, 0.42);
+  margin-bottom: 8px;
 }
-.coords {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 3px;
-  padding: 8px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: #c9a227;
-}
-.subCoords { color: #8fa8c8; font-size: 9px; }
-.placeBtn, .destBtn {
-  width: 100%;
-  background: #1a3a5c;
-  border: 1px dashed #c9a22788;
-  color: #c9a227;
-  border-radius: 3px;
-  padding: 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
+
+/* ── Card (départ + arrivée placée) — grammaire SailPanel.sailRow ── */
+.card {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
   align-items: center;
-  gap: 2px;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
 }
-.changeHint { color: #8fa8c8; font-size: 9px; }
+.cardIcon {
+  font-size: 16px;
+  color: #c9a227;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cardMain { min-width: 0; }
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #f5f0e8;
+  line-height: 1;
+}
+.cardMeta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(245, 240, 232, 0.72);
+  margin-top: 4px;
+}
+.cardAside {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 232, 0.42);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+  transition: color 150ms;
+}
+.cardAside:hover { color: #c9a227; }
+
+/* ── Empty-state CTA "+ Définir l'arrivée" — primary dimensions, outline gold ── */
+.placeBtn {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed rgba(201, 162, 39, 0.55);
+  color: #c9a227;
+  border-radius: 4px;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 150ms, border-color 150ms;
+}
+.placeBtn:hover {
+  background: rgba(201, 162, 39, 0.12);
+  border-color: #c9a227;
+}
+.placeBtnPlus {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Placing state hint ── */
 .placingHint {
-  background: rgba(201, 162, 39, 0.1);
-  border: 1px solid #c9a22788;
-  border-radius: 3px;
-  padding: 14px;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 4px;
+  padding: 18px 16px;
   text-align: center;
   color: #c9a227;
-  font-family: var(--font-mono);
-  font-size: 10px;
 }
-.placingIcon { font-size: 24px; margin-bottom: 6px; }
+.placingIcon { font-size: 26px; margin-bottom: 8px; }
+.placingMsg {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #f5f0e8;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
 .cancelBtn {
-  margin-top: 10px;
+  margin-top: 12px;
   background: transparent;
-  border: 1px solid #8fa8c8;
-  color: #8fa8c8;
-  border-radius: 3px;
-  padding: 4px 10px;
-  cursor: pointer;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  color: rgba(245, 240, 232, 0.72);
+  border-radius: 4px;
+  padding: 8px 14px;
   font-family: var(--font-mono);
+  font-weight: 700;
   font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms;
 }
+.cancelBtn:hover { background: rgba(255, 255, 255, 0.06); }
+
+/* ── Calculating ── */
 .calculating {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 0;
+  padding: 22px 0 6px;
   color: #c9a227;
 }
 .spinner {
@@ -85,65 +153,149 @@
   margin-bottom: 14px;
 }
 @keyframes nemo-spin { to { transform: rotate(360deg); } }
-.calcLabel { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; }
-.calcSub { color: #8fa8c8; font-size: 10px; margin-top: 4px; }
-.routeBtn {
-  width: 100%;
-  margin-top: 16px;
-  background: #c9a227;
-  color: #1a2840;
-  border: none;
-  border-radius: 3px;
-  padding: 10px;
+.calcLabel {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.1em;
-  cursor: pointer;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
-.routeBtnDisabled { background: rgba(255, 255, 255, 0.04); color: #5c6b80; cursor: not-allowed; }
-.routeBtnSub { font-size: 9px; font-weight: 400; margin-top: 4px; }
+.calcSub {
+  color: rgba(245, 240, 232, 0.42);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
+}
+
+/* ── Primary "Router" button — same dimensions as ProgPanel.submit ── */
+.routeBtn {
+  width: 100%;
+  margin-top: 18px;
+  background: #c9a227;
+  color: #1a2840;
+  border: none;
+  border-radius: 4px;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.routeBtn:hover { background: #d8b03a; }
+.routeBtnDisabled,
+.routeBtnDisabled:hover {
+  background: rgba(245, 240, 232, 0.06);
+  color: rgba(245, 240, 232, 0.42);
+  cursor: not-allowed;
+}
+.routeBtnSub {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+/* ── Error toast ── */
 .error {
-  margin-top: 10px;
+  margin-top: 12px;
   background: rgba(220, 70, 70, 0.1);
   border: 1px solid rgba(220, 70, 70, 0.4);
-  border-radius: 3px;
-  padding: 8px;
+  border-radius: 4px;
+  padding: 10px 12px;
   color: #f08585;
+  font-family: var(--font-mono);
   font-size: 10px;
+  letter-spacing: 0.04em;
 }
+
+/* ── Results card ── */
 .results {
-  /* Visually separate the results card from the cone slider above —
-   * without the gap the green-bordered block reads as part of the
-   * Configuration section. */
-  margin-top: 16px;
+  margin-top: 18px;
   background: rgba(50, 180, 100, 0.06);
   border: 1px solid rgba(50, 180, 100, 0.4);
-  border-radius: 3px;
-  padding: 12px;
+  border-radius: 4px;
+  padding: 14px;
 }
-.resultsHead { color: #5cc88c; font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 8px; }
-.resultsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: var(--font-mono); font-size: 10px; margin-bottom: 10px; }
-.metricLabel { color: #8fa8c8; }
+.resultsHead {
+  color: #5cc88c;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.resultsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+.metricLabel {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 232, 0.42);
+  margin-bottom: 2px;
+}
+.metricValue {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  color: #f5f0e8;
+  line-height: 1;
+}
+.metricUnit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(245, 240, 232, 0.72);
+  letter-spacing: 0.06em;
+  margin-left: 4px;
+}
 .warning {
   background: rgba(240, 180, 50, 0.1);
   border: 1px solid rgba(240, 180, 50, 0.4);
   color: #ddc270;
-  border-radius: 3px;
-  padding: 6px;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
   font-size: 10px;
-  margin-bottom: 10px;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
 }
-.applyPrimary, .applySecondary {
+
+.applyPrimary,
+.applySecondary {
   width: 100%;
-  border-radius: 3px;
-  padding: 9px;
+  border-radius: 4px;
+  padding: 14px 16px;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
-  margin-bottom: 6px;
+  transition: background 150ms, color 150ms;
 }
-.applyPrimary { background: #c9a227; color: #1a2840; border: none; }
-.applySecondary { background: transparent; color: #c9a227; border: 1px solid #c9a227; }
+.applyPrimary {
+  background: #c9a227;
+  color: #1a2840;
+  border: none;
+  margin-bottom: 8px;
+}
+.applyPrimary:hover { background: #d8b03a; }
+.applySecondary {
+  background: transparent;
+  color: #c9a227;
+  border: 1px solid #c9a227;
+}
+.applySecondary:hover { background: #c9a227; color: #1a2840; }
