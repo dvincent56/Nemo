@@ -38,9 +38,10 @@ const SNAP_PCT: Record<SheetSnap, number> = {
   full: 0.90,
 };
 
+/** Below this dragged height (in px), drag-release closes the sheet. */
+const CLOSE_THRESHOLD_PX = 32;
+
 function nearestSnap(viewportFrac: number): SheetSnap {
-  // viewportFrac = sheet height as fraction of viewport.
-  // Pick the snap whose target is closest.
   let best: SheetSnap = 'mid';
   let bestDist = Infinity;
   (Object.keys(SNAP_PCT) as SheetSnap[]).forEach((k) => {
@@ -55,6 +56,7 @@ export default function SlidePanel({
   mode = 'side', panelClassName,
 }: SlidePanelProps): React.ReactElement {
   const [snap, setSnap] = useState<SheetSnap>('mid');
+  const [dragHeight, setDragHeight] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; height: number } | null>(null);
 
   const cycleSnap = useCallback(() => {
@@ -62,22 +64,28 @@ export default function SlidePanel({
   }, []);
 
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!e.isPrimary) return;
     const sheet = e.currentTarget.parentElement as HTMLElement | null;
     if (!sheet) return;
-    if (!e.isPrimary) return;
     dragStartRef.current = { y: e.clientY, height: sheet.getBoundingClientRect().height };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-  const onPointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
-    dragStartRef.current = null;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
+
+  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    // Live update — finger drives height. Cap at viewport height so
+    // large upward drags don't exceed the screen.
+    const dy = e.clientY - start.y;
+    const next = Math.min(window.innerHeight, Math.max(0, start.height - dy));
+    setDragHeight(next);
   };
+
   const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const start = dragStartRef.current;
     dragStartRef.current = null;
     e.currentTarget.releasePointerCapture(e.pointerId);
+    setDragHeight(null);
     if (!start) return;
     const dy = e.clientY - start.y;
     if (Math.abs(dy) < 8) {
@@ -86,21 +94,43 @@ export default function SlidePanel({
       return;
     }
     const newHeight = Math.max(0, start.height - dy);
+    if (newHeight < CLOSE_THRESHOLD_PX) {
+      onClose();
+      return;
+    }
     const frac = newHeight / window.innerHeight;
     setSnap(nearestSnap(frac));
   };
 
+  const onPointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    dragStartRef.current = null;
+    setDragHeight(null);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
   if (mode === 'sheet') {
+    // While dragging, override CSS height with inline style and disable
+    // the transition so the sheet tracks the finger 1:1. When dragHeight
+    // is null we fall back to the snap class (.sheet_peek/mid/full)
+    // which has the standard 220ms transition.
+    const dragStyle = dragHeight !== null
+      ? { height: `${dragHeight}px`, transition: 'none' as const }
+      : undefined;
+
     return (
       <div className={styles.overlay}>
         <aside
           className={`${styles.sheet} ${styles[`sheet_${snap}`]} ${isOpen ? styles.open : ''}${panelClassName ? ` ${panelClassName}` : ''}`}
+          style={dragStyle}
           aria-label={title}
         >
           <button
             type="button"
             className={styles.sheetHandle}
             onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerCancel}
             aria-label="Redimensionner panneau"
