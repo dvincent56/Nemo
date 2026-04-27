@@ -722,7 +722,6 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               title="Routeur"
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
-              panelClassName={routerPhase === 'placing' ? 'slidePanelPlacingMobileHide' : ''}
               mode={panelMode}
             >
               <RouterPanel onApply={onApply} />
@@ -743,6 +742,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && (
           <div className={styles.rightStack}>
             <div className={styles.actionButtons}>
+              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => useGameStore.getState().setFollowBoat(true)}
+                  type="button"
+                >
+                  <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
+                  <span>Centrer</span>
+                </button>
+              </Tooltip>
               <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
@@ -761,16 +770,6 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                 >
                   <Route size={18} strokeWidth={2} className={styles.actionBtnIcon} />
                   <span>Prog.</span>
-                </button>
-              </Tooltip>
-              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
-                <button
-                  className={styles.actionBtn}
-                  onClick={() => useGameStore.getState().setFollowBoat(true)}
-                  type="button"
-                >
-                  <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Centrer</span>
                 </button>
               </Tooltip>
               <Tooltip text="Routeur" shortcut="R" position="bottom">
