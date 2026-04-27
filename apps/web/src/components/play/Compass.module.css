@@ -316,7 +316,7 @@
 /* Phone width */
 @media (max-width: 600px) {
   .wrapper {
-    width: clamp(180px, 60vw, 240px);
+    width: clamp(160px, 48vw, 200px);
     padding: 6px 8px 7px;
     gap: 5px;
   }
@@ -329,6 +329,12 @@
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
   .degreeLabel { display: none; }
   .cardinalLabel { font-size: 26px; }
+}
+
+/* Very narrow phones (iPhone SE 320px) */
+@media (max-width: 360px) {
+  .wrapper { width: clamp(140px, 44vw, 160px); }
+  .stage { max-width: 80px; }
 }
 
 /* Very small phone */

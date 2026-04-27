@@ -332,14 +332,14 @@
   .leftStack { left: 8px; bottom: 8px; gap: 4px; }
   .rightStack {
     bottom: 8px; right: 8px;
-    width: clamp(180px, 60vw, 240px);
+    width: clamp(160px, 48vw, 200px);
     gap: 6px;
     align-items: stretch;
   }
   .actionButtons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    width: clamp(180px, 60vw, 240px);
+    width: clamp(160px, 48vw, 200px);
     gap: 4px;
     height: 44px;
   }
@@ -364,6 +364,12 @@
     border-top: none;
     border-left: 1px solid rgba(245, 240, 232, 0.16);
   }
+}
+
+/* Very narrow phones (iPhone SE 320px) */
+@media (max-width: 360px) {
+  .rightStack { width: clamp(140px, 44vw, 160px); }
+  .actionButtons { width: clamp(140px, 44vw, 160px); }
 }
 
 /* Landscape with small height */
