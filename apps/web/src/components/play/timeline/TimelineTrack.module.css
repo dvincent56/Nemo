@@ -4,15 +4,19 @@
   height: 100%;
   min-width: 0;
   display: grid;
-  grid-template-rows: 14px auto 14px;
+  grid-template-rows: 16px auto 4px;
   align-items: center;
   row-gap: 0;
 }
 
-.tickRowAbove,
+.tickRowAbove {
+  position: relative;
+  height: 16px;
+}
+
 .tickRowBelow {
   position: relative;
-  height: 14px;
+  height: 4px;
 }
 
 .tickLabel {
@@ -26,6 +30,12 @@
   user-select: none;
   pointer-events: none;
   line-height: 1;
+  padding: 0 2px;
+}
+
+.tickRowAbove .tickLabel {
+  top: auto;
+  bottom: 0;
 }
 
 .tickFuture {
@@ -160,7 +170,7 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 12px 1fr 12px; }
+  .zone { grid-template-rows: 14px 1fr 4px; }
 }
 
 @media (max-height: 500px) {
@@ -171,6 +181,6 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 12px 1fr 12px; }
+  .zone { grid-template-rows: 14px 1fr 4px; }
 }
 

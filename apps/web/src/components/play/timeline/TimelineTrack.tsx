@@ -71,12 +71,22 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
 
   return (
     <div className={styles.zone}>
-      {/* Past tick labels — above the rail */}
+      {/* Tick labels — past + future, all above the rail. NOW intentionally
+          omitted: the gold cursor disc already materialises the present. */}
       <div className={styles.tickRowAbove} aria-hidden>
         {ticks.filter((t) => t.kind === 'past').map((t) => (
           <span
-            key={`a-${t.ts}`}
+            key={`a-past-${t.ts}`}
             className={`${styles.tickLabel} ${styles.tickPast}`}
+            style={{ left: `${t.pctX}%` }}
+          >
+            {t.label}
+          </span>
+        ))}
+        {ticks.filter((t) => t.kind === 'future').map((t) => (
+          <span
+            key={`a-fut-${t.ts}`}
+            className={`${styles.tickLabel} ${styles.tickFuture}`}
             style={{ left: `${t.pctX}%` }}
           >
             {t.label}
@@ -120,19 +130,9 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
         </div>
       </div>
 
-      {/* Future tick labels — below the rail. NOW intentionally omitted: the
-          gold cursor disc already materialises the present. */}
-      <div className={styles.tickRowBelow} aria-hidden>
-        {ticks.filter((t) => t.kind === 'future').map((t) => (
-          <span
-            key={`b-${t.ts}`}
-            className={`${styles.tickLabel} ${styles.tickFuture}`}
-            style={{ left: `${t.pctX}%` }}
-          >
-            {t.label}
-          </span>
-        ))}
-      </div>
+      {/* tickRowBelow kept as an empty placeholder to preserve grid spacing on
+          desktop — labels render above only. */}
+      <div className={styles.tickRowBelow} aria-hidden />
     </div>
   );
 }

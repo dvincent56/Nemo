@@ -289,7 +289,7 @@
 
 @media (max-height: 480px) {
   .wrapper {
-    width: clamp(160px, 32vw, 200px);
+    width: clamp(180px, 36vw, 240px);
     padding: 6px 8px 7px;
     gap: 5px;
   }
@@ -309,7 +309,7 @@
 /* Phone width */
 @media (max-width: 600px) {
   .wrapper {
-    width: clamp(160px, 50vw, 200px);
+    width: clamp(180px, 60vw, 240px);
     padding: 6px 8px 7px;
     gap: 5px;
   }
@@ -317,7 +317,7 @@
   .readoutValue { font-size: 10px; }
   .readoutValue small { font-size: 7px; }
   .readouts { padding-bottom: 4px; }
-  .stage { max-width: 80px; margin: 0 auto; }
+  .stage { max-width: 100px; margin: 0 auto; }
   .actions { gap: 4px; padding-top: 4px; }
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
 }
