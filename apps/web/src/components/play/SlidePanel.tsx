@@ -17,6 +17,21 @@ interface SlidePanelProps {
   panelClassName?: string;
 }
 
+/**
+ * Snap thresholds, expressed as fraction of viewport height. Used by
+ * `nearestSnap` to pick the closest snap on drag release.
+ *
+ * NOTE: these values are heuristics for snap detection — they do NOT need
+ * to match the CSS heights exactly. The CSS sets:
+ *   peek: 64px (≈ 7-20% of viewport depending on device)
+ *   mid:  min(50vh, 360px)
+ *   full: min(90vh, calc(100vh - 56px))
+ *
+ * `nearestSnap` only needs values that produce the right ordering and
+ * reasonable midpoint boundaries (peek↔mid at ~30% viewport, mid↔full
+ * at ~70%). If you change CSS sizes, revisit these to keep the boundaries
+ * sensible — but they don't need to be precise.
+ */
 const SNAP_PCT: Record<SheetSnap, number> = {
   peek: 0.10,
   mid: 0.50,
@@ -49,12 +64,15 @@ export default function SlidePanel({
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const sheet = e.currentTarget.parentElement as HTMLElement | null;
     if (!sheet) return;
+    if (!e.isPrimary) return;
     dragStartRef.current = { y: e.clientY, height: sheet.getBoundingClientRect().height };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
-  const onPointerMove = (_e: React.PointerEvent<HTMLButtonElement>) => {
-    // No live resizing — wait for pointer-up and snap to nearest. Keeps the
-    // gesture simple and avoids reflow during drag.
+  const onPointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    dragStartRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   };
   const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const start = dragStartRef.current;
@@ -83,8 +101,8 @@ export default function SlidePanel({
             type="button"
             className={styles.sheetHandle}
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
+            onPointerCancel={onPointerCancel}
             aria-label="Redimensionner panneau"
           >
             <span className={styles.sheetHandleBar} />

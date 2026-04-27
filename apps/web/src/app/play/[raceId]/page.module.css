@@ -450,7 +450,7 @@
 
 .placingIndicator {
   position: absolute;
-  top: 52px;
+  top: 48px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
@@ -474,7 +474,7 @@
  * where the panel hides itself to expose the map. */
 .placingCancelFab {
   position: absolute;
-  top: 88px;
+  top: 84px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 26;

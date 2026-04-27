@@ -106,6 +106,7 @@
   transition: transform 220ms ease, height 220ms ease;
   /* default = peek so we can animate up to mid/full */
   transform: translateY(100%);
+  will-change: transform;
 }
 .sheet.open { transform: translateY(0); }
 
@@ -117,13 +118,14 @@
   background: transparent;
   border: none;
   width: 100%;
-  height: 18px;
-  padding: 0;
+  height: 44px;
+  padding: 8px 0 22px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 .sheetHandleBar {
   width: 36px;

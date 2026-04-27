@@ -283,6 +283,10 @@
   .actionBtn { min-height: 32px; font-size: 8px; padding: 6px 4px; }
 }
 
+@media (max-height: 600px) {
+  .stage { max-width: 100px; margin: 0 auto; }
+}
+
 @media (max-height: 480px) {
   .wrapper {
     width: clamp(120px, 24vw, 168px);
