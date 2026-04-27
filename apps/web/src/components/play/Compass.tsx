@@ -496,6 +496,7 @@ export default function Compass(): React.ReactElement {
               const p = pt(R_OUTER - 20, deg);
               return (
                 <text key={label} x={p.x} y={p.y}
+                  className={styles.cardinalLabel}
                   fontFamily="Bebas Neue,sans-serif" fontSize="15"
                   fill="rgba(245,240,232,0.85)"
                   textAnchor="middle" dominantBaseline="central">
@@ -509,6 +510,7 @@ export default function Compass(): React.ReactElement {
               const p = pt(R_OUTER - 32, deg);
               return (
                 <text key={`deg-${deg}`} x={p.x} y={p.y}
+                  className={styles.degreeLabel}
                   fontFamily="Space Mono,monospace" fontSize="8" fontWeight="700"
                   fill="rgba(245,240,232,0.35)"
                   textAnchor="middle" dominantBaseline="central">

@@ -75,7 +75,6 @@ async function main() {
 
   let runtimes: BoatRuntime[] = init.runtimes ?? [];
   let seq = 0;
-  const TICK_MS = GameBalance.tickIntervalSeconds * 1000;
   let lastTickEnd = Date.now();
 
   parentPort.on('message', (msg: WorkerMsg) => {

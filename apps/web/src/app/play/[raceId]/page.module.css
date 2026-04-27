@@ -27,6 +27,7 @@
   display: flex;
   align-items: center;
   min-height: var(--timeline-h, 72px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .timelinePlaceholder {
   font-family: var(--font-mono);
@@ -64,7 +65,7 @@
 .actionButtons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .actionBtn {
@@ -327,31 +328,99 @@
 
 /* Phone */
 @media (max-width: 600px) {
-  .app { --hud-h: 44px; --timeline-h: 88px; }   /* 2-row stack: header+controls / track */
+  .app { --hud-h: 44px; --timeline-h: 104px; }
   .leftStack { left: 8px; bottom: 8px; gap: 4px; }
   .rightStack {
     bottom: 8px; right: 8px;
-    gap: 4px;
+    width: clamp(160px, 48vw, 200px);
+    gap: 6px;
+    align-items: stretch;
   }
-  .actionButtons { flex-direction: row; justify-content: flex-end; gap: 4px; }
-  .actionBtn { width: 38px; height: 38px; }
+  .actionButtons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: clamp(160px, 48vw, 200px);
+    height: 44px;
+  }
+  .actionBtn {
+    width: auto;
+    height: 44px;
+    flex-direction: row;
+    justify-content: center;
+  }
+  .actionBtn > span:not(.actionBtnIcon) { display: none; }
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
+
+  /* Zoom rules from Task 3 — preserved */
+  .zoomCompact {
+    top: 8px;
+    right: 8px;
+    flex-direction: row;
+  }
+  .zoomCompactBtn { width: 36px; height: 28px; }
+  .zoomCompactBtn + .zoomCompactBtn {
+    border-top: none;
+    border-left: 1px solid rgba(245, 240, 232, 0.16);
+  }
 }
 
-/* Landscape with small height — idem : marge et gap identiques des deux
- * côtés pour que le layout panel descende au même niveau que le compass. */
+/* Very narrow phones (iPhone SE 320px) */
+@media (max-width: 360px) {
+  .rightStack { width: clamp(150px, 47vw, 170px); }
+  .actionButtons {
+    width: clamp(150px, 47vw, 170px);
+    height: 36px;
+  }
+  .rightStack .actionBtn {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+  }
+}
+
+/* Landscape with small height */
 @media (max-height: 500px) {
   .app { --hud-h: 44px; --timeline-h: 76px; }
-  .leftStack { left: 6px; bottom: 6px; gap: 4px; }
-  .rightStack { bottom: 6px; right: 6px; gap: 4px; }
-  .actionButtons { flex-direction: row; gap: 4px; }
-  .actionBtn { width: 38px; height: 38px; gap: 0; }
+  .leftStack { left: 8px; bottom: 8px; gap: 4px; }
+  .rightStack {
+    bottom: 8px; right: 8px;
+    width: clamp(180px, 60vw, 240px);
+    gap: 6px;
+    align-items: stretch;
+  }
+  .actionButtons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: clamp(180px, 60vw, 240px);
+    height: 44px;
+  }
+  .actionBtn {
+    width: auto;
+    height: 44px;
+    flex-direction: row;
+    justify-content: center;
+  }
   .actionBtn > span:not(.actionBtnIcon) { display: none; }
-
-  /* Same ranking FAB as portrait mobile */
   .rankingTabWrap { display: none; }
   .rankingFab { display: flex; }
+
+  /* Zoom rules from Task 3 — preserved */
+  .zoomCompact {
+    top: 8px;
+    right: 8px;
+    flex-direction: row;
+  }
+  .zoomCompactBtn { width: 36px; height: 28px; }
+  .zoomCompactBtn + .zoomCompactBtn {
+    border-top: none;
+    border-left: 1px solid rgba(245, 240, 232, 0.16);
+  }
 }
 
 /* Touch devices — enlarge touch targets */
@@ -362,7 +431,7 @@
 /* ── Zoom compact (top-right under HUD) ──────────────────── */
 .zoomCompact {
   position: absolute;
-  top: 52px;
+  top: 16px;
   right: 16px;
   z-index: 20;
   display: flex;
@@ -389,11 +458,6 @@
   border-top: 1px solid rgba(245, 240, 232, 0.16);
 }
 
-@media (max-width: 640px) {
-  .zoomCompact { top: 50px; right: 8px; }
-  .zoomCompactBtn { width: 30px; height: 26px; }
-}
-
 /* ── Router placing mode: crosshair cursor + top banner ──── */
 .mapAreaPlacing { cursor: crosshair; }
 /* Force crosshair on the maplibre canvas — maplibre sets cursor: pointer
@@ -404,7 +468,7 @@
 
 .placingIndicator {
   position: absolute;
-  top: 52px;
+  top: 48px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
@@ -428,7 +492,7 @@
  * where the panel hides itself to expose the map. */
 .placingCancelFab {
   position: absolute;
-  top: 88px;
+  top: 84px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 26;
@@ -447,4 +511,41 @@
 .placingCancelFab:hover { background: #0c1424; }
 @media (max-width: 640px) {
   .placingCancelFab { top: 82px; font-size: 9px; padding: 4px 10px; }
+}
+
+/* ── Mobile final overrides (appended last to win cascade) ── */
+@media (max-width: 600px), (max-height: 500px) {
+  .zoomCompact {
+    top: 8px;
+    right: 8px;
+    flex-direction: row;
+  }
+  .zoomCompactBtn { width: 36px; height: 28px; }
+  .zoomCompactBtn + .zoomCompactBtn {
+    border-top: none;
+    border-left: 1px solid rgba(245, 240, 232, 0.16);
+  }
+
+  .rightStack .actionBtn {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .rightStack .actionBtn {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+  }
+  .actionButtons { height: 36px; }
 }

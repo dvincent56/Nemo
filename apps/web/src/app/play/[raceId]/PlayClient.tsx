@@ -15,6 +15,7 @@ import { useWeatherPrefetch } from '@/hooks/useWeatherPrefetch';
 import { useTacticalTile } from '@/hooks/useTacticalTile';
 import { useTrackHydration } from '@/hooks/useTrackHydration';
 import { useWeatherTimeSync } from '@/hooks/useWeatherTimeSync';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import Tooltip from '@/components/ui/Tooltip';
 import HudBar from '@/components/play/HudBar';
 import Compass from '@/components/play/Compass';
@@ -93,18 +94,22 @@ const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
 /**
  * Fetch initial boat state from API, seed the store, then open WS for deltas.
  */
+let demoResetDone = false;
+
 function useBoatInit(raceId: string): void {
   useEffect(() => {
     const store = useGameStore.getState();
     store.goLive();
     let cancelled = false;
 
-    // Dev-only: reset the demo runtime to its configured START_POS before
-    // reading initial state, so opening Play always lands on the intended
-    // position rather than wherever the continuously-ticking engine drifted
-    // to. No-op in prod (endpoint returns 404 when NEMO_DEV_ROUTES=0).
-    const reset = fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
-      .catch(() => null);
+    // Dev-only: reset the demo runtime once per full page load. The module-level
+    // flag survives client-side navigation, so route commands (CAP/WPT) are not
+    // wiped from the engine when the user navigates away and back.
+    const reset = demoResetDone
+      ? Promise.resolve(null)
+      : fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
+          .catch(() => null);
+    demoResetDone = true;
 
     reset.then(() => fetchMyBoat(raceId)).then(async (boat) => {
       if (cancelled || !boat) return;
@@ -205,6 +210,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // Resample weather grid as the user scrubs the timeline so wind/swell
   // overlays preview future GFS slices instead of staying frozen at NOW.
   useWeatherTimeSync();
+
+  const isPortraitPhone = useMediaQuery('(max-width: 600px) and (orientation: portrait)');
+  const panelMode = isPortraitPhone ? 'sheet' : 'side';
 
   // Seed race context for the timeline bounds. forecastEnd is refreshed
   // every 5 min so J+5 keeps sliding forward as wall time advances.
@@ -700,16 +708,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         </button>
 
         {/* Slide-out panels */}
-        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()}>
+        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
           <RankingPanel />
         </SlidePanel>
 
         {canInteract && (
           <>
-            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()}>
+            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <SailPanel />
             </SlidePanel>
-            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()}>
+            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <ProgPanel />
             </SlidePanel>
             <SlidePanel
@@ -718,7 +726,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               title="Routeur"
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
-              panelClassName={routerPhase === 'placing' ? 'slidePanelPlacingMobileHide' : ''}
+              mode={panelMode}
             >
               <RouterPanel onApply={onApply} />
             </SlidePanel>
@@ -738,6 +746,16 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && (
           <div className={styles.rightStack}>
             <div className={styles.actionButtons}>
+              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => useGameStore.getState().setFollowBoat(true)}
+                  type="button"
+                >
+                  <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
+                  <span>Centrer</span>
+                </button>
+              </Tooltip>
               <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
@@ -756,16 +774,6 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
                 >
                   <Route size={18} strokeWidth={2} className={styles.actionBtnIcon} />
                   <span>Prog.</span>
-                </button>
-              </Tooltip>
-              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
-                <button
-                  className={styles.actionBtn}
-                  onClick={() => useGameStore.getState().setFollowBoat(true)}
-                  type="button"
-                >
-                  <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Centrer</span>
                 </button>
               </Tooltip>
               <Tooltip text="Routeur" shortcut="R" position="bottom">

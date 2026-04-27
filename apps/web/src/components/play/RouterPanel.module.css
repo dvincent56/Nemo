@@ -1,14 +1,10 @@
 .panel { color: #f5f0e8; font-family: var(--font-body); font-size: 11px; }
 
-/* Mobile portrait + placing : free up the map so the user can tap their
- * destination. The placing hint + cancel button are mirrored on the map
- * itself (placingIndicator + placingCancelFab in PlayClient). We hide the
- * RouterPanel body AND the surrounding SlidePanel (via the global marker
- * class set by PlayClient when phase === 'placing'). */
-@media (max-width: 640px) and (orientation: portrait) {
-  .panelPlacing { display: none; }
-  :global(.slidePanelPlacingMobileHide) { display: none !important; }
-}
+/* The RouterPanel used to hide itself on mobile portrait while the user
+ * was placing the routing destination, so the map area was clear for
+ * tapping. Now that mobile portrait uses the bottom sheet (which leaves
+ * the map fully visible above), the panel can stay open during placing
+ * — the user taps the map without needing the panel out of the way. */
 
 .section { margin-bottom: 18px; }
 .section:last-child { margin-bottom: 0; }
@@ -299,3 +295,11 @@
   border: 1px solid #c9a227;
 }
 .applySecondary:hover { background: #c9a227; color: #1a2840; }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .section { margin-bottom: 12px; }
+  .fieldLabel { font-size: 8.5px; margin-bottom: 6px; }
+  .card { padding: 10px 12px; gap: 10px; }
+  .cardTitle { font-size: 14px; }
+  .cardMeta { font-size: 10px; }
+}

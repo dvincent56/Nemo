@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Wind, Waves, Shrimp, Eclipse, Ban } from 'lucide-react';
+import { Wind, Waves, Shrimp, Ban } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useGameStore } from '@/lib/store';
 import type { LayerName } from '@/lib/store';
 import { useGfsStatus } from '@/hooks/useGfsStatus';
-import MapAppearanceModal from './MapAppearanceModal';
 import styles from './LayersWidget.module.css';
 
 /** Format run timestamp into GFS run label: "Run 06z · 18/04" */
@@ -53,7 +51,6 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
   const layers = useGameStore((s) => s.layers);
   const toggleLayer = useGameStore((s) => s.toggleLayer);
   const gfs = useGfsStatus();
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   const visibleLayers = isSpectator
     ? LAYERS.filter((l) => l.id !== 'opponents')
@@ -98,29 +95,6 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
           </div>
         );
       })}
-      <div className={styles.separator} />
-      <div
-        className={styles.appearanceRow}
-        onClick={() => setAppearanceOpen(true)}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-expanded={appearanceOpen}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setAppearanceOpen(true);
-          }
-        }}
-      >
-        <span className={styles.rowLabel}>
-          <span className={styles.icon}><Eclipse size={14} strokeWidth={2} /></span>
-          Apparence
-        </span>
-        <span className={styles.chevron}>›</span>
-      </div>
-
-      <MapAppearanceModal open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
     </div>
   );
 }

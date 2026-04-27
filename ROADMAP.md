@@ -165,8 +165,25 @@ Les pages Social/Settings/Marina sont mockées avec des champs qui n'existent pa
   - Métriques tick duration, latence broadcast
 - [ ] Gestion joueurs : suspension, ban, remboursement crédits (`player_sanctions`)
 - [ ] Modération : file de signalements
-- [ ] Bandeau maintenance planifiée
 - [ ] Table `audit_log` pour traçabilité actions admin
+
+### Page super-admin / management (`/admin/system`)
+Gardée par middleware `role === 'super_admin'`, regroupe les manettes ops :
+
+- [ ] Toggle **mode maintenance** global : flag DB → middleware web qui répond 503 (sauf `/admin/*`) avec une page maintenance dédiée. Le toggle est instantané, pas de redeploy nécessaire.
+- [ ] Éditeur **bandeaux d'incident** (CRUD sur `system_status`) : sévérité, message multilingue, fenêtre de validité, preview du rendu avant publication.
+- [ ] Vue temps réel de l'état des services (lus depuis les `/health`) : game-engine, ws-gateway, weather-engine, Postgres, Redis. Voyants vert/orange/rouge.
+- [ ] Bouton **kill-switch** par feature flag : désactiver Stripe (lecture seule abonnements), désactiver les inscriptions, désactiver le routeur, etc. Tous les flags loggés dans `audit_log`.
+- [ ] Toutes les actions super-admin tracées dans `audit_log` (qui, quand, quel toggle, valeur avant/après).
+- [ ] **Sentry** SDK serveur (game-engine, weather-engine, ws-gateway) — capture exceptions + traces
+- [ ] **Sentry** SDK browser dans `apps/web` — erreurs runtime client (incluant le source-map upload CI)
+- [ ] Alerting Slack/email sur erreurs Sentry haute sévérité (≥ ERROR avec seuil de fréquence)
+- [ ] Endpoints `/health` sur chaque service (game-engine, ws-gateway, weather-engine) — status JSON simple, lus par les health checks ECS
+- [ ] Synthetic check externe (UptimeRobot ou équivalent) sur la home + un endpoint courses, alerte Slack si down > 2 min
+- [ ] Table `system_status` (id, severity: INFO/WARN/CRITICAL, message_fr/en/es/de, active_from, active_until) éditée depuis l'admin
+- [ ] Composant `<SystemStatusBanner />` lu en SSR layout, masqué si pas d'incident actif — sévérité contrôle la couleur (gold WARN / red CRITICAL)
+- [ ] Dégradés granulaires auto-poussés dans le bandeau via `WeatherStatus` (delayed → "Météo retardée, dernière mise à jour il y a Xh") et état du tick loop (game-engine downtime > 30 s → "Course en pause technique")
+- [ ] Maintenance planifiée : flag dans `system_status` + désactivation des inscriptions/lancements de course pendant la fenêtre
 
 ### Premier déploiement AWS
 - [ ] ECS Fargate : game-engine + ws-gateway

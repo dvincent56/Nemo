@@ -255,3 +255,13 @@
   background: #c9a227;
   color: #1a2840;
 }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .tabs { margin-bottom: 12px; }
+  .tab { padding: 8px 6px; font-size: 9px; letter-spacing: 0.12em; }
+  .form { gap: 8px; margin-bottom: 12px; }
+  .fieldLabel { font-size: 8.5px; }
+  .fieldInput { padding: 8px 10px; font-size: 13px; }
+  .submit { padding: 10px 14px; font-size: 10px; letter-spacing: 0.14em; }
+  .queueTitle { font-size: 15px; margin-bottom: 6px; }
+}

@@ -76,6 +76,7 @@ async function makeRuntime(startPos: Position, transitionEndMs: number): Promise
     loadout: resolveBoatLoadout('transition-boat', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 }
 

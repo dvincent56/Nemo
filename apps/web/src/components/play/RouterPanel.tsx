@@ -3,6 +3,7 @@ import { useGameStore } from '@/lib/store';
 import RouterControls from './RouterControls';
 import { formatDMS } from './formatDMS';
 import styles from './RouterPanel.module.css';
+import { Anchor } from 'lucide-react';
 
 export default function RouterPanel({
   onApply,
@@ -29,7 +30,7 @@ export default function RouterPanel({
       <section className={styles.section}>
         <div className={styles.fieldLabel}>Point de départ</div>
         <div className={styles.card}>
-          <span className={styles.cardIcon}>⚓</span>
+          <Anchor size={18} strokeWidth={2} className={styles.cardIcon} />
           <div className={styles.cardMain}>
             <div className={styles.cardTitle}>Position bateau</div>
             <div className={styles.cardMeta}>

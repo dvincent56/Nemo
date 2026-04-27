@@ -1,0 +1,236 @@
+/* =========================================================================
+   404 — "Hors carte"
+   Page bare immersive : pas de header global, juste logo + carte + hero.
+   ========================================================================= */
+
+.root {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--ivory);
+  color: var(--t1);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* ──────── Logo (iso Topbar) ──────── */
+.brand {
+  position: fixed;
+  top: 24px;
+  left: clamp(20px, 4vw, 64px);
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  text-decoration: none;
+  z-index: 3;
+  transition: color 150ms ease;
+}
+.brand span { color: var(--gold); }
+.brand:hover { color: var(--navy-2); }
+
+/* ──────── HUD bas-gauche ──────── */
+.hudPos {
+  position: fixed;
+  bottom: 20px;
+  left: clamp(20px, 4vw, 64px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--t3);
+  text-transform: uppercase;
+  z-index: 3;
+}
+.hudPos b {
+  color: var(--gold-dark);
+  font-weight: 400;
+}
+
+/* ──────── Layout ──────── */
+.page {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 1;
+}
+
+/* ──────── Calque carte arrière ──────── */
+.chart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  animation: chartIn 800ms ease-out 100ms forwards;
+  z-index: 1;
+}
+.chart svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes chartIn {
+  to { opacity: 0.42; }
+}
+
+/* Trait de route — anim de tracé */
+.route {
+  stroke-dasharray: 6 8;
+  stroke-dashoffset: 1200;
+  animation: routeDraw 1400ms ease-out 700ms forwards;
+}
+@keyframes routeDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Point ICI — apparition + 2 pulses or */
+.herePt {
+  opacity: 0;
+  transform-origin: center;
+  animation: herePop 500ms ease-out 1900ms forwards,
+             herePulse 2400ms ease-in-out 2400ms 2;
+}
+@keyframes herePop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  60%  { transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes herePulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(201, 162, 39, 0)); }
+  50%      { filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.7)); }
+}
+.hereLabel {
+  opacity: 0;
+  animation: hereLabelIn 400ms ease-out 2100ms forwards;
+}
+@keyframes hereLabelIn {
+  to { opacity: 1; }
+}
+
+/* Rose des vents — oscillation très lente */
+.compass {
+  transform-origin: 1080px 140px;
+  animation: compassSway 8s ease-in-out infinite;
+}
+@keyframes compassSway {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg); }
+}
+
+/* ──────── Bloc texte central ──────── */
+.hero {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 640px;
+  padding: 0 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: heroIn 700ms ease-out 400ms forwards;
+}
+@keyframes heroIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.kicker::before,
+.kicker::after {
+  content: '·';
+  margin: 0 10px;
+  color: var(--navy-rule);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 11vw, 120px);
+  line-height: 0.92;
+  letter-spacing: 0.005em;
+  color: var(--navy);
+  margin: 0;
+  font-weight: 400;
+}
+
+.rule {
+  width: 56px;
+  height: 1px;
+  background: var(--gold);
+  margin: 28px auto 24px;
+  border: 0;
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--t2);
+  font-style: italic;
+  max-width: 38ch;
+  margin: 0 auto 36px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--navy);
+  color: var(--ivory);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 16px 28px;
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  transition: background 200ms ease, transform 200ms ease;
+}
+.cta:hover {
+  background: var(--navy-2);
+  transform: translateX(-2px);
+}
+.arrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* ──────── Responsive ──────── */
+@media (max-width: 720px) {
+  .brand { font-size: 22px; top: 18px; left: 20px; }
+  .hudPos { font-size: 9px; bottom: 16px; left: 20px; }
+  .lede { font-size: 14.5px; }
+  .cta { padding: 14px 22px; font-size: 12px; }
+  .compass,
+  .isobathSecondary,
+  .coastMark { display: none; }
+  .chart { animation-delay: 50ms; }
+}
+
+/* Reduced motion : tout s'affiche en état final, sans animation */
+@media (prefers-reduced-motion: reduce) {
+  .chart,
+  .hero,
+  .route,
+  .herePt,
+  .hereLabel,
+  .compass {
+    animation: none !important;
+  }
+  .chart { opacity: 0.42; }
+  .hero { opacity: 1; transform: none; }
+  .route { stroke-dashoffset: 0; }
+  .herePt,
+  .hereLabel { opacity: 1; }
+}

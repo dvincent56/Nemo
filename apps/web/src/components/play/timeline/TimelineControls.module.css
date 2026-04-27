@@ -127,3 +127,18 @@
   .btn { min-width: 28px; padding: 0 6px; }
   .speedBtn { min-width: 26px; padding: 0 4px; }
 }
+
+@media (max-width: 600px), (max-height: 500px) {
+  .controls {
+    justify-content: flex-end;
+  }
+  .btn,
+  .speedGroup {
+    display: none;
+  }
+  .live {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 10px;
+  }
+}

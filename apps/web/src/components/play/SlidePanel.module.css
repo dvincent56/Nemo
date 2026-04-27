@@ -77,8 +77,67 @@
 
 /* Phone — cap panel width to screen */
 @media (max-width: 600px) {
-  .panel { max-width: calc(100vw - 48px); }
-  .head { padding: 12px 14px 10px; }
+  .panel { max-width: min(360px, calc(100vw - 48px)); }
+  .head { padding: 10px 14px; }
   .title { font-size: 18px; }
   .body { padding: 12px 14px; }
 }
+
+@media (max-height: 500px) {
+  .panel { max-width: min(360px, calc(100vw - 48px)); }
+  .head { padding: 10px 14px; }
+  .title { font-size: 18px; }
+  .body { padding: 12px 14px; }
+}
+
+/* ── Bottom sheet variant (mobile portrait only) ───────────── */
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(12, 20, 36, 0.97);
+  border-top: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  z-index: 28;
+  transition: transform 220ms ease, height 220ms ease;
+  /* default = peek so we can animate up to mid/full */
+  transform: translateY(100%);
+  will-change: transform;
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet_peek { height: 64px; }
+.sheet_mid { height: min(50vh, 360px); }
+.sheet_full { height: min(70vh, calc(100vh - 120px)); }
+
+.sheetHandle {
+  background: transparent;
+  border: none;
+  width: 100%;
+  height: 44px;
+  padding: 8px 0 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  cursor: grab;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  /* Disable native touch panning so pointer events drive the drag.
+   * Without this, mobile browsers swallow the gesture as a scroll
+   * before pointermove fires, and the sheet does not follow the finger. */
+  touch-action: none;
+  user-select: none;
+}
+.sheetHandle:active { cursor: grabbing; }
+.sheetHandleBar {
+  width: 36px;
+  height: 4px;
+  background: rgba(245, 240, 232, 0.35);
+  border-radius: 2px;
+  transition: background 150ms;
+}
+.sheetHandle:hover .sheetHandleBar { background: rgba(245, 240, 232, 0.55); }
