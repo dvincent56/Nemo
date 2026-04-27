@@ -338,6 +338,7 @@
   }
   .actionButtons {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     width: clamp(160px, 48vw, 200px);
     height: 44px;
@@ -394,6 +395,7 @@
   }
   .actionButtons {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     width: clamp(180px, 60vw, 240px);
     height: 44px;
