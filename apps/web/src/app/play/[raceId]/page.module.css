@@ -337,10 +337,9 @@
     align-items: stretch;
   }
   .actionButtons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    justify-content: space-between;
     width: clamp(160px, 48vw, 200px);
-    gap: 4px;
     height: 44px;
   }
   .actionBtn {
@@ -368,8 +367,19 @@
 
 /* Very narrow phones (iPhone SE 320px) */
 @media (max-width: 360px) {
-  .rightStack { width: clamp(140px, 44vw, 160px); }
-  .actionButtons { width: clamp(140px, 44vw, 160px); }
+  .rightStack { width: clamp(150px, 47vw, 170px); }
+  .actionButtons {
+    width: clamp(150px, 47vw, 170px);
+    height: 36px;
+  }
+  .rightStack .actionBtn {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+  }
 }
 
 /* Landscape with small height */
@@ -383,10 +393,9 @@
     align-items: stretch;
   }
   .actionButtons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
+    justify-content: space-between;
     width: clamp(180px, 60vw, 240px);
-    gap: 4px;
     height: 44px;
   }
   .actionBtn {
@@ -516,11 +525,25 @@
   }
 
   .rightStack .actionBtn {
-    width: auto;
-    min-width: 0;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
     height: 44px;
     min-height: 44px;
+    flex: 0 0 44px;
     flex-direction: row;
     justify-content: center;
   }
+}
+
+@media (max-width: 360px) {
+  .rightStack .actionBtn {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+  }
+  .actionButtons { height: 36px; }
 }
