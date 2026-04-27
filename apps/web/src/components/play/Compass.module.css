@@ -293,7 +293,7 @@
 
 @media (max-height: 480px) {
   .wrapper {
-    width: clamp(180px, 36vw, 240px);
+    width: 100%;
     padding: 6px 8px 7px;
     gap: 5px;
   }
@@ -316,7 +316,7 @@
 /* Phone width */
 @media (max-width: 600px) {
   .wrapper {
-    width: clamp(160px, 48vw, 200px);
+    width: 100%;
     padding: 6px 8px 7px;
     gap: 5px;
   }
@@ -333,14 +333,6 @@
 
 /* Very narrow phones (iPhone SE 320px) */
 @media (max-width: 360px) {
-  .wrapper { width: clamp(140px, 44vw, 160px); }
+  .wrapper { width: 100%; padding: 6px; }
   .stage { max-width: 80px; }
-}
-
-/* Very small phone */
-@media (max-width: 400px) {
-  .wrapper {
-    width: clamp(140px, 38vw, 170px);
-    padding: 6px;
-  }
 }
