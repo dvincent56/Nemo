@@ -30,6 +30,10 @@ function findBracket(arr: readonly number[], value: number): { i0: number; i1: n
 }
 
 export function getPolarSpeed(polar: Polar, sail: SailId, twa: number, tws: number): number {
+  // Weather-not-ready guard: when the projection runs before the weather
+  // grid lands (e.g. weather-engine still bootstrapping), twa/tws can be
+  // NaN. Return 0 instead of letting findBracket throw.
+  if (!Number.isFinite(twa) || !Number.isFinite(tws)) return 0;
   const absTwa = Math.min(Math.abs(twa), 180);
   const sailSpeeds = polar.speeds[sail];
   if (!sailSpeeds) return 0;
