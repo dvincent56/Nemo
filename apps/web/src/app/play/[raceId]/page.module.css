@@ -341,11 +341,11 @@
     grid-template-columns: repeat(4, 1fr);
     width: clamp(180px, 60vw, 240px);
     gap: 4px;
-    height: 36px;
+    height: 44px;
   }
   .actionBtn {
     width: auto;
-    height: 36px;
+    height: 44px;
     flex-direction: row;
     justify-content: center;
   }
@@ -381,11 +381,11 @@
     grid-template-columns: repeat(4, 1fr);
     width: clamp(180px, 60vw, 240px);
     gap: 4px;
-    height: 36px;
+    height: 44px;
   }
   .actionBtn {
     width: auto;
-    height: 36px;
+    height: 44px;
     flex-direction: row;
     justify-content: center;
   }
@@ -512,8 +512,8 @@
   .rightStack .actionBtn {
     width: auto;
     min-width: 0;
-    height: 36px;
-    min-height: 36px;
+    height: 44px;
+    min-height: 44px;
     flex-direction: row;
     justify-content: center;
   }

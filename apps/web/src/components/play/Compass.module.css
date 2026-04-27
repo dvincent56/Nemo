@@ -267,6 +267,10 @@
   border-color: #9e2a2a;
 }
 
+/* SVG text labels — class hooks for responsive sizing */
+.cardinalLabel { font-size: 15px; }
+.degreeLabel { font-size: 8px; }
+
 @media (max-height: 500px) {
   .wrapper {
     width: clamp(180px, 28vw, 240px);
@@ -300,10 +304,13 @@
   .stage { max-width: 80px; margin: 0 auto; }
   .actions { gap: 4px; padding-top: 4px; }
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
+  .degreeLabel { display: none; }
+  .cardinalLabel { font-size: 26px; }
 }
 
 @media (max-height: 360px) {
   .stage { max-width: 64px; }
+  .cardinalLabel { font-size: 30px; }
 }
 
 /* Phone width */
@@ -320,6 +327,8 @@
   .stage { max-width: 100px; margin: 0 auto; }
   .actions { gap: 4px; padding-top: 4px; }
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
+  .degreeLabel { display: none; }
+  .cardinalLabel { font-size: 26px; }
 }
 
 /* Very small phone */
