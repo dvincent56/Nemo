@@ -77,8 +77,8 @@
 @media (max-width: 600px) {
   .header { flex-basis: 130px; gap: 6px; }
   .offset { font-size: 9px; padding: 4px 8px; min-width: 0; gap: 4px; }
-  .timestamp { font-size: 9px; min-width: 70px; }
-  .sep { display: none; }
+  .timestamp { font-size: 9px; min-width: 80px; }
+  .sep { margin: 0 4px; color: rgba(245, 240, 232, 0.55); }
 }
 
 @media (max-height: 500px) {
