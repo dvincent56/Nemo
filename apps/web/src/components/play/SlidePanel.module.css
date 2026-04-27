@@ -112,7 +112,7 @@
 
 .sheet_peek { height: 64px; }
 .sheet_mid { height: min(50vh, 360px); }
-.sheet_full { height: min(90vh, calc(100vh - 56px)); }
+.sheet_full { height: min(70vh, calc(100vh - 120px)); }
 
 .sheetHandle {
   background: transparent;

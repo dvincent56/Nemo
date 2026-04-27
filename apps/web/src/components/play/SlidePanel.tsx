@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './SlidePanel.module.css';
 
 export type SlidePanelMode = 'side' | 'sheet';
@@ -59,6 +59,13 @@ export default function SlidePanel({
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; height: number } | null>(null);
 
+  // Reset to default snap each time the sheet is reopened — otherwise
+  // closing at "full" then reopening would keep the sheet maximised,
+  // which surprises users who expect the panel to start at mid.
+  useEffect(() => {
+    if (isOpen) setSnap('mid');
+  }, [isOpen]);
+
   const cycleSnap = useCallback(() => {
     setSnap((s) => (s === 'peek' ? 'mid' : s === 'mid' ? 'full' : 'peek'));
   }, []);
@@ -74,10 +81,11 @@ export default function SlidePanel({
   const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     const start = dragStartRef.current;
     if (!start) return;
-    // Live update — finger drives height. Cap at viewport height so
-    // large upward drags don't exceed the screen.
+    // Live update — finger drives height, capped at the "full" snap so
+    // the user cannot drag the sheet beyond the intended max.
     const dy = e.clientY - start.y;
-    const next = Math.min(window.innerHeight, Math.max(0, start.height - dy));
+    const maxHeight = Math.min(0.7 * window.innerHeight, window.innerHeight - 120);
+    const next = Math.min(maxHeight, Math.max(0, start.height - dy));
     setDragHeight(next);
   };
 
