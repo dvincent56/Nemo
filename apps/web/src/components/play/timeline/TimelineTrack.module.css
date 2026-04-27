@@ -160,7 +160,7 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 14px 1fr 14px; }
+  .zone { grid-template-rows: 12px 1fr 12px; }
 }
 
 @media (max-height: 500px) {
@@ -171,6 +171,6 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 14px 1fr 14px; }
+  .zone { grid-template-rows: 12px 1fr 12px; }
 }
 

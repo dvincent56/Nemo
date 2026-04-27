@@ -69,19 +69,20 @@
 }
 
 @media (max-width: 768px) {
-  /* phone : header lives on its own row alongside controls — let it size to content */
-  .header { flex-basis: auto; gap: 8px; }
+  /* phone : header lives on its own row alongside controls — pin width so track
+   * does not shift when cursor timestamp changes width on drag */
+  .header { flex-basis: 130px; gap: 6px; }
 }
 
 @media (max-width: 600px) {
-  .header { flex-basis: auto; gap: 6px; }
+  .header { flex-basis: 130px; gap: 6px; }
   .offset { font-size: 9px; padding: 4px 8px; min-width: 0; gap: 4px; }
-  .timestamp { font-size: 9px; }
+  .timestamp { font-size: 9px; min-width: 70px; }
   .sep { display: none; }
 }
 
 @media (max-height: 500px) {
-  .header { flex-basis: auto; gap: 6px; }
+  .header { flex-basis: 130px; gap: 6px; }
   .offset { font-size: 9px; padding: 4px 8px; min-width: 0; gap: 4px; }
-  .timestamp { font-size: 9px; }
+  .timestamp { font-size: 9px; min-width: 70px; }
 }
