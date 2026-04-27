@@ -99,6 +99,7 @@ async function makeRuntime(startPos: Position, orderHistory: OrderEnvelope[]): P
     loadout: resolveBoatLoadout('wpt-boat', [], 'CLASS40'),
     prevTwa: null,
     maneuver: null,
+    lastCheckpointTs: null,
   };
 }
 

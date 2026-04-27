@@ -114,6 +114,7 @@ export class TickManager {
           twa: 0,
           tws: 0,
           overlapFactor: 1,
+          bspBaseMultiplier: 1,
           zoneAlerts: [],
           zoneCleared: [],
           coastRisk: 0,

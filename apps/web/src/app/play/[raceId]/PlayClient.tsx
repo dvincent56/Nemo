@@ -94,18 +94,22 @@ const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
 /**
  * Fetch initial boat state from API, seed the store, then open WS for deltas.
  */
+let demoResetDone = false;
+
 function useBoatInit(raceId: string): void {
   useEffect(() => {
     const store = useGameStore.getState();
     store.goLive();
     let cancelled = false;
 
-    // Dev-only: reset the demo runtime to its configured START_POS before
-    // reading initial state, so opening Play always lands on the intended
-    // position rather than wherever the continuously-ticking engine drifted
-    // to. No-op in prod (endpoint returns 404 when NEMO_DEV_ROUTES=0).
-    const reset = fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
-      .catch(() => null);
+    // Dev-only: reset the demo runtime once per full page load. The module-level
+    // flag survives client-side navigation, so route commands (CAP/WPT) are not
+    // wiped from the engine when the user navigates away and back.
+    const reset = demoResetDone
+      ? Promise.resolve(null)
+      : fetch(new URL(`/api/v1/dev/reset-demo`, API_BASE), { method: 'POST' })
+          .catch(() => null);
+    demoResetDone = true;
 
     reset.then(() => fetchMyBoat(raceId)).then(async (boat) => {
       if (cancelled || !boat) return;
