@@ -4,7 +4,7 @@
   height: 100%;
   min-width: 0;
   display: grid;
-  grid-template-rows: 16px auto 4px;
+  grid-template-rows: 16px auto 16px;
   align-items: center;
   row-gap: 0;
 }
@@ -16,7 +16,7 @@
 
 .tickRowBelow {
   position: relative;
-  height: 4px;
+  height: 16px;
 }
 
 .tickLabel {
@@ -170,7 +170,7 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 14px 1fr 4px; }
+  .zone { grid-template-rows: 14px 1fr 14px; }
 }
 
 @media (max-height: 500px) {
@@ -181,6 +181,6 @@
     box-shadow: 0 0 0 1px #c9a227, 0 0 6px rgba(201, 162, 39, 0.35);
   }
   .tickLabel { font-size: 8px; }
-  .zone { grid-template-rows: 14px 1fr 4px; }
+  .zone { grid-template-rows: 14px 1fr 14px; }
 }
 
