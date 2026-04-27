@@ -123,10 +123,16 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  cursor: pointer;
+  cursor: grab;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+  /* Disable native touch panning so pointer events drive the drag.
+   * Without this, mobile browsers swallow the gesture as a scroll
+   * before pointermove fires, and the sheet does not follow the finger. */
+  touch-action: none;
+  user-select: none;
 }
+.sheetHandle:active { cursor: grabbing; }
 .sheetHandleBar {
   width: 36px;
   height: 4px;
