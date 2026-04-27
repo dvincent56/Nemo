@@ -26,16 +26,12 @@ from .poller import check_run_available, pick_target_run, wait_for_run
 
 LOG = logging.getLogger("nemo.weather")
 
-# NOAA Open Data Dissemination Program S3 mirror — free, public, no auth,
-# significantly more reliable than nomads.ncep.noaa.gov which is regularly
-# saturated. Path structure after the bucket root is identical to the
-# nomads /pub/data/nccf/com/gfs/prod/ tree.
 NOAA_ATMOS = (
-    "https://noaa-gfs-bdp-pds.s3.amazonaws.com/"
+    "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/atmos/gfs.t{hh}z.pgrb2.0p25.f{fff}"
 )
 NOAA_WAVE = (
-    "https://noaa-gfs-bdp-pds.s3.amazonaws.com/"
+    "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/wave/gridded/gfswave.t{hh}z.global.0p25.f{fff}.grib2"
 )
 

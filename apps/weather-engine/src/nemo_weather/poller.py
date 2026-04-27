@@ -8,9 +8,8 @@ import requests
 
 LOG = logging.getLogger("nemo.weather.poller")
 
-# NOAA Open Data Dissemination Program S3 mirror (see ingest.py).
 NOAA_CHECK_URL = (
-    "https://noaa-gfs-bdp-pds.s3.amazonaws.com/"
+    "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/"
     "gfs.{ymd}/{hh}/atmos/gfs.t{hh}z.pgrb2.0p25.f000"
 )
 
