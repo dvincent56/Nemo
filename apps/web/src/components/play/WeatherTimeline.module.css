@@ -9,8 +9,9 @@
   height: 100%;
   display: grid;
   /* Fixed header column so the track does NOT shift horizontally when
-   * the timestamp gains a digit (e.g. "9 avr" → "10 avr"). */
-  grid-template-columns: 220px 1fr auto;
+   * the timestamp gains a digit (e.g. "9 avr" → "10 avr"). Width chosen
+   * to fit the longest expected timestamp tightly without empty padding. */
+  grid-template-columns: 195px 1fr auto;
   grid-template-areas: "header track controls";
   align-items: center;
   column-gap: 14px;
@@ -25,7 +26,7 @@
 
 @media (max-width: 860px) {
   .wrapper {
-    grid-template-columns: 190px 1fr auto;
+    grid-template-columns: 170px 1fr auto;
     column-gap: 10px;
     padding: 5px 10px;
   }
