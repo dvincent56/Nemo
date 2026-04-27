@@ -4,6 +4,7 @@ import { useGameStore } from '@/lib/store';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
 
 const RESAMPLE_THROTTLE_GAME_MS = 5 * 60_000;  // 5 min de jeu mini entre 2 resamples
+const RESAMPLE_THROTTLE_WALL_MS = 150;        // 150 ms wall-clock mini — empêche 50 resamples/s pendant un drag de curseur
 const FIVE_MIN = 5 * 60_000;
 
 /**
@@ -33,10 +34,31 @@ export function useWeatherTimeSync(): void {
     if (!decodedGrid) return;
     const targetMs = isLive ? Date.now() : currentTime.getTime();
     if (Math.abs(targetMs - lastSampleGameMsRef.current) < RESAMPLE_THROTTLE_GAME_MS) return;
+    // Wall-clock throttle: a fast cursor drag fires currentTime updates at
+    // ~60 Hz; without this guard each pixel of drag re-decodes the global
+    // grid (~50-100 ms each), blocking the main thread. Defer to a trailing
+    // setTimeout so the LAST drag position still gets its sample.
+    const nowWall = Date.now();
+    const sinceLastWall = nowWall - lastWallClockMsRef.current;
+    if (sinceLastWall < RESAMPLE_THROTTLE_WALL_MS) {
+      const wait = RESAMPLE_THROTTLE_WALL_MS - sinceLastWall;
+      const id = window.setTimeout(() => {
+        // Re-read latest target on fire — store may have moved further.
+        const state = useGameStore.getState();
+        const live = state.timeline.isLive;
+        const t = live ? Date.now() : state.timeline.currentTime.getTime();
+        const grid = decodedGridToWeatherGridAtNow(decodedGrid, t);
+        setWeatherGrid(grid, new Date(t + 6 * 3_600_000));
+        lastSampleGameMsRef.current = t;
+        lastWallClockMsRef.current = Date.now();
+      }, wait);
+      return () => window.clearTimeout(id);
+    }
     const grid = decodedGridToWeatherGridAtNow(decodedGrid, targetMs);
     setWeatherGrid(grid, new Date(targetMs + 6 * 3_600_000));
     lastSampleGameMsRef.current = targetMs;
-    lastWallClockMsRef.current = Date.now();
+    lastWallClockMsRef.current = nowWall;
+    return undefined;
   }, [decodedGrid, currentTime, isLive, setWeatherGrid]);
 
   // LIVE-mode safety net : also resample every 5 wall-clock minutes so the
