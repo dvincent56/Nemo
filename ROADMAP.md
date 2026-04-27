@@ -167,7 +167,14 @@ Les pages Social/Settings/Marina sont mockées avec des champs qui n'existent pa
 - [ ] Modération : file de signalements
 - [ ] Table `audit_log` pour traçabilité actions admin
 
-### Observabilité + communication d'incident
+### Page super-admin / management (`/admin/system`)
+Gardée par middleware `role === 'super_admin'`, regroupe les manettes ops :
+
+- [ ] Toggle **mode maintenance** global : flag DB → middleware web qui répond 503 (sauf `/admin/*`) avec une page maintenance dédiée. Le toggle est instantané, pas de redeploy nécessaire.
+- [ ] Éditeur **bandeaux d'incident** (CRUD sur `system_status`) : sévérité, message multilingue, fenêtre de validité, preview du rendu avant publication.
+- [ ] Vue temps réel de l'état des services (lus depuis les `/health`) : game-engine, ws-gateway, weather-engine, Postgres, Redis. Voyants vert/orange/rouge.
+- [ ] Bouton **kill-switch** par feature flag : désactiver Stripe (lecture seule abonnements), désactiver les inscriptions, désactiver le routeur, etc. Tous les flags loggés dans `audit_log`.
+- [ ] Toutes les actions super-admin tracées dans `audit_log` (qui, quand, quel toggle, valeur avant/après).
 - [ ] **Sentry** SDK serveur (game-engine, weather-engine, ws-gateway) — capture exceptions + traces
 - [ ] **Sentry** SDK browser dans `apps/web` — erreurs runtime client (incluant le source-map upload CI)
 - [ ] Alerting Slack/email sur erreurs Sentry haute sévérité (≥ ERROR avec seuil de fréquence)
