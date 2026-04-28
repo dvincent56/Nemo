@@ -44,17 +44,6 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
 
   const coastDetection = input.coastDetection === true;
 
-  console.log('[routing] start', {
-    preset: input.preset,
-    from: input.from,
-    to: input.to,
-    horizonSec,
-    headingCount,
-    sectorCount,
-    coastDetection,
-    coneHalfDeg: input.coneHalfDeg ?? 90,
-  });
-
   // Only build / reuse the coastline index when detection is on. Skipping
   // the index when off avoids its ~10 MB memory footprint and (for callers
   // that pass raw GeoJSON) its ~500 ms build time.
@@ -63,15 +52,11 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
     coastline = new CoastlineIndex();
   } else if (input.coastlineIndex && input.coastlineIndex.isLoaded()) {
     coastline = input.coastlineIndex;
-    console.log('[routing] coastline reused from prebuilt index');
   } else if (input.coastlineGeoJson && input.coastlineGeoJson.features.length > 0) {
     coastline = new CoastlineIndex();
-    const tc = Date.now();
     coastline.loadFromGeoJson(input.coastlineGeoJson);
-    console.log(`[routing] coastline loaded in ${Date.now() - tc} ms`);
   } else {
     coastline = new CoastlineIndex();
-    console.log('[routing] coastline requested but no geojson/index provided — ignoring');
   }
 
   // Arrival radius: half the max distance the boat can cover in one step.
@@ -269,9 +254,6 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
         const d = haversineNM({ lat: q.lat, lon: q.lon }, input.to);
         if (d < bestD) bestD = d;
       }
-      console.log(
-        `[routing] step ${step}/${maxSteps} · candidates=${candidates.length} · pruned=${pruned.length} · bestDist=${bestD.toFixed(1)} NM · elapsed=${Date.now() - t0} ms`,
-      );
     }
 
     if (hit) {
@@ -317,17 +299,6 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   const eta = reachedGoal ? arrivalPoint.timeMs : Number.POSITIVE_INFINITY;
   const totalDistanceNm = arrivalPoint.distFromStartNm;
 
-  console.log(
-    `[routing] done · reachedGoal=${reachedGoal} · totalDist=${totalDistanceNm.toFixed(1)} NM · polyline=${polyline.length} pts · cap=${capSchedule.length} entries · totalTime=${Date.now() - t0} ms`,
-  );
-  // Plan details — compare with [sim-schedule] logs when the sim runs.
-  for (let i = 0; i < capSchedule.length; i++) {
-    const e = capSchedule[i]!;
-    const simT = (e.triggerMs - input.startTimeMs) / 3_600_000;
-    console.log(
-      `[routing-plan] #${i} simT=${simT.toFixed(2)}h · cap=${e.cap.toFixed(0)}°${e.sail ? ' · sail=' + e.sail : ''} · pos=(${e.plannedLat?.toFixed(3)}, ${e.plannedLon?.toFixed(3)})`,
-    );
-  }
   // Router's expected BSP trace — pair with [sim-tick] lines. Log every
   // 30 sim-minutes (every ~step/4) from the polyline to match the sim's
   // sampling cadence.
@@ -335,10 +306,6 @@ export async function computeRoute(input: RouteInput): Promise<RoutePlan> {
   let nextLogMs = input.startTimeMs;
   for (const p of polyline) {
     if (p.timeMs < nextLogMs) continue;
-    const simT = (p.timeMs - input.startTimeMs) / 3_600_000;
-    console.log(
-      `[routing-tick] simT=${simT.toFixed(2)}h · bsp=${p.bsp.toFixed(2)} · tws=${p.tws.toFixed(1)} · twa=${p.twa.toFixed(0)}° · sail=${p.sail} · pos=(${p.lat.toFixed(3)}, ${p.lon.toFixed(3)})`,
-    );
     nextLogMs = p.timeMs + logEveryMs;
   }
 
