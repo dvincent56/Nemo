@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/lib/store';
 import { mapInstance } from '@/components/play/MapCanvas';
 import { parseGfsWind } from '@/lib/weather/gfsParser';
+import { tileMaxValidMs } from '@/lib/weather/tacticalTile';
 import type { WeatherGrid } from '@/lib/store/types';
 
 /**
@@ -196,7 +197,7 @@ export default function WindOverlay(): React.ReactElement {
   const animRef = useRef<number>(0);
   const gridRef = useRef<WeatherGrid | null>(null);
   const frameRef = useRef(0);
-  const tileRef = useRef<{ grid: WeatherGrid; bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } } | null>(null);
+  const tileRef = useRef<{ grid: WeatherGrid; bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number }; validUntilMs: number } | null>(null);
 
   const windVisible = useGameStore((s) => s.layers.wind);
   const currentTimeMs = useGameStore((s) => s.timeline.currentTime.getTime());
@@ -227,7 +228,13 @@ export default function WindOverlay(): React.ReactElement {
   // stale (iy,ix) keyed values from the old grid don't bleed through.
   const tacticalTile = useGameStore((s) => s.weather.tacticalTile);
   useEffect(() => {
-    tileRef.current = tacticalTile;
+    tileRef.current = tacticalTile
+      ? {
+          grid: tacticalTile.grid,
+          bounds: tacticalTile.bounds,
+          validUntilMs: tileMaxValidMs(tacticalTile.decoded),
+        }
+      : null;
     windCache = new Map();
     windCacheFrame = -1;
   }, [tacticalTile]);
@@ -320,11 +327,15 @@ export default function WindOverlay(): React.ReactElement {
 
       let vi = 0, ai = 0, ci = 0;
 
-      // Pick wind: prefer the tactical tile when the particle falls inside it,
-      // fall back to the global grid otherwise.
+      // Pick wind: prefer the tactical tile when the particle falls inside it
+      // AND the scrubbed time is within the tile's temporal horizon (24h).
+      // Beyond the horizon `tile.grid` is clamped to its last layer, so we
+      // fall back to the global grid (J+7) to keep the field consistent.
+      const tlState = useGameStore.getState().timeline;
+      const targetMs = tlState.isLive ? Date.now() : tlState.currentTime.getTime();
       const pickWind = (lat: number, lon: number): CachedWind => {
         const tile = tileRef.current;
-        if (tile) {
+        if (tile && targetMs <= tile.validUntilMs) {
           const b = tile.bounds;
           if (lat >= b.latMin && lat <= b.latMax && lon >= b.lonMin && lon <= b.lonMax) {
             return getCachedWind(tile.grid, lat, lon, frame);

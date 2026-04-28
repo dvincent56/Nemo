@@ -41,3 +41,13 @@ export async function fetchTacticalTile(boat: BoatPos): Promise<{
   });
   return { tile, bounds };
 }
+
+/**
+ * Latest wall-clock time the tile can faithfully sample. Beyond this, callers
+ * must fall back to the global grid (which has a longer horizon).
+ */
+export function tileMaxValidMs(decoded: DecodedWeatherGrid): number {
+  const hours = decoded.hours ?? Array.from({ length: decoded.header.numHours }, (_, i) => i);
+  const maxHour = hours[hours.length - 1] ?? 0;
+  return (decoded.header.runTimestamp + maxHour * 3600) * 1000;
+}

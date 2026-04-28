@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { mapInstance } from './MapCanvas';
 import { useGameStore } from '@/lib/store';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
+import { tileMaxValidMs } from '@/lib/weather/tacticalTile';
 import { formatDMS } from './formatDMS';
 import styles from './CursorTooltip.module.css';
 
@@ -26,6 +27,8 @@ export default function CursorTooltip(): React.ReactElement | null {
   const lastEvent = useRef<{ mapX: number; mapY: number; clientX: number; clientY: number } | null>(null);
   const swellOn = useGameStore((s) => s.layers.swell);
   const windOn = useGameStore((s) => s.layers.wind);
+  const currentTimeMs = useGameStore((s) => s.timeline.currentTime.getTime());
+  const isLive = useGameStore((s) => s.timeline.isLive);
 
   // Wait for mapInstance to be available (dynamic import)
   useEffect(() => {
@@ -44,30 +47,38 @@ export default function CursorTooltip(): React.ReactElement | null {
     if (!ev || !mapInstance) return;
 
     const lngLat = mapInstance.unproject([ev.mapX, ev.mapY]);
-    const weatherState = useGameStore.getState().weather;
+    const state = useGameStore.getState();
+    const weatherState = state.weather;
     const decoded = weatherState.decodedGrid;
     const grid = weatherState.gridData;
+    // Sample at the scrubbed timeline — when the user previews t+12h we want
+    // the tooltip to show the forecast wind, not "now".
+    const targetMs = state.timeline.isLive
+      ? Date.now()
+      : state.timeline.currentTime.getTime();
 
     let tws = 0;
     let twd = 0;
     let swellHeight = 0;
     let swellDir = 0;
     let swellPeriod = 0;
-    // Wind: prefer the 0.25° tactical tile when the cursor is inside it — the
+    // Wind: prefer the 0.25° tactical tile when the cursor is inside it AND
+    // the scrubbed time is within the tile's temporal horizon (24h today). The
     // engine reads weather at the boat from the same 0.25° NOAA grid, so
     // sampling from the global 1° decimated grid here would misalign the HUD
     // and tooltip by ~1 kt in zones with wind gradient. Fall back to the 1°
-    // grid only when the cursor is outside the tile.
+    // grid when the cursor is outside the tile, or beyond its horizon.
     const tile = weatherState.tacticalTile;
     const cursorInTile = tile !== null
       && lngLat.lat >= tile.bounds.latMin && lngLat.lat <= tile.bounds.latMax
       && lngLat.lng >= tile.bounds.lonMin && lngLat.lng <= tile.bounds.lonMax;
-    if (cursorInTile && tile) {
-      const wind = sampleDecodedWindAtTime(tile.decoded, lngLat.lat, lngLat.lng);
+    const tileTemporallyValid = tile !== null && targetMs <= tileMaxValidMs(tile.decoded);
+    if (cursorInTile && tileTemporallyValid && tile) {
+      const wind = sampleDecodedWindAtTime(tile.decoded, lngLat.lat, lngLat.lng, targetMs);
       tws = wind.tws;
       twd = wind.twd;
     } else if (decoded) {
-      const wind = sampleDecodedWindAtTime(decoded, lngLat.lat, lngLat.lng);
+      const wind = sampleDecodedWindAtTime(decoded, lngLat.lat, lngLat.lng, targetMs);
       tws = wind.tws;
       twd = wind.twd;
     }
@@ -139,6 +150,12 @@ export default function CursorTooltip(): React.ReactElement | null {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [mapReady, compute]);
+
+  // Re-sample the cursor wind when the timeline scrubs even if the mouse
+  // stays still — otherwise the displayed value would lag the timeline.
+  useEffect(() => {
+    if (lastEvent.current) compute();
+  }, [currentTimeMs, isLive, compute]);
 
   if (!data) return null;
 
