@@ -103,3 +103,29 @@ export function supersedeHeadingIntent(
   }
   return orderHistory.slice();
 }
+
+/**
+ * Atomically replaces the user-modifiable portion of an envelope history.
+ *
+ * Envelopes with `order.completed === true` are kept (consumed history is
+ * preserved for replay/debug and so the engine doesn't "resurrect" already-
+ * crossed waypoints or already-fired CAP orders). All other envelopes are
+ * dropped and replaced by `incoming`, which is appended after the kept
+ * history, sorted ascending by `effectiveTs` (matches the existing insertion
+ * invariant maintained by `onOrderReceived` and the worker `ingestOrder`).
+ *
+ * Pure function. Caller is expected to feed `incoming` envelopes already
+ * built via the same shape as `onOrderReceived` (with trustedTs / effectiveTs
+ * computed by the gateway) — this function does not derive timestamps.
+ *
+ * Cf. spec `docs/superpowers/specs/2026-04-28-progpanel-redesign-design.md`
+ * Phase 0 ("ORDER_REPLACE_QUEUE").
+ */
+export function replaceUserQueue(
+  history: OrderEnvelope[],
+  incoming: OrderEnvelope[],
+): OrderEnvelope[] {
+  const completed = history.filter((e) => e.order.completed === true);
+  const sortedIncoming = incoming.slice().sort((a, b) => a.effectiveTs - b.effectiveTs);
+  return [...completed, ...sortedIncoming];
+}

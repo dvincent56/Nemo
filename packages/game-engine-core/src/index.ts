@@ -75,4 +75,5 @@ export {
   supersedeWaypointsByCapTwa,
   supersedeCapTwaByWaypoint,
   supersedeHeadingIntent,
+  replaceUserQueue,
 } from './orderHistory';
