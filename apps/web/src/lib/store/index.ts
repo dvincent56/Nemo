@@ -299,6 +299,52 @@ export function sendOrder(payload: OrderPayload): boolean {
   return true;
 }
 
+export interface ReplaceQueueOrderInput {
+  type: 'CAP' | 'TWA' | 'WPT' | 'SAIL' | 'MODE' | 'VMG';
+  value: Record<string, unknown>;
+  trigger?: import('@nemo/shared-types').OrderTrigger;
+}
+
+/**
+ * Atomically replaces the user-modifiable portion of the boat's order queue
+ * on the server (cf. spec 2026-04-28-progpanel-redesign-design.md Phase 0).
+ *
+ * The gateway expands the batch into N envelopes with clientSeq baseSeq..baseSeq+N-1,
+ * so we advance activeConnection.clientSeq by N (the batch length) — NOT by 1 —
+ * to keep subsequent sendOrder calls from colliding with batch envelopes in the
+ * engine's (connectionId, clientSeq) dedup map.
+ *
+ * Returns true if the WS frame was sent, false if the connection is not open.
+ * Does NOT update the local store — callers (typically the ProgPanel commit
+ * handler) are responsible for the optimistic mirror.
+ *
+ * Empty `orders` is allowed and means "wipe the user-modifiable queue."
+ */
+export function sendOrderReplaceQueue(orders: ReplaceQueueOrderInput[]): boolean {
+  if (!activeConnection?.ws || activeConnection.ws.readyState !== WebSocket.OPEN) return false;
+  const baseSeq = activeConnection.clientSeq + 1;
+  // Advance by orders.length so the next sendOrder uses a seq past the batch.
+  // For an empty batch, baseSeq is unused on the server but we still bump by 0
+  // (= no-op) to keep the contract uniform: clientSeq always equals "last used
+  // seq from this client". We use Math.max so empty batches don't decrement.
+  activeConnection.clientSeq = Math.max(activeConnection.clientSeq, baseSeq + orders.length - 1);
+  const envelope = {
+    type: 'ORDER_REPLACE_QUEUE',
+    payload: {
+      orders: orders.map((o, i) => ({
+        id: `${activeConnection!.raceId}-${baseSeq + i}`,
+        type: o.type,
+        value: o.value,
+        trigger: o.trigger ?? { type: 'IMMEDIATE' },
+      })),
+      clientTs: Date.now(),
+      clientSeq: baseSeq,
+    },
+  };
+  activeConnection.ws.send(encode(envelope));
+  return true;
+}
+
 export function isLiveMode(): boolean {
   return WS_LIVE;
 }
