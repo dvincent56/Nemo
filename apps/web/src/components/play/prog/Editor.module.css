@@ -152,3 +152,19 @@
   max-width: 220px;
   position: relative;
 }
+
+/* DÉCLENCHEUR readout — used by FinalCapEditor and WpEditor.
+   Mirrors WpEditor's previous local copy plus `text-align: center` so the
+   single-line trigger label (e.g. "APRÈS WP 3 (FINAL)") sits centered. */
+.triggerReadout {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #c9a227;
+  letter-spacing: 0.14em;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(245, 240, 232, 0.12);
+  border-radius: 4px;
+  text-align: center;
+}

@@ -110,7 +110,7 @@ export default function WpEditor({
 
             <div>
               <p className={styles.fieldLabel}>DÉCLENCHEUR</p>
-              <div className={wpStyles.triggerReadout}>{triggerLabel}</div>
+              <div className={styles.triggerReadout}>{triggerLabel}</div>
             </div>
           </>
         )}

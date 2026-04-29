@@ -85,18 +85,7 @@ export default function FinalCapEditor({
 
         <div>
           <p className={styles.fieldLabel}>DÉCLENCHEUR</p>
-          <div style={{
-            fontFamily: "'Space Mono', ui-monospace, monospace",
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#c9a227',
-            letterSpacing: '0.14em',
-            padding: '10px 12px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(245,240,232,0.12)',
-            borderRadius: 4,
-            textAlign: 'center',
-          }}>
+          <div className={styles.triggerReadout}>
             APRÈS WP {lastWpIndex} (FINAL)
           </div>
         </div>

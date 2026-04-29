@@ -14,6 +14,7 @@ import type {
   ProjectionRun,
 } from '@/lib/projection/types';
 import { serializeDraft } from '@/lib/prog/serialize';
+import { deepEqDraft } from '@/lib/prog/equality';
 import type { ProgDraft } from '@/lib/prog/types';
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
@@ -773,15 +774,15 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     // Phase 2b Task 2: emit BOTH committed and draft segment lists. The worker
     // detects equality via referential identity — when prog.draft === prog.committed
     // (no edits), they serialize through the same path but are not the same
-    // ARRAY reference, so we explicitly check JSON equality here and pass the
-    // SAME committed array as draftSegments. The cheap reference check inside
-    // the worker then short-circuits the second simulation.
+    // ARRAY reference, so we explicitly check structural equality here and pass
+    // the SAME committed array as draftSegments. The cheap reference check
+    // inside the worker then short-circuits the second simulation.
     //
-    // We use JSON.stringify (mirroring ProgPanel's deepEqDraft helper) — the
-    // typed-draft equality refactor is tracked elsewhere; for now this matches
-    // the UI's notion of "isDirty" exactly.
+    // Equality uses the typed `deepEqDraft` from `@/lib/prog/equality` so the
+    // dirty signal is identical to ProgPanel's — no JSON.stringify ordering
+    // fragility.
     const committedSegments = orderQueueToSegments(serializeDraft(prog.committed));
-    const isDirty = JSON.stringify(prog.draft) !== JSON.stringify(prog.committed);
+    const isDirty = !deepEqDraft(prog.draft, prog.committed);
     const draftSegments = isDirty
       ? orderQueueToSegments(serializeDraft(prog.draft))
       : committedSegments; // identical reference → worker skips the 2nd sim

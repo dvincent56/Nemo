@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore, commitDraft } from '@/lib/store';
-import type { ProgMode, ProgDraft } from '@/lib/prog/types';
+import type { ProgMode } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
@@ -12,10 +12,7 @@ import SailEditor from './prog/SailEditor';
 import WpEditor from './prog/WpEditor';
 import FinalCapEditor from './prog/FinalCapEditor';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-function deepEqDraft(a: ProgDraft, b: ProgDraft): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+import { deepEqDraft } from '@/lib/prog/equality';
 
 export default function ProgPanel(): ReactElement {
   const draft = useGameStore((s) => s.prog.draft);
@@ -292,7 +289,7 @@ export default function ProgPanel(): ReactElement {
       <ConfirmDialog
         open={clearAllOpen}
         title="Tout effacer ?"
-        body="Toutes les programmations en cours d'édition seront supprimées. La programmation déjà confirmée n'est pas affectée tant que vous ne cliquez pas sur Confirmer."
+        body="Cela vide la programmation en cours d'édition. Vous pouvez annuler avec « Annuler »."
         confirmLabel="Tout effacer"
         tone="danger"
         onConfirm={() => {
