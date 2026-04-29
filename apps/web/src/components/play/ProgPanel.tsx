@@ -5,10 +5,12 @@ import type { ProgMode, ProgDraft } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
+import ProgBanner from './prog/ProgBanner';
 import CapEditor from './prog/CapEditor';
 import SailEditor from './prog/SailEditor';
 import WpEditor from './prog/WpEditor';
 import FinalCapEditor from './prog/FinalCapEditor';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 type EditingState =
   | null
@@ -34,6 +36,10 @@ export default function ProgPanel(): ReactElement {
 
   const [editing, setEditing] = useState<EditingState>(null);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
+  const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [switchModeTo, setSwitchModeTo] = useState<ProgMode | null>(null);
+  const [bannerDismissedAtCount, setBannerDismissedAtCount] = useState<number | null>(null);
 
   // 1Hz tick for sliding floor + obsolescence
   useEffect(() => {
@@ -197,13 +203,41 @@ export default function ProgPanel(): ReactElement {
     );
   }
 
+  // Helper: WP referenced by a sail order — needed for the delete dialog body.
+  const wpHasSailOrder = (wpId: string): boolean =>
+    draft.sailOrders.some(
+      (s) => s.trigger.type === 'AT_WAYPOINT' && s.trigger.waypointOrderId === wpId,
+    );
+
   // Idle / Dirty queue view
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {bannerDismissedAtCount !== obsoleteCount && obsoleteCount > 0 && (
+        <ProgBanner
+          obsoleteCount={obsoleteCount}
+          onDismiss={() => setBannerDismissedAtCount(obsoleteCount)}
+        />
+      )}
       <ProgQueueView
         draft={draft}
         nowSec={nowSec}
-        onSwitchMode={(m: ProgMode) => setProgMode(m)}
+        onSwitchMode={(m: ProgMode) => {
+          // Same mode → no-op
+          if (m === draft.mode) return;
+          // Check if the OTHER track is non-empty
+          const hasIncompatibleOrders =
+            (m === 'cap' && (draft.wpOrders.length > 0 || draft.finalCap !== null))
+            || (m === 'wp' && draft.capOrders.length > 0);
+          // Also check sail orders that would be dropped (AT_WAYPOINT in cap mode)
+          const hasIncompatibleSails =
+            m === 'cap'
+            && draft.sailOrders.some((o) => o.trigger.type === 'AT_WAYPOINT');
+          if (hasIncompatibleOrders || hasIncompatibleSails) {
+            setSwitchModeTo(m);
+          } else {
+            setProgMode(m);
+          }
+        }}
         onAddCap={() => setEditing({ kind: 'cap', id: 'NEW' })}
         onAddWp={() => setEditing({ kind: 'wp', id: 'NEW' })}
         onAddFinalCap={() => setEditing({ kind: 'finalCap' })}
@@ -212,14 +246,66 @@ export default function ProgPanel(): ReactElement {
         onEditWp={(id) => setEditing({ kind: 'wp', id })}
         onEditFinalCap={() => setEditing({ kind: 'finalCap' })}
         onEditSail={(id) => setEditing({ kind: 'sail', id })}
-        onAskDelete={(_kind, _id) => { /* Task 9 wires ConfirmDialog */ }}
-        onAskClearAll={() => { /* Task 9 wires ConfirmDialog */ }}
+        onAskDelete={(kind, id) => setDeleteDialog({ kind, id })}
+        onAskClearAll={() => setClearAllOpen(true)}
       />
       <ProgFooter
         isDirty={isDirty}
         obsoleteCount={obsoleteCount}
         onCancelAll={handleCancelAll}
         onConfirm={handleConfirm}
+      />
+
+      <ConfirmDialog
+        open={deleteDialog !== null}
+        title="Supprimer cet ordre ?"
+        body={
+          deleteDialog?.kind === 'wp' && wpHasSailOrder(deleteDialog.id)
+            ? 'Ce WP est référencé par un ordre voile. Les deux seront supprimés.'
+            : 'Cette action est irréversible.'
+        }
+        confirmLabel="Supprimer"
+        tone="danger"
+        onConfirm={() => {
+          if (!deleteDialog) return;
+          const { kind, id } = deleteDialog;
+          if (kind === 'cap') useGameStore.getState().removeCapOrder(id);
+          else if (kind === 'wp') useGameStore.getState().removeWpOrder(id);
+          else if (kind === 'finalCap') useGameStore.getState().setFinalCap(null);
+          else if (kind === 'sail') useGameStore.getState().removeSailOrder(id);
+          setDeleteDialog(null);
+        }}
+        onCancel={() => setDeleteDialog(null)}
+      />
+
+      <ConfirmDialog
+        open={clearAllOpen}
+        title="Tout effacer ?"
+        body="Toutes les programmations en cours d'édition seront supprimées. La programmation déjà confirmée n'est pas affectée tant que vous ne cliquez pas sur Confirmer."
+        confirmLabel="Tout effacer"
+        tone="danger"
+        onConfirm={() => {
+          useGameStore.getState().clearAllOrders();
+          setClearAllOpen(false);
+        }}
+        onCancel={() => setClearAllOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={switchModeTo !== null}
+        title="Changer de mode ?"
+        body={
+          switchModeTo === 'cap'
+            ? 'Les waypoints, le cap final, et les ordres voile à un waypoint seront supprimés. Les ordres voile à une heure seront conservés.'
+            : 'Les ordres CAP seront supprimés.'
+        }
+        confirmLabel="Changer"
+        tone="primary"
+        onConfirm={() => {
+          if (switchModeTo) setProgMode(switchModeTo);
+          setSwitchModeTo(null);
+        }}
+        onCancel={() => setSwitchModeTo(null)}
       />
     </div>
   );
