@@ -63,6 +63,14 @@ export default function CompassDial({
 }: CompassDialProps): ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
 
+  // valueRef lets the wheel handler read the latest committed value without
+  // re-attaching listeners on every value change. Without this, the effect
+  // would tear down and rebuild listeners 30-60 times per second during a
+  // fast drag, and rapid wheel events in the same frame would under-count
+  // because they'd all read the same stale closure value.
+  const valueRef = useRef(value);
+  useEffect(() => { valueRef.current = value; }, [value]);
+
   // 60Hz preview — write the boat / ghost transform attributes directly,
   // bypassing React's reconciler. The committed React `value` prop catches
   // up on pointer-up (parent calls onChange).
@@ -135,7 +143,7 @@ export default function CompassDial({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY < 0 ? -1 : 1;
-      const next = (value + delta + 360) % 360;
+      const next = (valueRef.current + delta + 360) % 360;
       writeSvg(next);
       onChange(next);
     };
@@ -150,7 +158,7 @@ export default function CompassDial({
       window.removeEventListener('pointerup', onUp);
       svg.removeEventListener('wheel', onWheel);
     };
-  }, [readOnly, onChange, getHdgFromEvent, writeSvg, value]);
+  }, [readOnly, onChange, getHdgFromEvent, writeSvg]);
 
   // Tick generation
   const ticks: ReactElement[] = [];
