@@ -18,8 +18,14 @@ export interface ProjectionInput {
   sailAuto: boolean;
   /** TWA lock value (null = heading mode, number = locked TWA) */
   twaLock: number | null;
-  /** Programmed segments — ordered list of future orders */
+  /** Committed segments — the server-known programming. Always simulated. */
   segments: ProjectionSegment[];
+  /** Draft segments — the user's in-progress edits. When provided AND
+   *  distinct from `segments` (referential identity check), the worker runs
+   *  a SECOND simulation and returns the result in `ProjectionResult.draft`.
+   *  When omitted or referentially equal to `segments`, only one simulation
+   *  runs (the committed one) — zero overhead for the idle case. */
+  draftSegments?: ProjectionSegment[];
   /** Polar table: per-sail speed grids keyed by SailId */
   polar: { twa: number[]; tws: number[]; speeds: Record<string, number[][]> };
   /** Aggregated upgrade effects */
@@ -132,7 +138,11 @@ export interface ManeuverMarker {
  */
 export const PROJECTION_POINT_FIELDS = 6;
 
-export interface ProjectionResult {
+/**
+ * Single-simulation output. Composed into `ProjectionResult` for both the
+ * committed and (optional) draft projections.
+ */
+export interface ProjectionRun {
   /** Packed [lat, lon, dtMs, bsp, tws, twd] × pointsCount. The buffer is
    *  pre-allocated worst-case in the worker and transferred zero-copy. */
   pointsBuf: Float32Array;
@@ -143,6 +153,19 @@ export interface ProjectionResult {
   timeMarkers: TimeMarker[];
   maneuverMarkers: ManeuverMarker[];
   bspMax: number;
+}
+
+/**
+ * Worker output. The committed projection is always present (root-level
+ * fields preserve the legacy shape so existing consumers keep working).
+ * When the user has unsaved draft edits AND they differ from committed,
+ * `draft` carries the second simulation; otherwise it's undefined and the
+ * caller can render the single committed line at full opacity.
+ */
+export interface ProjectionResult extends ProjectionRun {
+  /** Present only when the input carried `draftSegments` distinct from the
+   *  committed `segments`. When undefined, render only the committed line. */
+  draft?: ProjectionRun;
 }
 
 /** Read a single packed point as an object. Use sparingly — for tight loops

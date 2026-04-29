@@ -90,16 +90,26 @@ const trailCoords: [number, number][] = [];
 /** Expose the MapLibre map instance for other components (WindOverlay) */
 export let mapInstance: maplibregl.Map | null = null;
 
+// Phase 2b Task 2 — projection now has TWO layer sets: -committed (always
+// rendered, drawn at 0.4 opacity when a draft overlay is active) and -draft
+// (only rendered while the user has unsaved edits in ProgPanel).
 const PROJECTION_LAYER_IDS = [
-  'projection-line-layer',
-  'projection-markers-time-circle',
-  'projection-markers-time-label',
-  'projection-markers-maneuver-icon',
+  'projection-line-committed-layer',
+  'projection-markers-time-committed-circle',
+  'projection-markers-time-committed-label',
+  'projection-markers-maneuver-committed-icon',
+  'projection-line-draft-layer',
+  'projection-markers-time-draft-circle',
+  'projection-markers-time-draft-label',
+  'projection-markers-maneuver-draft-icon',
 ] as const;
 const PROJECTION_SOURCE_IDS = [
-  'projection-line',
-  'projection-markers-time',
-  'projection-markers-maneuver',
+  'projection-line-committed',
+  'projection-markers-time-committed',
+  'projection-markers-maneuver-committed',
+  'projection-line-draft',
+  'projection-markers-time-draft',
+  'projection-markers-maneuver-draft',
 ] as const;
 
 /**
@@ -139,15 +149,38 @@ function installProjectionLayers(map: maplibregl.Map): void {
     if (map.getSource(id)) map.removeSource(id);
   }
 
-  map.addSource('projection-line', {
+  // Install one set of three sources + four layers per variant. The committed
+  // variant is the persistent baseline (always rendered at 0.85 opacity, dims
+  // to 0.4 when a draft overlay is active). The draft variant is empty until
+  // the user starts editing the queue — useProjectionLine.ts populates it via
+  // setData() and clears it back to empty on confirm/cancel.
+  installProjectionVariant(map, 'committed');
+  installProjectionVariant(map, 'draft');
+}
+
+function installProjectionVariant(map: maplibregl.Map, variant: 'committed' | 'draft'): void {
+  const lineSrcId = `projection-line-${variant}`;
+  const lineLayerId = `projection-line-${variant}-layer`;
+  const timeSrcId = `projection-markers-time-${variant}`;
+  const timeCircleId = `projection-markers-time-${variant}-circle`;
+  const timeLabelId = `projection-markers-time-${variant}-label`;
+  const manSrcId = `projection-markers-maneuver-${variant}`;
+  const manIconId = `projection-markers-maneuver-${variant}-icon`;
+
+  // Draft layers default to 0 opacity at install — the hook flips them on by
+  // pushing data once isDirty triggers. The committed layer keeps the legacy
+  // 0.85 baseline; the hook adjusts it dynamically based on draft presence.
+  const baseLineOpacity = variant === 'committed' ? 0.85 : 1;
+
+  map.addSource(lineSrcId, {
     type: 'geojson',
     data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
     lineMetrics: true,
   });
   map.addLayer({
-    id: 'projection-line-layer',
+    id: lineLayerId,
     type: 'line',
-    source: 'projection-line',
+    source: lineSrcId,
     layout: {
       // `round` joins/caps prevent miter-overflow spikes at sharp bends —
       // observed at WPT captures where the heading flips from "toward wpt_i"
@@ -165,18 +198,18 @@ function installProjectionLayers(map: maplibregl.Map): void {
         0, '#27ae60', 1, '#27ae60',
       ],
       'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
-      'line-opacity': 0.85,
+      'line-opacity': baseLineOpacity,
     },
   });
 
-  map.addSource('projection-markers-time', {
+  map.addSource(timeSrcId, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
   map.addLayer({
-    id: 'projection-markers-time-circle',
+    id: timeCircleId,
     type: 'circle',
-    source: 'projection-markers-time',
+    source: timeSrcId,
     paint: {
       'circle-radius': [
         'case', ['==', ['get', 'label'], ''], 2, 4,
@@ -192,9 +225,9 @@ function installProjectionLayers(map: maplibregl.Map): void {
     },
   });
   map.addLayer({
-    id: 'projection-markers-time-label',
+    id: timeLabelId,
     type: 'symbol',
-    source: 'projection-markers-time',
+    source: timeSrcId,
     layout: {
       'text-field': ['get', 'label'],
       'text-size': 11,
@@ -208,14 +241,14 @@ function installProjectionLayers(map: maplibregl.Map): void {
     },
   });
 
-  map.addSource('projection-markers-maneuver', {
+  map.addSource(manSrcId, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
   map.addLayer({
-    id: 'projection-markers-maneuver-icon',
+    id: manIconId,
     type: 'circle',
-    source: 'projection-markers-maneuver',
+    source: manSrcId,
     paint: {
       'circle-radius': [
         'case', ['==', ['get', 'type'], 'grounding'], 7, 5,
@@ -335,11 +368,14 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         console.log('[__debugMap] projection layers count:', projLayers.length, projLayers.map((l) => l.id));
         console.log('[__debugMap] sim-* layers count:', simLayers.length, simLayers.map((l) => l.id));
         console.log('[__debugMap] layers with GREEN paint:', greenLayers.length, greenLayers.map((l) => l.id));
-        // Also report current paint of the projection-line-layer so we can
+        // Also report current paint of both projection-line layers so we can
         // tell whether the gradient was ever overwritten by useProjectionLine.
-        if (m.getLayer('projection-line-layer')) {
-          const grad = m.getPaintProperty('projection-line-layer', 'line-gradient');
-          console.log('[__debugMap] projection-line-layer line-gradient:', grad);
+        for (const layerId of ['projection-line-committed-layer', 'projection-line-draft-layer']) {
+          if (m.getLayer(layerId)) {
+            const grad = m.getPaintProperty(layerId, 'line-gradient');
+            const op = m.getPaintProperty(layerId, 'line-opacity');
+            console.log(`[__debugMap] ${layerId}: opacity=${op as number}`, grad);
+          }
         }
       };
     }
@@ -435,7 +471,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           'line-width': 2.5,
           'line-opacity': 0.9,
         },
-      }, 'projection-line-layer');
+      }, 'projection-line-committed-layer');
 
       // ── Maneuver marker tooltip ──
       const maneuverPopup = new maplibregl.Popup({
@@ -471,42 +507,52 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:${accent};">${label}</strong><br/>${detail}${whenLine}</div>`;
       };
 
-      map.on('mouseenter', 'projection-markers-maneuver-icon', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        const feature = e.features?.[0];
-        if (!feature || feature.geometry.type !== 'Point') return;
-        const coords = feature.geometry.coordinates as [number, number];
-        const detail = feature.properties?.detail ?? '';
-        const type = feature.properties?.type ?? '';
-        const timestamp = feature.properties?.timestamp as number | undefined;
-        maneuverPopup
-          .setLngLat(coords)
-          .setHTML(maneuverHtml(type, detail, timestamp))
-          .addTo(map);
-      });
+      // Hook the maneuver popup to BOTH variant icons. While editing, the
+      // draft markers sit on top of the (dimmed) committed markers — both
+      // need to be hoverable so the user can inspect either projection.
+      const MANEUVER_ICON_LAYERS = [
+        'projection-markers-maneuver-committed-icon',
+        'projection-markers-maneuver-draft-icon',
+      ] as const;
 
-      map.on('mouseleave', 'projection-markers-maneuver-icon', () => {
-        map.getCanvas().style.cursor = '';
-        maneuverPopup.remove();
-      });
-
-      map.on('click', 'projection-markers-maneuver-icon', (e) => {
-        const feature = e.features?.[0];
-        if (!feature || feature.geometry.type !== 'Point') return;
-        const coords = feature.geometry.coordinates as [number, number];
-        const detail = feature.properties?.detail ?? '';
-        const type = feature.properties?.type ?? '';
-        const timestamp = feature.properties?.timestamp as number | undefined;
-
-        if (maneuverPopup.isOpen()) {
-          maneuverPopup.remove();
-        } else {
+      for (const layerId of MANEUVER_ICON_LAYERS) {
+        map.on('mouseenter', layerId, (e) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const feature = e.features?.[0];
+          if (!feature || feature.geometry.type !== 'Point') return;
+          const coords = feature.geometry.coordinates as [number, number];
+          const detail = feature.properties?.detail ?? '';
+          const type = feature.properties?.type ?? '';
+          const timestamp = feature.properties?.timestamp as number | undefined;
           maneuverPopup
             .setLngLat(coords)
             .setHTML(maneuverHtml(type, detail, timestamp))
             .addTo(map);
-        }
-      });
+        });
+
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+          maneuverPopup.remove();
+        });
+
+        map.on('click', layerId, (e) => {
+          const feature = e.features?.[0];
+          if (!feature || feature.geometry.type !== 'Point') return;
+          const coords = feature.geometry.coordinates as [number, number];
+          const detail = feature.properties?.detail ?? '';
+          const type = feature.properties?.type ?? '';
+          const timestamp = feature.properties?.timestamp as number | undefined;
+
+          if (maneuverPopup.isOpen()) {
+            maneuverPopup.remove();
+          } else {
+            maneuverPopup
+              .setLngLat(coords)
+              .setHTML(maneuverHtml(type, detail, timestamp))
+              .addTo(map);
+          }
+        });
+      }
 
       // ── Exclusion zone tooltip ──
       const ZONE_CATEGORY_LABEL: Record<string, string> = {
@@ -864,17 +910,28 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     });
   }, []);
 
-  /* ── Projection dimming: dim to 0.4 when scrubbing into the past ── */
+  /* ── Projection dimming: dim to 0.4 when scrubbing into the past.
+   *
+   * Phase 2b note: this competes with the `isDirty` dim in useProjectionLine
+   * (committed → 0.4 when a draft overlay is active). When scrubbing the past
+   * we apply the same 0.4 to both committed and draft layers so neither
+   * dominates over historical context — the next compute (or live-mode
+   * resume) will reset opacity from useProjectionLine. */
   useEffect(() => {
     const applyProjectionOpacity = (): void => {
       const map = mapRef.current;
       if (!map) return;
-      if (!map.getLayer('projection-line-layer')) return;
       const s = useGameStore.getState();
-      const op = s.timeline.isLive
-        ? 1
-        : s.timeline.currentTime.getTime() < Date.now() ? 0.4 : 1;
-      map.setPaintProperty('projection-line-layer', 'line-opacity', op);
+      const isPast = !s.timeline.isLive && s.timeline.currentTime.getTime() < Date.now();
+      // Only override while scrubbing the past — live mode hands opacity back
+      // to useProjectionLine (which knows about isDirty).
+      if (!isPast) return;
+      if (map.getLayer('projection-line-committed-layer')) {
+        map.setPaintProperty('projection-line-committed-layer', 'line-opacity', 0.4);
+      }
+      if (map.getLayer('projection-line-draft-layer')) {
+        map.setPaintProperty('projection-line-draft-layer', 'line-opacity', 0.4);
+      }
     };
     applyProjectionOpacity();
     let prevTime = useGameStore.getState().timeline.currentTime;
