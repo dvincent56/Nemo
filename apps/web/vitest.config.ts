@@ -7,6 +7,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // tsconfig.json has `jsx: preserve` for Next.js; vitest needs JSX transformed
+  // for tests rendering React components. Override here without touching the
+  // app's tsconfig (which would break Next's RSC pipeline).
+  oxc: {
+    jsx: { runtime: 'automatic' },
+  },
   test: {
     environment: 'node',
     // Scoped to weather/projection/hooks tests. src/workers/simulator.worker.test.ts
@@ -16,6 +22,7 @@ export default defineConfig({
       'src/lib/**/*.test.ts',
       'src/hooks/**/*.test.ts',
       'src/components/**/*.test.ts',
+      'src/components/**/*.test.tsx',
     ],
   },
 });
