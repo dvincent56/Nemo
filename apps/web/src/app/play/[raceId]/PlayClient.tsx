@@ -344,8 +344,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   // queue, dispatch each over WS, close panel. If the queue already has
   // future orders, prompt to confirm the replace first.
   const [pendingApply, setPendingApply] = useState<'WAYPOINTS' | 'CAP' | null>(null);
-  const orderQueue = useGameStore((s) => s.prog.orderQueue);
-  const futureOrdersCount = orderQueue.length;
+  // PHASE_2A_TASK_4_TODO: rewire to s.prog.draft (capOrders/wpOrders) once
+  // applyRoute helpers emit the new ProgDraft shape.
+  const futureOrdersCount = 0;
 
   const performApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
     const state = useGameStore.getState();
@@ -367,7 +368,10 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     // applied. The ConfirmReplaceProgModal already warns before clobbering a
     // non-empty queue.
     for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
-    state.replaceOrderQueue(orders);
+    // PHASE_2A_TASK_4_TODO: replace with applyRouteAsCommitted(progDraft) once
+    // applyRoute helpers emit the new ProgDraft shape (orders → capOrders /
+    // wpOrders / finalCap / sailOrders).
+    // state.replaceOrderQueue(orders);
 
     // Optimistic UI: any order that fires *now* (IMMEDIATE or AT_TIME with a
     // past timestamp — capScheduleToOrders emits the first CAP/TWA at
@@ -532,9 +536,9 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   };
 
   const onApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
-    const count = useGameStore.getState().prog.orderQueue.length;
-    if (count > 0) setPendingApply(mode);
-    else performApply(mode);
+    // PHASE_2A_TASK_4_TODO: switch to a computed length on s.prog.draft once
+    // ProgDraft is wired through applyRoute. For now apply directly.
+    performApply(mode);
   };
 
   // Close the confirm modal if the router panel is closed externally (e.g.

@@ -5,6 +5,17 @@ import type { RoutePlan } from '@nemo/routing';
 import type { DecodedWeatherGrid } from '@/lib/weather/binaryDecoder';
 import type { BoatEffects } from '@/lib/api';
 import type { PendingField } from './pending';
+import type { ProgState as ProgStateImpl } from '@/lib/prog/types';
+
+export type {
+  ProgMode,
+  CapOrder,
+  WpOrder,
+  FinalCapOrder,
+  SailOrder,
+  ProgDraft,
+  ProgState,
+} from '@/lib/prog/types';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
 
@@ -202,11 +213,6 @@ export interface OrderEntry {
   committed?: boolean;
 }
 
-export interface ProgState {
-  orderQueue: OrderEntry[];
-  serverQueue: OrderEntry[];
-}
-
 export interface BoatLive {
   id: string;
   lat: number; lon: number;
@@ -257,7 +263,7 @@ export interface GameStore extends RouterActions {
   panel: PanelState;
   weather: WeatherState;
   connection: ConnectionState;
-  prog: ProgState;
+  prog: ProgStateImpl;
   preview: import('./previewSlice').PreviewState;
   router: RouterState;
   zones: ExclusionZone[];
@@ -311,11 +317,21 @@ export interface GameStore extends RouterActions {
   setGfsStatus: (status: GfsStatus) => void;
   setTacticalTile: (grid: WeatherGrid | null, decoded: DecodedWeatherGrid | null, bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number } | null) => void;
   setConnection: (s: ConnState) => void;
-  addOrder: (order: OrderEntry) => void;
-  removeOrder: (id: string) => void;
-  reorderQueue: (from: number, to: number) => void;
-  commitQueue: () => void;
-  replaceOrderQueue: (orders: OrderEntry[]) => void;
+  setProgMode: (mode: import('@/lib/prog/types').ProgMode) => void;
+  addCapOrder: (o: import('@/lib/prog/types').CapOrder) => void;
+  updateCapOrder: (id: string, patch: Partial<import('@/lib/prog/types').CapOrder>) => void;
+  removeCapOrder: (id: string) => void;
+  addWpOrder: (o: import('@/lib/prog/types').WpOrder) => void;
+  updateWpOrder: (id: string, patch: Partial<import('@/lib/prog/types').WpOrder>) => void;
+  removeWpOrder: (id: string) => void;
+  setFinalCap: (o: import('@/lib/prog/types').FinalCapOrder | null) => void;
+  addSailOrder: (o: import('@/lib/prog/types').SailOrder) => void;
+  updateSailOrder: (id: string, patch: Partial<import('@/lib/prog/types').SailOrder>) => void;
+  removeSailOrder: (id: string) => void;
+  clearAllOrders: () => void;
+  resetDraft: () => void;
+  markCommitted: () => void;
+  applyRouteAsCommitted: (next: import('@/lib/prog/types').ProgDraft) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
