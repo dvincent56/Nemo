@@ -1,7 +1,7 @@
 {
   "version": "1.1.0",
   "updatedAt": "2026-04-29T00:00:00Z",
-  "updatedBy": "imoca-vr-polar-recalibration",
+  "updatedBy": "imoca-vr-polar-recalibration+sails",
   "wear": {
     "minCondition": 35,
     "maxSpeedPenalty": 8,
@@ -2211,6 +2211,52 @@
           "wearMul": {
             "sails": 1.12
           },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-imoca60-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di IMOCA",
+        "profile": "course gros temps",
+        "description": "Garde-robe 3Di haute performance optimisée medium/strong. Gain net dans la brise, légère sur-usure des voiles.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 22000,
+        "effects": {
+          "speedByTwa": [0,0,0,0,0],
+          "speedByTws": [0, 0.04, 0.06],
+          "wearMul": { "sail": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-imoca60-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure IMOCA",
+        "profile": "régate ultime gros temps",
+        "description": "Garde-robe sur-mesure North 3Di Endurance avec setup Vendée Globe. Performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0,0,0,0,0],
+          "speedByTws": [0, 0.06, 0.08],
+          "wearMul": { "sail": 1.6 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
