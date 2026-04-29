@@ -1,0 +1,88 @@
+.stepper {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  gap: 8px;
+  align-items: stretch;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.30);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  position: relative;
+}
+
+.btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f5f0e8;
+  height: 56px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.btn:not(:disabled):hover {
+  background: rgba(201, 162, 39, 0.18);
+  border-color: #c9a227;
+  color: #c9a227;
+}
+
+.btn:not(:disabled):active {
+  background: #c9a227;
+  color: #1a2840;
+  border-color: #c9a227;
+}
+
+.btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #060b18;
+  border: 1px solid #c9a227;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.absolute {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 30px;
+  color: #c9a227;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.relative {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(245, 240, 232, 0.42);
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+
+.floorWarning {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #f0b96b;
+  text-transform: uppercase;
+}
