@@ -1,0 +1,152 @@
+/* Segmented control for Auto/Manuel and trigger picker. */
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.segBtn {
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(245, 240, 232, 0.72);
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(245, 240, 232, 0.16);
+  cursor: pointer;
+}
+
+.segBtn:last-child {
+  border-right: none;
+}
+
+.segBtn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f0e8;
+}
+
+.segBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.segBtnActive {
+  background: rgba(201, 162, 39, 0.18) !important;
+  color: #c9a227 !important;
+}
+
+.sailGrid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.sailGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sailTile {
+  aspect-ratio: 1;
+  border: 1px solid rgba(245, 240, 232, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  color: #f5f0e8;
+  cursor: pointer;
+}
+
+.sailTile:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(245, 240, 232, 0.28);
+}
+
+.sailTileActive {
+  background: rgba(201, 162, 39, 0.18);
+  border-color: #c9a227;
+  color: #c9a227;
+}
+
+.sailIconWrap {
+  width: 26px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sailIconWrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sailIdLabel {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: rgba(245, 240, 232, 0.72);
+}
+
+.sailTileActive .sailIdLabel {
+  color: #c9a227;
+}
+
+.wpList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wpItem {
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(245, 240, 232, 0.12);
+  border-radius: 4px;
+  color: #f5f0e8;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  cursor: pointer;
+}
+
+.wpItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(245, 240, 232, 0.28);
+}
+
+.wpItemActive {
+  background: rgba(201, 162, 39, 0.12);
+  border-color: #c9a227;
+  color: #c9a227;
+}
+
+.empty {
+  text-align: center;
+  padding: 14px 12px;
+  color: rgba(245, 240, 232, 0.42);
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px dashed rgba(245, 240, 232, 0.16);
+  border-radius: 4px;
+}

@@ -2,10 +2,11 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameStore, commitDraft } from '@/lib/store';
 import type { ProgMode, ProgDraft } from '@/lib/prog/types';
-import { defaultCapAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
+import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import CapEditor from './prog/CapEditor';
+import SailEditor from './prog/SailEditor';
 
 type EditingState =
   | null
@@ -91,7 +92,40 @@ export default function ProgPanel(): ReactElement {
         />
       );
     }
-    // Other editor placeholders remain (Tasks 7-8)
+    if (editing.kind === 'sail') {
+      const isNew = editing.id === 'NEW';
+      const initialOrder = isNew ? null : draft.sailOrders.find((o) => o.id === editing.id) ?? null;
+
+      // Filter WPs: exclude those already referenced by another sail order,
+      // EXCEPT the one being edited (so the user can keep its current WP).
+      const wpIdsUsedByOtherSails = new Set(
+        draft.sailOrders
+          .filter((s) => s.id !== editing.id && s.trigger.type === 'AT_WAYPOINT')
+          .map((s) => (s.trigger as { waypointOrderId: string }).waypointOrderId),
+      );
+      const availableWps = draft.wpOrders.filter((wp) => !wpIdsUsedByOtherSails.has(wp.id));
+
+      return (
+        <SailEditor
+          initialOrder={initialOrder}
+          draftMode={draft.mode}
+          availableWps={availableWps}
+          defaultTime={defaultSailAnchor(draft, nowSec)}
+          minValueSec={floorForNow(nowSec)}
+          nowSec={nowSec}
+          onCancel={() => setEditing(null)}
+          onSave={(order) => {
+            if (isNew) {
+              useGameStore.getState().addSailOrder(order);
+            } else {
+              useGameStore.getState().updateSailOrder(order.id, order);
+            }
+            setEditing(null);
+          }}
+        />
+      );
+    }
+    // Other editor placeholders remain (Task 8)
     return (
       <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
         Editor placeholder — kind={editing.kind}
