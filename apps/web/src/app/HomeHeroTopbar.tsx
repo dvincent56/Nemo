@@ -2,33 +2,24 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { API_BASE } from '@/lib/api';
-import styles from './Topbar.module.css';
-import { Button } from './Button';
-import { Drawer, type DrawerLink } from './Drawer';
+import { Drawer, type DrawerLink } from '@/components/ui';
+import styles from './page.module.css';
 
-export interface TopbarLink {
+interface HeroNavLink {
   href: string;
   label: string;
 }
 
-export interface TopbarProps {
-  links?: TopbarLink[];
-  /** Affiche le language switcher (défaut true). */
-  showLang?: boolean;
-  /** Visiteur non authentifié : masque Marina/Profil, affiche "Se connecter". */
-  isVisitor?: boolean;
-}
-
-const PLAYER_LINKS: TopbarLink[] = [
+const PLAYER_LINKS: HeroNavLink[] = [
   { href: '/races', label: 'Courses' },
   { href: '/marina', label: 'Marina' },
   { href: '/ranking', label: 'Classement' },
   { href: '/profile', label: 'Profil' },
 ];
 
-const VISITOR_LINKS: TopbarLink[] = [
+const VISITOR_LINKS: HeroNavLink[] = [
   { href: '/races', label: 'Courses' },
   { href: '/ranking', label: 'Classement' },
 ];
@@ -40,12 +31,15 @@ const LANGS = [
   { code: 'de', label: 'DE' },
 ];
 
-export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProps): React.ReactElement {
+export interface HomeHeroTopbarProps {
+  isVisitor: boolean;
+}
+
+export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactElement {
   const pathname = usePathname();
-  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const navLinks = links ?? (isVisitor ? VISITOR_LINKS : PLAYER_LINKS);
+  const navLinks = isVisitor ? VISITOR_LINKS : PLAYER_LINKS;
 
   const handleLogout = async (): Promise<void> => {
     try {
@@ -54,7 +48,7 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
         credentials: 'include',
       });
     } catch {
-      // ignore — full reload below will land on `/` either way
+      // ignore — full reload below resets state either way
     }
     window.location.href = '/';
   };
@@ -74,64 +68,68 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
     });
   }
 
+  const drawerLangs = LANGS.map((l) => ({
+    code: l.code,
+    label: l.label,
+    active: l.code === 'fr',
+  }));
+
   return (
     <>
-      <header className={styles.topbar}>
+      <header className={styles.heroTopbar}>
         <Link href="/" className={styles.brand} aria-label="Nemo">
           NE<span>M</span>O
         </Link>
 
-        <nav className={styles.nav} aria-label="Principal">
+        <nav aria-label="Principal">
           {navLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href as Parameters<typeof Link>[0]['href']}
-              className={pathname === l.href || pathname?.startsWith(`${l.href}/`) ? styles.active : ''}
             >
               {l.label}
             </Link>
           ))}
-          {isVisitor ? (
-            <Button
-              variant="primary"
-              className={styles.loginCta}
-              onClick={() => router.push('/login')}
-            >
-              Se connecter
-            </Button>
-          ) : (
-            <button
-              type="button"
-              className={styles.logoutBtn}
-              onClick={handleLogout}
-            >
-              Se déconnecter
-            </button>
-          )}
         </nav>
 
-        {showLang && (
-          <nav className={styles.lang} aria-label="Langue">
-            {LANGS.map((l) => (
-              <Link
-                key={l.code}
-                href={`/${l.code}${pathname ?? ''}` as Parameters<typeof Link>[0]['href']}
-                className={l.code === 'fr' ? styles.active : ''}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+        {isVisitor ? (
+          <Link href="/login" className={styles.heroLoginBtn}>
+            Se connecter
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className={styles.heroLogoutBtn}
+            onClick={handleLogout}
+          >
+            Se déconnecter
+          </button>
         )}
+
+        <div
+          className={styles.heroLang}
+          role="navigation"
+          aria-label="Langue"
+        >
+          {LANGS.map((l) => (
+            <a
+              key={l.code}
+              href="#"
+              className={l.code === 'fr' ? styles.heroLangActive : ''}
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
 
         <button
           type="button"
-          className={`${styles.burger} ${drawerOpen ? styles.open : ''}`}
+          className={`${styles.heroBurger} ${drawerOpen ? styles.heroBurgerOpen : ''}`}
           aria-label="Ouvrir le menu"
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen((v) => !v)}
         >
-          <span className={styles.burgerBars} aria-hidden />
+          <span className={styles.heroBurgerBars} aria-hidden />
         </button>
       </header>
 
@@ -139,9 +137,8 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         links={drawerLinks}
-        {...(showLang
-          ? { langs: LANGS.map((l) => ({ ...l, active: l.code === 'fr' })) }
-          : {})}
+        langs={drawerLangs}
+        variant="hero"
         {...(!isVisitor
           ? { bottomAction: { label: 'Se déconnecter', onClick: handleLogout } }
           : {})}

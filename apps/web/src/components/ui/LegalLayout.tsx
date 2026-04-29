@@ -39,10 +39,16 @@ export function LegalLayout({
   useEffect(() => {
     if (sections.length === 0) return;
 
-    // On observe les <h2> des titres de section. Dès qu'un titre entre
-    // dans la bande supérieure du viewport (120..45 %), il devient le
-    // candidat actif ; parmi les visibles on garde celui dont le top
-    // est le plus proche du haut.
+    // On observe les <h2> via IntersectionObserver : c'est le seul mécanisme
+    // qui marche indépendamment du modèle de scroll (window vs body — le CSS
+    // global force `html, body { height: 100% }` ce qui rend les scroll
+    // listeners sur window peu fiables).
+    //
+    // Bande d'activation = 120px (ligne haute) → 45% (ligne basse) du viewport.
+    // - h2 dans la bande     → candidat actif (cas nominal)
+    // - aucun h2 dans la bande → on est entre deux titres, l'actif est le
+    //   dernier titre passé au-dessus de la ligne haute.
+    const ACTIVATION_TOP_PX = 120;
     const visible = new Set<string>();
     const io = new IntersectionObserver(
       (entries) => {
@@ -51,6 +57,8 @@ export function LegalLayout({
           else visible.delete(e.target.id);
         }
         if (visible.size > 0) {
+          // Parmi les h2 dans la bande, on garde celui dont le top est le
+          // plus proche du haut (= le titre "courant" qu'on lit).
           let bestId: string | null = null;
           let bestTop = Infinity;
           visible.forEach((id) => {
@@ -62,22 +70,21 @@ export function LegalLayout({
           if (bestId !== null) setActive(bestId);
           return;
         }
-        // Aucun titre dans la bande : soit on est au-dessus du 1er
-        // (retour haut de page), soit entre le dernier titre et le bas
-        // de page. On tranche en mesurant la position du 1er titre.
-        const firstId = sections[0]?.id;
-        const firstEl = firstId ? document.getElementById(firstId) : null;
-        if (firstEl && firstEl.getBoundingClientRect().top > 0) {
-          setActive(firstId!);
-        } else {
-          const lastId = sections[sections.length - 1]?.id;
-          if (lastId) setActive(lastId);
+        // Aucun h2 dans la bande : trouver le dernier h2 dont le top est
+        // au-dessus de la ligne haute. C'est la section dont on lit le
+        // corps (entre son titre et le titre suivant).
+        let lastPassedId: string | null = null;
+        for (const s of sections) {
+          const el = document.getElementById(s.id);
+          if (!el) continue;
+          if (el.getBoundingClientRect().top <= ACTIVATION_TOP_PX) {
+            lastPassedId = s.id;
+          }
         }
+        setActive(lastPassedId ?? sections[0]!.id);
       },
       {
-        // Bande d'activation : 120 px depuis le haut → 55 % depuis le bas.
-        // Un titre devient actif quand il traverse cette zone.
-        rootMargin: '-120px 0px -55% 0px',
+        rootMargin: `-${ACTIVATION_TOP_PX}px 0px -55% 0px`,
         threshold: 0,
       },
     );

@@ -4,6 +4,7 @@ import type { RaceSummary } from '@/lib/api';
 import type { NewsItem } from './home-data';
 import type { SkipperRanking } from './ranking/data';
 import { CLASS_LABEL } from '@/lib/boat-classes';
+import { HomeHeroTopbar } from './HomeHeroTopbar';
 import styles from './page.module.css';
 
 type LinkHref = Parameters<typeof Link>[0]['href'];
@@ -83,22 +84,7 @@ function Hero({
         />
       </div>
 
-      <header className={styles.heroTopbar}>
-        <Link href="/" className={styles.brand} aria-label="Nemo">
-          NE<span>M</span>O
-        </Link>
-        <nav aria-label="Principal">
-          <Link href="/races">Courses</Link>
-          <Link href="/ranking">Classement</Link>
-          {!isVisitor && <Link href="/marina">Marina</Link>}
-          {!isVisitor && <Link href="/profile">Profil</Link>}
-        </nav>
-        {isVisitor && (
-          <Link href="/login" className={styles.heroLoginBtn}>
-            Se connecter
-          </Link>
-        )}
-      </header>
+      <HomeHeroTopbar isVisitor={isVisitor} />
 
       <div className={styles.heroContent}>
         <div className={styles.heroMain}>
