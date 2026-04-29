@@ -1145,6 +1145,117 @@
         }
       },
       {
+        "id": "polish-bronze",
+        "slot": "REINFORCEMENT",
+        "tier": "BRONZE",
+        "name": "Polish Bronze",
+        "profile": "finition glisse",
+        "description": "Antifouling racing et carène poncée. Gain de glisse régulier sur tous les angles, usure de coque légèrement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 3000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "wearMul": {
+            "hull": 1.15
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "polish-silver",
+        "slot": "REINFORCEMENT",
+        "tier": "SILVER",
+        "name": "Polish Silver",
+        "profile": "finition course",
+        "description": "Polish de carène complet et appendices polis miroir. Glisse nette, usure de coque sensiblement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 8000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "wearMul": {
+            "hull": 1.25
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "polish-gold",
+        "slot": "REINFORCEMENT",
+        "tier": "GOLD",
+        "name": "Polish Gold",
+        "profile": "préparation course pro",
+        "description": "Préparation course professionnelle : antifouling teflon haut de gamme, polish miroir intégral. Gain maximal, usure de coque fortement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.03,
+            0.03,
+            0.03
+          ],
+          "wearMul": {
+            "hull": 1.40
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "hull-figaro-monotype",
         "slot": "HULL",
         "tier": "SERIE",
