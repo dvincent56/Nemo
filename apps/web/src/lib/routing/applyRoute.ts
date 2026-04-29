@@ -11,6 +11,7 @@
 
 import type { RoutePlan } from '@nemo/routing';
 import type { OrderEntry } from '@/lib/store/types';
+import type { ProgDraft, CapOrder, WpOrder, SailOrder } from '@/lib/prog/types';
 import { haversinePosNM } from '@/lib/geo';
 
 /**
@@ -136,4 +137,85 @@ export function waypointsToOrders(
     prevId = id;
   }
   return orders;
+}
+
+// ---------------------------------------------------------------------------
+// Typed ProgDraft factories (Phase 2a Task 4)
+//
+// These produce the new typed ProgDraft shape consumed by progSlice
+// (capOrders / wpOrders / finalCap / sailOrders). They replace the legacy
+// `*ToOrders` flat OrderEntry[] producers at call sites that drive the
+// committed-prog mirror; the OrderEntry[] producers remain for tests + any
+// non-committed-prog consumer until Phase 2b retires them.
+// ---------------------------------------------------------------------------
+
+export function capScheduleToProgDraft(
+  plan: RoutePlan,
+  sailAutoAlready: boolean,
+): ProgDraft {
+  const sailOrders: SailOrder[] = [];
+  if (!sailAutoAlready) {
+    sailOrders.push({
+      id: uid('mode'),
+      trigger: { type: 'AT_TIME', time: Math.floor(Date.now() / 1000) },
+      action: { auto: true },
+    });
+  }
+
+  const capOrders: CapOrder[] = [];
+  for (const entry of plan.capSchedule) {
+    const triggerTimeSec = Math.floor(entry.triggerMs / 1000);
+    if (entry.twaLock !== undefined && entry.twaLock !== null) {
+      capOrders.push({
+        id: uid('twa'),
+        trigger: { type: 'AT_TIME', time: triggerTimeSec },
+        heading: Math.round(entry.twaLock),
+        twaLock: true,
+      });
+    } else {
+      capOrders.push({
+        id: uid('cap'),
+        trigger: { type: 'AT_TIME', time: triggerTimeSec },
+        heading: Math.round(entry.cap),
+        twaLock: false,
+      });
+    }
+  }
+
+  return { mode: 'cap', capOrders, wpOrders: [], finalCap: null, sailOrders };
+}
+
+export function waypointsToProgDraft(
+  plan: RoutePlan,
+  sailAutoAlready: boolean,
+): ProgDraft {
+  const sailOrders: SailOrder[] = [];
+  if (!sailAutoAlready) {
+    sailOrders.push({
+      id: uid('mode'),
+      trigger: { type: 'AT_TIME', time: Math.floor(Date.now() / 1000) },
+      action: { auto: true },
+    });
+  }
+
+  const wpOrders: WpOrder[] = [];
+  const start = plan.waypoints[0];
+  let prevId: string | null = null;
+  for (let i = 1; i < plan.waypoints.length; i++) {
+    const wp = plan.waypoints[i]!;
+    if (start && haversinePosNM(start, wp) < MIN_WP_DISTANCE_NM) continue;
+    const id = uid('wpt');
+    wpOrders.push({
+      id,
+      trigger: prevId
+        ? { type: 'AT_WAYPOINT', waypointOrderId: prevId }
+        : { type: 'IMMEDIATE' },
+      lat: wp.lat,
+      lon: wp.lon,
+      captureRadiusNm: 0.5,
+    });
+    prevId = id;
+  }
+
+  return { mode: 'wp', capOrders: [], wpOrders, finalCap: null, sailOrders };
 }

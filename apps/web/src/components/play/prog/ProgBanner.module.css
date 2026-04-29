@@ -1,0 +1,60 @@
+.banner {
+  display: grid;
+  grid-template-columns: 28px 1fr 24px;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  background: rgba(240, 185, 107, 0.12);
+  border: 1px solid #f0b96b;
+  border-radius: 4px;
+  margin: 12px 18px 0;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f0b96b;
+}
+
+.body {
+  min-width: 0;
+}
+
+.title {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: #f0b96b;
+  margin-bottom: 2px;
+}
+
+.desc {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  color: rgba(245, 240, 232, 0.72);
+  line-height: 1.4;
+}
+
+.desc b {
+  color: #f5f0e8;
+  font-weight: 700;
+}
+
+.close {
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(245, 240, 232, 0.42);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  color: #f5f0e8;
+  border-color: rgba(245, 240, 232, 0.16);
+}

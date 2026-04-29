@@ -1,27 +1,236 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useGameStore } from './index';
-import type { OrderEntry } from './types';
+import { describe, it, expect } from 'vitest';
+import { create } from 'zustand';
+import { createProgSlice, INITIAL_PROG } from './progSlice';
+import type {
+  ProgState,
+  CapOrder,
+  WpOrder,
+  SailOrder,
+  ProgDraft,
+} from '@/lib/prog/types';
 
-const order = (id: string, type: OrderEntry['type'] = 'CAP'): OrderEntry => ({
-  id, type, value: { cap: 0 }, trigger: { type: 'IMMEDIATE' }, label: id,
+// Define the minimum store shape this slice's test needs.
+interface TestStore {
+  prog: ProgState;
+  setProgMode: ReturnType<typeof createProgSlice>['setProgMode'];
+  addCapOrder: ReturnType<typeof createProgSlice>['addCapOrder'];
+  updateCapOrder: ReturnType<typeof createProgSlice>['updateCapOrder'];
+  removeCapOrder: ReturnType<typeof createProgSlice>['removeCapOrder'];
+  addWpOrder: ReturnType<typeof createProgSlice>['addWpOrder'];
+  updateWpOrder: ReturnType<typeof createProgSlice>['updateWpOrder'];
+  removeWpOrder: ReturnType<typeof createProgSlice>['removeWpOrder'];
+  setFinalCap: ReturnType<typeof createProgSlice>['setFinalCap'];
+  addSailOrder: ReturnType<typeof createProgSlice>['addSailOrder'];
+  removeSailOrder: ReturnType<typeof createProgSlice>['removeSailOrder'];
+  clearAllOrders: ReturnType<typeof createProgSlice>['clearAllOrders'];
+  resetDraft: ReturnType<typeof createProgSlice>['resetDraft'];
+  markCommitted: ReturnType<typeof createProgSlice>['markCommitted'];
+  applyRouteAsCommitted: ReturnType<typeof createProgSlice>['applyRouteAsCommitted'];
+}
+
+function makeStore() {
+  return create<TestStore>()((set) => ({
+    ...createProgSlice(set as never),
+  }));
+}
+
+const cap = (id: string, time: number, heading = 100): CapOrder => ({
+  id,
+  trigger: { type: 'AT_TIME', time },
+  heading,
+  twaLock: false,
 });
 
-describe('progSlice', () => {
-  beforeEach(() => {
-    useGameStore.setState(() => ({ prog: { orderQueue: [], serverQueue: [] } }));
+const wp = (id: string, lat = 45, lon = -3, prevId: string | null = null): WpOrder => ({
+  id,
+  trigger: prevId
+    ? { type: 'AT_WAYPOINT', waypointOrderId: prevId }
+    : { type: 'IMMEDIATE' },
+  lat,
+  lon,
+  captureRadiusNm: 0.5,
+});
+
+const sail = (id: string, time: number): SailOrder => ({
+  id,
+  trigger: { type: 'AT_TIME', time },
+  action: { auto: true },
+});
+
+const sailAtWp = (id: string, wpId: string): SailOrder => ({
+  id,
+  trigger: { type: 'AT_WAYPOINT', waypointOrderId: wpId },
+  action: { auto: false, sail: 'SPI' },
+});
+
+describe('progSlice INITIAL_PROG', () => {
+  it('starts with empty draft and empty committed', () => {
+    expect(INITIAL_PROG.draft.capOrders).toEqual([]);
+    expect(INITIAL_PROG.draft.wpOrders).toEqual([]);
+    expect(INITIAL_PROG.draft.sailOrders).toEqual([]);
+    expect(INITIAL_PROG.draft.finalCap).toBeNull();
+    expect(INITIAL_PROG.committed.capOrders).toEqual([]);
+  });
+});
+
+describe('progSlice cap mutations', () => {
+  it('addCapOrder mutates draft only, not committed', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    expect(store.getState().prog.draft.capOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.capOrders).toHaveLength(0);
   });
 
-  it('replaceOrderQueue replaces all pending orders', () => {
-    useGameStore.getState().addOrder(order('a'));
-    useGameStore.getState().addOrder(order('b'));
-    useGameStore.getState().replaceOrderQueue([order('x'), order('y'), order('z')]);
-    const ids = useGameStore.getState().prog.orderQueue.map((o) => o.id);
-    expect(ids).toEqual(['x', 'y', 'z']);
+  it('updateCapOrder applies a partial patch by id', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000, 100));
+    store.getState().updateCapOrder('c1', { heading: 225 });
+    expect(store.getState().prog.draft.capOrders[0]?.heading).toBe(225);
+    expect(store.getState().prog.draft.capOrders[0]?.trigger.time).toBe(1000); // unchanged
   });
 
-  it('replaceOrderQueue leaves serverQueue untouched', () => {
-    useGameStore.setState(() => ({ prog: { orderQueue: [], serverQueue: [order('s1')] } }));
-    useGameStore.getState().replaceOrderQueue([order('n1')]);
-    expect(useGameStore.getState().prog.serverQueue.map((o) => o.id)).toEqual(['s1']);
+  it('removeCapOrder filters by id', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().addCapOrder(cap('c2', 2000));
+    store.getState().removeCapOrder('c1');
+    expect(store.getState().prog.draft.capOrders).toHaveLength(1);
+    expect(store.getState().prog.draft.capOrders[0]?.id).toBe('c2');
+  });
+});
+
+describe('progSlice wp mutations', () => {
+  it('addWpOrder appends', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
+  });
+
+  it('removeWpOrder rebinds AT_WAYPOINT successors to the predecessor', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().addWpOrder(wp('w2', 46, -2, 'w1'));
+    store.getState().addWpOrder(wp('w3', 47, -1, 'w2'));
+    store.getState().removeWpOrder('w2');
+    const wps = store.getState().prog.draft.wpOrders;
+    expect(wps).toHaveLength(2);
+    const w3 = wps.find((x) => x.id === 'w3');
+    expect(w3?.trigger).toEqual({ type: 'AT_WAYPOINT', waypointOrderId: 'w1' });
+  });
+
+  it('removeWpOrder makes the head IMMEDIATE if first WP is removed', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().addWpOrder(wp('w2', 46, -2, 'w1'));
+    store.getState().removeWpOrder('w1');
+    const w2 = store.getState().prog.draft.wpOrders[0];
+    expect(w2?.trigger).toEqual({ type: 'IMMEDIATE' });
+  });
+
+  it('removeWpOrder drops sail orders that referenced the removed WP', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().addSailOrder(sailAtWp('s1', 'w1'));
+    store.getState().removeWpOrder('w1');
+    expect(store.getState().prog.draft.sailOrders).toEqual([]);
+  });
+
+  it('removeWpOrder drops finalCap if it referenced the removed WP', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().setFinalCap({
+      id: 'fc',
+      trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' },
+      heading: 45,
+      twaLock: false,
+    });
+    store.getState().removeWpOrder('w1');
+    expect(store.getState().prog.draft.finalCap).toBeNull();
+  });
+});
+
+describe('progSlice mode switching', () => {
+  it('setProgMode("wp") clears capOrders', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().setProgMode('wp');
+    expect(store.getState().prog.draft.capOrders).toEqual([]);
+    expect(store.getState().prog.draft.mode).toBe('wp');
+  });
+
+  it('setProgMode("cap") clears wpOrders, finalCap, and AT_WAYPOINT sailOrders', () => {
+    const store = makeStore();
+    store.getState().setProgMode('wp');
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().setFinalCap({
+      id: 'fc',
+      trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' },
+      heading: 45,
+      twaLock: false,
+    });
+    store.getState().addSailOrder(sailAtWp('s1', 'w1'));
+    store.getState().addSailOrder(sail('s2', 5000)); // AT_TIME — should survive
+    store.getState().setProgMode('cap');
+    expect(store.getState().prog.draft.wpOrders).toEqual([]);
+    expect(store.getState().prog.draft.finalCap).toBeNull();
+    expect(store.getState().prog.draft.sailOrders).toHaveLength(1);
+    expect(store.getState().prog.draft.sailOrders[0]?.id).toBe('s2');
+  });
+});
+
+describe('progSlice clear / reset / commit', () => {
+  it('clearAllOrders empties all 4 tracks', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().addSailOrder(sail('s1', 5000));
+    store.getState().clearAllOrders();
+    expect(store.getState().prog.draft.capOrders).toEqual([]);
+    expect(store.getState().prog.draft.sailOrders).toEqual([]);
+  });
+
+  it('resetDraft copies committed back to draft', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().resetDraft();
+    expect(store.getState().prog.draft.capOrders).toEqual([]);
+    expect(store.getState().prog.committed.capOrders).toEqual([]);
+  });
+
+  it('markCommitted promotes draft to committed', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.capOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.capOrders[0]?.id).toBe('c1');
+  });
+
+  it('applyRouteAsCommitted overwrites both draft and committed', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp',
+      capOrders: [],
+      wpOrders: [wp('w1')],
+      finalCap: null,
+      sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.wpOrders).toHaveLength(1);
+    expect(store.getState().prog.draft.mode).toBe('wp');
+  });
+
+  it('applyRouteAsCommitted clones the input (no aliasing)', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp',
+      capOrders: [],
+      wpOrders: [wp('w1')],
+      finalCap: null,
+      sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    next.wpOrders.push(wp('w2'));
+    expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.wpOrders).toHaveLength(1);
   });
 });
