@@ -746,6 +746,8 @@ git add apps/game-engine/src/engine/replace-queue.e2e.test.ts
 git commit -m "test(game-engine): e2e for ORDER_REPLACE_QUEUE wire path"
 ```
 
+**STATUS:** Skipped per plan's escape hatch. Rationale: this monorepo has no Redis-mock harness and no precedent for spinning the manager + worker + Redis stack in tests. The pattern of every existing layer (subscribeOrders, the WS gateway ORDER handler, sendOrder) is to rely on unit tests at the handler level + manual smoke runs. The wire path `client → ws-gateway → Redis → manager → worker → engine` for ORDER_REPLACE_QUEUE follows the exact same pattern as the established ORDER path; if either path breaks at the integration level, both will surface together at first manual run of the new ProgPanel commit flow (Phase 2). Task 3 code review flagged this as Important #1 — that note remains valid and accepted.
+
 ---
 
 ## Task 8: Document WP_REACHED decision
