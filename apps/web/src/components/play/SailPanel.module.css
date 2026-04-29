@@ -85,17 +85,22 @@
 }
 
 /* ── Sail icon ── */
-.sailIcon {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
 .sailRowIcon {
   width: 28px;
   height: 36px;
   color: rgba(245, 240, 232, 0.5);
   flex-shrink: 0;
+}
+
+/* SVG sizing — replaces the old `.sailIcon` className that was dropped
+ * when SAIL_ICONS moved to lib/sails/icons.tsx. The shared module no
+ * longer carries SailPanel's CSS-module class on its <svg> elements,
+ * so we size it here via a descendant selector instead. */
+.sailRowIcon svg,
+.confirmIcon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .sailRowActive .sailRowIcon { color: #c9a227; }
