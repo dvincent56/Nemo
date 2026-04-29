@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "updatedAt": "2026-04-14T00:00:00Z",
-  "updatedBy": "bootstrap",
+  "version": "1.1.0",
+  "updatedAt": "2026-04-29T00:00:00Z",
+  "updatedBy": "imoca-vr-polar-recalibration",
   "wear": {
     "minCondition": 35,
     "maxSpeedPenalty": 8,
@@ -2150,16 +2150,16 @@
         "cost": 45000,
         "effects": {
           "speedByTwa": [
-            -0.02,
-            -0.01,
+            0,
+            0.04,
             0.06,
-            0.12,
-            0.05
+            0.04,
+            0
           ],
           "speedByTws": [
             -0.01,
-            0.05,
-            0.07
+            0.04,
+            0.05
           ],
           "wearMul": {
             "hull": 1.05
@@ -2192,16 +2192,16 @@
         "cost": 80000,
         "effects": {
           "speedByTwa": [
-            -0.03,
-            -0.02,
+            0,
+            0.06,
             0.10,
-            0.22,
-            0.10
+            0.06,
+            0
           ],
           "speedByTws": [
-            -0.03,
-            0.08,
-            0.12
+            -0.02,
+            0.06,
+            0.08
           ],
           "wearMul": {
             "hull": 1.15
