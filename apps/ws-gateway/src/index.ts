@@ -74,21 +74,23 @@ function computeEffectiveTs(trigger: OrderTrigger, trustedTs: number): number {
 }
 
 function buildEnvelope(args: {
-  rawOrder: Record<string, unknown>;
+  rawOrder: unknown;
   clientTs: number;
   clientSeq: number;
   connectionId: string;
   serverNow: number;
 }): OrderEnvelope | null {
   const { rawOrder, clientTs, clientSeq, connectionId, serverNow } = args;
-  if (typeof rawOrder['type'] !== 'string') return null;
+  if (typeof rawOrder !== 'object' || rawOrder === null) return null;
+  const o = rawOrder as Record<string, unknown>;
+  if (typeof o['type'] !== 'string') return null;
   const trustedTs = Math.abs(serverNow - clientTs) < CLIENT_TS_TOLERANCE_MS ? clientTs : serverNow;
-  const trigger = (rawOrder['trigger'] as OrderTrigger) ?? { type: 'IMMEDIATE' };
+  const trigger = (o['trigger'] as OrderTrigger) ?? { type: 'IMMEDIATE' };
   const effectiveTs = computeEffectiveTs(trigger, trustedTs);
   const order: Order = {
-    id: (rawOrder['id'] as string) ?? `${connectionId}-${clientSeq}`,
-    type: rawOrder['type'] as Order['type'],
-    value: (rawOrder['value'] as Record<string, unknown>) ?? {},
+    id: (o['id'] as string) ?? `${connectionId}-${clientSeq}`,
+    type: o['type'] as Order['type'],
+    value: (o['value'] as Record<string, unknown>) ?? {},
     trigger,
   };
   return {
@@ -236,7 +238,7 @@ async function main(): Promise<void> {
           const envelopes: OrderEnvelope[] = [];
           for (let i = 0; i < rawOrders.length; i++) {
             const env = buildEnvelope({
-              rawOrder: rawOrders[i] as Record<string, unknown>,
+              rawOrder: rawOrders[i],
               clientTs,
               clientSeq: clientSeq + i, // unique per envelope inside the batch
               connectionId: ctx.connectionId,
