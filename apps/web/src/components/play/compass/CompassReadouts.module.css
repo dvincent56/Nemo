@@ -1,0 +1,81 @@
+/* Readouts grid — 3 colonnes : BSP / Cap / TWA. TWS vit dans le HUD, et la
+ * direction du vent est déjà indiquée par les WindWaves animées autour du
+ * compass, donc on évite la redondance et on gagne une ligne de hauteur.
+ * Chaque cellule est centrée et séparée par un trait fin façon HUD. */
+.readouts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(245, 240, 232, 0.16);
+}
+
+.readouts > div {
+  text-align: center;
+  padding: 0 6px;
+  border-right: 1px solid rgba(245, 240, 232, 0.16);
+}
+
+.readouts > div:last-child {
+  border-right: none;
+}
+
+.readoutLabel {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: rgba(245, 240, 232, 0.42);
+  text-transform: uppercase;
+  margin: 0 0 1px;
+  line-height: 1;
+}
+
+.readoutValue {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: #f5f0e8;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.readoutValue small {
+  font-size: 10px;
+  color: rgba(245, 240, 232, 0.42);
+  margin-left: 2px;
+}
+
+.gold { color: #c9a227; }
+.live { color: #6cd28a; }
+.warn { color: #f0b96b; }
+.danger { color: #e05252; }
+
+.editTag {
+  color: #c9a227;
+  font-size: 7px;
+  margin-left: 4px;
+}
+
+@media (max-height: 500px) {
+  .readouts {
+    gap: 4px 10px;
+    padding-bottom: 8px;
+  }
+  .readoutLabel { font-size: 7px; }
+  .readoutValue { font-size: 12px; }
+}
+
+@media (max-height: 480px) {
+  .readoutLabel { font-size: 6.5px; letter-spacing: 0.14em; }
+  .readoutValue { font-size: 10px; }
+  .readoutValue small { font-size: 7px; }
+  .readouts { padding-bottom: 4px; }
+}
+
+/* Phone width */
+@media (max-width: 600px) {
+  .readoutLabel { font-size: 6.5px; letter-spacing: 0.14em; }
+  .readoutValue { font-size: 10px; }
+  .readoutValue small { font-size: 7px; }
+  .readouts { padding-bottom: 4px; }
+}

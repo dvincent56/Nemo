@@ -7,11 +7,12 @@ import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
 import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
-import { Lock, LockOpen, Check, AlertTriangle } from 'lucide-react';
+import { Lock, LockOpen, Check } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
 import { VB, IMOCA_VB, IMOCA_PATH, IMOCA_SCALE, CX, CY, R_OUTER, R_INNER, pt, isInVmgZone } from './compass/compassGeometry';
 import WindWaves from './compass/WindWaves';
+import CompassReadouts from './compass/CompassReadouts';
 
 export default function Compass(): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -76,9 +77,13 @@ export default function Compass(): React.ReactElement {
     ? Math.max(...(Object.keys(polar.speeds) as SailId[]).map((s) => getPolarSpeed(polar, s, displayTwa, tws)))
     : 0;
   const bspRatio = bestPolarAtTwa > 0 ? displayBsp / bestPolarAtTwa : 1;
-  const bspColor = bspRatio >= 0.95 ? styles.live   // vert — voile optimale ou quasi
-    : bspRatio >= 0.80 ? styles.warn                 // orange — une meilleure voile existe
-    : styles.danger;                                 // rouge — voile fortement sous-optimale
+  // Discriminator passed to <CompassReadouts> which owns the actual CSS classes.
+  // 'live' (vert) — voile optimale ou quasi ; 'warn' (orange) — une meilleure
+  // voile existe ; 'danger' (rouge) — voile fortement sous-optimale.
+  const bspColorClass: 'live' | 'warn' | 'danger' =
+    bspRatio >= 0.95 ? 'live'
+      : bspRatio >= 0.80 ? 'warn'
+      : 'danger';
 
   // ── Hint "la validation va déclencher une manœuvre" ─────────────────
   // Affiché pendant l'édition de cap quand la validation provoquera un coût
@@ -98,18 +103,18 @@ export default function Compass(): React.ReactElement {
     if (isGybe) {
       const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
       const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
-      pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: styles.hintGybe! };
+      pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: 'hintGybe' };
     } else if (isTack) {
       const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
       const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
-      pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: styles.hintTack! };
+      pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: 'hintTack' };
     } else if (sailAuto) {
       const optimal = pickOptimalSail(polar, displayTwa, tws);
       if (optimal !== currentSail) {
         const key = `${currentSail}_${optimal}`;
         const dur = (GameBalance.sails?.transitionTimes as Record<string, number> | undefined)?.[key] ?? 180;
         const pct = Math.round((1 - (GameBalance.sails?.transitionPenalty ?? 0.7)) * 100);
-        pendingHint = { kind: 'sail', label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: styles.hintSail! };
+        pendingHint = { kind: 'sail', label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: 'hintSail' };
       }
     }
   }
@@ -365,37 +370,18 @@ export default function Compass(): React.ReactElement {
   return (
     <>
       <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`}>
-        {/* Floating hint (position: absolute) — shown only during edit when
-            the validation would trigger a maneuver. Doesn't alter wrapper
-            height so the compass stays stable when it appears/disappears. */}
-        {pendingHint && (
-          <div className={`${styles.floatingHint} ${pendingHint.className}`}>
-            <span className={styles.hintIcon}><AlertTriangle size={12} strokeWidth={2.5} /></span>
-            <span>{pendingHint.label}</span>
-          </div>
-        )}
-
-        {/* Readouts — 3 colonnes : Vitesse / Cap / TWA (TWS est dans le HUD) */}
-        <div className={styles.readouts}>
-          <div>
-            <p className={styles.readoutLabel}>Vitesse</p>
-            <p className={`${styles.readoutValue} ${bspColor}`}>
-              {displayBsp.toFixed(2)} <small>nds</small>
-            </p>
-          </div>
-          <div>
-            <p className={styles.readoutLabel}>Cap</p>
-            <p className={`${styles.readoutValue} ${styles.gold}`}>
-              {Math.round(displayHdg)}°
-            </p>
-          </div>
-          <div>
-            <p className={styles.readoutLabel}>TWA</p>
-            <p className={`${styles.readoutValue} ${vmgGlow ? styles.live : ''}`}>
-              {Math.round(displayTwa)}°
-            </p>
-          </div>
-        </div>
+        {/* Readouts (3 cols Vitesse/Cap/TWA) + manoeuvre hint above. The
+            wrapper provides position: relative so the absolute hint anchors
+            correctly; CompassReadouts emits both as a fragment. */}
+        <CompassReadouts
+          headingDeg={displayHdg}
+          twaDeg={displayTwa}
+          bspKn={displayBsp}
+          twaLocked={twaLocked}
+          vmgGlow={vmgGlow}
+          bspColorClass={bspColorClass}
+          pendingHint={pendingHint ?? undefined}
+        />
 
         {/* Compass SVG */}
         <div className={styles.stage}>
