@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
 import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
-import { connectRace, sendOrder, useGameStore } from '@/lib/store';
+import { connectRace, sendOrderReplaceQueue, useGameStore } from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
   type SessionContext,
@@ -36,7 +36,11 @@ import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
 import { loadPolar, getCachedPolar } from '@/lib/polar';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { computeRoute } from '@/lib/routing/client';
-import { capScheduleToOrders, waypointsToOrders } from '@/lib/routing/applyRoute';
+import {
+  capScheduleToProgDraft,
+  waypointsToProgDraft,
+} from '@/lib/routing/applyRoute';
+import { serializeDraft } from '@/lib/prog/serialize';
 import { packWindData } from '@/lib/projection/fetchWindGrid';
 import { resolveBoatLoadout } from '@nemo/game-engine-core/browser';
 import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
@@ -340,38 +344,47 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     return () => window.removeEventListener('nemo:router:route', onRoute);
   }, [decodedGrid, prevDecodedGrid, boatClass]);
 
-  // Router apply flow — convert computed route to orders, replace local
-  // queue, dispatch each over WS, close panel. If the queue already has
-  // future orders, prompt to confirm the replace first.
+  // Router apply flow — convert computed route to a typed ProgDraft, mirror
+  // it locally as the new committed state via applyRouteAsCommitted, then
+  // atomically replace the server's user-modifiable queue via
+  // sendOrderReplaceQueue. If the committed queue already holds future
+  // orders, prompt to confirm the replace first.
   const [pendingApply, setPendingApply] = useState<'WAYPOINTS' | 'CAP' | null>(null);
-  // PHASE_2A_TASK_4_TODO: rewire to s.prog.draft (capOrders/wpOrders) once
-  // applyRoute helpers emit the new ProgDraft shape.
-  const futureOrdersCount = 0;
+  const committedProg = useGameStore((s) => s.prog.committed);
+  const futureOrdersCount =
+    committedProg.capOrders.length
+    + committedProg.wpOrders.length
+    + committedProg.sailOrders.length
+    + (committedProg.finalCap ? 1 : 0);
 
   const performApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
     const state = useGameStore.getState();
     const plan = state.router.computedRoute;
     if (!plan) return;
-    const baseTs = Date.now();
     // Skip the leading MODE(auto:true) order when the boat is already in
     // sail-auto — otherwise the queue gets a redundant first entry every time
     // the player applies a route.
     const sailAutoAlready = state.sail.sailAuto === true;
-    const orders = mode === 'WAYPOINTS'
-      ? waypointsToOrders(plan, baseTs, sailAutoAlready)
-      : capScheduleToOrders(plan, baseTs, sailAutoAlready);
-    // Replace pending local orders with the freshly-applied route. Each order
-    // is also dispatched to the server *now* via sendOrder; orders carry a
-    // `committed: true` flag (set by applyRoute helpers) so ProgPanel's
-    // "Valider la file" handler skips them and we avoid double-send. Keeping
-    // them in the queue gives the user immediate visibility into what was
-    // applied. The ConfirmReplaceProgModal already warns before clobbering a
-    // non-empty queue.
-    for (const o of orders) sendOrder({ type: o.type, value: o.value, trigger: o.trigger });
-    // PHASE_2A_TASK_4_TODO: replace with applyRouteAsCommitted(progDraft) once
-    // applyRoute helpers emit the new ProgDraft shape (orders → capOrders /
-    // wpOrders / finalCap / sailOrders).
-    // state.replaceOrderQueue(orders);
+    const draft = mode === 'WAYPOINTS'
+      ? waypointsToProgDraft(plan, sailAutoAlready)
+      : capScheduleToProgDraft(plan, sailAutoAlready);
+
+    // Mirror locally (draft + committed both = next) BEFORE the wire send so
+    // the projection hook + ProgPanel see the new state immediately.
+    state.applyRouteAsCommitted(draft);
+
+    // Atomically replace the user-modifiable portion of the server queue.
+    // sendOrderReplaceQueue handles the empty-batch case correctly.
+    const wireOrders = serializeDraft(draft);
+    sendOrderReplaceQueue(
+      wireOrders.map((o) => ({ type: o.type, value: o.value, trigger: o.trigger })),
+    );
+
+    // Optimistic-UI bridge: the existing predictAfterHdg / sail-change logic
+    // below operates on the legacy "orders" array shape (id, type, value,
+    // trigger). Reuse the wire orders as that shape — they carry exactly the
+    // same fields plus a synthetic `label`/`committed` we don't read here.
+    const orders = wireOrders;
 
     // Optimistic UI: any order that fires *now* (IMMEDIATE or AT_TIME with a
     // past timestamp — capScheduleToOrders emits the first CAP/TWA at
@@ -536,8 +549,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   };
 
   const onApply = (mode: 'WAYPOINTS' | 'CAP'): void => {
-    // PHASE_2A_TASK_4_TODO: switch to a computed length on s.prog.draft once
-    // ProgDraft is wired through applyRoute. For now apply directly.
+    // If the committed queue already holds user-modifiable orders, surface the
+    // ConfirmReplaceProgModal first so the player explicitly opts in to
+    // clobbering them. Otherwise apply directly.
+    if (futureOrdersCount > 0) {
+      setPendingApply(mode);
+      return;
+    }
     performApply(mode);
   };
 

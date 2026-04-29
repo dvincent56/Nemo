@@ -350,3 +350,51 @@ export function sendOrderReplaceQueue(orders: ReplaceQueueOrderInput[]): boolean
 export function isLiveMode(): boolean {
   return WS_LIVE;
 }
+
+// ---------------------------------------------------------------------------
+// commitDraft orchestrator (Phase 2a Task 4)
+// ---------------------------------------------------------------------------
+
+import { serializeDraft } from '@/lib/prog/serialize';
+import { isObsoleteAtTime } from '@/lib/prog/anchors';
+import type { ProgDraft } from '@/lib/prog/types';
+
+/**
+ * Commit the current draft to the server.
+ *
+ * 1. Filter obsolete AT_TIME orders (their trigger is below the now+5min floor)
+ * 2. Serialize the filtered draft to wire format
+ * 3. Send via sendOrderReplaceQueue
+ *
+ * Returns:
+ *   { ok, droppedObsolete, sent }
+ *
+ * Caller is expected to invoke `markCommitted()` on the slice if `ok === true`,
+ * to mirror the wire send into the local committed state.
+ *
+ * Cf. spec `docs/superpowers/specs/2026-04-28-progpanel-redesign-design.md`
+ * (Sémantique du Confirmer section).
+ */
+export function commitDraft(draft: ProgDraft, nowSec: number): {
+  ok: boolean;
+  droppedObsolete: number;
+  sent: number;
+} {
+  const filteredCaps = draft.capOrders.filter((o) => !isObsoleteAtTime(o.trigger, nowSec));
+  const filteredSails = draft.sailOrders.filter((o) => !isObsoleteAtTime(o.trigger, nowSec));
+  const droppedObsolete =
+    (draft.capOrders.length - filteredCaps.length)
+    + (draft.sailOrders.length - filteredSails.length);
+  const filtered: ProgDraft = {
+    ...draft,
+    capOrders: filteredCaps,
+    sailOrders: filteredSails,
+  };
+
+  const wireOrders = serializeDraft(filtered);
+  const ok = sendOrderReplaceQueue(
+    wireOrders.map((o) => ({ type: o.type, value: o.value, trigger: o.trigger })),
+  );
+
+  return { ok, droppedObsolete, sent: wireOrders.length };
+}

@@ -12,6 +12,7 @@ import type {
   WorkerOutMessage,
   ProjectionResult,
 } from '@/lib/projection/types';
+import { serializeDraft } from '@/lib/prog/serialize';
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
@@ -539,9 +540,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     }
 
     const state = useGameStore.getState();
-    // PHASE_2A_TASK_4_TODO: re-introduce `prog` once segments are derived
-    // from s.prog.draft (capOrders / wpOrders / finalCap / sailOrders).
-    const { hud, sail, weather, preview, zones } = state;
+    const { hud, sail, weather, preview, zones, prog } = state;
     const decoded = weather.decodedGrid;
     const snapshot = weather.gridData;
     if (!decoded && !snapshot) return;
@@ -605,11 +604,13 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       activeSail: effectiveSail,
       sailAuto: sail.sailAuto,
       twaLock: effectiveTwaLock,
-      // PHASE_2A_TASK_4_TODO: derive segments from s.prog.draft (capOrders /
-      // wpOrders / finalCap / sailOrders) once the new ProgDraft is the
-      // source of truth. Empty until then so projection falls back to the
-      // current heading straight line.
-      segments: orderQueueToSegments([]),
+      // Phase 2a Task 4: segments derive from `prog.committed` — the
+      // confirmed-on-server draft. Live edits to `prog.draft` are intentionally
+      // not previewed here for 2a; that's the 2b "live draft projection"
+      // milestone. We serialize the typed draft to wire format then funnel it
+      // through orderQueueToSegments which only reads { id, type, value,
+      // trigger } — exactly what serializeDraft emits.
+      segments: orderQueueToSegments(serializeDraft(prog.committed)),
       polar: polarRef.current,
       // Real aggregated loadout effects from the engine — upgrade bonuses
       // and wear multipliers shape the predicted trajectory the same way
@@ -642,8 +643,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevHdg = useGameStore.getState().hud.hdg;
     let prevSail = useGameStore.getState().sail.currentSail;
     let prevSailAuto = useGameStore.getState().sail.sailAuto;
-    // PHASE_2A_TASK_4_TODO: track s.prog.draft once segments come from it.
-    let prevQueue: unknown = useGameStore.getState().prog.draft;
+    // Phase 2a Task 4: track prog.committed since segments derive from it.
+    // prog.draft changes (live editing in ProgPanel) intentionally do NOT
+    // re-fire the projection in 2a — that's a 2b enhancement.
+    let prevQueue: unknown = useGameStore.getState().prog.committed;
     let prevTick = useGameStore.getState().lastTickUnix;
     let prevDecoded = useGameStore.getState().weather.decodedGrid;
     let prevSnapshot = useGameStore.getState().weather.gridData;
@@ -657,7 +660,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const hdgChanged = s.hud.hdg !== prevHdg;
       const sailChanged = s.sail.currentSail !== prevSail;
       const autoChanged = s.sail.sailAuto !== prevSailAuto;
-      const queueChanged = s.prog.draft !== prevQueue;
+      const queueChanged = s.prog.committed !== prevQueue;
       const tickChanged = s.lastTickUnix !== prevTick;
       const gridChanged = s.weather.decodedGrid !== prevDecoded || s.weather.gridData !== prevSnapshot;
       const zonesChanged = s.zones !== prevZones;
@@ -669,7 +672,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevHdg = s.hud.hdg;
       prevSail = s.sail.currentSail;
       prevSailAuto = s.sail.sailAuto;
-      prevQueue = s.prog.draft;
+      prevQueue = s.prog.committed;
       prevTick = s.lastTickUnix;
       prevDecoded = s.weather.decodedGrid;
       prevSnapshot = s.weather.gridData;
