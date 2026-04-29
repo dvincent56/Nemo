@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
@@ -132,33 +132,13 @@ export default function Compass(): React.ReactElement {
     setCommittedTwaLock(serverTwaLock);
   }, [serverTwaLock]);
 
-  // ── Keyboard shortcuts ──
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && applyActive) {
-        e.preventDefault();
-        cancelEdit();
-      }
-      if (e.key === 'Enter' && applyActive) {
-        e.preventDefault();
-        apply();
-      }
-      if (e.key === 't' || e.key === 'T') {
-        e.preventDefault();
-        toggleTwaLock();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
-
   // ── Apply heading / lock state ──
   // A single validation path: commits both heading changes AND lock toggles
   // so the player can compose the two (e.g. drag + lock) then validate once.
   // Orders are rounded to integer degrees to match what the UI displays —
   // otherwise TWA derived from (hdg − twd) carries the fractional TWD and
   // the engine ends up computing on e.g. 169.70° when the player saw 170°.
-  const apply = () => {
+  const apply = useCallback(() => {
     if (!applyActive) return;
     const store = useGameStore.getState();
     if (twaLocked) {
@@ -211,7 +191,7 @@ export default function Compass(): React.ReactElement {
       }
     }
     setTargetHdg(null);
-  };
+  }, [applyActive, twaLocked, targetHdg, twd, hdg, lockedTwa, twa, tws, currentSail, sailAuto, bspBaseMultiplier, transitionEndMs, maneuverEndMs, maneuverKind, polar, boatClass]);
 
   // ── Cancel editing ──
   // The dial's sync `useEffect` watches [value, ghostValue] and re-applies
@@ -219,7 +199,7 @@ export default function Compass(): React.ReactElement {
   // (which makes displayHdg revert to `hdg` and the ghost prop go back to
   // matching `value`) is enough to visually snap the boat back. No direct
   // SVG mutation needed here anymore.
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setTargetHdg(null);
     if (committedTwaLock !== null) {
       setTwaLocked(true);
@@ -229,7 +209,7 @@ export default function Compass(): React.ReactElement {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
     }
-  };
+  }, [committedTwaLock]);
 
   // ── Toggle TWA lock (preview only) ──
   // Toggling the lock button never commits an order by itself — it only
@@ -237,7 +217,7 @@ export default function Compass(): React.ReactElement {
   // The player must click Apply (check button) or hit Entrée to validate.
   // If the player is currently previewing a heading (compass drag), we lock
   // on THAT preview's TWA; otherwise we lock on the current live TWA.
-  const toggleTwaLock = () => {
+  const toggleTwaLock = useCallback(() => {
     if (twaLocked) {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ twaLocked: false });
@@ -250,7 +230,27 @@ export default function Compass(): React.ReactElement {
       setLockedTwa(effectiveTwa);
       useGameStore.getState().setPreview({ twaLocked: true, lockedTwa: effectiveTwa });
     }
-  };
+  }, [twaLocked, targetHdg, twd, twa]);
+
+  // ── Keyboard shortcuts ──
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && applyActive) {
+        e.preventDefault();
+        cancelEdit();
+      }
+      if (e.key === 'Enter' && applyActive) {
+        e.preventDefault();
+        apply();
+      }
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        toggleTwaLock();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [applyActive, apply, cancelEdit, toggleTwaLock]);
 
   return (
     <>

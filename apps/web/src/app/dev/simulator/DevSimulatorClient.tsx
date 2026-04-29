@@ -179,14 +179,18 @@ export function DevSimulatorClient() {
   // up to this point is computed from data that is *guaranteed* to still
   // be authoritative; beyond it, a new run will arrive and may reshape the
   // forecast. Displayed via the dashed-line style split in RouteLayer.
-  // Falls back to the nearest upcoming 6 h boundary when no grid is loaded.
+  // Falls back to the nearest upcoming 6 h boundary when no grid is loaded;
+  // the fallback is locked at mount via lazy useState to avoid impure render.
+  const [fallbackNextRunMs] = useState(() => {
+    const sixH = 6 * 3_600_000;
+    return Math.ceil(Date.now() / sixH) * sixH;
+  });
   const nextGfsRunMs = useMemo(() => {
     if (decodedGrid?.header.nextRunExpectedUtc) {
       return decodedGrid.header.nextRunExpectedUtc * 1000;
     }
-    const sixH = 6 * 3_600_000;
-    return Math.ceil(Date.now() / sixH) * sixH;
-  }, [decodedGrid]);
+    return fallbackNextRunMs;
+  }, [decodedGrid, fallbackNextRunMs]);
   useEffect(() => {
     if (!decodedGrid) return;
     if (status === 'idle') return; // nothing to update until a sim is running

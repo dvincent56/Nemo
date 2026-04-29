@@ -43,7 +43,7 @@ export default function SailPanel(): React.ReactElement {
   }, [boatClass]);
 
   // Local 1s tick to update remaining display from timestamps
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isTransitioning = transitionEndMs > 0 && now < transitionEndMs;
 

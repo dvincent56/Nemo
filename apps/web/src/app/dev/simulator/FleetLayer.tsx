@@ -144,7 +144,6 @@ export function FleetLayer({ fleet, primaryId, boatIds, trails }: FleetLayerProp
     };
 
     tryInit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boatIds, primaryId, mapReady]);
 
   // Update boat positions

@@ -452,16 +452,14 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
   // the latest store state. Zero baseline latency on drag — no setTimeout.
   const inFlightRef = useRef(false);
   const pendingRef = useRef(false);
-
-  // Keep mapRef in sync without re-running effects when map changes
-  useEffect(() => {
-    mapRef.current = map;
-    // If we already have a result and the map just became ready, render it
-    if (map && lastResultRef.current) {
-      updateMapSources(lastResultRef.current);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  // Forward-ref shims: requestCompute and updateMapSources are declared
+  // further down. The worker onmessage closure (set up in the init effect)
+  // needs to call requestCompute; updateMapSources self-references inside
+  // an `m.once('idle', ...)` retry path. Calling through these refs avoids
+  // TDZ access and keeps the captured handlers/callbacks pointed at the
+  // latest useCallback identities at invocation time.
+  const requestComputeRef = useRef<() => void>(() => {});
+  const updateMapSourcesRef = useRef<(r: ProjectionResult) => void>(() => {});
 
   /**
    * Push a single ProjectionRun (committed or draft) into the matching MapLibre
@@ -574,7 +572,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     // isStyleLoaded() is unreliable — relying on source presence instead.
     if (!m.getSource('projection-line-committed')) {
       m.once('idle', () => {
-        if (lastResultRef.current) updateMapSources(lastResultRef.current);
+        if (lastResultRef.current) updateMapSourcesRef.current(lastResultRef.current);
       });
       return;
     }
@@ -628,9 +626,19 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     refreshOrderMarkers(m, activeDraft, activeRun);
   }, [writeRunToMap, clearVariant, refreshOrderMarkers]);
 
+  // Keep mapRef in sync without re-running effects when map changes
+  useEffect(() => {
+    mapRef.current = map;
+    // If we already have a result and the map just became ready, render it
+    if (map && lastResultRef.current) {
+      updateMapSources(lastResultRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+
   // Initialize Worker
   useEffect(() => {
-    console.log('[Projection] hook mounted, map =', map ? 'ready' : 'null');
+    console.log('[Projection] hook mounted, map =', mapRef.current ? 'ready' : 'null');
     let worker: Worker;
     try {
       worker = new Worker(
@@ -664,7 +672,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         // compute with the latest store state — no debounce, no stale frame.
         if (pendingRef.current) {
           pendingRef.current = false;
-          requestCompute();
+          requestComputeRef.current();
         }
       } else if (e.data.type === 'error') {
         inFlightRef.current = false;
@@ -700,10 +708,9 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       .then((r) => r.json())
       .then((polar) => {
         polarRef.current = polar;
-        requestCompute();
+        requestComputeRef.current();
       })
       .catch((err) => console.error('[Projection] polar fetch failed:', err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boatClass]);
 
   // Trigger recalculation. Coalescing: at most one compute in flight; while
@@ -824,6 +831,16 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     workerRef.current.postMessage(msg);
     inFlightRef.current = true;
   }, []);
+
+  // Keep the forward-ref shims pointing at the current useCallback identities
+  // so the worker.onmessage closure and the updateMapSources idle-retry path
+  // always invoke the latest implementations.
+  useEffect(() => {
+    requestComputeRef.current = requestCompute;
+  }, [requestCompute]);
+  useEffect(() => {
+    updateMapSourcesRef.current = updateMapSources;
+  }, [updateMapSources]);
 
   // Subscribe to store changes that trigger recalculation
   useEffect(() => {

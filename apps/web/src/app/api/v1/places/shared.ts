@@ -10,9 +10,7 @@
  *  - autres → subdivisions ISO 3166-2 via country-state-city
  */
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import departementsRaw from '@etalab/decoupage-administratif/data/departements.json';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import communesRaw from '@etalab/decoupage-administratif/data/communes.json';
 
 interface EtalabDepartement {
