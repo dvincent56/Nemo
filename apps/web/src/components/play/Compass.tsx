@@ -93,7 +93,7 @@ export default function Compass(): React.ReactElement {
   // empannage > virement > changement de voile (durées & pénalités de vitesse
   // décroissantes). Le message est rendu en absolute au-dessus du compass
   // pour ne pas modifier sa hauteur quand il apparaît/disparaît.
-  let pendingHint: { kind: 'gybe' | 'tack' | 'sail'; label: string; className: string } | null = null;
+  let pendingHint: { label: string; className: 'hintGybe' | 'hintTack' | 'hintSail' } | null = null;
   if (applyActive && polar && boatClass) {
     const sameSign = Math.sign(displayTwa) === Math.sign(twa) || twa === 0;
     const isManeuver = !sameSign && displayTwa !== 0 && twa !== 0;
@@ -103,18 +103,18 @@ export default function Compass(): React.ReactElement {
     if (isGybe) {
       const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
       const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
-      pendingHint = { kind: 'gybe', label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: 'hintGybe' };
+      pendingHint = { label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: 'hintGybe' };
     } else if (isTack) {
       const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
       const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
-      pendingHint = { kind: 'tack', label: `Virement — vitesse −${pct}% (~${dur}s)`, className: 'hintTack' };
+      pendingHint = { label: `Virement — vitesse −${pct}% (~${dur}s)`, className: 'hintTack' };
     } else if (sailAuto) {
       const optimal = pickOptimalSail(polar, displayTwa, tws);
       if (optimal !== currentSail) {
         const key = `${currentSail}_${optimal}`;
         const dur = (GameBalance.sails?.transitionTimes as Record<string, number> | undefined)?.[key] ?? 180;
         const pct = Math.round((1 - (GameBalance.sails?.transitionPenalty ?? 0.7)) * 100);
-        pendingHint = { kind: 'sail', label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: 'hintSail' };
+        pendingHint = { label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: 'hintSail' };
       }
     }
   }
@@ -377,7 +377,6 @@ export default function Compass(): React.ReactElement {
           headingDeg={displayHdg}
           twaDeg={displayTwa}
           bspKn={displayBsp}
-          twaLocked={twaLocked}
           vmgGlow={vmgGlow}
           bspColorClass={bspColorClass}
           pendingHint={pendingHint ?? undefined}

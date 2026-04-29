@@ -6,14 +6,14 @@ import CompassReadouts from './CompassReadouts';
 describe('<CompassReadouts>', () => {
   it('formats heading as 3-digit integer with degree sign', () => {
     const { container } = render(
-      <CompassReadouts headingDeg={45} twaDeg={-12} bspKn={6.7} twaLocked={false} vmgGlow={false} />
+      <CompassReadouts headingDeg={45} twaDeg={-12} bspKn={6.7} vmgGlow={false} />
     );
     expect(container.textContent).toContain('45°');
   });
 
   it('formats bsp with 2 decimals when provided', () => {
     const { container } = render(
-      <CompassReadouts headingDeg={180} twaDeg={90} bspKn={9.123} twaLocked={false} vmgGlow={false} />
+      <CompassReadouts headingDeg={180} twaDeg={90} bspKn={9.123} vmgGlow={false} />
     );
     expect(container.textContent).toContain('9.12');
     expect(container.textContent).toContain('nds');
@@ -21,7 +21,7 @@ describe('<CompassReadouts>', () => {
 
   it('omits the BSP cell when bspKn is undefined', () => {
     const { container } = render(
-      <CompassReadouts headingDeg={180} twaDeg={90} twaLocked={false} vmgGlow={false} />
+      <CompassReadouts headingDeg={180} twaDeg={90} vmgGlow={false} />
     );
     expect(container.textContent).not.toContain('nds');
     expect(container.textContent).not.toContain('Vitesse');
@@ -33,9 +33,8 @@ describe('<CompassReadouts>', () => {
         headingDeg={45}
         twaDeg={-12}
         bspKn={6}
-        twaLocked={false}
         vmgGlow={false}
-        pendingHint={{ kind: 'tack', label: 'Virement — vitesse −40% (~90s)', className: 'hintTack' }}
+        pendingHint={{ label: 'Virement — vitesse −40% (~90s)', className: 'hintTack' }}
       />
     );
     expect(container.textContent).toContain('Virement');

@@ -20,17 +20,14 @@ export interface CompassReadoutsProps {
   twaDeg: number;
   /** Boat speed in knots. Omit to hide the Vitesse cell entirely. */
   bspKn?: number;
-  twaLocked: boolean;
   /** Apply a green tint to the TWA cell when in a VMG-optimal band. */
   vmgGlow: boolean;
   /** Optional CSS module class for the BSP cell color (live | warn | danger). */
   bspColorClass?: 'live' | 'warn' | 'danger';
   /** Optional manoeuvre hint rendered above the readouts. */
   pendingHint?: {
-    kind: 'gybe' | 'tack' | 'sail';
     label: string;
-    /** CSS module class name from `Compass.module.css` (e.g. 'hintGybe'). */
-    className: string;
+    className: 'hintGybe' | 'hintTack' | 'hintSail';
   };
 }
 
@@ -38,7 +35,6 @@ export default function CompassReadouts({
   headingDeg,
   twaDeg,
   bspKn,
-  twaLocked: _twaLocked,
   vmgGlow,
   bspColorClass,
   pendingHint,
@@ -47,7 +43,7 @@ export default function CompassReadouts({
   return (
     <>
       {pendingHint && (
-        <div className={`${compassStyles.floatingHint} ${compassStyles[pendingHint.className] ?? ''}`}>
+        <div className={`${compassStyles.floatingHint} ${compassStyles[pendingHint.className]}`}>
           <span className={compassStyles.hintIcon}>
             <AlertTriangle size={12} strokeWidth={2.5} />
           </span>
