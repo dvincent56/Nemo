@@ -2,9 +2,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameStore, commitDraft } from '@/lib/store';
 import type { ProgMode, ProgDraft } from '@/lib/prog/types';
-import { isObsoleteAtTime } from '@/lib/prog/anchors';
+import { defaultCapAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
+import CapEditor from './prog/CapEditor';
 
 type EditingState =
   | null
@@ -23,6 +24,10 @@ export default function ProgPanel(): ReactElement {
   const resetDraft = useGameStore((s) => s.resetDraft);
   const markCommitted = useGameStore((s) => s.markCommitted);
   const setProgMode = useGameStore((s) => s.setProgMode);
+  const addCapOrder = useGameStore((s) => s.addCapOrder);
+  const updateCapOrder = useGameStore((s) => s.updateCapOrder);
+  const hudHdg = useGameStore((s) => Math.round(s.hud.hdg));
+  const hudTwd = useGameStore((s) => s.hud.twd);
 
   const [editing, setEditing] = useState<EditingState>(null);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
@@ -52,8 +57,41 @@ export default function ProgPanel(): ReactElement {
     resetDraft();
   };
 
-  // Editor sub-screens (placeholders — Tasks 6-8 wire real editors)
+  // Editor sub-screens (Tasks 7-8 wire the remaining real editors)
   if (editing) {
+    if (editing.kind === 'cap') {
+      const isNew = editing.id === 'NEW';
+      const initialOrder = isNew
+        ? null
+        : draft.capOrders.find((o) => o.id === editing.id) ?? null;
+      const sortedCaps = [...draft.capOrders].sort(
+        (a, b) => a.trigger.time - b.trigger.time,
+      );
+      const index = isNew
+        ? null
+        : sortedCaps.findIndex((o) => o.id === editing.id) + 1;
+      return (
+        <CapEditor
+          initialOrder={initialOrder}
+          windDir={hudTwd}
+          defaultHeading={hudHdg}
+          defaultTime={defaultCapAnchor(draft, nowSec)}
+          minValueSec={floorForNow(nowSec)}
+          nowSec={nowSec}
+          index={index}
+          onCancel={() => setEditing(null)}
+          onSave={(order) => {
+            if (isNew) {
+              addCapOrder(order);
+            } else {
+              updateCapOrder(order.id, order);
+            }
+            setEditing(null);
+          }}
+        />
+      );
+    }
+    // Other editor placeholders remain (Tasks 7-8)
     return (
       <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
         Editor placeholder — kind={editing.kind}
