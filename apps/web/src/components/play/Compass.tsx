@@ -7,12 +7,13 @@ import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
 import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
-import { Lock, LockOpen, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
 import { VB, IMOCA_VB, IMOCA_PATH, IMOCA_SCALE, CX, CY, R_OUTER, R_INNER, pt, isInVmgZone } from './compass/compassGeometry';
 import WindWaves from './compass/WindWaves';
 import CompassReadouts from './compass/CompassReadouts';
+import CompassLockToggle from './compass/CompassLockToggle';
 
 export default function Compass(): React.ReactElement {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -450,16 +451,7 @@ export default function Compass(): React.ReactElement {
         {/* Action buttons */}
         <div className={styles.actions}>
           <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
-            <button
-              type="button"
-              className={`${styles.actionBtn} ${twaLocked ? styles.locked : ''}`}
-              onClick={toggleTwaLock}
-            >
-              {twaLocked
-                ? <Lock size={14} strokeWidth={2.5} />
-                : <LockOpen size={14} strokeWidth={2.5} />}
-              <span>TWA</span>
-            </button>
+            <CompassLockToggle locked={twaLocked} onToggle={toggleTwaLock} />
           </Tooltip>
           <Tooltip text="Valider l'ordre (cap ou TWA lock)" shortcut="Entrée" position="bottom">
             <button
