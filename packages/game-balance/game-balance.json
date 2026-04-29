@@ -2107,28 +2107,28 @@
         }
       },
       {
-        "id": "hull-imoca60-non-foiler",
+        "id": "hull-imoca60-light-air",
         "slot": "HULL",
         "tier": "SILVER",
-        "name": "Coque IMOCA non-foiler",
-        "profile": "archimédienne petit temps",
-        "description": "Carène plus fine sans dérives profondes, performante au près et par petit temps, handicapée en glisse forte.",
+        "name": "Coque IMOCA Affinée Petit Temps",
+        "profile": "petit temps spécialiste",
+        "description": "Carène allégée et finement profilée, optimisée pour le près et le petit temps. Brille avec un setup dérive droite ; ses gains se réduisent quand on monte en foils performance.",
         "compat": [
           "IMOCA60"
         ],
-        "cost": 15000,
+        "cost": 12000,
         "effects": {
           "speedByTwa": [
             0.06,
-            0.05,
-            0.03,
+            0.04,
             0.02,
-            0.01
+            0,
+            0
           ],
           "speedByTws": [
-            0.1,
-            0.04,
-            -0.06
+            0.08,
+            0.02,
+            -0.05
           ],
           "wearMul": {},
           "maneuverMul": {},
