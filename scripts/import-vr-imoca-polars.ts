@@ -1,7 +1,7 @@
 // scripts/import-vr-imoca-polars.ts
 /**
- * Imports the new VR IMOCA per-sail polars from tmp/imoca/new/{foil,nofoil}/*
- * to apps/web/public/data/polars/imoca60{,-foil}.json and packages/polar-lib/polars/imoca60{,-foil}.json.
+ * Imports the new VR IMOCA per-sail polars from tmp/imoca/new/nofoil/*
+ * to apps/web/public/data/polars/imoca60.json and packages/polar-lib/polars/imoca60.json.
  *
  * VR per-sail format: CSV-like with header "TWA\TWS;0;1;...;70" and 181 rows TWA 0..180,
  * separator ';', CRLF line endings.
@@ -80,27 +80,17 @@ function buildPolarJSON(srcDir: string, sourceLabel: string) {
 }
 
 const baseDir = join(ROOT, 'tmp', 'imoca', 'new');
-
 const noFoil = buildPolarJSON(join(baseDir, 'nofoil'), 'VR-2026-imoca-nofoil');
-const foil = buildPolarJSON(join(baseDir, 'foil'), 'VR-2026-imoca-foil');
 
-const targets = [
-  { variant: 'base', polar: noFoil, paths: [
-    join(ROOT, 'apps', 'web', 'public', 'data', 'polars', 'imoca60.json'),
-    join(ROOT, 'packages', 'polar-lib', 'polars', 'imoca60.json'),
-  ]},
-  { variant: 'foil', polar: foil, paths: [
-    join(ROOT, 'apps', 'web', 'public', 'data', 'polars', 'imoca60-foil.json'),
-    join(ROOT, 'packages', 'polar-lib', 'polars', 'imoca60-foil.json'),
-  ]},
+const outputs = [
+  join(ROOT, 'apps', 'web', 'public', 'data', 'polars', 'imoca60.json'),
+  join(ROOT, 'packages', 'polar-lib', 'polars', 'imoca60.json'),
 ];
 
-for (const target of targets) {
-  const json = JSON.stringify(target.polar, null, 2) + '\n';
-  for (const path of target.paths) {
-    writeFileSync(path, json);
-    console.log(`OK ${target.variant} -> ${path}`);
-  }
+const json = JSON.stringify(noFoil, null, 2) + '\n';
+for (const path of outputs) {
+  writeFileSync(path, json);
+  console.log(`OK -> ${path}`);
 }
 
 console.log('Done.');
