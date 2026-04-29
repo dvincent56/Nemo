@@ -62,14 +62,26 @@
   border-color: #c9a227;
 }
 
-.triggerReadout {
-  font-family: 'Space Mono', ui-monospace, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: #c9a227;
-  letter-spacing: 0.14em;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(245, 240, 232, 0.12);
+.pickBtn {
+  width: 100%;
+  padding: 14px 12px;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid #c9a227;
   border-radius: 4px;
+  color: #c9a227;
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.pickBtn:hover:not(:disabled) {
+  background: rgba(201, 162, 39, 0.18);
+}
+
+.pickBtn:disabled {
+  cursor: default;
+  background: rgba(201, 162, 39, 0.06);
+  color: rgba(201, 162, 39, 0.6);
 }

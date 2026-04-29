@@ -4,6 +4,7 @@
 import type {
   ProjectionInput,
   ProjectionResult,
+  ProjectionRun,
   ProjectionSegment,
   TimeMarker,
   ManeuverMarker,
@@ -146,7 +147,7 @@ const MAX_POINTS = 4096; // 5d × 30min ≈ 240; 4096 is safe headroom
 
 // ── Main simulation ──
 
-function simulate(input: ProjectionInput): ProjectionResult {
+function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]): ProjectionRun {
   if (!cachedWindLookup) {
     throw new Error('projection: wind grid not set (setWindGrid must be sent before compute)');
   }
@@ -216,7 +217,8 @@ function simulate(input: ProjectionInput): ProjectionResult {
   // here by overriding `hdg` every step while a WPT is active, and
   // advancing the chain on capture (mirrors tick.ts WPT capture detection
   // and the orderHistory purge filter that keeps un-captured WPTs alive).
-  const allSegments = [...input.segments].sort((a, b) => a.triggerMs - b.triggerMs);
+  const sourceSegments = segmentsOverride ?? input.segments;
+  const allSegments = [...sourceSegments].sort((a, b) => a.triggerMs - b.triggerMs);
   const segments: ProjectionSegment[] = allSegments.filter((s) => s.type !== 'WPT');
   const wptList: ProjectionSegment[] = allSegments.filter((s) => s.type === 'WPT');
   // Order WPTs along the chain: a WPT comes AFTER its predecessor. WPTs
@@ -725,11 +727,32 @@ self.onmessage = async (e: MessageEvent<WorkerInMessage>) => {
   if (msg.type === 'compute') {
     try {
       await Promise.all([ensureBalance(), ensureCoastline()]);
-      const result = simulate(msg.input);
+      const input = msg.input;
+
+      // Always run the committed simulation. Its fields land at the root of
+      // ProjectionResult so legacy consumers keep working.
+      const committedRun = simulate(input);
+
+      // Run the draft simulation only when the caller flagged a distinct
+      // edit. The hook hands us the SAME array reference for the no-edit
+      // case (or omits draftSegments entirely), so the cheap referential
+      // check skips the second sim with zero false negatives. A deeper
+      // structural compare would be wasted work — the hook already memoizes.
+      let draftRun: ProjectionRun | undefined;
+      if (input.draftSegments && input.draftSegments !== input.segments) {
+        draftRun = simulate(input, input.draftSegments);
+      }
+
+      const result: ProjectionResult = draftRun
+        ? { ...committedRun, draft: draftRun }
+        : committedRun;
+
       const out: WorkerOutMessage = { type: 'result', result };
-      // Zero-copy transfer of the points buffer — postMessage no longer
-      // serializes ~500 small objects, just hands the ArrayBuffer over.
-      self.postMessage(out, [result.pointsBuf.buffer]);
+      // Zero-copy transfer of both points buffers — postMessage no longer
+      // serializes ~500 small objects per run, just hands the ArrayBuffers over.
+      const transfer: Transferable[] = [committedRun.pointsBuf.buffer as ArrayBuffer];
+      if (draftRun) transfer.push(draftRun.pointsBuf.buffer as ArrayBuffer);
+      self.postMessage(out, transfer);
     } catch (err) {
       const out: WorkerOutMessage = { type: 'error', message: String(err) };
       self.postMessage(out);

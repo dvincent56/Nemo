@@ -12,12 +12,13 @@ export { BoatClassZ };
 export type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
   RewardsConfig, ManeuversConfig,
-  GroundingConfig, EconomyConfig,
+  GroundingConfig, EconomyConfig, ProgrammingConfig,
 } from './types';
 
 import type {
   GameBalanceConfig, WearConfig, SwellConfig, SailsConfig,
   RewardsConfig, ManeuversConfig, GroundingConfig, EconomyConfig,
+  ProgrammingConfig,
 } from './types';
 
 class GameBalanceClass {
@@ -52,6 +53,7 @@ class GameBalanceClass {
   get grounding(): GroundingConfig { return this.ensure().grounding; }
   get zones() { return this.ensure().zones; }
   get economy(): EconomyConfig { return this.ensure().economy; }
+  get programming(): ProgrammingConfig { return this.ensure().programming; }
   get tickIntervalSeconds(): number { return this.ensure().tick.intervalSeconds; }
 }
 

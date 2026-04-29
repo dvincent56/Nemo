@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore, commitDraft } from '@/lib/store';
-import type { ProgMode, ProgDraft } from '@/lib/prog/types';
+import type { ProgMode } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
@@ -11,17 +12,7 @@ import SailEditor from './prog/SailEditor';
 import WpEditor from './prog/WpEditor';
 import FinalCapEditor from './prog/FinalCapEditor';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-type EditingState =
-  | null
-  | { kind: 'cap'; id: string }
-  | { kind: 'sail'; id: string }
-  | { kind: 'wp'; id: string }
-  | { kind: 'finalCap' };
-
-function deepEqDraft(a: ProgDraft, b: ProgDraft): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+import { deepEqDraft } from '@/lib/prog/equality';
 
 export default function ProgPanel(): ReactElement {
   const draft = useGameStore((s) => s.prog.draft);
@@ -31,10 +22,25 @@ export default function ProgPanel(): ReactElement {
   const setProgMode = useGameStore((s) => s.setProgMode);
   const addCapOrder = useGameStore((s) => s.addCapOrder);
   const updateCapOrder = useGameStore((s) => s.updateCapOrder);
+  const addSailOrder = useGameStore((s) => s.addSailOrder);
+  const updateSailOrder = useGameStore((s) => s.updateSailOrder);
+  const updateWpOrder = useGameStore((s) => s.updateWpOrder);
+  const setFinalCap = useGameStore((s) => s.setFinalCap);
+  const removeCapOrder = useGameStore((s) => s.removeCapOrder);
+  const removeWpOrder = useGameStore((s) => s.removeWpOrder);
+  const removeSailOrder = useGameStore((s) => s.removeSailOrder);
+  const clearAllOrders = useGameStore((s) => s.clearAllOrders);
   const hudHdg = useGameStore((s) => Math.round(s.hud.hdg));
   const hudTwd = useGameStore((s) => s.hud.twd);
+  const hudLat = useGameStore((s) => s.hud.lat);
+  const hudLon = useGameStore((s) => s.hud.lon);
 
-  const [editing, setEditing] = useState<EditingState>(null);
+  // Phase 2b Task 3: editing state lives in the store so MapCanvas marker
+  // clicks can drive the editor. The 'NEW' magic id (cap/sail/wp create
+  // mode) and the 'FINAL' literal (single-instance finalCap) are preserved
+  // as ProgPanel-internal conventions on top of the EditingOrder.id field.
+  const editing = useGameStore((s) => s.prog.editingOrder);
+  const setEditing = useGameStore((s) => s.setEditingOrder);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
@@ -124,9 +130,9 @@ export default function ProgPanel(): ReactElement {
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             if (isNew) {
-              useGameStore.getState().addSailOrder(order);
+              addSailOrder(order);
             } else {
-              useGameStore.getState().updateSailOrder(order.id, order);
+              updateSailOrder(order.id, order);
             }
             setEditing(null);
           }}
@@ -149,9 +155,11 @@ export default function ProgPanel(): ReactElement {
           initialOrder={initialOrder}
           index={index}
           predecessorIndex={predecessorIndex}
+          boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
+          minWpDistanceNm={GameBalance.programming.minWpDistanceNm}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
-            useGameStore.getState().updateWpOrder(order.id, order);
+            updateWpOrder(order.id, order);
             setEditing(null);
           }}
         />
@@ -180,7 +188,7 @@ export default function ProgPanel(): ReactElement {
           defaultHeading={hudHdg}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
-            useGameStore.getState().setFinalCap(order);
+            setFinalCap(order);
             setEditing(null);
           }}
         />
@@ -240,11 +248,11 @@ export default function ProgPanel(): ReactElement {
         }}
         onAddCap={() => setEditing({ kind: 'cap', id: 'NEW' })}
         onAddWp={() => setEditing({ kind: 'wp', id: 'NEW' })}
-        onAddFinalCap={() => setEditing({ kind: 'finalCap' })}
+        onAddFinalCap={() => setEditing({ kind: 'finalCap', id: 'FINAL' })}
         onAddSail={() => setEditing({ kind: 'sail', id: 'NEW' })}
         onEditCap={(id) => setEditing({ kind: 'cap', id })}
         onEditWp={(id) => setEditing({ kind: 'wp', id })}
-        onEditFinalCap={() => setEditing({ kind: 'finalCap' })}
+        onEditFinalCap={() => setEditing({ kind: 'finalCap', id: 'FINAL' })}
         onEditSail={(id) => setEditing({ kind: 'sail', id })}
         onAskDelete={(kind, id) => setDeleteDialog({ kind, id })}
         onAskClearAll={() => setClearAllOpen(true)}
@@ -269,10 +277,10 @@ export default function ProgPanel(): ReactElement {
         onConfirm={() => {
           if (!deleteDialog) return;
           const { kind, id } = deleteDialog;
-          if (kind === 'cap') useGameStore.getState().removeCapOrder(id);
-          else if (kind === 'wp') useGameStore.getState().removeWpOrder(id);
-          else if (kind === 'finalCap') useGameStore.getState().setFinalCap(null);
-          else if (kind === 'sail') useGameStore.getState().removeSailOrder(id);
+          if (kind === 'cap') removeCapOrder(id);
+          else if (kind === 'wp') removeWpOrder(id);
+          else if (kind === 'finalCap') setFinalCap(null);
+          else if (kind === 'sail') removeSailOrder(id);
           setDeleteDialog(null);
         }}
         onCancel={() => setDeleteDialog(null)}
@@ -281,11 +289,11 @@ export default function ProgPanel(): ReactElement {
       <ConfirmDialog
         open={clearAllOpen}
         title="Tout effacer ?"
-        body="Toutes les programmations en cours d'édition seront supprimées. La programmation déjà confirmée n'est pas affectée tant que vous ne cliquez pas sur Confirmer."
+        body="Cela vide la programmation en cours d'édition. Vous pouvez annuler avec « Annuler »."
         confirmLabel="Tout effacer"
         tone="danger"
         onConfirm={() => {
-          useGameStore.getState().clearAllOrders();
+          clearAllOrders();
           setClearAllOpen(false);
         }}
         onCancel={() => setClearAllOpen(false)}

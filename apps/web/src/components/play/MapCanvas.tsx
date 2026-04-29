@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore } from '@/lib/store';
 import {
   findOceanPreset,
   DEFAULT_OCEAN_ID,
 } from '@/lib/mapAppearance';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
+import { validateWpDistance } from '@/lib/prog/safetyRadius';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 import { selectGhostPosition } from '@/lib/store/timeline-selectors';
@@ -90,16 +92,34 @@ const trailCoords: [number, number][] = [];
 /** Expose the MapLibre map instance for other components (WindOverlay) */
 export let mapInstance: maplibregl.Map | null = null;
 
+// Phase 2b Task 2 — projection now has TWO layer sets: -committed (always
+// rendered, drawn at 0.4 opacity when a draft overlay is active) and -draft
+// (only rendered while the user has unsaved edits in ProgPanel).
 const PROJECTION_LAYER_IDS = [
-  'projection-line-layer',
-  'projection-markers-time-circle',
-  'projection-markers-time-label',
-  'projection-markers-maneuver-icon',
+  'projection-line-committed-layer',
+  'projection-markers-time-committed-circle',
+  'projection-markers-time-committed-label',
+  'projection-markers-maneuver-committed-icon',
+  'projection-line-draft-layer',
+  'projection-markers-time-draft-circle',
+  'projection-markers-time-draft-label',
+  'projection-markers-maneuver-draft-icon',
+  // Phase 2b Task 3: per-order-kind markers (cap/sail/wp/finalCap). One source,
+  // four filtered layers — clicking one drives the store's editingOrder so
+  // ProgPanel opens the matching sub-screen.
+  'prog-order-markers-cap',
+  'prog-order-markers-sail',
+  'prog-order-markers-wp',
+  'prog-order-markers-finalCap',
 ] as const;
 const PROJECTION_SOURCE_IDS = [
-  'projection-line',
-  'projection-markers-time',
-  'projection-markers-maneuver',
+  'projection-line-committed',
+  'projection-markers-time-committed',
+  'projection-markers-maneuver-committed',
+  'projection-line-draft',
+  'projection-markers-time-draft',
+  'projection-markers-maneuver-draft',
+  'prog-order-markers',
 ] as const;
 
 /**
@@ -139,15 +159,109 @@ function installProjectionLayers(map: maplibregl.Map): void {
     if (map.getSource(id)) map.removeSource(id);
   }
 
-  map.addSource('projection-line', {
+  // Install one set of three sources + four layers per variant. The committed
+  // variant is the persistent baseline (always rendered at 0.85 opacity, dims
+  // to 0.4 when a draft overlay is active). The draft variant is empty until
+  // the user starts editing the queue — useProjectionLine.ts populates it via
+  // setData() and clears it back to empty on confirm/cancel.
+  installProjectionVariant(map, 'committed');
+  installProjectionVariant(map, 'draft');
+  installProgOrderMarkers(map);
+}
+
+/**
+ * Phase 2b Task 3: order markers, one source / four kind-filtered circle
+ * layers. Distinct visual per kind — see Task 3 spec for the rationale of
+ * using circles instead of sprite icons for now. Click handlers are wired
+ * separately in the load handler so the layer install stays pure (no
+ * closures over the map instance beyond what addLayer needs).
+ */
+function installProgOrderMarkers(map: maplibregl.Map): void {
+  map.addSource('prog-order-markers', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+
+  // cap (AT_TIME): gold circle 8px, navy stroke
+  map.addLayer({
+    id: 'prog-order-markers-cap',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'cap'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#1a2840',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // sail: navy circle 8px with gold stroke (visual contrast vs cap)
+  map.addLayer({
+    id: 'prog-order-markers-sail',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'sail'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#1a2840',
+      'circle-stroke-color': '#c9a227',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // wp: gold circle 12px (larger — primary route anchor)
+  map.addLayer({
+    id: 'prog-order-markers-wp',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'wp'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 12,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#1a2840',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // finalCap: gold circle 14px with thicker double-feel stroke
+  map.addLayer({
+    id: 'prog-order-markers-finalCap',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'finalCap'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 14,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#f5f0e8',
+      'circle-stroke-width': 3,
+    },
+  });
+}
+
+function installProjectionVariant(map: maplibregl.Map, variant: 'committed' | 'draft'): void {
+  const lineSrcId = `projection-line-${variant}`;
+  const lineLayerId = `projection-line-${variant}-layer`;
+  const timeSrcId = `projection-markers-time-${variant}`;
+  const timeCircleId = `projection-markers-time-${variant}-circle`;
+  const timeLabelId = `projection-markers-time-${variant}-label`;
+  const manSrcId = `projection-markers-maneuver-${variant}`;
+  const manIconId = `projection-markers-maneuver-${variant}-icon`;
+
+  // Draft layers default to 0 opacity at install — the hook flips them on by
+  // pushing data once isDirty triggers. The committed layer keeps the legacy
+  // 0.85 baseline; the hook adjusts it dynamically based on draft presence.
+  const baseLineOpacity = variant === 'committed' ? 0.85 : 1;
+
+  map.addSource(lineSrcId, {
     type: 'geojson',
     data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
     lineMetrics: true,
   });
   map.addLayer({
-    id: 'projection-line-layer',
+    id: lineLayerId,
     type: 'line',
-    source: 'projection-line',
+    source: lineSrcId,
     layout: {
       // `round` joins/caps prevent miter-overflow spikes at sharp bends —
       // observed at WPT captures where the heading flips from "toward wpt_i"
@@ -165,18 +279,18 @@ function installProjectionLayers(map: maplibregl.Map): void {
         0, '#27ae60', 1, '#27ae60',
       ],
       'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.5, 8, 3, 12, 4],
-      'line-opacity': 0.85,
+      'line-opacity': baseLineOpacity,
     },
   });
 
-  map.addSource('projection-markers-time', {
+  map.addSource(timeSrcId, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
   map.addLayer({
-    id: 'projection-markers-time-circle',
+    id: timeCircleId,
     type: 'circle',
-    source: 'projection-markers-time',
+    source: timeSrcId,
     paint: {
       'circle-radius': [
         'case', ['==', ['get', 'label'], ''], 2, 4,
@@ -192,9 +306,9 @@ function installProjectionLayers(map: maplibregl.Map): void {
     },
   });
   map.addLayer({
-    id: 'projection-markers-time-label',
+    id: timeLabelId,
     type: 'symbol',
-    source: 'projection-markers-time',
+    source: timeSrcId,
     layout: {
       'text-field': ['get', 'label'],
       'text-size': 11,
@@ -208,14 +322,14 @@ function installProjectionLayers(map: maplibregl.Map): void {
     },
   });
 
-  map.addSource('projection-markers-maneuver', {
+  map.addSource(manSrcId, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
   map.addLayer({
-    id: 'projection-markers-maneuver-icon',
+    id: manIconId,
     type: 'circle',
-    source: 'projection-markers-maneuver',
+    source: manSrcId,
     paint: {
       'circle-radius': [
         'case', ['==', ['get', 'type'], 'grounding'], 7, 5,
@@ -335,11 +449,14 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         console.log('[__debugMap] projection layers count:', projLayers.length, projLayers.map((l) => l.id));
         console.log('[__debugMap] sim-* layers count:', simLayers.length, simLayers.map((l) => l.id));
         console.log('[__debugMap] layers with GREEN paint:', greenLayers.length, greenLayers.map((l) => l.id));
-        // Also report current paint of the projection-line-layer so we can
+        // Also report current paint of both projection-line layers so we can
         // tell whether the gradient was ever overwritten by useProjectionLine.
-        if (m.getLayer('projection-line-layer')) {
-          const grad = m.getPaintProperty('projection-line-layer', 'line-gradient');
-          console.log('[__debugMap] projection-line-layer line-gradient:', grad);
+        for (const layerId of ['projection-line-committed-layer', 'projection-line-draft-layer']) {
+          if (m.getLayer(layerId)) {
+            const grad = m.getPaintProperty(layerId, 'line-gradient');
+            const op = m.getPaintProperty(layerId, 'line-opacity');
+            console.log(`[__debugMap] ${layerId}: opacity=${op as number}`, grad);
+          }
         }
       };
     }
@@ -423,6 +540,36 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       installProjectionLayers(map);
       projectionInstalledRef.current = map;
 
+      // Phase 2b Task 3: click + hover handlers for the per-order markers.
+      // Clicking sets `editingOrder` in the store and ensures the programming
+      // panel is open. ProgPanel re-renders into the matching editor.
+      const PROG_MARKER_LAYERS: Array<{ id: string; kind: 'cap' | 'sail' | 'wp' | 'finalCap' }> = [
+        { id: 'prog-order-markers-cap',      kind: 'cap' },
+        { id: 'prog-order-markers-sail',     kind: 'sail' },
+        { id: 'prog-order-markers-wp',       kind: 'wp' },
+        { id: 'prog-order-markers-finalCap', kind: 'finalCap' },
+      ];
+      for (const { id: layerId, kind } of PROG_MARKER_LAYERS) {
+        map.on('click', layerId, (e) => {
+          const orderId = e.features?.[0]?.properties?.['id'];
+          if (typeof orderId !== 'string') return;
+          const store = useGameStore.getState();
+          store.setEditingOrder({ kind, id: orderId });
+          // Open the programming panel if it isn't already — marker clicks
+          // must be self-contained (the user shouldn't have to also click the
+          // tab to see the editor they just selected).
+          if (store.panel.activePanel !== 'programming') {
+            store.openPanel('programming');
+          }
+        });
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
+
       // Past-trace line layer — inserted just below the projection so the
       // future arc renders on top during replay scrubbing. The past-trace
       // source is added earlier in the load handler.
@@ -435,7 +582,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           'line-width': 2.5,
           'line-opacity': 0.9,
         },
-      }, 'projection-line-layer');
+      }, 'projection-line-committed-layer');
 
       // ── Maneuver marker tooltip ──
       const maneuverPopup = new maplibregl.Popup({
@@ -471,42 +618,52 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         return `<div style="font-size:12px;color:#f5f0e8;"><strong style="color:${accent};">${label}</strong><br/>${detail}${whenLine}</div>`;
       };
 
-      map.on('mouseenter', 'projection-markers-maneuver-icon', (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-        const feature = e.features?.[0];
-        if (!feature || feature.geometry.type !== 'Point') return;
-        const coords = feature.geometry.coordinates as [number, number];
-        const detail = feature.properties?.detail ?? '';
-        const type = feature.properties?.type ?? '';
-        const timestamp = feature.properties?.timestamp as number | undefined;
-        maneuverPopup
-          .setLngLat(coords)
-          .setHTML(maneuverHtml(type, detail, timestamp))
-          .addTo(map);
-      });
+      // Hook the maneuver popup to BOTH variant icons. While editing, the
+      // draft markers sit on top of the (dimmed) committed markers — both
+      // need to be hoverable so the user can inspect either projection.
+      const MANEUVER_ICON_LAYERS = [
+        'projection-markers-maneuver-committed-icon',
+        'projection-markers-maneuver-draft-icon',
+      ] as const;
 
-      map.on('mouseleave', 'projection-markers-maneuver-icon', () => {
-        map.getCanvas().style.cursor = '';
-        maneuverPopup.remove();
-      });
-
-      map.on('click', 'projection-markers-maneuver-icon', (e) => {
-        const feature = e.features?.[0];
-        if (!feature || feature.geometry.type !== 'Point') return;
-        const coords = feature.geometry.coordinates as [number, number];
-        const detail = feature.properties?.detail ?? '';
-        const type = feature.properties?.type ?? '';
-        const timestamp = feature.properties?.timestamp as number | undefined;
-
-        if (maneuverPopup.isOpen()) {
-          maneuverPopup.remove();
-        } else {
+      for (const layerId of MANEUVER_ICON_LAYERS) {
+        map.on('mouseenter', layerId, (e) => {
+          map.getCanvas().style.cursor = 'pointer';
+          const feature = e.features?.[0];
+          if (!feature || feature.geometry.type !== 'Point') return;
+          const coords = feature.geometry.coordinates as [number, number];
+          const detail = feature.properties?.detail ?? '';
+          const type = feature.properties?.type ?? '';
+          const timestamp = feature.properties?.timestamp as number | undefined;
           maneuverPopup
             .setLngLat(coords)
             .setHTML(maneuverHtml(type, detail, timestamp))
             .addTo(map);
-        }
-      });
+        });
+
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+          maneuverPopup.remove();
+        });
+
+        map.on('click', layerId, (e) => {
+          const feature = e.features?.[0];
+          if (!feature || feature.geometry.type !== 'Point') return;
+          const coords = feature.geometry.coordinates as [number, number];
+          const detail = feature.properties?.detail ?? '';
+          const type = feature.properties?.type ?? '';
+          const timestamp = feature.properties?.timestamp as number | undefined;
+
+          if (maneuverPopup.isOpen()) {
+            maneuverPopup.remove();
+          } else {
+            maneuverPopup
+              .setLngLat(coords)
+              .setHTML(maneuverHtml(type, detail, timestamp))
+              .addTo(map);
+          }
+        });
+      }
 
       // ── Exclusion zone tooltip ──
       const ZONE_CATEGORY_LABEL: Record<string, string> = {
@@ -864,17 +1021,28 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
     });
   }, []);
 
-  /* ── Projection dimming: dim to 0.4 when scrubbing into the past ── */
+  /* ── Projection dimming: dim to 0.4 when scrubbing into the past.
+   *
+   * Phase 2b note: this competes with the `isDirty` dim in useProjectionLine
+   * (committed → 0.4 when a draft overlay is active). When scrubbing the past
+   * we apply the same 0.4 to both committed and draft layers so neither
+   * dominates over historical context — the next compute (or live-mode
+   * resume) will reset opacity from useProjectionLine. */
   useEffect(() => {
     const applyProjectionOpacity = (): void => {
       const map = mapRef.current;
       if (!map) return;
-      if (!map.getLayer('projection-line-layer')) return;
       const s = useGameStore.getState();
-      const op = s.timeline.isLive
-        ? 1
-        : s.timeline.currentTime.getTime() < Date.now() ? 0.4 : 1;
-      map.setPaintProperty('projection-line-layer', 'line-opacity', op);
+      const isPast = !s.timeline.isLive && s.timeline.currentTime.getTime() < Date.now();
+      // Only override while scrubbing the past — live mode hands opacity back
+      // to useProjectionLine (which knows about isDirty).
+      if (!isPast) return;
+      if (map.getLayer('projection-line-committed-layer')) {
+        map.setPaintProperty('projection-line-committed-layer', 'line-opacity', 0.4);
+      }
+      if (map.getLayer('projection-line-draft-layer')) {
+        map.setPaintProperty('projection-line-draft-layer', 'line-opacity', 0.4);
+      }
     };
     applyProjectionOpacity();
     let prevTime = useGameStore.getState().timeline.currentTime;
@@ -926,6 +1094,193 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       canvas.style.cursor = prevCursor;
     };
   }, [routerPhase, setRouterDestination]);
+
+  /* ── Phase 2b Task 4: WP picking mode (click on map → add WP).
+   *
+   * Reacts to `prog.pickingWp` flipping true: changes the cursor to crosshair
+   * and registers a one-shot map click handler. When the user clicks on the
+   * map (away from existing prog markers), we validate the safety radius
+   * against the current boat position and either:
+   *  - add a fresh WpOrder + transition `editingOrder` to the new id, OR
+   *  - reject the click (warn + leave picking mode active so the user can
+   *    try again).
+   *
+   * Pickers reset themselves via setPickingWp(false) on success — and the
+   * WpEditor unmount path also resets defensively (cancel button, etc.).
+   */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const PROG_LAYERS = [
+      'prog-order-markers-cap',
+      'prog-order-markers-sail',
+      'prog-order-markers-wp',
+      'prog-order-markers-finalCap',
+    ];
+
+    const handlePickClick = (e: maplibregl.MapMouseEvent): void => {
+      const state = useGameStore.getState();
+      if (!state.prog.pickingWp) return;
+
+      // Skip if the click hit an existing prog marker — those have their own
+      // click handlers (open the editor for that marker).
+      const visibleLayers = PROG_LAYERS.filter((id) => map.getLayer(id));
+      if (visibleLayers.length > 0) {
+        const features = map.queryRenderedFeatures(e.point, { layers: visibleLayers });
+        if (features.length > 0) return;
+      }
+
+      const minNm = GameBalance.programming.minWpDistanceNm;
+      const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+      const wp = { lat: e.lngLat.lat, lon: e.lngLat.lng };
+
+      if (!validateWpDistance(boat, wp, minNm)) {
+        // TODO Phase 2b: surface this as a toast. For now, console.warn keeps
+        // the user state intact (still in picking mode) so they can try again.
+        console.warn(`[ProgPanel] WP trop proche du bateau (min ${minNm} NM)`);
+        return;
+      }
+
+      const wpOrders = state.prog.draft.wpOrders;
+      const newId = `wp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const lastWp = wpOrders[wpOrders.length - 1];
+      const trigger: import('@/lib/prog/types').WpOrder['trigger'] = lastWp
+        ? { type: 'AT_WAYPOINT', waypointOrderId: lastWp.id }
+        : { type: 'IMMEDIATE' };
+
+      state.addWpOrder({
+        id: newId,
+        trigger,
+        lat: wp.lat,
+        lon: wp.lon,
+        captureRadiusNm: 0.5,
+      });
+      state.setPickingWp(false);
+      // Smoothly transition the editor from "NEW" mode to editing the just-
+      // created WP. The editor re-renders with its capture-radius/trigger UI.
+      state.setEditingOrder({ kind: 'wp', id: newId });
+    };
+
+    // Cursor sync — flip the canvas cursor whenever pickingWp toggles.
+    const applyCursor = (picking: boolean): void => {
+      const canvas = map.getCanvas();
+      canvas.style.cursor = picking ? 'crosshair' : '';
+    };
+    applyCursor(useGameStore.getState().prog.pickingWp);
+
+    map.on('click', handlePickClick);
+
+    let prevPicking = useGameStore.getState().prog.pickingWp;
+    const unsub = useGameStore.subscribe((s) => {
+      if (s.prog.pickingWp !== prevPicking) {
+        prevPicking = s.prog.pickingWp;
+        applyCursor(prevPicking);
+      }
+    });
+
+    return () => {
+      map.off('click', handlePickClick);
+      unsub();
+      // Reset cursor on unmount.
+      map.getCanvas().style.cursor = '';
+    };
+  }, []);
+
+  /* ── Phase 2b Task 4: WP drag marker for the currently-edited WP.
+   *
+   * GeoJSON circle layers don't support drag — so we overlay an HTML
+   * maplibregl.Marker on the WP being edited. Drag end validates the safety
+   * radius and either commits via updateWpOrder or snaps back. The GeoJSON
+   * marker for the same WP stays in place underneath; on successful drag the
+   * draft mutation triggers a projection re-fire which repaints both the
+   * line + the GeoJSON marker at the new position. */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    let dragMarker: maplibregl.Marker | null = null;
+    let dragWpId: string | null = null;
+
+    const apply = (s: ReturnType<typeof useGameStore.getState>): void => {
+      const eo = s.prog.editingOrder;
+      const isEditingExisting =
+        eo?.kind === 'wp' && eo.id !== 'NEW';
+
+      if (!isEditingExisting) {
+        if (dragMarker) {
+          dragMarker.remove();
+          dragMarker = null;
+          dragWpId = null;
+        }
+        return;
+      }
+
+      const wp = s.prog.draft.wpOrders.find((w) => w.id === eo.id);
+      if (!wp) {
+        // The WP was deleted while editing — clean up.
+        if (dragMarker) {
+          dragMarker.remove();
+          dragMarker = null;
+          dragWpId = null;
+        }
+        return;
+      }
+
+      if (dragMarker && dragWpId === wp.id) {
+        // Reposition only if the WP moved (avoid re-snap during user drag).
+        const cur = dragMarker.getLngLat();
+        if (cur.lng !== wp.lon || cur.lat !== wp.lat) {
+          dragMarker.setLngLat([wp.lon, wp.lat]);
+        }
+        return;
+      }
+
+      // Switching to a different WP — replace the marker.
+      if (dragMarker) {
+        dragMarker.remove();
+        dragMarker = null;
+      }
+
+      const el = document.createElement('div');
+      el.className = 'wp-drag-marker';
+      const marker = new maplibregl.Marker({ element: el, draggable: true })
+        .setLngLat([wp.lon, wp.lat])
+        .addTo(map);
+
+      marker.on('dragend', () => {
+        const ll = marker.getLngLat();
+        const minNm = GameBalance.programming.minWpDistanceNm;
+        const state = useGameStore.getState();
+        const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+        const newWp = { lat: ll.lat, lon: ll.lng };
+        if (!validateWpDistance(boat, newWp, minNm)) {
+          // Reject — snap back to the stored position (read fresh from the
+          // store so we don't pick up a stale closure value).
+          const cur = useGameStore
+            .getState()
+            .prog.draft.wpOrders.find((w) => w.id === wp.id);
+          if (cur) marker.setLngLat([cur.lon, cur.lat]);
+          console.warn(`[ProgPanel] WP drag rejected — too close to boat (min ${minNm} NM)`);
+          return;
+        }
+        state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });
+      });
+
+      dragMarker = marker;
+      dragWpId = wp.id;
+    };
+
+    apply(useGameStore.getState());
+    const unsub = useGameStore.subscribe((s) => apply(s));
+
+    return () => {
+      unsub();
+      if (dragMarker) {
+        dragMarker.remove();
+        dragMarker = null;
+      }
+    };
+  }, []);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
   const coastlineVisible = useGameStore((s) => s.layers.coastline);

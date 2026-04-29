@@ -2291,6 +2291,9 @@
       "ULTIM": 1400
     }
   },
+  "programming": {
+    "minWpDistanceNm": 3
+  },
   "tick": {
     "intervalSeconds": 30
   }

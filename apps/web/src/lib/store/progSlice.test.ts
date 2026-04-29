@@ -26,6 +26,8 @@ interface TestStore {
   resetDraft: ReturnType<typeof createProgSlice>['resetDraft'];
   markCommitted: ReturnType<typeof createProgSlice>['markCommitted'];
   applyRouteAsCommitted: ReturnType<typeof createProgSlice>['applyRouteAsCommitted'];
+  setEditingOrder: ReturnType<typeof createProgSlice>['setEditingOrder'];
+  setPickingWp: ReturnType<typeof createProgSlice>['setPickingWp'];
 }
 
 function makeStore() {
@@ -232,5 +234,66 @@ describe('progSlice clear / reset / commit', () => {
     next.wpOrders.push(wp('w2'));
     expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
     expect(store.getState().prog.committed.wpOrders).toHaveLength(1);
+  });
+});
+
+describe('progSlice editingOrder', () => {
+  it('starts with editingOrder = null', () => {
+    const store = makeStore();
+    expect(store.getState().prog.editingOrder).toBeNull();
+  });
+
+  it('setEditingOrder updates the editingOrder field', () => {
+    const store = makeStore();
+    store.getState().setEditingOrder({ kind: 'cap', id: 'c1' });
+    expect(store.getState().prog.editingOrder).toEqual({ kind: 'cap', id: 'c1' });
+    store.getState().setEditingOrder({ kind: 'wp', id: 'w1' });
+    expect(store.getState().prog.editingOrder).toEqual({ kind: 'wp', id: 'w1' });
+    store.getState().setEditingOrder(null);
+    expect(store.getState().prog.editingOrder).toBeNull();
+  });
+
+  it('applyRouteAsCommitted preserves editingOrder', () => {
+    const store = makeStore();
+    store.getState().setEditingOrder({ kind: 'cap', id: 'c1' });
+    const next: ProgDraft = {
+      mode: 'wp',
+      capOrders: [],
+      wpOrders: [wp('w1')],
+      finalCap: null,
+      sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    expect(store.getState().prog.editingOrder).toEqual({ kind: 'cap', id: 'c1' });
+  });
+});
+
+describe('progSlice pickingWp', () => {
+  it('starts with pickingWp = false', () => {
+    const store = makeStore();
+    expect(store.getState().prog.pickingWp).toBe(false);
+  });
+
+  it('setPickingWp toggles the picking flag', () => {
+    const store = makeStore();
+    expect(store.getState().prog.pickingWp).toBe(false);
+    store.getState().setPickingWp(true);
+    expect(store.getState().prog.pickingWp).toBe(true);
+    store.getState().setPickingWp(false);
+    expect(store.getState().prog.pickingWp).toBe(false);
+  });
+
+  it('applyRouteAsCommitted preserves pickingWp', () => {
+    const store = makeStore();
+    store.getState().setPickingWp(true);
+    const next: ProgDraft = {
+      mode: 'wp',
+      capOrders: [],
+      wpOrders: [wp('w1')],
+      finalCap: null,
+      sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    expect(store.getState().prog.pickingWp).toBe(true);
   });
 });

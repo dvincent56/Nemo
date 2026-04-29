@@ -31,6 +31,7 @@ class GameBalanceNode {
   get grounding() { return BrowserGameBalance.grounding; }
   get zones() { return BrowserGameBalance.zones; }
   get economy() { return BrowserGameBalance.economy; }
+  get programming() { return BrowserGameBalance.programming; }
   get tickIntervalSeconds() { return BrowserGameBalance.tickIntervalSeconds; }
 }
 

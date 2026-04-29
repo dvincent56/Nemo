@@ -11,8 +11,11 @@ import type {
   WorkerInMessage,
   WorkerOutMessage,
   ProjectionResult,
+  ProjectionRun,
 } from '@/lib/projection/types';
 import { serializeDraft } from '@/lib/prog/serialize';
+import { deepEqDraft } from '@/lib/prog/equality';
+import type { ProgDraft } from '@/lib/prog/types';
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
@@ -321,6 +324,116 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
     });
 }
 
+/**
+ * Find the projection point closest to a given target wall-clock time.
+ * Buffer layout: [lat, lon, dtMs, bsp, tws, twd] × N — see PROJECTION_POINT_FIELDS.
+ * `dtMs` is relative to `run.startMs`; we look for the index whose absolute
+ * timestamp is nearest to `targetMs`. Linear scan: pointsCount is bounded by
+ * the projection step count (~few hundred), well below where binary search
+ * would matter and we only run this once per order per recompute.
+ */
+function findProjectionPointAtTime(
+  run: ProjectionRun,
+  targetMs: number,
+): { lat: number; lon: number } | null {
+  const buf = run.pointsBuf;
+  const count = run.pointsCount;
+  if (count === 0) return null;
+  const targetDt = targetMs - run.startMs;
+  // Negative target → before the projection starts: fall back to the first
+  // point. Beyond the last point → fall back to the last.
+  if (targetDt <= buf[2]!) return { lat: buf[0]!, lon: buf[1]! };
+  const lastB = (count - 1) * 6;
+  if (targetDt >= buf[lastB + 2]!) return { lat: buf[lastB]!, lon: buf[lastB + 1]! };
+  // Find the first point whose dtMs >= targetDt — return whichever side is
+  // closer in time.
+  for (let i = 1; i < count; i++) {
+    const b = i * 6;
+    const dt = buf[b + 2]!;
+    if (dt >= targetDt) {
+      const prevB = (i - 1) * 6;
+      const prevDt = buf[prevB + 2]!;
+      const prevDist = targetDt - prevDt;
+      const currDist = dt - targetDt;
+      return prevDist <= currDist
+        ? { lat: buf[prevB]!, lon: buf[prevB + 1]! }
+        : { lat: buf[b]!, lon: buf[b + 1]! };
+    }
+  }
+  return { lat: buf[lastB]!, lon: buf[lastB + 1]! };
+}
+
+/**
+ * Build a FeatureCollection for the prog-order-markers source from the active
+ * draft + projection run. Order trigger times (CapOrder.trigger.time and
+ * SailOrder AT_TIME .time) are Unix SECONDS — matches engine convention and
+ * the conversion already in `orderQueueToSegments`.
+ */
+function buildMarkerGeoJson(
+  draft: ProgDraft,
+  run: ProjectionRun,
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+
+  // Cap orders → predicted position at trigger.time
+  for (const cap of draft.capOrders) {
+    const pos = findProjectionPointAtTime(run, cap.trigger.time * 1000);
+    if (!pos) continue;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+      properties: { kind: 'cap', id: cap.id },
+    });
+  }
+
+  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → offset from WP
+  for (const sail of draft.sailOrders) {
+    if (sail.trigger.type === 'AT_TIME') {
+      const pos = findProjectionPointAtTime(run, sail.trigger.time * 1000);
+      if (!pos) continue;
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+        properties: { kind: 'sail', id: sail.id },
+      });
+    } else {
+      const trig = sail.trigger; // narrow once for TS
+      const wp = draft.wpOrders.find((w) => w.id === trig.waypointOrderId);
+      if (!wp) continue;
+      // ~0.001° east ≈ 60 m at mid-lat — visible separation from the wp
+      // marker without drifting off the actual location at typical zooms.
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [wp.lon + 0.001, wp.lat] },
+        properties: { kind: 'sail', id: sail.id },
+      });
+    }
+  }
+
+  // WP orders: literal lat/lon
+  for (const wp of draft.wpOrders) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [wp.lon, wp.lat] },
+      properties: { kind: 'wp', id: wp.id },
+    });
+  }
+
+  // Final cap: at the last WP (visually distinct from the WP marker)
+  if (draft.finalCap) {
+    const lastWp = draft.wpOrders[draft.wpOrders.length - 1];
+    if (lastWp) {
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lastWp.lon, lastWp.lat] },
+        properties: { kind: 'finalCap', id: draft.finalCap.id },
+      });
+    }
+  }
+
+  return { type: 'FeatureCollection', features };
+}
+
 export function useProjectionLine(map: maplibregl.Map | null): void {
   const workerRef = useRef<Worker | null>(null);
   const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
@@ -350,49 +463,26 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map]);
 
-  // Update MapLibre sources with projection result
-  const updateMapSources = useCallback((result: ProjectionResult) => {
-    const m = mapRef.current;
-    if (!m) return;
-    // If sources aren't added yet, schedule a retry on next idle frame.
-    // isStyleLoaded() is unreliable — relying on source presence instead.
-    if (!m.getSource('projection-line')) {
-      m.once('idle', () => {
-        if (lastResultRef.current) updateMapSources(lastResultRef.current);
-      });
-      return;
-    }
-    // Sanity log: if the map ever reports more than one layer for any of the
-    // projection-* ids the duplicate render bug has reappeared. MapLibre's
-    // public API only allows a single layer per id, so this should never
-    // fire — but the log makes regressions visible immediately.
-    if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
-      const styleLayers = m.getStyle().layers ?? [];
-      const counts: Record<string, number> = {};
-      for (const layer of styleLayers) {
-        if (
-          layer.id === 'projection-line-layer' ||
-          layer.id === 'projection-markers-time-circle' ||
-          layer.id === 'projection-markers-time-label' ||
-          layer.id === 'projection-markers-maneuver-icon'
-        ) {
-          counts[layer.id] = (counts[layer.id] ?? 0) + 1;
-        }
-      }
-      for (const [id, n] of Object.entries(counts)) {
-        if (n > 1) console.warn('[useProjectionLine] DUPLICATE projection layer detected:', id, '×', n);
-      }
-    }
-    const map = m;
-    const buf = result.pointsBuf;
-    const count = result.pointsCount;
+  /**
+   * Push a single ProjectionRun (committed or draft) into the matching MapLibre
+   * source/layer set. `variant` selects the layer-id suffix:
+   *   - 'committed' → projection-line-committed / -markers-time-committed / …
+   *   - 'draft'     → projection-line-draft / …
+   */
+  const writeRunToMap = useCallback((
+    map: maplibregl.Map,
+    run: ProjectionRun,
+    variant: 'committed' | 'draft',
+  ): void => {
+    const buf = run.pointsBuf;
+    const count = run.pointsCount;
 
-    // Line source: one LineString covering all points. Color is applied via
-    // a `line-gradient` paint expression keyed on `line-progress`, with a
-    // stop per vertex placed at its normalised cumulative-distance position.
-    // This replaces the old per-segment Feature approach (~500 features per
-    // recompute), which was the main render-side bottleneck on mobile.
-    const lineSrc = map.getSource('projection-line') as maplibregl.GeoJSONSource | undefined;
+    const lineSrcId = `projection-line-${variant}`;
+    const lineLayerId = `projection-line-${variant}-layer`;
+    const timeSrcId = `projection-markers-time-${variant}`;
+    const manSrcId = `projection-markers-maneuver-${variant}`;
+
+    const lineSrc = map.getSource(lineSrcId) as maplibregl.GeoJSONSource | undefined;
     if (count < 2) {
       lineSrc?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} });
     } else {
@@ -406,14 +496,14 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         geometry: { type: 'LineString', coordinates: coords },
         properties: {},
       });
-      const gradient = buildLineGradient(buf, count, result.bspMax);
-      if (gradient) {
-        map.setPaintProperty('projection-line-layer', 'line-gradient', gradient);
+      const gradient = buildLineGradient(buf, count, run.bspMax);
+      if (gradient && map.getLayer(lineLayerId)) {
+        map.setPaintProperty(lineLayerId, 'line-gradient', gradient);
       }
     }
 
-    // Time markers source
-    const timeFeatures: GeoJSON.Feature[] = result.timeMarkers.map((m) => {
+    // Time markers
+    const timeFeatures: GeoJSON.Feature[] = run.timeMarkers.map((m) => {
       const b = m.index * 6;
       return {
         type: 'Feature',
@@ -421,16 +511,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         properties: { label: m.label },
       };
     });
-
-    const timeSrc = map.getSource('projection-markers-time') as maplibregl.GeoJSONSource | undefined;
+    const timeSrc = map.getSource(timeSrcId) as maplibregl.GeoJSONSource | undefined;
     timeSrc?.setData({ type: 'FeatureCollection', features: timeFeatures });
 
-    // Maneuver markers source. When the marker carries explicit lat/lon
-    // (currently only WPT-capture markers), use those directly so the marker
-    // sits at the true WPT bend rather than the polyline vertex before it.
-    // Other markers (sail changes, tack/gybe, zone entries…) keep the legacy
-    // pointsBuf[index] lookup.
-    const manFeatures: GeoJSON.Feature[] = result.maneuverMarkers
+    // Maneuver markers — when explicit lat/lon present (WPT captures), use it.
+    const manFeatures: GeoJSON.Feature[] = run.maneuverMarkers
       .map((m) => {
         if (m.index < 0 || m.index >= count) return null;
         const b = m.index * 6;
@@ -442,15 +527,106 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
           properties: {
             type: m.type,
             detail: m.detail,
-            timestamp: result.startMs + buf[b + 2]!,
+            timestamp: run.startMs + buf[b + 2]!,
           },
         };
       })
       .filter(Boolean) as GeoJSON.Feature[];
-
-    const manSrc = map.getSource('projection-markers-maneuver') as maplibregl.GeoJSONSource | undefined;
+    const manSrc = map.getSource(manSrcId) as maplibregl.GeoJSONSource | undefined;
     manSrc?.setData({ type: 'FeatureCollection', features: manFeatures });
   }, []);
+
+  /**
+   * Empty out a variant's three sources. Used to clear the draft layers when
+   * the user cancels edits / commits — without this the previous draft polyline
+   * would linger on the map until the next compute clears it.
+   */
+  const clearVariant = useCallback((map: maplibregl.Map, variant: 'committed' | 'draft'): void => {
+    const lineSrc = map.getSource(`projection-line-${variant}`) as maplibregl.GeoJSONSource | undefined;
+    lineSrc?.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} });
+    const timeSrc = map.getSource(`projection-markers-time-${variant}`) as maplibregl.GeoJSONSource | undefined;
+    timeSrc?.setData({ type: 'FeatureCollection', features: [] });
+    const manSrc = map.getSource(`projection-markers-maneuver-${variant}`) as maplibregl.GeoJSONSource | undefined;
+    manSrc?.setData({ type: 'FeatureCollection', features: [] });
+  }, []);
+
+  /**
+   * Phase 2b Task 3: refresh the prog-order-markers source from the active
+   * draft/committed slice + the matching projection run. AT_TIME orders are
+   * placed at the projection point matching their trigger time; AT_WAYPOINT
+   * sails are offset slightly east of the referenced WP so they don't sit
+   * exactly on top; WPs and finalCap use literal lat/lon. */
+  const refreshOrderMarkers = useCallback((map: maplibregl.Map, draft: ProgDraft, run: ProjectionRun): void => {
+    const src = map.getSource('prog-order-markers') as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    src.setData(buildMarkerGeoJson(draft, run));
+  }, []);
+
+  // Update MapLibre sources with projection result. Renders the committed run
+  // into the *-committed source/layer set, and (when the worker found a
+  // distinct draft) the draft run into the *-draft set. When draft is absent,
+  // we explicitly clear the *-draft sources so a stale draft polyline from a
+  // previous dirty cycle doesn't linger.
+  const updateMapSources = useCallback((result: ProjectionResult) => {
+    const m = mapRef.current;
+    if (!m) return;
+    // If sources aren't added yet, schedule a retry on next idle frame.
+    // isStyleLoaded() is unreliable — relying on source presence instead.
+    if (!m.getSource('projection-line-committed')) {
+      m.once('idle', () => {
+        if (lastResultRef.current) updateMapSources(lastResultRef.current);
+      });
+      return;
+    }
+    // Sanity log: if the map ever reports more than one layer for any of the
+    // projection-* ids the duplicate render bug has reappeared. MapLibre's
+    // public API only allows a single layer per id, so this should never
+    // fire — but the log makes regressions visible immediately.
+    if (typeof console !== 'undefined' && process.env.NODE_ENV !== 'production') {
+      const styleLayers = m.getStyle().layers ?? [];
+      const counts: Record<string, number> = {};
+      const watched = new Set<string>([
+        'projection-line-committed-layer', 'projection-line-draft-layer',
+        'projection-markers-time-committed-circle', 'projection-markers-time-committed-label',
+        'projection-markers-time-draft-circle', 'projection-markers-time-draft-label',
+        'projection-markers-maneuver-committed-icon', 'projection-markers-maneuver-draft-icon',
+      ]);
+      for (const layer of styleLayers) {
+        if (watched.has(layer.id)) {
+          counts[layer.id] = (counts[layer.id] ?? 0) + 1;
+        }
+      }
+      for (const [id, n] of Object.entries(counts)) {
+        if (n > 1) console.warn('[useProjectionLine] DUPLICATE projection layer detected:', id, '×', n);
+      }
+    }
+
+    writeRunToMap(m, result, 'committed');
+
+    // Drive the committed line opacity from `isDirty`. When draft is present,
+    // the committed projection becomes the "ghost" reference at 40% so the
+    // draft can dominate visually; when not, it's the only line and stays at
+    // full opacity (~0.85, the legacy value baked into the layer paint).
+    if (m.getLayer('projection-line-committed-layer')) {
+      m.setPaintProperty('projection-line-committed-layer', 'line-opacity', result.draft ? 0.4 : 0.85);
+    }
+
+    if (result.draft) {
+      writeRunToMap(m, result.draft, 'draft');
+    } else {
+      clearVariant(m, 'draft');
+    }
+
+    // Phase 2b Task 3: refresh the per-order markers. Use draft when dirty
+    // (so markers match what the user is editing), committed otherwise. The
+    // active run (result.draft / result) is the matching projection — its
+    // pointsBuf is what AT_TIME orders project against.
+    const state = useGameStore.getState();
+    const isDirty = !!result.draft;
+    const activeDraft = isDirty ? state.prog.draft : state.prog.committed;
+    const activeRun: ProjectionRun = result.draft ?? result;
+    refreshOrderMarkers(m, activeDraft, activeRun);
+  }, [writeRunToMap, clearVariant, refreshOrderMarkers]);
 
   // Initialize Worker
   useEffect(() => {
@@ -595,6 +771,22 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     const nowMs = Date.now();
 
+    // Phase 2b Task 2: emit BOTH committed and draft segment lists. The worker
+    // detects equality via referential identity — when prog.draft === prog.committed
+    // (no edits), they serialize through the same path but are not the same
+    // ARRAY reference, so we explicitly check structural equality here and pass
+    // the SAME committed array as draftSegments. The cheap reference check
+    // inside the worker then short-circuits the second simulation.
+    //
+    // Equality uses the typed `deepEqDraft` from `@/lib/prog/equality` so the
+    // dirty signal is identical to ProgPanel's — no JSON.stringify ordering
+    // fragility.
+    const committedSegments = orderQueueToSegments(serializeDraft(prog.committed));
+    const isDirty = !deepEqDraft(prog.draft, prog.committed);
+    const draftSegments = isDirty
+      ? orderQueueToSegments(serializeDraft(prog.draft))
+      : committedSegments; // identical reference → worker skips the 2nd sim
+
     const input: ProjectionInput = {
       lat: hud.lat,
       lon: hud.lon,
@@ -604,13 +796,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       activeSail: effectiveSail,
       sailAuto: sail.sailAuto,
       twaLock: effectiveTwaLock,
-      // Phase 2a Task 4: segments derive from `prog.committed` — the
-      // confirmed-on-server draft. Live edits to `prog.draft` are intentionally
-      // not previewed here for 2a; that's the 2b "live draft projection"
-      // milestone. We serialize the typed draft to wire format then funnel it
-      // through orderQueueToSegments which only reads { id, type, value,
-      // trigger } — exactly what serializeDraft emits.
-      segments: orderQueueToSegments(serializeDraft(prog.committed)),
+      segments: committedSegments,
+      draftSegments,
       polar: polarRef.current,
       // Real aggregated loadout effects from the engine — upgrade bonuses
       // and wear multipliers shape the predicted trajectory the same way
@@ -643,10 +830,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevHdg = useGameStore.getState().hud.hdg;
     let prevSail = useGameStore.getState().sail.currentSail;
     let prevSailAuto = useGameStore.getState().sail.sailAuto;
-    // Phase 2a Task 4: track prog.committed since segments derive from it.
-    // prog.draft changes (live editing in ProgPanel) intentionally do NOT
-    // re-fire the projection in 2a — that's a 2b enhancement.
-    let prevQueue: unknown = useGameStore.getState().prog.committed;
+    // Phase 2b Task 2: track BOTH prog.committed and prog.draft — committed
+    // drives the persistent projection, draft drives the live preview overlay
+    // when the user is editing the queue.
+    let prevCommitted: unknown = useGameStore.getState().prog.committed;
+    let prevDraft: unknown = useGameStore.getState().prog.draft;
     let prevTick = useGameStore.getState().lastTickUnix;
     let prevDecoded = useGameStore.getState().weather.decodedGrid;
     let prevSnapshot = useGameStore.getState().weather.gridData;
@@ -660,7 +848,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const hdgChanged = s.hud.hdg !== prevHdg;
       const sailChanged = s.sail.currentSail !== prevSail;
       const autoChanged = s.sail.sailAuto !== prevSailAuto;
-      const queueChanged = s.prog.committed !== prevQueue;
+      const committedChanged = s.prog.committed !== prevCommitted;
+      const draftChanged = s.prog.draft !== prevDraft;
       const tickChanged = s.lastTickUnix !== prevTick;
       const gridChanged = s.weather.decodedGrid !== prevDecoded || s.weather.gridData !== prevSnapshot;
       const zonesChanged = s.zones !== prevZones;
@@ -672,7 +861,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevHdg = s.hud.hdg;
       prevSail = s.sail.currentSail;
       prevSailAuto = s.sail.sailAuto;
-      prevQueue = s.prog.committed;
+      prevCommitted = s.prog.committed;
+      prevDraft = s.prog.draft;
       prevTick = s.lastTickUnix;
       prevDecoded = s.weather.decodedGrid;
       prevSnapshot = s.weather.gridData;
@@ -686,7 +876,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       // backpressure is handled by inFlight/pending refs, not by debounce.
       if (
         previewHdgChanged || hdgChanged ||
-        sailChanged || autoChanged || queueChanged || tickChanged || gridChanged ||
+        sailChanged || autoChanged || committedChanged || draftChanged ||
+        tickChanged || gridChanged ||
         zonesChanged ||
         previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged
       ) {
