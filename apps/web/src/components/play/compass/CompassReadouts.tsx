@@ -28,7 +28,7 @@ export interface CompassReadoutsProps {
   pendingHint?: {
     label: string;
     className: 'hintGybe' | 'hintTack' | 'hintSail';
-  };
+  } | undefined;
 }
 
 export default function CompassReadouts({
