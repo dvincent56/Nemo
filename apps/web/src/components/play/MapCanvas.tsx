@@ -1131,7 +1131,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         if (features.length > 0) return;
       }
 
-      const minNm = GameBalance.programming.minWpDistanceNm;
+      const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
       const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
       const wp = { lat: e.lngLat.lat, lon: e.lngLat.lng };
 
@@ -1249,7 +1249,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
 
       marker.on('dragend', () => {
         const ll = marker.getLngLat();
-        const minNm = GameBalance.programming.minWpDistanceNm;
+        const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
         const state = useGameStore.getState();
         const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
         const newWp = { lat: ll.lat, lon: ll.lng };

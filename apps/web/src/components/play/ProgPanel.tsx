@@ -156,7 +156,7 @@ export default function ProgPanel(): ReactElement {
           index={index}
           predecessorIndex={predecessorIndex}
           boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
-          minWpDistanceNm={GameBalance.programming.minWpDistanceNm}
+          minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 3}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             updateWpOrder(order.id, order);
