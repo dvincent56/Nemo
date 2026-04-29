@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
@@ -10,13 +10,12 @@ import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
 import { Check } from 'lucide-react';
 import styles from './Compass.module.css';
 import Tooltip from '@/components/ui/Tooltip';
-import { VB, IMOCA_VB, IMOCA_PATH, IMOCA_SCALE, CX, CY, R_OUTER, R_INNER, pt, isInVmgZone } from './compass/compassGeometry';
-import WindWaves from './compass/WindWaves';
+import { isInVmgZone } from './compass/compassGeometry';
 import CompassReadouts from './compass/CompassReadouts';
 import CompassLockToggle from './compass/CompassLockToggle';
+import CompassDial from './compass/CompassDial';
 
 export default function Compass(): React.ReactElement {
-  const svgRef = useRef<SVGSVGElement>(null);
   const [targetHdg, setTargetHdg] = useState<number | null>(null);
   const [twaLocked, setTwaLocked] = useState(false);
   const [lockedTwa, setLockedTwa] = useState(0);
@@ -120,33 +119,6 @@ export default function Compass(): React.ReactElement {
     }
   }
 
-  // ── SVG direct DOM update (60fps during drag) ──
-  const writeSvg = useCallback((target: number) => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const boat = svg.querySelector<SVGGElement>('#boat');
-    const ghost = svg.querySelector<SVGGElement>('#ghost');
-
-    if (boat) boat.setAttribute('transform', `rotate(${target} ${CX} ${CY})`);
-    if (ghost) ghost.style.opacity = target === hdg ? '0' : '0.2';
-  }, [hdg]);
-
-  // Sync SVG when hdg/twd changes from server
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const boat = svg.querySelector<SVGGElement>('#boat');
-    const ghost = svg.querySelector<SVGGElement>('#ghost');
-
-    if (boat && targetHdg === null) {
-      boat.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
-    }
-    if (ghost) {
-      ghost.setAttribute('transform', `rotate(${hdg} ${CX} ${CY})`);
-      ghost.style.opacity = '0';
-    }
-  }, [hdg, twd]);
-
   // Sync local lock state from server — reflect authoritative state in
   // both the preview toggle and the committed mirror, so the UI stays
   // aligned if the server clears/changes the lock externally.
@@ -159,73 +131,6 @@ export default function Compass(): React.ReactElement {
     }
     setCommittedTwaLock(serverTwaLock);
   }, [serverTwaLock]);
-
-  // ── Drag handling ──
-  const getHdgFromEvent = (e: PointerEvent): number | null => {
-    const svg = svgRef.current;
-    if (!svg) return null;
-    const rect = svg.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
-    if (dx * dx + dy * dy < 400) return null; // too close to center
-    let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
-    if (angle < 0) angle += 360;
-    return Math.round(angle) % 360;
-  };
-
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    let dragging = false;
-
-    const onDown = (e: PointerEvent) => {
-      dragging = true;
-      svg.setPointerCapture(e.pointerId);
-      const h = getHdgFromEvent(e);
-      if (h !== null) {
-        setTargetHdg(h);
-        writeSvg(h);
-        useGameStore.getState().setPreview({ hdg: h });
-      }
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!dragging) return;
-      const h = getHdgFromEvent(e);
-      if (h !== null) {
-        setTargetHdg(h);
-        writeSvg(h);
-        useGameStore.getState().setPreview({ hdg: h });
-      }
-    };
-    const onUp = (e: PointerEvent) => {
-      dragging = false;
-      svg.releasePointerCapture(e.pointerId);
-    };
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? -1 : 1;
-      setTargetHdg((prev) => {
-        const base = prev ?? hdg;
-        const h = (base + delta + 360) % 360;
-        writeSvg(h);
-        useGameStore.getState().setPreview({ hdg: h });
-        return h;
-      });
-    };
-
-    svg.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', onUp);
-    svg.addEventListener('wheel', onWheel, { passive: false });
-    return () => {
-      svg.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      svg.removeEventListener('wheel', onWheel);
-    };
-  }, [hdg, writeSvg]);
 
   // ── Keyboard shortcuts ──
   useEffect(() => {
@@ -309,6 +214,11 @@ export default function Compass(): React.ReactElement {
   };
 
   // ── Cancel editing ──
+  // The dial's sync `useEffect` watches [value, ghostValue] and re-applies
+  // the SVG transforms on the next render, so resetting `targetHdg` to null
+  // (which makes displayHdg revert to `hdg` and the ghost prop go back to
+  // matching `value`) is enough to visually snap the boat back. No direct
+  // SVG mutation needed here anymore.
   const cancelEdit = () => {
     setTargetHdg(null);
     if (committedTwaLock !== null) {
@@ -319,9 +229,6 @@ export default function Compass(): React.ReactElement {
       setTwaLocked(false);
       useGameStore.getState().setPreview({ hdg: null, twaLocked: false });
     }
-    writeSvg(hdg);
-    const ghost = svgRef.current?.querySelector<SVGGElement>('#ghost');
-    if (ghost) ghost.style.opacity = '0';
   };
 
   // ── Toggle TWA lock (preview only) ──
@@ -345,29 +252,6 @@ export default function Compass(): React.ReactElement {
     }
   };
 
-  // ── Tick marks generation ──
-  const ticks = [];
-  for (let i = 0; i < 36; i++) {
-    const deg = i * 10;
-    const isCardinal = deg % 90 === 0;
-    const isIntercardinal = deg % 45 === 0 && !isCardinal;
-    const len = isCardinal ? 12 : isIntercardinal ? 10 : 6;
-    const opacity = isCardinal ? 0.4 : isIntercardinal ? 0.25 : 0.15;
-    const width = isCardinal ? 1.2 : 0.5;
-    const p1 = pt(R_OUTER, deg);
-    const p2 = pt(R_OUTER - len, deg);
-    ticks.push(
-      <line key={i} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-        stroke={`rgba(245,240,232,${opacity})`} strokeWidth={width} />
-    );
-  }
-
-  // Cardinal labels
-  const cardinals = [
-    { label: 'N', deg: 0 }, { label: 'E', deg: 90 },
-    { label: 'S', deg: 180 }, { label: 'O', deg: 270 },
-  ];
-
   return (
     <>
       <div className={`${styles.wrapper} ${vmgGlow ? styles.vmgGlow : ''}`}>
@@ -383,70 +267,21 @@ export default function Compass(): React.ReactElement {
           pendingHint={pendingHint ?? undefined}
         />
 
-        {/* Compass SVG */}
-        <div className={styles.stage}>
-          <svg ref={svgRef} viewBox={`0 0 ${VB} ${VB}`} className={styles.svg}>
-            {/* Circles */}
-            <circle cx={CX} cy={CY} r={R_OUTER} fill="none"
-              stroke="rgba(245,240,232,0.18)" strokeWidth="1" />
-            <circle cx={CX} cy={CY} r={R_INNER} fill="none"
-              stroke="rgba(245,240,232,0.08)" strokeWidth="0.5" />
-
-            {/* Tick marks */}
-            {ticks}
-
-            {/* Cardinal labels (French: O for Ouest) */}
-            {cardinals.map(({ label, deg }) => {
-              const p = pt(R_OUTER - 20, deg);
-              return (
-                <text key={label} x={p.x} y={p.y}
-                  className={styles.cardinalLabel}
-                  fontFamily="Bebas Neue,sans-serif" fontSize="15"
-                  fill="rgba(245,240,232,0.85)"
-                  textAnchor="middle" dominantBaseline="central">
-                  {label}
-                </text>
-              );
-            })}
-
-            {/* Degree labels every 30° (except cardinals at 0/90/180/270) */}
-            {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
-              const p = pt(R_OUTER - 32, deg);
-              return (
-                <text key={`deg-${deg}`} x={p.x} y={p.y}
-                  className={styles.degreeLabel}
-                  fontFamily="Space Mono,monospace" fontSize="8" fontWeight="700"
-                  fill="rgba(245,240,232,0.35)"
-                  textAnchor="middle" dominantBaseline="central">
-                  {String(deg).padStart(3, '0')}
-                </text>
-              );
-            })}
-
-            {/* Wind waves — animated, OUTSIDE the circle */}
-            <WindWaves twd={twd} tws={tws} cx={CX} cy={CY} r={R_OUTER} />
-
-            {/* Ghost of previous heading (shown during edit) */}
-            <g id="ghost" transform={`rotate(${hdg} ${CX} ${CY})`} style={{ opacity: 0 }}>
-              <g transform={`translate(${CX},${CY}) rotate(-90) scale(${IMOCA_SCALE}) translate(${-IMOCA_VB.w / 2},${-IMOCA_VB.h / 2})`}>
-                <path d={IMOCA_PATH}
-                  fill="none" stroke="#f5f0e8" strokeWidth={8} strokeDasharray="12 8" />
-              </g>
-            </g>
-
-            {/* Boat silhouette — IMOCA, oriented by heading */}
-            <g id="boat" transform={`rotate(${hdg} ${CX} ${CY})`}>
-              <line x1={CX} y1={CY - 26} x2={CX} y2={CY - 70}
-                stroke="#f5f0e8" strokeWidth="1" opacity="0.5" strokeDasharray="4 3" />
-              <g transform={`translate(${CX},${CY}) rotate(-90) scale(${IMOCA_SCALE}) translate(${-IMOCA_VB.w / 2},${-IMOCA_VB.h / 2})`}>
-                <path d={IMOCA_PATH} fill="#c9a227" />
-              </g>
-            </g>
-
-            {/* Center dot */}
-            <circle cx={CX} cy={CY} r={3} fill="rgba(245,240,232,0.25)" />
-          </svg>
-        </div>
+        {/* Compass cadran — extracted primitive. The inline onChange wraps
+            the dial's drag/wheel callback so we update BOTH the local
+            targetHdg state (drives applyActive, displayHdg, hint) AND the
+            store preview (drives the projection line on the map). Dropping
+            either side breaks live drag feedback. */}
+        <CompassDial
+          value={displayHdg}
+          onChange={(h) => {
+            setTargetHdg(h);
+            useGameStore.getState().setPreview({ hdg: h });
+          }}
+          windDir={twd}
+          ghostValue={hdg}
+          tws={tws}
+        />
 
         {/* Action buttons */}
         <div className={styles.actions}>

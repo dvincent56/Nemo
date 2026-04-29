@@ -51,23 +51,10 @@
 
 /* Readouts grid moved to compass/CompassReadouts.module.css —
  * see <CompassReadouts>. The floating hint above keeps living here
- * because it's positioned against .wrapper. */
-
-/* Compass SVG */
-.stage {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-}
-
-.svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  cursor: crosshair;
-  user-select: none;
-  touch-action: none;
-}
+ * because it's positioned against .wrapper.
+ *
+ * Stage / svg / cardinal & degree label styles moved to
+ * compass/CompassDial.module.css — see <CompassDial>. */
 
 /* Actions */
 .actions {
@@ -213,10 +200,6 @@
   border-color: #9e2a2a;
 }
 
-/* SVG text labels — class hooks for responsive sizing */
-.cardinalLabel { font-size: 15px; }
-.degreeLabel { font-size: 8px; }
-
 @media (max-height: 500px) {
   .wrapper {
     width: clamp(180px, 28vw, 240px);
@@ -227,26 +210,14 @@
   .actionBtn { min-height: 32px; font-size: 8px; padding: 6px 4px; }
 }
 
-@media (max-height: 600px) {
-  .stage { max-width: 100px; margin: 0 auto; }
-}
-
 @media (max-height: 480px) {
   .wrapper {
     width: 100%;
     padding: 6px 8px 7px;
     gap: 5px;
   }
-  .stage { max-width: 80px; margin: 0 auto; }
   .actions { gap: 4px; padding-top: 4px; }
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
-  .degreeLabel { display: none; }
-  .cardinalLabel { font-size: 26px; }
-}
-
-@media (max-height: 360px) {
-  .stage { max-width: 64px; }
-  .cardinalLabel { font-size: 30px; }
 }
 
 /* Phone width */
@@ -256,15 +227,11 @@
     padding: 6px 8px 7px;
     gap: 5px;
   }
-  .stage { max-width: 100px; margin: 0 auto; }
   .actions { gap: 4px; padding-top: 4px; }
   .actionBtn { min-height: 20px; font-size: 7.5px; padding: 0 2px; gap: 3px; }
-  .degreeLabel { display: none; }
-  .cardinalLabel { font-size: 26px; }
 }
 
 /* Very narrow phones (iPhone SE 320px) */
 @media (max-width: 360px) {
   .wrapper { width: 100%; padding: 6px; }
-  .stage { max-width: 80px; }
 }
