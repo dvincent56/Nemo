@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore } from '@/lib/store';
 import {
   findOceanPreset,
   DEFAULT_OCEAN_ID,
 } from '@/lib/mapAppearance';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
+import { validateWpDistance } from '@/lib/prog/safetyRadius';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 import { selectGhostPosition } from '@/lib/store/timeline-selectors';
@@ -1092,6 +1094,193 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       canvas.style.cursor = prevCursor;
     };
   }, [routerPhase, setRouterDestination]);
+
+  /* ── Phase 2b Task 4: WP picking mode (click on map → add WP).
+   *
+   * Reacts to `prog.pickingWp` flipping true: changes the cursor to crosshair
+   * and registers a one-shot map click handler. When the user clicks on the
+   * map (away from existing prog markers), we validate the safety radius
+   * against the current boat position and either:
+   *  - add a fresh WpOrder + transition `editingOrder` to the new id, OR
+   *  - reject the click (warn + leave picking mode active so the user can
+   *    try again).
+   *
+   * Pickers reset themselves via setPickingWp(false) on success — and the
+   * WpEditor unmount path also resets defensively (cancel button, etc.).
+   */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const PROG_LAYERS = [
+      'prog-order-markers-cap',
+      'prog-order-markers-sail',
+      'prog-order-markers-wp',
+      'prog-order-markers-finalCap',
+    ];
+
+    const handlePickClick = (e: maplibregl.MapMouseEvent): void => {
+      const state = useGameStore.getState();
+      if (!state.prog.pickingWp) return;
+
+      // Skip if the click hit an existing prog marker — those have their own
+      // click handlers (open the editor for that marker).
+      const visibleLayers = PROG_LAYERS.filter((id) => map.getLayer(id));
+      if (visibleLayers.length > 0) {
+        const features = map.queryRenderedFeatures(e.point, { layers: visibleLayers });
+        if (features.length > 0) return;
+      }
+
+      const minNm = GameBalance.programming.minWpDistanceNm;
+      const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+      const wp = { lat: e.lngLat.lat, lon: e.lngLat.lng };
+
+      if (!validateWpDistance(boat, wp, minNm)) {
+        // TODO Phase 2b: surface this as a toast. For now, console.warn keeps
+        // the user state intact (still in picking mode) so they can try again.
+        console.warn(`[ProgPanel] WP trop proche du bateau (min ${minNm} NM)`);
+        return;
+      }
+
+      const wpOrders = state.prog.draft.wpOrders;
+      const newId = `wp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const lastWp = wpOrders[wpOrders.length - 1];
+      const trigger: import('@/lib/prog/types').WpOrder['trigger'] = lastWp
+        ? { type: 'AT_WAYPOINT', waypointOrderId: lastWp.id }
+        : { type: 'IMMEDIATE' };
+
+      state.addWpOrder({
+        id: newId,
+        trigger,
+        lat: wp.lat,
+        lon: wp.lon,
+        captureRadiusNm: 0.5,
+      });
+      state.setPickingWp(false);
+      // Smoothly transition the editor from "NEW" mode to editing the just-
+      // created WP. The editor re-renders with its capture-radius/trigger UI.
+      state.setEditingOrder({ kind: 'wp', id: newId });
+    };
+
+    // Cursor sync — flip the canvas cursor whenever pickingWp toggles.
+    const applyCursor = (picking: boolean): void => {
+      const canvas = map.getCanvas();
+      canvas.style.cursor = picking ? 'crosshair' : '';
+    };
+    applyCursor(useGameStore.getState().prog.pickingWp);
+
+    map.on('click', handlePickClick);
+
+    let prevPicking = useGameStore.getState().prog.pickingWp;
+    const unsub = useGameStore.subscribe((s) => {
+      if (s.prog.pickingWp !== prevPicking) {
+        prevPicking = s.prog.pickingWp;
+        applyCursor(prevPicking);
+      }
+    });
+
+    return () => {
+      map.off('click', handlePickClick);
+      unsub();
+      // Reset cursor on unmount.
+      map.getCanvas().style.cursor = '';
+    };
+  }, []);
+
+  /* ── Phase 2b Task 4: WP drag marker for the currently-edited WP.
+   *
+   * GeoJSON circle layers don't support drag — so we overlay an HTML
+   * maplibregl.Marker on the WP being edited. Drag end validates the safety
+   * radius and either commits via updateWpOrder or snaps back. The GeoJSON
+   * marker for the same WP stays in place underneath; on successful drag the
+   * draft mutation triggers a projection re-fire which repaints both the
+   * line + the GeoJSON marker at the new position. */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    let dragMarker: maplibregl.Marker | null = null;
+    let dragWpId: string | null = null;
+
+    const apply = (s: ReturnType<typeof useGameStore.getState>): void => {
+      const eo = s.prog.editingOrder;
+      const isEditingExisting =
+        eo?.kind === 'wp' && eo.id !== 'NEW';
+
+      if (!isEditingExisting) {
+        if (dragMarker) {
+          dragMarker.remove();
+          dragMarker = null;
+          dragWpId = null;
+        }
+        return;
+      }
+
+      const wp = s.prog.draft.wpOrders.find((w) => w.id === eo.id);
+      if (!wp) {
+        // The WP was deleted while editing — clean up.
+        if (dragMarker) {
+          dragMarker.remove();
+          dragMarker = null;
+          dragWpId = null;
+        }
+        return;
+      }
+
+      if (dragMarker && dragWpId === wp.id) {
+        // Reposition only if the WP moved (avoid re-snap during user drag).
+        const cur = dragMarker.getLngLat();
+        if (cur.lng !== wp.lon || cur.lat !== wp.lat) {
+          dragMarker.setLngLat([wp.lon, wp.lat]);
+        }
+        return;
+      }
+
+      // Switching to a different WP — replace the marker.
+      if (dragMarker) {
+        dragMarker.remove();
+        dragMarker = null;
+      }
+
+      const el = document.createElement('div');
+      el.className = 'wp-drag-marker';
+      const marker = new maplibregl.Marker({ element: el, draggable: true })
+        .setLngLat([wp.lon, wp.lat])
+        .addTo(map);
+
+      marker.on('dragend', () => {
+        const ll = marker.getLngLat();
+        const minNm = GameBalance.programming.minWpDistanceNm;
+        const state = useGameStore.getState();
+        const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+        const newWp = { lat: ll.lat, lon: ll.lng };
+        if (!validateWpDistance(boat, newWp, minNm)) {
+          // Reject — snap back to the stored position (read fresh from the
+          // store so we don't pick up a stale closure value).
+          const cur = useGameStore
+            .getState()
+            .prog.draft.wpOrders.find((w) => w.id === wp.id);
+          if (cur) marker.setLngLat([cur.lon, cur.lat]);
+          console.warn(`[ProgPanel] WP drag rejected — too close to boat (min ${minNm} NM)`);
+          return;
+        }
+        state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });
+      });
+
+      dragMarker = marker;
+      dragWpId = wp.id;
+    };
+
+    apply(useGameStore.getState());
+    const unsub = useGameStore.subscribe((s) => apply(s));
+
+    return () => {
+      unsub();
+      if (dragMarker) {
+        dragMarker.remove();
+        dragMarker = null;
+      }
+    };
+  }, []);
 
   /* ── Coastline layer: lazy-load GeoJSON on first toggle, then show/hide ── */
   const coastlineVisible = useGameStore((s) => s.layers.coastline);

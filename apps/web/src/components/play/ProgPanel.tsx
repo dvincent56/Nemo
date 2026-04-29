@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore, commitDraft } from '@/lib/store';
 import type { ProgMode, ProgDraft } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
@@ -34,6 +35,8 @@ export default function ProgPanel(): ReactElement {
   const clearAllOrders = useGameStore((s) => s.clearAllOrders);
   const hudHdg = useGameStore((s) => Math.round(s.hud.hdg));
   const hudTwd = useGameStore((s) => s.hud.twd);
+  const hudLat = useGameStore((s) => s.hud.lat);
+  const hudLon = useGameStore((s) => s.hud.lon);
 
   // Phase 2b Task 3: editing state lives in the store so MapCanvas marker
   // clicks can drive the editor. The 'NEW' magic id (cap/sail/wp create
@@ -155,6 +158,8 @@ export default function ProgPanel(): ReactElement {
           initialOrder={initialOrder}
           index={index}
           predecessorIndex={predecessorIndex}
+          boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
+          minWpDistanceNm={GameBalance.programming.minWpDistanceNm}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             updateWpOrder(order.id, order);

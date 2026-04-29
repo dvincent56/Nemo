@@ -15,3 +15,20 @@
 :global(.projection-maneuver-popup .maplibregl-popup-tip) {
   border-top-color: rgba(26, 39, 68, 0.95);
 }
+
+/* Phase 2b Task 4: drag marker for the currently-edited WP. Sits on top of
+ * the GeoJSON marker for that WP — visually distinct gold halo so the user
+ * can tell at a glance that this one is interactive. */
+:global(.wp-drag-marker) {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c9a227;
+  border: 3px solid #f5f0e8;
+  cursor: grab;
+  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.4);
+}
+
+:global(.wp-drag-marker:active) {
+  cursor: grabbing;
+}

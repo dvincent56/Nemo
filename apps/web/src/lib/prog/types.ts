@@ -67,4 +67,7 @@ export interface ProgState {
    *  applyRouteAsCommitted so a marker click can drive the editor without
    *  being squashed by an incoming route apply. */
   editingOrder: EditingOrder | null;
+  /** True when the WP editor is in "click on map to place" mode. Read by
+   *  MapCanvas to enable map-click→add-wp + cursor change. */
+  pickingWp: boolean;
 }
