@@ -154,7 +154,10 @@ export class TickManager {
       }
     });
 
-    if (this.redis) await this.subscribeOrders();
+    if (this.redis) {
+      await this.subscribeOrders();
+      await this.subscribeReplaceQueues();
+    }
 
     const intervalMs = GameBalance.tickIntervalSeconds * 1000;
     this.timer = setInterval(() => {
@@ -268,6 +271,30 @@ export class TickManager {
         return;
       }
       this.worker?.postMessage({ kind: 'ingestOrder', boatId, envelope });
+    });
+  }
+
+  private async subscribeReplaceQueues(): Promise<void> {
+    if (!this.redis) return;
+    await this.redis.sub.psubscribe(CHANNELS.boatReplaceQueuePattern);
+    this.redis.sub.on('pmessageBuffer', (_pattern, channel, message) => {
+      const channelStr = channel.toString();
+      const m = /^boat:([^:]+):replace-queue$/.exec(channelStr);
+      if (!m) return;
+      const boatId = m[1]!;
+      let envelopes: OrderEnvelope[];
+      try {
+        const decoded = decode(message) as { envelopes?: unknown };
+        if (!Array.isArray(decoded.envelopes)) {
+          log.warn({ channel: channelStr }, 'replace-queue payload missing envelopes array');
+          return;
+        }
+        envelopes = decoded.envelopes as OrderEnvelope[];
+      } catch (err) {
+        log.warn({ err, channel: channelStr }, 'invalid replace-queue payload');
+        return;
+      }
+      this.worker?.postMessage({ kind: 'replaceUserQueue', boatId, envelopes });
     });
   }
 
