@@ -7,6 +7,8 @@ import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import CapEditor from './prog/CapEditor';
 import SailEditor from './prog/SailEditor';
+import WpEditor from './prog/WpEditor';
+import FinalCapEditor from './prog/FinalCapEditor';
 
 type EditingState =
   | null
@@ -125,10 +127,64 @@ export default function ProgPanel(): ReactElement {
         />
       );
     }
-    // Other editor placeholders remain (Task 8)
+    if (editing.kind === 'wp') {
+      const isNew = editing.id === 'NEW';
+      const initialOrder = isNew ? null : draft.wpOrders.find((o) => o.id === editing.id) ?? null;
+      const index = isNew ? null : draft.wpOrders.findIndex((o) => o.id === editing.id) + 1;
+      const predecessorIndex = (() => {
+        if (!initialOrder) return null;
+        const trig = initialOrder.trigger;
+        if (trig.type === 'IMMEDIATE') return null;
+        const predIdx = draft.wpOrders.findIndex((w) => w.id === trig.waypointOrderId);
+        return predIdx >= 0 ? predIdx + 1 : null;
+      })();
+      return (
+        <WpEditor
+          initialOrder={initialOrder}
+          index={index}
+          predecessorIndex={predecessorIndex}
+          onCancel={() => setEditing(null)}
+          onSave={(order) => {
+            useGameStore.getState().updateWpOrder(order.id, order);
+            setEditing(null);
+          }}
+        />
+      );
+    }
+
+    if (editing.kind === 'finalCap') {
+      const initialOrder = draft.finalCap;
+      const lastWp = draft.wpOrders[draft.wpOrders.length - 1];
+      if (!lastWp) {
+        // Defensive: shouldn't happen because the "+ Cap final" button is gated
+        // by wpOrders.length >= 1.
+        return (
+          <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
+            Aucun WP disponible.{' '}
+            <button type="button" onClick={() => setEditing(null)}>Fermer</button>
+          </div>
+        );
+      }
+      return (
+        <FinalCapEditor
+          initialOrder={initialOrder}
+          lastWpId={lastWp.id}
+          lastWpIndex={draft.wpOrders.length}
+          windDir={hudTwd}
+          defaultHeading={hudHdg}
+          onCancel={() => setEditing(null)}
+          onSave={(order) => {
+            useGameStore.getState().setFinalCap(order);
+            setEditing(null);
+          }}
+        />
+      );
+    }
+
+    // Defensive fallback for unknown editor kinds
     return (
       <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
-        Editor placeholder — kind={editing.kind}
+        Editor placeholder — kind={(editing as { kind: string }).kind}
         {' '}
         <button
           type="button"
