@@ -118,6 +118,13 @@ export function supersedeHeadingIntent(
  * built via the same shape as `onOrderReceived` (with trustedTs / effectiveTs
  * computed by the gateway) — this function does not derive timestamps.
  *
+ * Note : les enveloppes `completed` sont **toujours en tête** quel que soit
+ * leur `effectiveTs`. Le tableau retourné n'est donc PAS globalement trié
+ * par `effectiveTs` — c'est acceptable parce que tous les consommateurs aval
+ * (`buildSegments`, détection de capture WPT dans `tick.ts`, purge) ignorent
+ * les enveloppes `completed`. Un futur lecteur qui voudrait
+ * `result.find(o => o.effectiveTs > X)` doit filtrer les `completed` d'abord.
+ *
  * Cf. spec `docs/superpowers/specs/2026-04-28-progpanel-redesign-design.md`
  * Phase 0 ("ORDER_REPLACE_QUEUE").
  */

@@ -81,4 +81,20 @@ describe('replaceUserQueue', () => {
 
     assert.deepEqual(out.map((e) => e.order.id), ['completed-future', 'new']);
   });
+
+  it('preserves input order for envelopes sharing effectiveTs (relies on sort stability)', () => {
+    // Realistic case: a batch of IMMEDIATE orders built in the same serverNow
+    // share effectiveTs. Stable sort + appended-after-completed semantics
+    // means input order survives. ECMA-2019+ specifies Array.prototype.sort
+    // as stable.
+    const incoming: OrderEnvelope[] = [
+      makeEnvelope({ id: 'first', effectiveTs: 1000, clientSeq: 1 }),
+      makeEnvelope({ id: 'second', effectiveTs: 1000, clientSeq: 2 }),
+      makeEnvelope({ id: 'third', effectiveTs: 1000, clientSeq: 3 }),
+    ];
+
+    const out = replaceUserQueue([], incoming);
+
+    assert.deepEqual(out.map((e) => e.order.id), ['first', 'second', 'third']);
+  });
 });
