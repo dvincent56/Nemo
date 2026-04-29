@@ -89,4 +89,58 @@ describe('<TimeStepper>', () => {
     fireEvent.pointerUp(minus, { pointerId: 1 });
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('accelerates + when held: pulses 1-3 at 350ms', async () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const t = 12 * HOUR;
+    const { getByLabelText, unmount } = render(
+      <TimeStepper value={t} onChange={onChange} minValue={0} nowSec={t} />
+    );
+    const plus = getByLabelText('Avancer');
+
+    fireEvent.pointerDown(plus, { pointerId: 1 });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(t + 60);
+
+    await vi.advanceTimersByTimeAsync(350);
+    expect(onChange).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(350);
+    expect(onChange).toHaveBeenCalledTimes(3);
+
+    fireEvent.pointerUp(plus, { pointerId: 1 });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(onChange).toHaveBeenCalledTimes(3);
+
+    unmount();
+    vi.useRealTimers();
+  });
+
+  it('advances cumulatively when consumer updates value between pulses', async () => {
+    vi.useFakeTimers();
+    let v = 12 * HOUR;
+    const onChange = vi.fn((next: number) => { v = next; });
+    const t0 = v;
+
+    const { getByLabelText, rerender, unmount } = render(
+      <TimeStepper value={v} onChange={onChange} minValue={0} nowSec={t0} />
+    );
+    const plus = getByLabelText('Avancer');
+
+    fireEvent.pointerDown(plus, { pointerId: 1 });
+    expect(onChange).toHaveBeenLastCalledWith(t0 + 60);
+    rerender(<TimeStepper value={v} onChange={onChange} minValue={0} nowSec={t0} />);
+
+    await vi.advanceTimersByTimeAsync(350);
+    expect(onChange).toHaveBeenLastCalledWith(t0 + 120);
+    rerender(<TimeStepper value={v} onChange={onChange} minValue={0} nowSec={t0} />);
+
+    await vi.advanceTimersByTimeAsync(350);
+    expect(onChange).toHaveBeenLastCalledWith(t0 + 180);
+
+    fireEvent.pointerUp(plus, { pointerId: 1 });
+    unmount();
+    vi.useRealTimers();
+  });
 });
