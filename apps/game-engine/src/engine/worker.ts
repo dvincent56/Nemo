@@ -12,6 +12,7 @@ import {
   segmentCrossesCoast,
   coastRiskLevel,
 } from './coastline.js';
+import { handleReplaceUserQueue } from './worker.handlers.js';
 
 interface WorkerInit {
   runtimes: BoatRuntime[];
@@ -21,7 +22,8 @@ type WorkerMsg =
   | { kind: 'tick' }
   | { kind: 'stop' }
   | { kind: 'setRuntimes'; runtimes: BoatRuntime[] }
-  | { kind: 'ingestOrder'; boatId: string; envelope: OrderEnvelope };
+  | { kind: 'ingestOrder'; boatId: string; envelope: OrderEnvelope }
+  | { kind: 'replaceUserQueue'; boatId: string; envelopes: OrderEnvelope[] };
 
 const log = pino({ name: 'tick-worker' });
 
@@ -115,6 +117,17 @@ async function main() {
           wallNow: Date.now(),
         },
         'order ingested',
+      );
+      return;
+    }
+
+    if (msg.kind === 'replaceUserQueue') {
+      const before = runtimes.find((r) => r.boat.id === msg.boatId)?.orderHistory.length ?? 0;
+      runtimes = handleReplaceUserQueue(runtimes, msg);
+      const after = runtimes.find((r) => r.boat.id === msg.boatId)?.orderHistory.length ?? 0;
+      log.info(
+        { boatId: msg.boatId, before, after, incoming: msg.envelopes.length },
+        'order queue replaced',
       );
       return;
     }

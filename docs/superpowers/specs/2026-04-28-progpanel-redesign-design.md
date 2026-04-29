@@ -62,12 +62,9 @@ type ClientToServerMessage =
 
 ### Signal `WP_REACHED`
 
-Aujourd'hui le client détecte la capture WP via `haversinePosNM` côté UI et marque visuellement `capturedIds` (cf. ProgPanel.tsx:101-138). C'est une heuristique côté client, pas un signal serveur explicite. Pour le ProgPanel V2, deux pistes acceptables, à trancher au moment de l'implémentation :
+V1 décision : **on garde l'heuristique client existante** (cf. `apps/web/src/components/play/ProgPanel.tsx:101-138`). Le client retire un WP de `committed.wpOrders` dès qu'il détecte capture local via `haversinePosNM`. Le moteur, à la prochaine `ORDER_REPLACE_QUEUE`, ne verra pas le WP retiré et ne fera rien de spécial.
 
-1. **Conserver l'heuristique client** : le client retire un WP de `committed.wpOrders` dès qu'il détecte capture local. Le moteur, à la prochaine `ORDER_REPLACE_QUEUE`, ne verra pas le WP retiré et ne fera rien de spécial. Simple, mais le client peut désaligner le moteur quelques secondes.
-2. **Ajouter un champ `consumedOrderIds: string[]`** au snapshot tick existant. Le moteur indique explicitement quels ordres ont été consommés depuis la dernière snapshot. Le client retire les WPs en conséquence. Plus propre mais demande un mini-changement de protocole.
-
-Le choix est laissé au plan d'implémentation Phase 0. Recommandation : option 2 si le coût est marginal, option 1 sinon.
+Rationale : zéro changement de protocole, fenêtre de désync bornée par le tick rate (≤ 30s), le joueur ne peut rien observer d'incohérent (le bateau est déjà passé). Si un bug utilisateur apparaît plus tard, on ajoutera un champ `consumedOrderIds` au snapshot tick (option 2 du draft précédent).
 
 ### Tests
 

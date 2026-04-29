@@ -88,6 +88,20 @@ export interface OrderEnvelope {
 }
 
 /**
+ * Payload for the ORDER_REPLACE_QUEUE WS message (cf. spec
+ * 2026-04-28-progpanel-redesign-design.md, Phase 0).
+ *
+ * Sent by a client (typically the ProgPanel commit action) to atomically
+ * replace its boat's user-modifiable orders. Consumed history (envelopes
+ * with `completed: true`) is preserved engine-side.
+ */
+export interface ReplaceQueuePayload {
+  orders: Order[];
+  clientTs: number;
+  clientSeq: number;
+}
+
+/**
  * Zones d'exclusion — décision UX 2026-04-15 :
  *   WARN    : ralentissement léger (multiplier par défaut 0.8)
  *   PENALTY : ralentissement fort   (multiplier par défaut 0.5)

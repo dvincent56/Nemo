@@ -41,4 +41,6 @@ export const CHANNELS = {
   boatOrder: (boatId: string) => `boat:${boatId}:order`,
   /** Canal global pour que game-engine écoute TOUS les ordres via pattern. */
   boatOrderPattern: 'boat:*:order',
+  boatReplaceQueuePattern: 'boat:*:replace-queue',
+  boatReplaceQueue: (boatId: string) => `boat:${boatId}:replace-queue`,
 };

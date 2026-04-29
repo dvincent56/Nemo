@@ -299,6 +299,54 @@ export function sendOrder(payload: OrderPayload): boolean {
   return true;
 }
 
+export interface ReplaceQueueOrderInput {
+  type: 'CAP' | 'TWA' | 'WPT' | 'SAIL' | 'MODE' | 'VMG';
+  value: Record<string, unknown>;
+  trigger?: import('@nemo/shared-types').OrderTrigger;
+}
+
+/**
+ * Atomically replaces the user-modifiable portion of the boat's order queue
+ * on the server (cf. spec 2026-04-28-progpanel-redesign-design.md Phase 0).
+ *
+ * The gateway expands the batch into N envelopes with clientSeq baseSeq..baseSeq+N-1.
+ * We advance activeConnection.clientSeq by max(N, 1) so:
+ * - subsequent sendOrder calls don't collide with batch envelopes in the engine's
+ *   (connectionId, clientSeq) dedup map (handles N >= 1 case);
+ * - an empty-batch wipe still consumes 1 seq, so payload.clientSeq is never
+ *   reused by the next sendOrder (prevents wire-level ambiguity in logs).
+ *
+ * Returns true if the WS frame was sent, false if the connection is not open.
+ * Does NOT update the local store — callers (typically the ProgPanel commit
+ * handler) are responsible for the optimistic mirror.
+ *
+ * Empty `orders` is allowed and means "wipe the user-modifiable queue."
+ */
+export function sendOrderReplaceQueue(orders: ReplaceQueueOrderInput[]): boolean {
+  if (!activeConnection?.ws || activeConnection.ws.readyState !== WebSocket.OPEN) return false;
+  const baseSeq = activeConnection.clientSeq + 1;
+  // Empty batch still consumes 1 seq so payload.clientSeq is never reused by
+  // the next sendOrder (avoids wire-level ambiguity in logs). Non-empty batch
+  // consumes orders.length seqs, matching the gateway's clientSeq + i expansion.
+  const consumedSeqs = Math.max(1, orders.length);
+  activeConnection.clientSeq = baseSeq + consumedSeqs - 1;
+  const envelope = {
+    type: 'ORDER_REPLACE_QUEUE',
+    payload: {
+      orders: orders.map((o, i) => ({
+        id: `${activeConnection!.raceId}-${baseSeq + i}`,
+        type: o.type,
+        value: o.value,
+        trigger: o.trigger ?? { type: 'IMMEDIATE' },
+      })),
+      clientTs: Date.now(),
+      clientSeq: baseSeq,
+    },
+  };
+  activeConnection.ws.send(encode(envelope));
+  return true;
+}
+
 export function isLiveMode(): boolean {
   return WS_LIVE;
 }

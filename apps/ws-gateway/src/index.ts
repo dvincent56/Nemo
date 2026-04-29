@@ -3,6 +3,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import Redis from 'ioredis';
 import { decode, encode } from '@msgpack/msgpack';
 import pino from 'pino';
+import type { Order, OrderEnvelope, OrderTrigger } from '@nemo/shared-types';
 
 /**
  * ws-gateway — Phase 3 pipeline complet (implémentation `ws` standard npm).
@@ -61,6 +62,46 @@ function extractRaceId(url: string | undefined): string | null {
   if (!url) return null;
   const m = /^\/race\/([^/?#]+)/.exec(url);
   return m?.[1] ?? null;
+}
+
+const CLIENT_TS_TOLERANCE_MS = 2000;
+
+function computeEffectiveTs(trigger: OrderTrigger, trustedTs: number): number {
+  if (trigger.type === 'AT_TIME' && typeof (trigger as { time: number }).time === 'number') {
+    return (trigger as { time: number }).time * 1000;
+  }
+  return trustedTs;
+}
+
+function buildEnvelope(args: {
+  rawOrder: unknown;
+  clientTs: number;
+  clientSeq: number;
+  connectionId: string;
+  serverNow: number;
+}): OrderEnvelope | null {
+  const { rawOrder, clientTs, clientSeq, connectionId, serverNow } = args;
+  if (typeof rawOrder !== 'object' || rawOrder === null) return null;
+  const o = rawOrder as Record<string, unknown>;
+  if (typeof o['type'] !== 'string') return null;
+  const trustedTs = Math.abs(serverNow - clientTs) < CLIENT_TS_TOLERANCE_MS ? clientTs : serverNow;
+  const trigger = (o['trigger'] as OrderTrigger) ?? { type: 'IMMEDIATE' };
+  const effectiveTs = computeEffectiveTs(trigger, trustedTs);
+  const order: Order = {
+    id: (o['id'] as string) ?? `${connectionId}-${clientSeq}`,
+    type: o['type'] as Order['type'],
+    value: (o['value'] as Record<string, unknown>) ?? {},
+    trigger,
+  };
+  return {
+    order,
+    clientTs,
+    clientSeq,
+    trustedTs,
+    effectiveTs,
+    receivedAt: serverNow,
+    connectionId,
+  };
 }
 
 async function main(): Promise<void> {
@@ -150,46 +191,71 @@ async function main(): Promise<void> {
           log.warn({ err, conn: ctx.connectionId }, 'invalid msgpack frame');
           return;
         }
-        if (decoded['type'] !== 'ORDER') return;
-
-        const payload = (decoded['payload'] as Record<string, unknown>) ?? {};
-        const clientTs = Number(payload['clientTs'] ?? payload['ts'] ?? Date.now());
-        const clientSeq = Number(payload['clientSeq'] ?? 0);
-        const order = payload['order'] as Record<string, unknown> | undefined;
-        if (!order || typeof order['type'] !== 'string') {
-          log.warn({ conn: ctx.connectionId }, 'malformed ORDER payload');
+        if (decoded['type'] === 'ORDER') {
+          const payload = (decoded['payload'] as Record<string, unknown>) ?? {};
+          const clientTs = Number(payload['clientTs'] ?? payload['ts'] ?? Date.now());
+          const clientSeq = Number(payload['clientSeq'] ?? 0);
+          const rawOrder = payload['order'] as Record<string, unknown> | undefined;
+          if (!rawOrder) {
+            log.warn({ conn: ctx.connectionId }, 'malformed ORDER payload');
+            return;
+          }
+          const envelope = buildEnvelope({
+            rawOrder,
+            clientTs,
+            clientSeq,
+            connectionId: ctx.connectionId,
+            serverNow: Date.now(),
+          });
+          if (!envelope) {
+            log.warn({ conn: ctx.connectionId }, 'malformed ORDER payload');
+            return;
+          }
+          if (!ctx.boatId || !pub) {
+            log.warn({ conn: ctx.connectionId, hasBoat: !!ctx.boatId, hasRedis: !!pub }, 'order dropped');
+            return;
+          }
+          pub.publish(`boat:${ctx.boatId}:order`, Buffer.from(encode(envelope)))
+            .catch((err) => log.error({ err, boatId: ctx.boatId }, 'publish order failed'));
+          log.info({ conn: ctx.connectionId, boat: ctx.boatId, type: envelope.order.type, clientSeq }, 'order forwarded');
           return;
         }
 
-        const serverNow = Date.now();
-        const trustedTs = Math.abs(serverNow - clientTs) < 2000 ? clientTs : serverNow;
-        const trigger = (order['trigger'] as Record<string, unknown>) ?? { type: 'IMMEDIATE' };
-        const effectiveTs = trigger['type'] === 'AT_TIME' && typeof trigger['time'] === 'number'
-          ? Number(trigger['time']) * 1000
-          : trustedTs;
-
-        const envelope = {
-          order: {
-            id: (order['id'] as string) ?? `${ctx.connectionId}-${clientSeq}`,
-            type: order['type'],
-            value: order['value'] ?? {},
-            trigger,
-          },
-          clientTs,
-          clientSeq,
-          trustedTs,
-          effectiveTs,
-          receivedAt: serverNow,
-          connectionId: ctx.connectionId,
-        };
-
-        if (!ctx.boatId || !pub) {
-          log.warn({ conn: ctx.connectionId, hasBoat: !!ctx.boatId, hasRedis: !!pub }, 'order dropped');
+        if (decoded['type'] === 'ORDER_REPLACE_QUEUE') {
+          const payload = (decoded['payload'] as Record<string, unknown>) ?? {};
+          const clientTs = Number(payload['clientTs'] ?? Date.now());
+          const clientSeq = Number(payload['clientSeq'] ?? 0);
+          const rawOrders = payload['orders'];
+          if (!Array.isArray(rawOrders)) {
+            log.warn({ conn: ctx.connectionId }, 'malformed ORDER_REPLACE_QUEUE payload');
+            return;
+          }
+          if (!ctx.boatId || !pub) {
+            log.warn({ conn: ctx.connectionId, hasBoat: !!ctx.boatId, hasRedis: !!pub }, 'replace-queue dropped');
+            return;
+          }
+          const serverNow = Date.now();
+          const envelopes: OrderEnvelope[] = [];
+          for (let i = 0; i < rawOrders.length; i++) {
+            const env = buildEnvelope({
+              rawOrder: rawOrders[i],
+              clientTs,
+              clientSeq: clientSeq + i, // unique per envelope inside the batch
+              connectionId: ctx.connectionId,
+              serverNow,
+            });
+            if (env) envelopes.push(env);
+          }
+          pub.publish(
+            `boat:${ctx.boatId}:replace-queue`,
+            Buffer.from(encode({ envelopes })),
+          ).catch((err) => log.error({ err, boatId: ctx.boatId }, 'publish replace-queue failed'));
+          log.info(
+            { conn: ctx.connectionId, boat: ctx.boatId, count: envelopes.length, clientSeq },
+            'replace-queue forwarded',
+          );
           return;
         }
-        pub.publish(`boat:${ctx.boatId}:order`, Buffer.from(encode(envelope)))
-          .catch((err) => log.error({ err, boatId: ctx.boatId }, 'publish order failed'));
-        log.info({ conn: ctx.connectionId, boat: ctx.boatId, type: order['type'], clientSeq }, 'order forwarded');
       });
 
       ws.on('close', (code) => {
