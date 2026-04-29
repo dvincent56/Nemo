@@ -309,10 +309,12 @@ export interface ReplaceQueueOrderInput {
  * Atomically replaces the user-modifiable portion of the boat's order queue
  * on the server (cf. spec 2026-04-28-progpanel-redesign-design.md Phase 0).
  *
- * The gateway expands the batch into N envelopes with clientSeq baseSeq..baseSeq+N-1,
- * so we advance activeConnection.clientSeq by N (the batch length) — NOT by 1 —
- * to keep subsequent sendOrder calls from colliding with batch envelopes in the
- * engine's (connectionId, clientSeq) dedup map.
+ * The gateway expands the batch into N envelopes with clientSeq baseSeq..baseSeq+N-1.
+ * We advance activeConnection.clientSeq by max(N, 1) so:
+ * - subsequent sendOrder calls don't collide with batch envelopes in the engine's
+ *   (connectionId, clientSeq) dedup map (handles N >= 1 case);
+ * - an empty-batch wipe still consumes 1 seq, so payload.clientSeq is never
+ *   reused by the next sendOrder (prevents wire-level ambiguity in logs).
  *
  * Returns true if the WS frame was sent, false if the connection is not open.
  * Does NOT update the local store — callers (typically the ProgPanel commit
@@ -323,11 +325,11 @@ export interface ReplaceQueueOrderInput {
 export function sendOrderReplaceQueue(orders: ReplaceQueueOrderInput[]): boolean {
   if (!activeConnection?.ws || activeConnection.ws.readyState !== WebSocket.OPEN) return false;
   const baseSeq = activeConnection.clientSeq + 1;
-  // Advance by orders.length so the next sendOrder uses a seq past the batch.
-  // For an empty batch, baseSeq is unused on the server but we still bump by 0
-  // (= no-op) to keep the contract uniform: clientSeq always equals "last used
-  // seq from this client". We use Math.max so empty batches don't decrement.
-  activeConnection.clientSeq = Math.max(activeConnection.clientSeq, baseSeq + orders.length - 1);
+  // Empty batch still consumes 1 seq so payload.clientSeq is never reused by
+  // the next sendOrder (avoids wire-level ambiguity in logs). Non-empty batch
+  // consumes orders.length seqs, matching the gateway's clientSeq + i expansion.
+  const consumedSeqs = Math.max(1, orders.length);
+  activeConnection.clientSeq = baseSeq + consumedSeqs - 1;
   const envelope = {
     type: 'ORDER_REPLACE_QUEUE',
     payload: {
