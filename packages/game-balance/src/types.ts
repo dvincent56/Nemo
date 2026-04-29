@@ -17,7 +17,14 @@ export interface GameBalanceConfig {
   grounding: GroundingConfig;
   zones: { warnDefaultMultiplier: number; penaltyDefaultMultiplier: number };
   economy: EconomyConfig;
+  programming: ProgrammingConfig;
   tick: { intervalSeconds: number };
+}
+
+export interface ProgrammingConfig {
+  /** Minimum distance (NM) between the boat and a manually placed waypoint.
+   *  Used by the WP editor to prevent placement inside the safety radius. */
+  minWpDistanceNm: number;
 }
 
 export interface WearConfig {
