@@ -48,7 +48,23 @@ export const EMPTY_DRAFT: ProgDraft = {
   sailOrders: [],
 };
 
+/** Identifies which order is currently being edited in ProgPanel.
+ *  Set by either ProgPanel (entering an editor sub-screen) or MapCanvas
+ *  (clicking a marker). The `'NEW'` magic id (preserved from Phase 2a)
+ *  signals "create" mode for cap/sail/wp; finalCap doesn't need an id
+ *  because there's at most one. */
+export type EditingOrder =
+  | { kind: 'cap'; id: string }
+  | { kind: 'sail'; id: string }
+  | { kind: 'wp'; id: string }
+  | { kind: 'finalCap'; id: string };
+
 export interface ProgState {
   draft: ProgDraft;
   committed: ProgDraft;
+  /** Currently-edited order (set by ProgPanel + MapCanvas). null = no editor open.
+   *  This is UI state — NOT included in commit/reset/clone — preserved across
+   *  applyRouteAsCommitted so a marker click can drive the editor without
+   *  being squashed by an incoming route apply. */
+  editingOrder: EditingOrder | null;
 }

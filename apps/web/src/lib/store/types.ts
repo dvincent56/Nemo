@@ -15,6 +15,7 @@ export type {
   SailOrder,
   ProgDraft,
   ProgState,
+  EditingOrder,
 } from '@/lib/prog/types';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
@@ -332,6 +333,7 @@ export interface GameStore extends RouterActions {
   resetDraft: () => void;
   markCommitted: () => void;
   applyRouteAsCommitted: (next: import('@/lib/prog/types').ProgDraft) => void;
+  setEditingOrder: (e: import('@/lib/prog/types').EditingOrder | null) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;

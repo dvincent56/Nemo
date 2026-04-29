@@ -14,6 +14,7 @@ import type {
   ProjectionRun,
 } from '@/lib/projection/types';
 import { serializeDraft } from '@/lib/prog/serialize';
+import type { ProgDraft } from '@/lib/prog/types';
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
@@ -322,6 +323,116 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
     });
 }
 
+/**
+ * Find the projection point closest to a given target wall-clock time.
+ * Buffer layout: [lat, lon, dtMs, bsp, tws, twd] × N — see PROJECTION_POINT_FIELDS.
+ * `dtMs` is relative to `run.startMs`; we look for the index whose absolute
+ * timestamp is nearest to `targetMs`. Linear scan: pointsCount is bounded by
+ * the projection step count (~few hundred), well below where binary search
+ * would matter and we only run this once per order per recompute.
+ */
+function findProjectionPointAtTime(
+  run: ProjectionRun,
+  targetMs: number,
+): { lat: number; lon: number } | null {
+  const buf = run.pointsBuf;
+  const count = run.pointsCount;
+  if (count === 0) return null;
+  const targetDt = targetMs - run.startMs;
+  // Negative target → before the projection starts: fall back to the first
+  // point. Beyond the last point → fall back to the last.
+  if (targetDt <= buf[2]!) return { lat: buf[0]!, lon: buf[1]! };
+  const lastB = (count - 1) * 6;
+  if (targetDt >= buf[lastB + 2]!) return { lat: buf[lastB]!, lon: buf[lastB + 1]! };
+  // Find the first point whose dtMs >= targetDt — return whichever side is
+  // closer in time.
+  for (let i = 1; i < count; i++) {
+    const b = i * 6;
+    const dt = buf[b + 2]!;
+    if (dt >= targetDt) {
+      const prevB = (i - 1) * 6;
+      const prevDt = buf[prevB + 2]!;
+      const prevDist = targetDt - prevDt;
+      const currDist = dt - targetDt;
+      return prevDist <= currDist
+        ? { lat: buf[prevB]!, lon: buf[prevB + 1]! }
+        : { lat: buf[b]!, lon: buf[b + 1]! };
+    }
+  }
+  return { lat: buf[lastB]!, lon: buf[lastB + 1]! };
+}
+
+/**
+ * Build a FeatureCollection for the prog-order-markers source from the active
+ * draft + projection run. Order trigger times (CapOrder.trigger.time and
+ * SailOrder AT_TIME .time) are Unix SECONDS — matches engine convention and
+ * the conversion already in `orderQueueToSegments`.
+ */
+function buildMarkerGeoJson(
+  draft: ProgDraft,
+  run: ProjectionRun,
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+
+  // Cap orders → predicted position at trigger.time
+  for (const cap of draft.capOrders) {
+    const pos = findProjectionPointAtTime(run, cap.trigger.time * 1000);
+    if (!pos) continue;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+      properties: { kind: 'cap', id: cap.id },
+    });
+  }
+
+  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → offset from WP
+  for (const sail of draft.sailOrders) {
+    if (sail.trigger.type === 'AT_TIME') {
+      const pos = findProjectionPointAtTime(run, sail.trigger.time * 1000);
+      if (!pos) continue;
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+        properties: { kind: 'sail', id: sail.id },
+      });
+    } else {
+      const trig = sail.trigger; // narrow once for TS
+      const wp = draft.wpOrders.find((w) => w.id === trig.waypointOrderId);
+      if (!wp) continue;
+      // ~0.001° east ≈ 60 m at mid-lat — visible separation from the wp
+      // marker without drifting off the actual location at typical zooms.
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [wp.lon + 0.001, wp.lat] },
+        properties: { kind: 'sail', id: sail.id },
+      });
+    }
+  }
+
+  // WP orders: literal lat/lon
+  for (const wp of draft.wpOrders) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [wp.lon, wp.lat] },
+      properties: { kind: 'wp', id: wp.id },
+    });
+  }
+
+  // Final cap: at the last WP (visually distinct from the WP marker)
+  if (draft.finalCap) {
+    const lastWp = draft.wpOrders[draft.wpOrders.length - 1];
+    if (lastWp) {
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [lastWp.lon, lastWp.lat] },
+        properties: { kind: 'finalCap', id: draft.finalCap.id },
+      });
+    }
+  }
+
+  return { type: 'FeatureCollection', features };
+}
+
 export function useProjectionLine(map: maplibregl.Map | null): void {
   const workerRef = useRef<Worker | null>(null);
   const polarRef = useRef<{ twa: number[]; tws: number[]; speeds: Record<string, number[][]> } | null>(null);
@@ -438,6 +549,18 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     manSrc?.setData({ type: 'FeatureCollection', features: [] });
   }, []);
 
+  /**
+   * Phase 2b Task 3: refresh the prog-order-markers source from the active
+   * draft/committed slice + the matching projection run. AT_TIME orders are
+   * placed at the projection point matching their trigger time; AT_WAYPOINT
+   * sails are offset slightly east of the referenced WP so they don't sit
+   * exactly on top; WPs and finalCap use literal lat/lon. */
+  const refreshOrderMarkers = useCallback((map: maplibregl.Map, draft: ProgDraft, run: ProjectionRun): void => {
+    const src = map.getSource('prog-order-markers') as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    src.setData(buildMarkerGeoJson(draft, run));
+  }, []);
+
   // Update MapLibre sources with projection result. Renders the committed run
   // into the *-committed source/layer set, and (when the worker found a
   // distinct draft) the draft run into the *-draft set. When draft is absent,
@@ -492,7 +615,17 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     } else {
       clearVariant(m, 'draft');
     }
-  }, [writeRunToMap, clearVariant]);
+
+    // Phase 2b Task 3: refresh the per-order markers. Use draft when dirty
+    // (so markers match what the user is editing), committed otherwise. The
+    // active run (result.draft / result) is the matching projection — its
+    // pointsBuf is what AT_TIME orders project against.
+    const state = useGameStore.getState();
+    const isDirty = !!result.draft;
+    const activeDraft = isDirty ? state.prog.draft : state.prog.committed;
+    const activeRun: ProjectionRun = result.draft ?? result;
+    refreshOrderMarkers(m, activeDraft, activeRun);
+  }, [writeRunToMap, clearVariant, refreshOrderMarkers]);
 
   // Initialize Worker
   useEffect(() => {

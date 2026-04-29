@@ -7,6 +7,7 @@ import type {
   FinalCapOrder,
   SailOrder,
   ProgMode,
+  EditingOrder,
 } from '@/lib/prog/types';
 import { EMPTY_DRAFT } from '@/lib/prog/types';
 import type { GameStore } from './types';
@@ -14,6 +15,7 @@ import type { GameStore } from './types';
 export const INITIAL_PROG: ProgState = {
   draft: { ...EMPTY_DRAFT, capOrders: [], wpOrders: [], sailOrders: [] },
   committed: { ...EMPTY_DRAFT, capOrders: [], wpOrders: [], sailOrders: [] },
+  editingOrder: null,
 };
 
 type SetFn = (fn: (s: GameStore) => Partial<GameStore>) => void;
@@ -204,8 +206,16 @@ export function createProgSlice(set: SetFn) {
       })),
 
     applyRouteAsCommitted: (next: ProgDraft) =>
-      set(() => ({
-        prog: { draft: clone(next), committed: clone(next) },
+      set((s) => ({
+        // Preserve editingOrder — UI state mustn't be squashed by an incoming
+        // route apply (so the user can click a marker, then accept a route,
+        // and still see the editor where they left it).
+        prog: { draft: clone(next), committed: clone(next), editingOrder: s.prog.editingOrder },
+      })),
+
+    setEditingOrder: (e: EditingOrder | null) =>
+      set((s) => ({
+        prog: { ...s.prog, editingOrder: e },
       })),
   };
 }

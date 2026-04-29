@@ -102,6 +102,13 @@ const PROJECTION_LAYER_IDS = [
   'projection-markers-time-draft-circle',
   'projection-markers-time-draft-label',
   'projection-markers-maneuver-draft-icon',
+  // Phase 2b Task 3: per-order-kind markers (cap/sail/wp/finalCap). One source,
+  // four filtered layers — clicking one drives the store's editingOrder so
+  // ProgPanel opens the matching sub-screen.
+  'prog-order-markers-cap',
+  'prog-order-markers-sail',
+  'prog-order-markers-wp',
+  'prog-order-markers-finalCap',
 ] as const;
 const PROJECTION_SOURCE_IDS = [
   'projection-line-committed',
@@ -110,6 +117,7 @@ const PROJECTION_SOURCE_IDS = [
   'projection-line-draft',
   'projection-markers-time-draft',
   'projection-markers-maneuver-draft',
+  'prog-order-markers',
 ] as const;
 
 /**
@@ -156,6 +164,77 @@ function installProjectionLayers(map: maplibregl.Map): void {
   // setData() and clears it back to empty on confirm/cancel.
   installProjectionVariant(map, 'committed');
   installProjectionVariant(map, 'draft');
+  installProgOrderMarkers(map);
+}
+
+/**
+ * Phase 2b Task 3: order markers, one source / four kind-filtered circle
+ * layers. Distinct visual per kind — see Task 3 spec for the rationale of
+ * using circles instead of sprite icons for now. Click handlers are wired
+ * separately in the load handler so the layer install stays pure (no
+ * closures over the map instance beyond what addLayer needs).
+ */
+function installProgOrderMarkers(map: maplibregl.Map): void {
+  map.addSource('prog-order-markers', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+
+  // cap (AT_TIME): gold circle 8px, navy stroke
+  map.addLayer({
+    id: 'prog-order-markers-cap',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'cap'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#1a2840',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // sail: navy circle 8px with gold stroke (visual contrast vs cap)
+  map.addLayer({
+    id: 'prog-order-markers-sail',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'sail'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#1a2840',
+      'circle-stroke-color': '#c9a227',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // wp: gold circle 12px (larger — primary route anchor)
+  map.addLayer({
+    id: 'prog-order-markers-wp',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'wp'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 12,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#1a2840',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  // finalCap: gold circle 14px with thicker double-feel stroke
+  map.addLayer({
+    id: 'prog-order-markers-finalCap',
+    source: 'prog-order-markers',
+    filter: ['==', ['get', 'kind'], 'finalCap'],
+    type: 'circle',
+    paint: {
+      'circle-radius': 14,
+      'circle-color': '#c9a227',
+      'circle-stroke-color': '#f5f0e8',
+      'circle-stroke-width': 3,
+    },
+  });
 }
 
 function installProjectionVariant(map: maplibregl.Map, variant: 'committed' | 'draft'): void {
@@ -458,6 +537,36 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
       // projection-* source + layer set" no matter the entry conditions.
       installProjectionLayers(map);
       projectionInstalledRef.current = map;
+
+      // Phase 2b Task 3: click + hover handlers for the per-order markers.
+      // Clicking sets `editingOrder` in the store and ensures the programming
+      // panel is open. ProgPanel re-renders into the matching editor.
+      const PROG_MARKER_LAYERS: Array<{ id: string; kind: 'cap' | 'sail' | 'wp' | 'finalCap' }> = [
+        { id: 'prog-order-markers-cap',      kind: 'cap' },
+        { id: 'prog-order-markers-sail',     kind: 'sail' },
+        { id: 'prog-order-markers-wp',       kind: 'wp' },
+        { id: 'prog-order-markers-finalCap', kind: 'finalCap' },
+      ];
+      for (const { id: layerId, kind } of PROG_MARKER_LAYERS) {
+        map.on('click', layerId, (e) => {
+          const orderId = e.features?.[0]?.properties?.['id'];
+          if (typeof orderId !== 'string') return;
+          const store = useGameStore.getState();
+          store.setEditingOrder({ kind, id: orderId });
+          // Open the programming panel if it isn't already — marker clicks
+          // must be self-contained (the user shouldn't have to also click the
+          // tab to see the editor they just selected).
+          if (store.panel.activePanel !== 'programming') {
+            store.openPanel('programming');
+          }
+        });
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
 
       // Past-trace line layer — inserted just below the projection so the
       // future arc renders on top during replay scrubbing. The past-trace
