@@ -607,11 +607,12 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     writeRunToMap(m, result, 'committed');
 
     // Drive the committed line opacity from `isDirty`. When draft is present,
-    // the committed projection becomes the "ghost" reference at 40% so the
-    // draft can dominate visually; when not, it's the only line and stays at
-    // full opacity (~0.85, the legacy value baked into the layer paint).
+    // the committed projection becomes a faint "ghost" reference at 25% so
+    // the draft (full opacity) is unambiguously the line the user is editing;
+    // when not, the committed line is the only one and stays at full opacity
+    // (~0.85, the legacy value baked into the layer paint).
     if (m.getLayer('projection-line-committed-layer')) {
-      m.setPaintProperty('projection-line-committed-layer', 'line-opacity', result.draft ? 0.4 : 0.85);
+      m.setPaintProperty('projection-line-committed-layer', 'line-opacity', result.draft ? 0.25 : 0.85);
     }
 
     if (result.draft) {
