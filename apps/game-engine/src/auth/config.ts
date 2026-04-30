@@ -34,7 +34,9 @@ export function loadAuthConfig(): AuthConfig {
   };
 }
 
-export function assertAuthConfig(cfg: AuthConfig): void {
+export function assertAuthConfig(
+  cfg: AuthConfig,
+): asserts cfg is Exclude<AuthConfig, { mode: 'error' }> {
   if (cfg.mode === 'error') {
     throw new Error(`auth configuration invalid: ${cfg.reason}`);
   }
