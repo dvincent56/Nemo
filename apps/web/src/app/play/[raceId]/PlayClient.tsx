@@ -739,7 +739,25 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <SailPanel />
             </SlidePanel>
-            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
+            <SlidePanel
+              side="right"
+              width={420}
+              title="Programmation"
+              isOpen={activePanel === 'programming'}
+              onClose={() => {
+                // Closing the prog panel without confirming = discard the
+                // in-flight draft. This rolls draft back to committed (so
+                // the projection stops previewing un-saved orders) and
+                // clears any open editor / map-pick state so the next
+                // open lands on a clean queue view.
+                const state = useGameStore.getState();
+                state.resetDraft();
+                state.setEditingOrder(null);
+                state.setPickingWp(false);
+                state.closePanel();
+              }}
+              mode={panelMode}
+            >
               <ProgPanel />
             </SlidePanel>
             <SlidePanel
