@@ -236,9 +236,16 @@ export function getPublicProfile(username: string): PublicProfile | null {
    - Pour 'ALL' : agrégat par joueur (somme rankingScore/racesFinished/
      podiums). Le bateau favori et la tendance sont ceux de la classe
      dominante du joueur (où il marque le plus de points).
+   - `config='series'` filtre les joueurs sans résultat Série (racesFinishedSeries
+     === 0) et trie par rankingScoreSeries décroissant.
    Le rang renvoyé est local au sous-classement (1, 2, 3 …).
    ========================================================================= */
-export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
+export type RankingConfig = 'all' | 'series';
+
+export function getRanking(
+  boatClass: BoatClass | 'ALL',
+  config: RankingConfig = 'all',
+): SkipperRanking[] {
   if (boatClass === 'ALL') {
     const agg = new Map<string, {
       rankingScore: number; racesFinished: number; podiums: number;
@@ -278,8 +285,16 @@ export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
         boatClass: 'ALL',
       }];
     });
-    return rows
-      .sort((x, y) => y.rankingScore - x.rankingScore)
+
+    const filtered = config === 'series'
+      ? rows.filter((r) => r.racesFinishedSeries > 0)
+      : rows;
+    const scoreKey: keyof SkipperRanking = config === 'series'
+      ? 'rankingScoreSeries'
+      : 'rankingScore';
+
+    return filtered
+      .sort((x, y) => (y[scoreKey] as number) - (x[scoreKey] as number))
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }
 
@@ -300,7 +315,15 @@ export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
         boatClass: r.boatClass,
       }];
     });
-  return rows
-    .sort((x, y) => y.rankingScore - x.rankingScore)
+
+  const filtered = config === 'series'
+    ? rows.filter((r) => r.racesFinishedSeries > 0)
+    : rows;
+  const scoreKey: keyof SkipperRanking = config === 'series'
+    ? 'rankingScoreSeries'
+    : 'rankingScore';
+
+  return filtered
+    .sort((x, y) => (y[scoreKey] as number) - (x[scoreKey] as number))
     .map((r, i) => ({ ...r, rank: i + 1 }));
 }
