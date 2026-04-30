@@ -43,16 +43,9 @@
   color: #c9a227 !important;
 }
 
-.sailGrid4 {
+.sailGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.sailGrid3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 

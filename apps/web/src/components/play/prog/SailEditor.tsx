@@ -119,22 +119,8 @@ export default function SailEditor({
         {!auto && (
           <div>
             <p className={styles.fieldLabel}>VOILE À HISSER</p>
-            <div className={sailStyles.sailGrid4}>
-              {SAIL_DEFS.slice(0, 4).map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`${sailStyles.sailTile} ${sailId === s.id ? sailStyles.sailTileActive : ''}`}
-                  onClick={() => setSailId(s.id)}
-                  aria-pressed={sailId === s.id}
-                >
-                  <div className={sailStyles.sailIconWrap}>{SAIL_ICONS[s.id]}</div>
-                  <span className={sailStyles.sailIdLabel}>{s.id}</span>
-                </button>
-              ))}
-            </div>
-            <div className={sailStyles.sailGrid3}>
-              {SAIL_DEFS.slice(4).map((s) => (
+            <div className={sailStyles.sailGrid}>
+              {SAIL_DEFS.map((s) => (
                 <button
                   key={s.id}
                   type="button"
