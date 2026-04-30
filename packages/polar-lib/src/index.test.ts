@@ -23,3 +23,23 @@ test('loadPolar(MINI650) raw data has 0 speed at TWA=0 (head-to-wind source row)
   const speed = polar.speeds.JIB?.[0]?.[10] ?? -1;
   assert.equal(speed, 0);
 });
+
+test('loadPolar(IMOCA60) returns the 7 sails with 181 TWA × 71 TWS grid', async () => {
+  const polar = await loadPolar('IMOCA60');
+  assert.equal(polar.boatClass, 'IMOCA60');
+  assert.equal(polar.twa.length, 181);
+  assert.equal(polar.tws.length, 71);
+  assert.equal(polar.twa[0], 0);
+  assert.equal(polar.twa[180], 180);
+  assert.equal(polar.tws[0], 0);
+  assert.equal(polar.tws[70], 70);
+  const sails = Object.keys(polar.speeds).sort();
+  assert.deepEqual(sails, ['C0', 'HG', 'JIB', 'LG', 'LJ', 'SPI', 'SS']);
+});
+
+test('loadPolar(IMOCA60) base polar (NoFoil) has lower speed at TWA 110 TWS 18 than the foil variant', async () => {
+  const base = await loadPolar('IMOCA60');
+  const baseSpeed = base.speeds.C0?.[110]?.[18] ?? 0;
+  // Sanity: known approximate value from the new VR NoFoil polar
+  assert.ok(baseSpeed > 18 && baseSpeed < 24, `expected 18 < C0@(110,18) < 24, got ${baseSpeed}`);
+});

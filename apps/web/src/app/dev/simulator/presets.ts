@@ -41,7 +41,7 @@ export const PRESETS: Preset[] = [
     boatClass: 'IMOCA60',
     description: 'Carène archimédienne + voilerie petit temps — performe quand les foilers décrochent.',
     initialSail: 'JIB',
-    upgradeIds: ['hull-imoca60-non-foiler', 'sails-imoca60-light-air'],
+    upgradeIds: ['hull-imoca60-light-air', 'sails-imoca60-light-air'],
   },
   {
     id: 'imoca60-foiler',
