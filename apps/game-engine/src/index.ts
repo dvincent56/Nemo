@@ -9,6 +9,7 @@ import type { BoatRuntime } from '@nemo/game-engine-core';
 import { resolveBoatLoadout, INITIAL_CONDITIONS } from '@nemo/game-engine-core';
 import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
+import { loadAuthConfig, assertAuthConfig } from './auth/config.js';
 import { registerMarinaRoutes } from './api/marina.js';
 import { getDb } from './db/client.js';
 import { seedDevPlayer } from './db/seed-dev.js';
@@ -80,6 +81,10 @@ function validateCatalogCoverage(): void {
 }
 
 async function main() {
+  const authConfig = loadAuthConfig();
+  assertAuthConfig(authConfig);
+  log.info({ mode: authConfig.mode }, 'auth mode resolved');
+
   await GameBalance.loadFromDisk();
   log.info({ version: GameBalance.version }, 'game-balance loaded');
   validateCatalogCoverage();
