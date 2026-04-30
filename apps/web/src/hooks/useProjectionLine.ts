@@ -280,10 +280,21 @@ function toProjectionZone(z: ExclusionZone): ProjectionZone | null {
  * Convert store's orderQueue to ProjectionSegments. Includes WPT orders so
  * the projection follows the route's waypoints (mirrors the engine tick's
  * applyOrder WPT case which recomputes heading toward the active waypoint).
- * AT_WAYPOINT triggers don't carry a time — they cascade — so we record the
- * predecessor id and let the worker activate WPTs sequentially as they are
- * captured.
+ *
+ * AT_WAYPOINT triggers don't carry a time — they cascade. We record the
+ * predecessor id on the segment and stamp triggerMs with the
+ * Number.MAX_SAFE_INTEGER sentinel so the segment never fires by pure time
+ * comparison. The worker rewrites triggerMs to the capture moment when the
+ * referenced WPT is captured. This matters for:
+ *   - WPT chain ordering (existing behaviour, preserved).
+ *   - Final cap (CAP/TWA with AT_WAYPOINT(lastWp)): used to fire at Date.now()
+ *     in the old code, getting overridden by the WPT chain heading and never
+ *     observable. Now it fires at the moment the last WP is captured and
+ *     drives the projection past the last WP.
+ *   - Sail-at-WP (SAIL with AT_WAYPOINT(wpN)): same fix — fires at WP capture.
  */
+const TRIGGER_MS_PENDING = Number.MAX_SAFE_INTEGER;
+
 function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: { type: string; time?: number; waypointOrderId?: string }; value: Record<string, unknown> }>): ProjectionSegment[] {
   return queue
     .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE' || o.type === 'WPT')
@@ -302,7 +313,9 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
         value = { lat, lon, captureRadiusNm };
       }
 
-      let triggerMs = Date.now();
+      // Default: AT_WAYPOINT triggers are pending until the worker sees the
+      // referenced WPT captured. AT_TIME stamps the order in ms.
+      let triggerMs = TRIGGER_MS_PENDING;
       if (o.trigger.type === 'AT_TIME' && o.trigger.time) {
         // OrderTrigger.time is Unix seconds (matches engine convention
         // `nowUnix >= trigger.time`); the projection worker expects
@@ -311,14 +324,14 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
         // worker applies all CAP/TWA orders on the first iteration —
         // collapsing the projection to a straight line in the last heading.
         triggerMs = o.trigger.time * 1000;
+      } else if (o.trigger.type === 'IMMEDIATE') {
+        triggerMs = Date.now();
       }
 
       const seg: ProjectionSegment = { triggerMs, type: o.type as ProjectionSegment['type'], value };
-      if (o.type === 'WPT') {
-        seg.id = o.id;
-        if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
-          seg.waypointPredecessorId = o.trigger.waypointOrderId;
-        }
+      seg.id = o.id;
+      if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
+        seg.waypointPredecessorId = o.trigger.waypointOrderId;
       }
       return seg;
     });
