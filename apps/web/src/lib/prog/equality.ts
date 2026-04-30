@@ -72,6 +72,20 @@ export function eqList<T>(a: T[], b: T[], cmp: (x: T, y: T) => boolean): boolean
 }
 
 export function deepEqDraft(a: ProgDraft, b: ProgDraft): boolean {
+  // If both drafts have no orders in any track, they're considered equal
+  // regardless of mode — switching the mode tab on an empty programming
+  // shouldn't mark the panel as dirty (the user hasn't actually authored
+  // anything yet).
+  const aEmpty = a.capOrders.length === 0
+    && a.wpOrders.length === 0
+    && a.finalCap === null
+    && a.sailOrders.length === 0;
+  const bEmpty = b.capOrders.length === 0
+    && b.wpOrders.length === 0
+    && b.finalCap === null
+    && b.sailOrders.length === 0;
+  if (aEmpty && bEmpty) return true;
+
   return a.mode === b.mode
     && eqList(a.capOrders, b.capOrders, eqCap)
     && eqList(a.wpOrders, b.wpOrders, eqWp)

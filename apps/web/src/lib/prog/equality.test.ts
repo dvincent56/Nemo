@@ -53,9 +53,20 @@ describe('deepEqDraft', () => {
     expect(deepEqDraft(empty(), empty())).toBe(true);
   });
 
-  it('returns false when mode differs', () => {
+  it('treats two empty drafts with different modes as equal', () => {
+    // Two drafts with no orders in any track are considered equal regardless
+    // of `mode` — switching the cap/wp tab on a blank ProgPanel shouldn't
+    // make `isDirty` flip true.
     const a = empty();
     const b: ProgDraft = { ...empty(), mode: 'wp' };
+    expect(deepEqDraft(a, b)).toBe(true);
+  });
+
+  it('returns false when mode differs and at least one draft has orders', () => {
+    // Once the user has authored an order on one side, a mode switch is a
+    // real change (the other track's contents would be discarded on commit).
+    const a: ProgDraft = { ...empty(), capOrders: [cap()] };
+    const b: ProgDraft = { ...empty(), mode: 'wp', capOrders: [cap()] };
     expect(deepEqDraft(a, b)).toBe(false);
   });
 
