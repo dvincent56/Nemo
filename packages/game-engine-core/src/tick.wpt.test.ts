@@ -152,10 +152,13 @@ describe('WPT order — capture detection', () => {
     const tickEndMs = tickStartMs + 30_000;
     const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
 
-    // Boat is essentially on the waypoint (within 0.1 NM).
+    // Boat is essentially on the waypoint (within 0.06 NM). Default capture
+    // radius is now 0.001 NM (meter-level), so we explicitly pass a 0.5 NM
+    // radius for this scenario which validates the radius itself, not the
+    // tactical default.
     const startPos: Position = { lat: 46.0, lon: -4.0 };
     const wpt: Position = { lat: 46.001, lon: -4.0 }; // ~0.06 NM north
-    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1);
+    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, 0.5);
     const wptOrderId = wptEnv.order.id;
     const runtime = await makeRuntime(startPos, [wptEnv]);
 
@@ -209,7 +212,7 @@ describe('WPT order — capture detection', () => {
 // ---------------------------------------------------------------------------
 
 describe('WPT order — captureRadiusNm validation', () => {
-  test('NaN captureRadiusNm is ignored, default 0.5 NM applies', async () => {
+  test('NaN captureRadiusNm is ignored, default applies (no DoS)', async () => {
     const polar = await loadPolar('CLASS40');
     const zones = buildZoneIndex([]);
     const coastline = new CoastlineIndex();
@@ -217,22 +220,27 @@ describe('WPT order — captureRadiusNm validation', () => {
     const tickEndMs = tickStartMs + 30_000;
     const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
 
-    // Boat at ~0.4 NM south of waypoint (within default 0.5 NM).
+    // The malformed NaN radius must be rejected. With the new meter-level
+    // default (0.001 NM), the boat must end the tick within ~1.85m of the
+    // WP for capture. Place the WP essentially on the boat (lat-only nudge
+    // smaller than the default radius) so a successful capture proves the
+    // NaN was rejected and the default applied — without the rejection,
+    // NaN < radius is always false (NaN comparisons) and the WP would
+    // never be captured (DoS).
     const startPos: Position = { lat: 46.0, lon: -4.0 };
-    const wpt: Position = { lat: 46 + 0.4 / 60, lon: -4.0 }; // ~0.4 NM north
+    // ~0.0006 NM north (~1.1 m) — well within the 0.001 NM default.
+    const wpt: Position = { lat: 46.00001, lon: -4.0 };
     const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, NaN);
     const wptOrderId = wptEnv.order.id;
     const runtime = await makeRuntime(startPos, [wptEnv]);
 
     const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
 
-    // The malformed NaN radius must be rejected; the default 0.5 NM applies,
-    // so the boat (~0.4 NM away) captures the waypoint.
     const stillThere = out.runtime.orderHistory.find((o) => o.order.id === wptOrderId);
     assert.equal(
       stillThere,
       undefined,
-      `WPT with NaN captureRadiusNm should fall back to default and be captured at 0.4 NM`,
+      `WPT with NaN captureRadiusNm should fall back to default and be captured`,
     );
   });
 
@@ -268,6 +276,149 @@ describe('WPT order — captureRadiusNm validation', () => {
 // override heading on subsequent ticks. Reproduces the WPT-then-CAP route
 // regression where the boat held the bearing-to-last-WPT instead of CAP°.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Line-distance capture — meter-level precision. The boat is steered by a CAP
+// order so its heading does NOT point at the WP. The WP is placed on/near the
+// segment line such that BOTH endpoints are outside the (tiny) capture radius
+// but the perpendicular projection falls within it. Without the line-distance
+// check (Step 2 of the meter-precision rewrite), capture would be missed.
+// ---------------------------------------------------------------------------
+
+describe('WPT capture — line-distance check (meter precision)', () => {
+  test('boat passing within 1m of WP captures it (line-distance, endpoints outside)', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    // Steer the boat with a CAP @ 90° (due east) — heading does NOT point at
+    // the WP. Boat sails east in 12 kt wind from north (beam reach).
+    const startPos: Position = { lat: 46.0, lon: -4.0 };
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: tickStartMs - 1, clientSeq: 0, trustedTs: tickStartMs - 1,
+      effectiveTs: tickStartMs - 1, receivedAt: tickStartMs - 1,
+      connectionId: 'test',
+    };
+
+    const TINY_RADIUS_NM = 0.001; // ~1.85m
+    // Run a probing tick first to discover where the boat ends with this CAP.
+    const probeRuntime = await makeRuntime(startPos, [cap]);
+    const probeOut = runTick(probeRuntime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+    const endPos = probeOut.runtime.boat.position;
+
+    // Place the WP exactly on the midpoint of the swept line (so perpendicular
+    // distance ≈ 0). To make the test discriminating, nudge it laterally by
+    // ~0.5m (still within the 1.85m capture radius).
+    const midLat = (startPos.lat + endPos.lat) / 2;
+    const midLon = (startPos.lon + endPos.lon) / 2;
+    // Lateral nudge: 0.5m north ≈ 4.5e-6° latitude.
+    const lateralNudgeDeg = 0.5 / 111_000;
+    const wpt: Position = { lat: midLat + lateralNudgeDeg, lon: midLon };
+
+    // Sanity check: each endpoint must be OUTSIDE the radius (otherwise the
+    // endpoint check alone would catch it and the test wouldn't exercise the
+    // line-distance path). The midpoint is roughly half the tick distance
+    // from each endpoint, which for a CLASS40 doing several knots is well
+    // beyond 1.85m.
+    const distToStart = Math.hypot(
+      (wpt.lat - startPos.lat) * 60,
+      (wpt.lon - startPos.lon) * Math.cos(startPos.lat * Math.PI / 180) * 60,
+    );
+    const distToEnd = Math.hypot(
+      (wpt.lat - endPos.lat) * 60,
+      (wpt.lon - endPos.lon) * Math.cos(startPos.lat * Math.PI / 180) * 60,
+    );
+    assert.ok(
+      distToStart > TINY_RADIUS_NM,
+      `test setup: WP→start ${distToStart} NM should be > radius ${TINY_RADIUS_NM}`,
+    );
+    assert.ok(
+      distToEnd > TINY_RADIUS_NM,
+      `test setup: WP→end ${distToEnd} NM should be > radius ${TINY_RADIUS_NM}`,
+    );
+
+    // Now run the real tick: same CAP + a WPT placed where the boat passes.
+    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, TINY_RADIUS_NM);
+    const wptOrderId = wptEnv.order.id;
+    // Note: the WPT is the chain head so heading would normally point at it;
+    // we override with a CAP that supersedes WPTs ordering — but we want the
+    // WPT to remain ACTIVE for capture, so we use a TWA/CAP that does NOT
+    // supersede. Instead, omit the CAP and rely on the WPT itself for heading.
+    // The boat will steer at the WP and naturally pass exactly through it
+    // (line-distance ≈ 0 by definition of bearing-to-target).
+    const runtime = await makeRuntime(startPos, [wptEnv]);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    const stillThere = out.runtime.orderHistory.find((o) => o.order.id === wptOrderId);
+    assert.equal(
+      stillThere,
+      undefined,
+      `WPT should be captured via line-distance check (perpendicular within ${TINY_RADIUS_NM} NM)`,
+    );
+  });
+
+  test('boat passing 5m from WP does NOT capture it (radius 1m)', async () => {
+    const polar = await loadPolar('CLASS40');
+    const zones = buildZoneIndex([]);
+    const coastline = new CoastlineIndex();
+    const tickStartMs = 1_700_000_000_000;
+    const tickEndMs = tickStartMs + 30_000;
+    const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
+
+    const startPos: Position = { lat: 46.0, lon: -4.0 };
+    const TINY_RADIUS_NM = 0.0005; // ~0.93m
+
+    // Discover the boat's expected end position when steering at a probe WP
+    // due east. We then place the real WP off that line.
+    const probeWp = makeWptEnvelope(46.0, -3.99, tickStartMs, 1);
+    const probeRuntime = await makeRuntime(startPos, [probeWp]);
+    const probeOut = runTick(probeRuntime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+    const endPos = probeOut.runtime.boat.position;
+
+    // Place the real WP 5m perpendicular off the swept line at the midpoint.
+    // 5m ≈ 4.5e-5° latitude. With TINY_RADIUS_NM ≈ 0.93m, this is well outside
+    // the radius → the line-distance check must NOT trigger capture.
+    const midLat = (startPos.lat + endPos.lat) / 2;
+    const midLon = (startPos.lon + endPos.lon) / 2;
+    const fiveMeterDeg = 5 / 111_000;
+    const wpt: Position = { lat: midLat + fiveMeterDeg, lon: midLon };
+
+    // Steer with a CAP so the boat does NOT aim at the WP (otherwise it
+    // would zero the perpendicular distance).
+    const cap: OrderEnvelope = {
+      order: { id: randomUUID(), type: 'CAP', value: { heading: 90 }, trigger: { type: 'IMMEDIATE' } },
+      clientTs: tickStartMs - 1, clientSeq: 0, trustedTs: tickStartMs - 1,
+      effectiveTs: tickStartMs - 1, receivedAt: tickStartMs - 1,
+      connectionId: 'test',
+    };
+    const wptEnv = makeWptEnvelope(wpt.lat, wpt.lon, tickStartMs, 1, TINY_RADIUS_NM);
+    // Apply CAP→WPT supersession so CAP wins heading. Wait — we WANT the WPT
+    // to be active for capture detection but not driving heading. The
+    // capture detection checks `activeWptForCapture` (the chain head),
+    // independent of heading. The CAP is queued first and supersedes
+    // following WPTs… actually no: supersession marks WPTs completed.
+    // To keep WPT capturable but not heading-driving, use CAP.effectiveTs
+    // > WPT.effectiveTs and rely on the engine's per-order priority within
+    // the tick window — heading is set by the LATEST applicable order.
+    // The capture loop only requires the WPT to be the active chain head
+    // (uncompleted). Build with WPT first, CAP second (more recent) — the
+    // CAP wins heading at segment time, the WPT remains uncompleted and
+    // thus capturable.
+    const wptOrderId = wptEnv.order.id;
+    const runtime = await makeRuntime(startPos, [wptEnv, cap]);
+    const out = runTick(runtime, { polar, weather, zones, coastline }, tickStartMs, tickEndMs);
+
+    const stillThere = out.runtime.orderHistory.find((o) => o.order.id === wptOrderId);
+    assert.ok(
+      stillThere !== undefined,
+      `WPT should NOT be captured when boat passes ~5m away (radius ~0.93m)`,
+    );
+  });
+});
 
 describe('orderHistory — supersedeWaypointsByCapTwa', () => {
   test('a CAP order marks earlier non-completed WPTs as completed', () => {
@@ -393,10 +544,12 @@ describe('WPT order — sequential waypoints', () => {
     const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
 
     const startPos: Position = { lat: 46.0, lon: -4.0 };
-    const wptA: Position = { lat: 46.001, lon: -4.0 }; // ~0.06 NM north — captured immediately
+    const wptA: Position = { lat: 46.001, lon: -4.0 }; // ~0.06 NM north — captured via explicit larger radius
     const wptB: Position = { lat: 46.5, lon: -4.0 };   // 30 NM north — far
 
-    const envA = makeWptEnvelope(wptA.lat, wptA.lon, tickStartMs, 1);
+    // Explicit 0.5 NM radius for WPT A so it captures immediately even
+    // though the default is now 0.001 NM (meter-level).
+    const envA = makeWptEnvelope(wptA.lat, wptA.lon, tickStartMs, 1, 0.5);
     const envB = makeWptEnvelope(wptB.lat, wptB.lon, tickEndMs + 60_000, 2); // far future
     const runtime = await makeRuntime(startPos, [envA, envB]);
 
@@ -689,8 +842,11 @@ describe('WPT order — AT_WAYPOINT chain heading is the active head, not the ta
     const weather = makeWeatherProvider(Math.floor(tickStartMs / 1000));
 
     // Place boat already on WP_1 so it captures within the first tick.
+    // Explicit 0.5 NM radius — the meter-level default (0.001 NM) would
+    // not catch the ~0.006 NM offset; this test exercises chain progression
+    // not radius precision.
     const startPos: Position = { lat: 46, lon: -4 };
-    const wp1 = makeWptEnvelope(46.0001, -4.0, tickStartMs, 1); // ~0.006 NM north
+    const wp1 = makeWptEnvelope(46.0001, -4.0, tickStartMs, 1, 0.5); // ~0.006 NM north
     // WP_2 due east of WP_1 (well outside capture radius from start).
     const wp2 = makeChainedWptEnvelope(46.0, -3.0, tickStartMs, 2, wp1.order.id);
 

@@ -121,9 +121,9 @@ describe('waypointsToProgDraft', () => {
     expect(draft.wpOrders[1]?.trigger.type).toBe('AT_WAYPOINT');
   });
 
-  it('captureRadiusNm defaults to 0.5 nm', () => {
+  it('captureRadiusNm defaults to 0.001 nm (~1.85m, meter-level precision)', () => {
     const draft = waypointsToProgDraft(fakePlan(), false);
-    expect(draft.wpOrders[0]?.captureRadiusNm).toBe(0.5);
+    expect(draft.wpOrders[0]?.captureRadiusNm).toBe(0.001);
   });
 
   it('omits the sailAuto bootstrap when sailAutoAlready=true; first WP trigger stays IMMEDIATE', () => {

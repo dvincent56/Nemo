@@ -436,7 +436,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           if (typeof lat !== 'number' || typeof lon !== 'number') continue;
           const radiusRaw = (o.value as { captureRadiusNm?: unknown }).captureRadiusNm;
           const radius =
-            typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.5;
+            typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.001;
           const d = haversinePosNM(
             { lat: boatLatLocal, lon: boatLonLocal },
             { lat, lon },
@@ -626,7 +626,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       // Pass 1: WPs whose center is within captureRadius of the boat.
       for (const wp of wpOrders) {
         const dNm = haversinePosNM(boatPos, { lat: wp.lat, lon: wp.lon });
-        const radius = wp.captureRadiusNm > 0 ? wp.captureRadiusNm : 0.5;
+        const radius = wp.captureRadiusNm > 0 ? wp.captureRadiusNm : 0.001;
         if (dNm < radius) captured.add(wp.id);
       }
 

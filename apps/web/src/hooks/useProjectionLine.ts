@@ -309,7 +309,7 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
         const lat = Number(o.value['lat'] ?? 0);
         const lon = Number(o.value['lon'] ?? 0);
         const radiusRaw = Number(o.value['captureRadiusNm']);
-        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.5;
+        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.001;
         value = { lat, lon, captureRadiusNm };
       }
 

@@ -17,7 +17,9 @@ export interface OrderRuntime extends Order {
 
 export type OrderQueue = OrderRuntime[];
 
-const WPT_REACHED_NM = 0.5;
+// Meter-level WP capture (~1.85m). Matches packages/game-engine-core/src/geo.ts
+// WPT_DEFAULT_CAPTURE_NM and Virtual Regatta tactical precision.
+const WPT_REACHED_NM = 0.001;
 
 /**
  * Test de déclenchement d'un ordre en file d'attente.

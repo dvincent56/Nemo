@@ -1210,7 +1210,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         trigger,
         lat: wp.lat,
         lon: wp.lon,
-        captureRadiusNm: 0.5,
+        captureRadiusNm: 0.001,
       });
       state.setPickingWp(false);
       // Mark this WP as tentative — if the user clicks "Annuler" instead of
