@@ -442,8 +442,7 @@
         "profile": "vif raidi",
         "description": "Mât carbone standard, plus rigide et plus réactif.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 3200,
         "effects": {
@@ -476,8 +475,7 @@
         "profile": "stable musclé",
         "description": "Carbone haut module, manœuvres accélérées et puissance accrue.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 5800,
         "effects": {
@@ -550,9 +548,7 @@
         "profile": "polyvalent stable",
         "description": "Mylar laminé, bon équilibre rendement/durabilité.",
         "compat": [
-          "CLASS40",
-          "IMOCA60",
-          "MINI650"
+          "CLASS40"
         ],
         "cost": 5800,
         "effects": {
@@ -585,8 +581,7 @@
         "profile": "rendement haut",
         "description": "Technologie 3Di North Sails, rendement exceptionnel sur tous les allures.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 10000,
         "effects": {
@@ -619,8 +614,7 @@
         "profile": "sur-mesure expert",
         "description": "Voiles taillées spécifiquement pour le bateau, réservées aux experts.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": null,
         "unlockCriteria": {
@@ -850,8 +844,7 @@
         "profile": "puissance redresseur",
         "description": "Quille pendulaire améliorant le couple de redressement au près.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 2800,
         "effects": {
@@ -884,8 +877,7 @@
         "profile": "couple max",
         "description": "Quille basculante pour un couple de redressement maximal.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 5600,
         "effects": {
