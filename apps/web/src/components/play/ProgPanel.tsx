@@ -175,7 +175,7 @@ export default function ProgPanel(): ReactElement {
           index={index}
           predecessorIndex={predecessorIndex}
           boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
-          minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 3}
+          minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 0.5}
           onCancel={() => {
             // If this WP was tentatively placed by a click-on-map and the
             // user is bailing out of the editor without confirming, remove

@@ -10,7 +10,7 @@ import {
   DEFAULT_OCEAN_ID,
 } from '@/lib/mapAppearance';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
-import { validateWpDistance } from '@/lib/prog/safetyRadius';
+import { validateWpDistance, wpDistanceNm } from '@/lib/prog/safetyRadius';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 import { selectGhostPosition } from '@/lib/store/timeline-selectors';
@@ -1131,14 +1131,15 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         if (features.length > 0) return;
       }
 
-      const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
+      const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
       const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
       const wp = { lat: e.lngLat.lat, lon: e.lngLat.lng };
 
       if (!validateWpDistance(boat, wp, minNm)) {
         // TODO Phase 2b: surface this as a toast. For now, console.warn keeps
         // the user state intact (still in picking mode) so they can try again.
-        console.warn(`[ProgPanel] WP trop proche du bateau (min ${minNm} NM)`);
+        const actualNm = wpDistanceNm(boat, wp);
+        console.warn(`[ProgPanel] WP placement rejected — ${actualNm.toFixed(2)} NM from boat (min ${minNm} NM)`);
         return;
       }
 
@@ -1253,7 +1254,7 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
 
       marker.on('dragend', () => {
         const ll = marker.getLngLat();
-        const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
+        const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
         const state = useGameStore.getState();
         const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
         const newWp = { lat: ll.lat, lon: ll.lng };
@@ -1264,7 +1265,8 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
             .getState()
             .prog.draft.wpOrders.find((w) => w.id === wp.id);
           if (cur) marker.setLngLat([cur.lon, cur.lat]);
-          console.warn(`[ProgPanel] WP drag rejected — too close to boat (min ${minNm} NM)`);
+          const actualNm = wpDistanceNm(boat, newWp);
+          console.warn(`[ProgPanel] WP placement rejected — ${actualNm.toFixed(2)} NM from boat (min ${minNm} NM)`);
           return;
         }
         state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });
