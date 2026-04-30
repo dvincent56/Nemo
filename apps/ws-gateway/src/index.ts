@@ -3,7 +3,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import Redis from 'ioredis';
 import { decode, encode } from '@msgpack/msgpack';
 import pino from 'pino';
-import type { Order, OrderEnvelope, OrderTrigger } from '@nemo/shared-types';
+import type { OrderEnvelope } from '@nemo/shared-types';
+import { buildEnvelope } from './build-envelope.js';
 
 /**
  * ws-gateway — Phase 3 pipeline complet (implémentation `ws` standard npm).
@@ -64,45 +65,6 @@ function extractRaceId(url: string | undefined): string | null {
   return m?.[1] ?? null;
 }
 
-const CLIENT_TS_TOLERANCE_MS = 2000;
-
-function computeEffectiveTs(trigger: OrderTrigger, trustedTs: number): number {
-  if (trigger.type === 'AT_TIME' && typeof (trigger as { time: number }).time === 'number') {
-    return (trigger as { time: number }).time * 1000;
-  }
-  return trustedTs;
-}
-
-function buildEnvelope(args: {
-  rawOrder: unknown;
-  clientTs: number;
-  clientSeq: number;
-  connectionId: string;
-  serverNow: number;
-}): OrderEnvelope | null {
-  const { rawOrder, clientTs, clientSeq, connectionId, serverNow } = args;
-  if (typeof rawOrder !== 'object' || rawOrder === null) return null;
-  const o = rawOrder as Record<string, unknown>;
-  if (typeof o['type'] !== 'string') return null;
-  const trustedTs = Math.abs(serverNow - clientTs) < CLIENT_TS_TOLERANCE_MS ? clientTs : serverNow;
-  const trigger = (o['trigger'] as OrderTrigger) ?? { type: 'IMMEDIATE' };
-  const effectiveTs = computeEffectiveTs(trigger, trustedTs);
-  const order: Order = {
-    id: (o['id'] as string) ?? `${connectionId}-${clientSeq}`,
-    type: o['type'] as Order['type'],
-    value: (o['value'] as Record<string, unknown>) ?? {},
-    trigger,
-  };
-  return {
-    order,
-    clientTs,
-    clientSeq,
-    trustedTs,
-    effectiveTs,
-    receivedAt: serverNow,
-    connectionId,
-  };
-}
 
 async function main(): Promise<void> {
   let pub: Redis | null = null;
