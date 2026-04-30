@@ -1307,6 +1307,22 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         .setLngLat([wp.lon, wp.lat])
         .addTo(map);
 
+      // Live update during drag: fires on every pointer-move, so the
+      // projection re-computes in real time as the WP slides instead of
+      // jumping only on release. We skip the store update if the candidate
+      // position would violate the minWp safety radius (the user can keep
+      // dragging — the marker visually moves, but the WP order stays at the
+      // last valid position). dragend handles the final commit + snap-back.
+      marker.on('drag', () => {
+        const ll = marker.getLngLat();
+        const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
+        const state = useGameStore.getState();
+        const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+        const newWp = { lat: ll.lat, lon: ll.lng };
+        if (!validateWpDistance(boat, newWp, minNm)) return;
+        state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });
+      });
+
       marker.on('dragend', () => {
         const ll = marker.getLngLat();
         const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
