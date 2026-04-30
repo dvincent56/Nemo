@@ -2292,7 +2292,7 @@
     }
   },
   "programming": {
-    "minWpDistanceNm": 3
+    "minWpDistanceNm": 0.5
   },
   "tick": {
     "intervalSeconds": 30
