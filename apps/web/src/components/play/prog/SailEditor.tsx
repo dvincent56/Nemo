@@ -61,7 +61,15 @@ export default function SailEditor({
   // Force AT_TIME in cap mode (segmented picker not shown)
   const effectiveTriggerKind: TriggerKind = draftMode === 'cap' ? 'AT_TIME' : triggerKind;
 
-  const canSave = effectiveTriggerKind === 'AT_TIME' || (effectiveTriggerKind === 'AT_WAYPOINT' && wpId !== '');
+  // No-op guard: an auto-sail order when the boat is already in auto-sail at
+  // the trigger time changes nothing. Refuse to save instead of letting the
+  // user pile up phantom orders. Validated on save in addition to the segment
+  // disabled state so the safeguard works even when the segment is bypassed
+  // (e.g. editing an existing auto order whose prior state is still auto).
+  const isAutoNoOp = auto && priorIsAuto;
+
+  const triggerOk = effectiveTriggerKind === 'AT_TIME' || (effectiveTriggerKind === 'AT_WAYPOINT' && wpId !== '');
+  const canSave = triggerOk && !isAutoNoOp;
 
   const handleSave = (): void => {
     if (!canSave) return;
@@ -113,6 +121,11 @@ export default function SailEditor({
               MANUEL
             </button>
           </div>
+          {isAutoNoOp && (
+            <p className={sailStyles.warnText}>
+              ⚠ Le bateau est déjà en voile auto à cette heure. L&apos;ordre serait sans effet.
+            </p>
+          )}
         </div>
 
         {/* Sail grid (only when Manuel) */}
