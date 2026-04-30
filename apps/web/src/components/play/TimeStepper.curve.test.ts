@@ -2,27 +2,34 @@ import { describe, it, expect } from 'vitest';
 import { holdAccelerationCurve } from './TimeStepper.curve';
 
 describe('holdAccelerationCurve', () => {
-  it('returns 60s/350ms for pulses 1-3', () => {
-    for (const n of [1, 2, 3]) {
-      expect(holdAccelerationCurve(n)).toEqual({ stepSec: 60, delayMs: 350 });
+  it('always advances by 60 seconds (1 minute) per pulse', () => {
+    for (const n of [0, 1, 5, 10, 50, 100, 1000]) {
+      expect(holdAccelerationCurve(n).stepSec).toBe(60);
     }
   });
 
-  it('returns 300s/140ms for pulses 4-7', () => {
-    for (const n of [4, 5, 6, 7]) {
-      expect(holdAccelerationCurve(n)).toEqual({ stepSec: 300, delayMs: 140 });
-    }
+  it('returns 350ms delay for the first 3 pulses (slow phase)', () => {
+    expect(holdAccelerationCurve(1).delayMs).toBe(350);
+    expect(holdAccelerationCurve(2).delayMs).toBe(350);
+    expect(holdAccelerationCurve(3).delayMs).toBe(350);
   });
 
-  it('returns 900s/90ms for pulses 8-14', () => {
-    for (const n of [8, 9, 10, 14]) {
-      expect(holdAccelerationCurve(n)).toEqual({ stepSec: 900, delayMs: 90 });
-    }
+  it('accelerates to 200ms by pulse 4', () => {
+    expect(holdAccelerationCurve(4).delayMs).toBe(200);
+    expect(holdAccelerationCurve(7).delayMs).toBe(200);
   });
 
-  it('returns 3600s/60ms for pulses 15+ (max speed)', () => {
-    for (const n of [15, 16, 100, 1000]) {
-      expect(holdAccelerationCurve(n)).toEqual({ stepSec: 3600, delayMs: 60 });
+  it('reaches max speed (15ms) at pulse 30+', () => {
+    expect(holdAccelerationCurve(30).delayMs).toBe(15);
+    expect(holdAccelerationCurve(100).delayMs).toBe(15);
+  });
+
+  it('delay is monotonically non-increasing as pulse grows', () => {
+    let prev = Infinity;
+    for (const n of [1, 4, 8, 14, 22, 30, 100]) {
+      const { delayMs } = holdAccelerationCurve(n);
+      expect(delayMs).toBeLessThanOrEqual(prev);
+      prev = delayMs;
     }
   });
 
