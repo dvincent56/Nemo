@@ -42,7 +42,18 @@ export default function CapEditor({
   onCancel,
   onSave,
 }: CapEditorProps): ReactElement {
-  const [heading, setHeading] = useState<number>(initialOrder?.heading ?? defaultHeading);
+  // When TWA-locked, the stored heading is a TWA in [-180, 180] (so the
+  // serializer can emit `{ twa }` and the engine consumes a relative-to-wind
+  // angle). The compass dial works in absolute 0..359, so on open we convert
+  // back: absHdg = (twa + windDir + 360) % 360. Double `% 360` is required
+  // for negative TWA values (e.g. -30 → ((-30 + 220) % 360 + 360) % 360 = 190).
+  const initialHeading = (() => {
+    if (initialOrder && initialOrder.twaLock) {
+      return (((initialOrder.heading + windDir) % 360) + 360) % 360;
+    }
+    return initialOrder?.heading ?? defaultHeading;
+  })();
+  const [heading, setHeading] = useState<number>(initialHeading);
   const [twaLock, setTwaLock] = useState<boolean>(initialOrder?.twaLock ?? false);
   const [time, setTime] = useState<number>(initialOrder?.trigger.time ?? defaultTime);
 
@@ -52,10 +63,17 @@ export default function CapEditor({
     : `MODIFIER CAP${index !== null ? ` · N°${String(index).padStart(2, '0')}` : ''}`;
 
   const handleSave = (): void => {
+    // When TWA-locked, the order's stored heading must be a TWA in [-180, 180]
+    // — the serializer emits `{ twa: heading }` for TWA orders and the engine
+    // expects a relative-to-wind angle. Convert from the absolute compass dial
+    // value using the current windDir; mirrors Compass.tsx apply() L145-148.
+    const storedHeading = twaLock
+      ? Math.round(((heading - windDir + 540) % 360) - 180)
+      : heading;
     const order: CapOrder = {
       id: initialOrder?.id ?? makeId(),
       trigger: { type: 'AT_TIME', time },
-      heading,
+      heading: storedHeading,
       twaLock,
     };
     onSave(order);
