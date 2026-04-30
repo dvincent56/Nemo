@@ -34,7 +34,10 @@ function getJwks(e: CognitoEnv): ReturnType<typeof createRemoteJWKSet> {
   const url = new URL(
     `https://cognito-idp.${e.region}.amazonaws.com/${e.userPoolId}/.well-known/jwks.json`,
   );
-  jwks = createRemoteJWKSet(url);
+  // cooldownDuration: minimum interval (ms) between two refresh attempts when
+  // an unknown kid is encountered. Allows key rotation to be picked up at most
+  // every 5 minutes without hammering the JWKS endpoint.
+  jwks = createRemoteJWKSet(url, { cooldownDuration: 300_000 });
   return jwks;
 }
 
@@ -42,18 +45,21 @@ export interface AuthContext {
   sub: string;
   username: string;
   tier: 'FREE' | 'CAREER';
+  isAdmin: boolean;
   claims: JWTPayload;
 }
 
 export async function verifyAccessToken(token: string): Promise<AuthContext> {
   const e = env();
   if (!e) {
-    // Mode dev/stub : si Cognito non configuré, on accepte un token signé "dev.<sub>.<username>".
+    if (process.env['NEMO_ALLOW_DEV_AUTH'] !== '1') {
+      throw new Error('dev tokens disabled (set NEMO_ALLOW_DEV_AUTH=1 for local dev)');
+    }
     if (token.startsWith('dev.')) {
       const parts = token.split('.');
       const sub = parts[1] ?? 'dev-user';
       const username = parts[2] ?? 'dev';
-      return { sub, username, tier: 'FREE', claims: { sub, username } };
+      return { sub, username, tier: 'FREE', isAdmin: false, claims: { sub, username } };
     }
     throw new Error('COGNITO_* env missing and token is not a dev stub');
   }
@@ -65,7 +71,11 @@ export async function verifyAccessToken(token: string): Promise<AuthContext> {
   const sub = String(payload['sub'] ?? '');
   const username = String(payload['cognito:username'] ?? payload['username'] ?? sub);
   const tier = (payload['custom:tier'] as 'FREE' | 'CAREER' | undefined) ?? 'FREE';
-  return { sub, username, tier, claims: payload };
+  // Admin claim: must come from a Cognito group (cognito:groups is an array).
+  // We never trust client-side hints — only the signed token.
+  const groups = (payload['cognito:groups'] as string[] | undefined) ?? [];
+  const isAdmin = groups.includes('admin');
+  return { sub, username, tier, isAdmin, claims: payload };
 }
 
 /**
