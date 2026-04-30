@@ -20,6 +20,11 @@ export interface SailEditorProps {
   /** Floor for the TimeStepper minValue */
   minValueSec: number;
   nowSec: number;
+  /** When true, the boat is already in sail-auto by the time this order
+   *  would fire — so emitting another auto-sail order is a no-op. The
+   *  Auto segment is disabled to make this clear, and a new order
+   *  defaults to Manuel rather than Auto. */
+  priorIsAuto: boolean;
   onCancel: () => void;
   onSave: (order: SailOrder) => void;
 }
@@ -31,10 +36,13 @@ function makeId(): string {
 }
 
 export default function SailEditor({
-  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, onCancel, onSave,
+  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, priorIsAuto, onCancel, onSave,
 }: SailEditorProps): ReactElement {
   const isNew = initialOrder === null;
-  const initialAuto = initialOrder?.action.auto ?? true;
+  // If the boat is already in auto at this order's trigger time, emitting
+  // another auto-sail order is a no-op — default a new order to Manuel so
+  // the user has a meaningful action to confirm.
+  const initialAuto = initialOrder?.action.auto ?? !priorIsAuto;
   const initialSail: SailId = initialOrder && initialOrder.action.auto === false
     ? initialOrder.action.sail
     : 'JIB';
@@ -90,6 +98,8 @@ export default function SailEditor({
               type="button"
               className={`${sailStyles.segBtn} ${auto ? sailStyles.segBtnActive : ''}`}
               onClick={() => setAuto(true)}
+              disabled={priorIsAuto}
+              title={priorIsAuto ? 'Le bateau est déjà en voile auto à cette heure' : undefined}
               aria-pressed={auto}
             >
               AUTO

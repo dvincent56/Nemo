@@ -34,6 +34,7 @@ export default function ProgPanel(): ReactElement {
   const hudTwd = useGameStore((s) => s.hud.twd);
   const hudLat = useGameStore((s) => s.hud.lat);
   const hudLon = useGameStore((s) => s.hud.lon);
+  const sailAuto = useGameStore((s) => s.sail.sailAuto);
 
   // Phase 2b Task 3: editing state lives in the store so MapCanvas marker
   // clicks can drive the editor. The 'NEW' magic id (cap/sail/wp create
@@ -119,6 +120,22 @@ export default function ProgPanel(): ReactElement {
       );
       const availableWps = draft.wpOrders.filter((wp) => !wpIdsUsedByOtherSails.has(wp.id));
 
+      // Determine the boat's auto-mode state at the moment THIS order would
+      // fire. We only consider AT_TIME prior orders here — AT_WAYPOINT
+      // triggers depend on routing dynamics that aren't ordered linearly
+      // against AT_TIME triggers. If there's no AT_TIME predecessor, fall
+      // back to the live boat state (`sail.sailAuto`). This is what powers
+      // the "Auto button disabled when already in auto" UX in SailEditor.
+      const editingTime = (initialOrder?.trigger.type === 'AT_TIME'
+        ? initialOrder.trigger.time
+        : null) ?? defaultSailAnchor(draft, nowSec);
+      const priorAtTimeSails = draft.sailOrders
+        .filter((s) => s.id !== editing.id && s.trigger.type === 'AT_TIME')
+        .filter((s) => (s.trigger as { time: number }).time < editingTime)
+        .sort((a, b) => (b.trigger as { time: number }).time - (a.trigger as { time: number }).time);
+      const priorOrder = priorAtTimeSails[0];
+      const priorIsAuto = priorOrder ? priorOrder.action.auto : sailAuto;
+
       return (
         <SailEditor
           initialOrder={initialOrder}
@@ -127,6 +144,7 @@ export default function ProgPanel(): ReactElement {
           defaultTime={defaultSailAnchor(draft, nowSec)}
           minValueSec={floorForNow(nowSec)}
           nowSec={nowSec}
+          priorIsAuto={priorIsAuto}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             if (isNew) {
