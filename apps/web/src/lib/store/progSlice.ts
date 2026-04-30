@@ -252,5 +252,56 @@ export function createProgSlice(set: SetFn) {
       set((s) => ({
         prog: { ...s.prog, pendingNewWpId: id },
       })),
+
+    /**
+     * Remove WPs that have been captured by the boat from BOTH committed and
+     * draft. Cascades: drops sail orders + finalCap referencing removed WPs.
+     *
+     * Called by a 5Hz client-side capture detector in PlayClient. The engine
+     * has its own authoritative state; this mirror keeps the panel/projection
+     * in sync so a Confirmer doesn't re-emit already-traversed WPs.
+     *
+     * @param removedIds - the set of WP ids the heuristic detected as captured
+     */
+    removeCapturedWps: (removedIds: string[]) => set((s) => {
+      if (removedIds.length === 0) return s;
+      const removed = new Set(removedIds);
+
+      function cleanDraft(d: ProgDraft): ProgDraft {
+        const wpOrders = d.wpOrders.filter((wp) => !removed.has(wp.id));
+        // Successors of removed WPs need to rebind to the new chain
+        // head/predecessor.
+        const reboundWps = wpOrders.map((wp) => {
+          if (wp.trigger.type !== 'AT_WAYPOINT') return wp;
+          if (!removed.has(wp.trigger.waypointOrderId)) return wp;
+          // The predecessor was captured. Walk back through the original list
+          // to find the most recent NON-captured predecessor.
+          const origIdx = d.wpOrders.findIndex((x) => x.id === wp.id);
+          for (let i = origIdx - 1; i >= 0; i--) {
+            const cand = d.wpOrders[i];
+            if (cand && !removed.has(cand.id)) {
+              return { ...wp, trigger: { type: 'AT_WAYPOINT' as const, waypointOrderId: cand.id } };
+            }
+          }
+          // No predecessor survived → this WP is now the chain head (IMMEDIATE).
+          return { ...wp, trigger: { type: 'IMMEDIATE' as const } };
+        });
+        const sailOrders = d.sailOrders.filter((so) =>
+          !(so.trigger.type === 'AT_WAYPOINT' && removed.has(so.trigger.waypointOrderId))
+        );
+        const finalCap = d.finalCap && removed.has(d.finalCap.trigger.waypointOrderId)
+          ? null
+          : d.finalCap;
+        return { ...d, wpOrders: reboundWps, sailOrders, finalCap };
+      }
+
+      return {
+        prog: {
+          ...s.prog,
+          committed: cleanDraft(s.prog.committed),
+          draft: cleanDraft(s.prog.draft),
+        },
+      };
+    }),
   };
 }

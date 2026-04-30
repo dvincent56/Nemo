@@ -604,6 +604,59 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     return () => cancelAnimationFrame(handle);
   }, [routerRoute]);
 
+  // Periodic capture detection — every 5s, scan committed.wpOrders for any
+  // WP within the boat's capture radius and remove it from BOTH committed
+  // and draft. The engine has its own authoritative state; this client-side
+  // mirror keeps the panel/projection in sync so a Confirmer doesn't re-emit
+  // an already-traversed WP (which would otherwise make the boat backtrack
+  // — VR-style bug).
+  useEffect(() => {
+    const tick = (): void => {
+      const state = useGameStore.getState();
+      const lat = state.hud.lat;
+      const lon = state.hud.lon;
+      if (typeof lat !== 'number' || typeof lon !== 'number') return;
+
+      const wpOrders = state.prog.committed.wpOrders;
+      if (wpOrders.length === 0) return;
+
+      const boatPos = { lat, lon };
+      const captured = new Set<string>();
+
+      // Pass 1: WPs whose center is within captureRadius of the boat.
+      for (const wp of wpOrders) {
+        const dNm = haversinePosNM(boatPos, { lat: wp.lat, lon: wp.lon });
+        const radius = wp.captureRadiusNm > 0 ? wp.captureRadiusNm : 0.5;
+        if (dNm < radius) captured.add(wp.id);
+      }
+
+      // Pass 2: walk the AT_WAYPOINT chain backward from each captured WP.
+      // If WP C is captured, every predecessor (B, A, …) referenced through
+      // trigger.waypointOrderId is also done — engine semantics.
+      for (const wp of wpOrders) {
+        if (!captured.has(wp.id)) continue;
+        if (wp.trigger.type !== 'AT_WAYPOINT') continue;
+        let prevId: string | undefined = wp.trigger.waypointOrderId;
+        const guard = new Set<string>();
+        while (prevId && !guard.has(prevId)) {
+          guard.add(prevId);
+          captured.add(prevId);
+          const prev = wpOrders.find((x) => x.id === prevId);
+          if (!prev || prev.trigger.type !== 'AT_WAYPOINT') break;
+          prevId = prev.trigger.waypointOrderId;
+        }
+      }
+
+      if (captured.size > 0) {
+        state.removeCapturedWps([...captured]);
+      }
+    };
+
+    tick(); // initial run
+    const interval = setInterval(tick, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (access.kind === 'blocked') {
     return (
       <div className={styles.blockedShell}>

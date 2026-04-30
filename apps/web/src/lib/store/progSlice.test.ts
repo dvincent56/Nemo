@@ -29,6 +29,7 @@ interface TestStore {
   setEditingOrder: ReturnType<typeof createProgSlice>['setEditingOrder'];
   setPickingWp: ReturnType<typeof createProgSlice>['setPickingWp'];
   setPendingNewWpId: ReturnType<typeof createProgSlice>['setPendingNewWpId'];
+  removeCapturedWps: ReturnType<typeof createProgSlice>['removeCapturedWps'];
 }
 
 function makeStore() {
@@ -362,5 +363,57 @@ describe('progSlice pendingNewWpId', () => {
     };
     store.getState().applyRouteAsCommitted(next);
     expect(store.getState().prog.pendingNewWpId).toBe('w7');
+  });
+});
+
+describe('progSlice removeCapturedWps', () => {
+  it('removes captured WPs from both committed and draft', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp', capOrders: [],
+      wpOrders: [
+        wp('w1'),
+        wp('w2', 46, -2, 'w1'),
+        wp('w3', 47, -1, 'w2'),
+      ],
+      finalCap: null, sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    // Simulate user edits w3
+    store.getState().updateWpOrder('w3', { lat: 48 });
+
+    store.getState().removeCapturedWps(['w1']);
+
+    expect(store.getState().prog.committed.wpOrders.map((w) => w.id)).toEqual(['w2', 'w3']);
+    expect(store.getState().prog.draft.wpOrders.map((w) => w.id)).toEqual(['w2', 'w3']);
+    // w2 was AT_WAYPOINT(w1) — now IMMEDIATE since w1 is gone
+    expect(store.getState().prog.committed.wpOrders[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
+  });
+
+  it('cascades to sail orders + finalCap referencing the removed WPs', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp', capOrders: [],
+      wpOrders: [wp('w1'), wp('w2', 46, -2, 'w1')],
+      finalCap: { id: 'fc', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, heading: 45, twaLock: false },
+      sailOrders: [{ id: 's1', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, action: { auto: true } }],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    store.getState().removeCapturedWps(['w1']);
+
+    expect(store.getState().prog.committed.finalCap).toBeNull();
+    expect(store.getState().prog.committed.sailOrders).toEqual([]);
+    // w2 rebinds to IMMEDIATE
+    expect(store.getState().prog.committed.wpOrders[0]?.trigger.type).toBe('IMMEDIATE');
+  });
+
+  it('is a no-op when removedIds is empty', () => {
+    const store = makeStore();
+    store.getState().applyRouteAsCommitted({
+      mode: 'wp', capOrders: [], wpOrders: [wp('w1')], finalCap: null, sailOrders: [],
+    });
+    const beforeCommitted = store.getState().prog.committed;
+    store.getState().removeCapturedWps([]);
+    expect(store.getState().prog.committed).toBe(beforeCommitted); // referential identity preserved
   });
 });
