@@ -51,6 +51,10 @@ export interface PlayerClassStats {
   boatClass: BoatClass;
   rankingScore: number;
   racesFinished: number;
+  /** ELO Série pour cette classe (mock — backend Phase 2). */
+  rankingScoreSeries: number;
+  /** Nombre de courses finies en config Série dans cette classe (mock). */
+  racesFinishedSeries: number;
   podiums: number;
   /** Bateau favori du joueur sur cette classe. */
   favoriteBoatName: string;
@@ -68,6 +72,8 @@ export interface SkipperRanking {
   country: CountryCode;
   rankingScore: number;
   racesFinished: number;
+  rankingScoreSeries: number;
+  racesFinishedSeries: number;
   podiums: number;
   favoriteBoatName: string;
   trend: Trend;
@@ -104,36 +110,36 @@ export const PLAYERS: Player[] = [
    ========================================================================= */
 export const PLAYER_CLASS_STATS: PlayerClassStats[] = [
   // ── IMOCA 60 ─────────────────────────────────────────────────────
-  { username: 'laperouse', boatClass: 'IMOCA60', rankingScore: 4318, racesFinished: 30, podiums: 12, favoriteBoatName: 'Finisterre',  trend: { dir: 'flat', delta: 0 } },
-  { username: 'northwind', boatClass: 'IMOCA60', rankingScore: 4082, racesFinished: 28, podiums: 11, favoriteBoatName: 'Noordster',   trend: { dir: 'up',   delta: 1 } },
-  { username: 'cascais',   boatClass: 'IMOCA60', rankingScore: 2608, racesFinished: 21, podiums:  4, favoriteBoatName: 'Atlantico',   trend: { dir: 'up',   delta: 4 } },
-  { username: 'vous',      boatClass: 'IMOCA60', rankingScore:  720, racesFinished:  8, podiums:  1, favoriteBoatName: 'Nemo I',      trend: { dir: 'up',   delta: 2 } },
-  { username: 'finistère', boatClass: 'IMOCA60', rankingScore: 1840, racesFinished: 14, podiums:  3, favoriteBoatName: 'Iroise II',   trend: { dir: 'flat', delta: 0 } },
+  { username: 'laperouse', boatClass: 'IMOCA60', rankingScore: 4318, racesFinished: 30, rankingScoreSeries: 1820, racesFinishedSeries: 11, podiums: 12, favoriteBoatName: 'Finisterre',  trend: { dir: 'flat', delta: 0 } },
+  { username: 'northwind', boatClass: 'IMOCA60', rankingScore: 4082, racesFinished: 28, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums: 11, favoriteBoatName: 'Noordster',   trend: { dir: 'up',   delta: 1 } },
+  { username: 'cascais',   boatClass: 'IMOCA60', rankingScore: 2608, racesFinished: 21, rankingScoreSeries: 1640, racesFinishedSeries:  6, podiums:  4, favoriteBoatName: 'Atlantico',   trend: { dir: 'up',   delta: 4 } },
+  { username: 'vous',      boatClass: 'IMOCA60', rankingScore:  720, racesFinished:  8, rankingScoreSeries: 1380, racesFinishedSeries:  3, podiums:  1, favoriteBoatName: 'Nemo I',      trend: { dir: 'up',   delta: 2 } },
+  { username: 'finistère', boatClass: 'IMOCA60', rankingScore: 1840, racesFinished: 14, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  3, favoriteBoatName: 'Iroise II',   trend: { dir: 'flat', delta: 0 } },
 
   // ── CLASS40 ──────────────────────────────────────────────────────
-  { username: 'bora_c',    boatClass: 'CLASS40', rankingScore: 3947, racesFinished: 28, podiums:  9, favoriteBoatName: 'Tramontana',  trend: { dir: 'down', delta: 1 } },
-  { username: 'tradewind', boatClass: 'CLASS40', rankingScore: 3384, racesFinished: 26, podiums:  7, favoriteBoatName: 'Solent',      trend: { dir: 'flat', delta: 0 } },
-  { username: 'hebrides',  boatClass: 'CLASS40', rankingScore: 2984, racesFinished: 24, podiums:  5, favoriteBoatName: 'Lewis',       trend: { dir: 'flat', delta: 0 } },
-  { username: 'vous',      boatClass: 'CLASS40', rankingScore: 1420, racesFinished: 22, podiums:  4, favoriteBoatName: 'Nemo',        trend: { dir: 'flat', delta: 0 } },
-  { username: 'narvik',    boatClass: 'CLASS40', rankingScore: 2011, racesFinished: 18, podiums:  3, favoriteBoatName: 'Hurtig',      trend: { dir: 'down', delta: 2 } },
-  { username: 'laperouse', boatClass: 'CLASS40', rankingScore: 1280, racesFinished: 12, podiums:  2, favoriteBoatName: 'Trinité 40', trend: { dir: 'up',   delta: 1 } },
+  { username: 'bora_c',    boatClass: 'CLASS40', rankingScore: 3947, racesFinished: 28, rankingScoreSeries: 1720, racesFinishedSeries:  9, podiums:  9, favoriteBoatName: 'Tramontana',  trend: { dir: 'down', delta: 1 } },
+  { username: 'tradewind', boatClass: 'CLASS40', rankingScore: 3384, racesFinished: 26, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  7, favoriteBoatName: 'Solent',      trend: { dir: 'flat', delta: 0 } },
+  { username: 'hebrides',  boatClass: 'CLASS40', rankingScore: 2984, racesFinished: 24, rankingScoreSeries: 1610, racesFinishedSeries:  7, podiums:  5, favoriteBoatName: 'Lewis',       trend: { dir: 'flat', delta: 0 } },
+  { username: 'vous',      boatClass: 'CLASS40', rankingScore: 1420, racesFinished: 22, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  4, favoriteBoatName: 'Nemo',        trend: { dir: 'flat', delta: 0 } },
+  { username: 'narvik',    boatClass: 'CLASS40', rankingScore: 2011, racesFinished: 18, rankingScoreSeries: 1490, racesFinishedSeries:  4, podiums:  3, favoriteBoatName: 'Hurtig',      trend: { dir: 'down', delta: 2 } },
+  { username: 'laperouse', boatClass: 'CLASS40', rankingScore: 1280, racesFinished: 12, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  2, favoriteBoatName: 'Trinité 40', trend: { dir: 'up',   delta: 1 } },
 
   // ── FIGARO III ───────────────────────────────────────────────────
-  { username: 'finistère',  boatClass: 'FIGARO', rankingScore: 3512, racesFinished: 26, podiums:  8, favoriteBoatName: 'Iroise',      trend: { dir: 'up',   delta: 3 } },
-  { username: 'mistral',    boatClass: 'FIGARO', rankingScore: 3221, racesFinished: 24, podiums:  6, favoriteBoatName: 'Bandol',      trend: { dir: 'down', delta: 2 } },
-  { username: 'galway_bay', boatClass: 'FIGARO', rankingScore: 2842, racesFinished: 22, podiums:  4, favoriteBoatName: 'Claddagh',    trend: { dir: 'up',   delta: 1 } },
-  { username: 'balearic',   boatClass: 'FIGARO', rankingScore: 1988, racesFinished: 18, podiums:  3, favoriteBoatName: 'Mediterra',   trend: { dir: 'flat', delta: 0 } },
-  { username: 'vous',       boatClass: 'FIGARO', rankingScore:    0, racesFinished:  6, podiums:  0, favoriteBoatName: 'Nemo Solo',   trend: { dir: 'up',   delta: 0 } },
-  { username: 'tradewind',  boatClass: 'FIGARO', rankingScore: 1100, racesFinished: 10, podiums:  1, favoriteBoatName: 'Cowes Solo',  trend: { dir: 'flat', delta: 0 } },
+  { username: 'finistère',  boatClass: 'FIGARO', rankingScore: 3512, racesFinished: 26, rankingScoreSeries: 1690, racesFinishedSeries:  8, podiums:  8, favoriteBoatName: 'Iroise',      trend: { dir: 'up',   delta: 3 } },
+  { username: 'mistral',    boatClass: 'FIGARO', rankingScore: 3221, racesFinished: 24, rankingScoreSeries: 1580, racesFinishedSeries:  6, podiums:  6, favoriteBoatName: 'Bandol',      trend: { dir: 'down', delta: 2 } },
+  { username: 'galway_bay', boatClass: 'FIGARO', rankingScore: 2842, racesFinished: 22, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  4, favoriteBoatName: 'Claddagh',    trend: { dir: 'up',   delta: 1 } },
+  { username: 'balearic',   boatClass: 'FIGARO', rankingScore: 1988, racesFinished: 18, rankingScoreSeries: 1620, racesFinishedSeries:  9, podiums:  3, favoriteBoatName: 'Mediterra',   trend: { dir: 'flat', delta: 0 } },
+  { username: 'vous',       boatClass: 'FIGARO', rankingScore:    0, racesFinished:  6, rankingScoreSeries: 1500, racesFinishedSeries:  0, podiums:  0, favoriteBoatName: 'Nemo Solo',   trend: { dir: 'up',   delta: 0 } },
+  { username: 'tradewind',  boatClass: 'FIGARO', rankingScore: 1100, racesFinished: 10, rankingScoreSeries: 1430, racesFinishedSeries:  3, podiums:  1, favoriteBoatName: 'Cowes Solo',  trend: { dir: 'flat', delta: 0 } },
 
   // ── OCEAN FIFTY ──────────────────────────────────────────────────
-  { username: 'portofino', boatClass: 'OCEAN_FIFTY', rankingScore: 2721, racesFinished: 18, podiums: 4, favoriteBoatName: 'Ligure',   trend: { dir: 'down', delta: 1 } },
-  { username: 'donegal',   boatClass: 'OCEAN_FIFTY', rankingScore: 1902, racesFinished: 14, podiums: 2, favoriteBoatName: 'Swilly',   trend: { dir: 'up',   delta: 2 } },
-  { username: 'bora_c',    boatClass: 'OCEAN_FIFTY', rankingScore: 1240, racesFinished:  9, podiums: 1, favoriteBoatName: 'Adriatic', trend: { dir: 'flat', delta: 0 } },
+  { username: 'portofino', boatClass: 'OCEAN_FIFTY', rankingScore: 2721, racesFinished: 18, rankingScoreSeries: 1500, racesFinishedSeries: 0, podiums: 4, favoriteBoatName: 'Ligure',   trend: { dir: 'down', delta: 1 } },
+  { username: 'donegal',   boatClass: 'OCEAN_FIFTY', rankingScore: 1902, racesFinished: 14, rankingScoreSeries: 1540, racesFinishedSeries: 5, podiums: 2, favoriteBoatName: 'Swilly',   trend: { dir: 'up',   delta: 2 } },
+  { username: 'bora_c',    boatClass: 'OCEAN_FIFTY', rankingScore: 1240, racesFinished:  9, rankingScoreSeries: 1500, racesFinishedSeries: 0, podiums: 1, favoriteBoatName: 'Adriatic', trend: { dir: 'flat', delta: 0 } },
 
   // ── ULTIM ────────────────────────────────────────────────────────
-  { username: 'cap_horn',  boatClass: 'ULTIM', rankingScore: 3102, racesFinished: 22, podiums: 6, favoriteBoatName: 'Magellan',     trend: { dir: 'up',   delta: 2 } },
-  { username: 'laperouse', boatClass: 'ULTIM', rankingScore: 2010, racesFinished: 16, podiums: 3, favoriteBoatName: 'Trinité Max',  trend: { dir: 'flat', delta: 0 } },
+  { username: 'cap_horn',  boatClass: 'ULTIM', rankingScore: 3102, racesFinished: 22, rankingScoreSeries: 1660, racesFinishedSeries: 7, podiums: 6, favoriteBoatName: 'Magellan',     trend: { dir: 'up',   delta: 2 } },
+  { username: 'laperouse', boatClass: 'ULTIM', rankingScore: 2010, racesFinished: 16, rankingScoreSeries: 1500, racesFinishedSeries: 0, podiums: 3, favoriteBoatName: 'Trinité Max',  trend: { dir: 'flat', delta: 0 } },
 ];
 
 /** Le contexte du joueur courant (utilisé par le filtre Périmètre). */
@@ -236,15 +242,19 @@ export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
   if (boatClass === 'ALL') {
     const agg = new Map<string, {
       rankingScore: number; racesFinished: number; podiums: number;
+      rankingScoreSeries: number; racesFinishedSeries: number;
       bestBoat: string; bestBoatScore: number; trend: Trend;
     }>();
     for (const r of PLAYER_CLASS_STATS) {
       const cur = agg.get(r.username) ?? {
         rankingScore: 0, racesFinished: 0, podiums: 0,
+        rankingScoreSeries: 0, racesFinishedSeries: 0,
         bestBoat: r.favoriteBoatName, bestBoatScore: -1, trend: r.trend,
       };
       cur.rankingScore += r.rankingScore;
       cur.racesFinished += r.racesFinished;
+      cur.rankingScoreSeries += r.rankingScoreSeries;
+      cur.racesFinishedSeries += r.racesFinishedSeries;
       cur.podiums += r.podiums;
       if (r.rankingScore > cur.bestBoatScore) {
         cur.bestBoatScore = r.rankingScore;
@@ -260,6 +270,8 @@ export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
         ...p, rank: 0,
         rankingScore: a.rankingScore,
         racesFinished: a.racesFinished,
+        rankingScoreSeries: a.rankingScoreSeries,
+        racesFinishedSeries: a.racesFinishedSeries,
         podiums: a.podiums,
         favoriteBoatName: a.bestBoat,
         trend: a.trend,
@@ -280,6 +292,8 @@ export function getRanking(boatClass: BoatClass | 'ALL'): SkipperRanking[] {
         ...p, rank: 0,
         rankingScore: r.rankingScore,
         racesFinished: r.racesFinished,
+        rankingScoreSeries: r.rankingScoreSeries,
+        racesFinishedSeries: r.racesFinishedSeries,
         podiums: r.podiums,
         favoriteBoatName: r.favoriteBoatName,
         trend: r.trend,
