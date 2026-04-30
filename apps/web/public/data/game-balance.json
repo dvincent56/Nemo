@@ -2517,6 +2517,67 @@
             ]
           }
         }
+      },
+      {
+        "id": "mast-imoca60-carbon-hm",
+        "slot": "MAST",
+        "tier": "SILVER",
+        "name": "Mât Carbone Haut Module IMOCA",
+        "profile": "léger réactif",
+        "description": "Mât carbone haut module Lorima/Multiplast. Allègement gréement, gain de stabilité de route et performance fort vent.",
+        "compat": ["IMOCA60"],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.01, 0.06],
+          "wearMul": { "rig": 1.3 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "keel-imoca60-canting-pro",
+        "slot": "KEEL",
+        "tier": "SILVER",
+        "name": "Quille Basculante Pro IMOCA",
+        "profile": "couple de redressement augmenté",
+        "description": "Mécanisme de basculement quille révisé, course augmentée et asservissement précis. Plus de couple de redressement, surtout dans la brise.",
+        "compat": ["IMOCA60"],
+        "cost": 22000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.02, 0.04],
+          "wearMul": { "hull": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "keel-imoca60-canting-titanium",
+        "slot": "KEEL",
+        "tier": "PROTO",
+        "name": "Quille Titane IMOCA",
+        "profile": "régate ultime",
+        "description": "Quille basculante en titane et bulbe sur-mesure. Couple de redressement maximal pour les conditions extrêmes du Vendée Globe.",
+        "compat": ["IMOCA60"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.03, 0.06],
+          "wearMul": { "hull": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
       }
     ]
   },
