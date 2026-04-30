@@ -1584,6 +1584,86 @@
         }
       },
       {
+        "id": "foils-ocean-fifty-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils Ocean Fifty Mk2",
+        "profile": "foils intermédiaires",
+        "description": "Foils tunés génération intermédiaire. Lift accru au largue et portant, léger surcroît de sollicitation de la structure.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 12000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.02, 0.06, 0.08, 0.02],
+          "speedByTws": [-0.01, 0.04, 0.05],
+          "wearMul": { "hull": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 10 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-ocean-fifty-proto",
+        "slot": "FOILS",
+        "tier": "SILVER",
+        "name": "Foils Ocean Fifty Proto",
+        "profile": "vol ultime course",
+        "description": "Foils sur-mesure Multi 50 — lift maximal au portant, surcroît de sollicitation marquée sur les bras.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 28000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.03, 0.08, 0.14, 0.03],
+          "speedByTws": [-0.02, 0.06, 0.08],
+          "wearMul": { "hull": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 12 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ocean-fifty-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di Ocean Fifty",
+        "profile": "course gros temps",
+        "description": "Garde-robe 3Di haute performance optimisée pour la brise. Gain net dans le medium/fort, légère sur-usure des voiles.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.03, 0.06],
+          "wearMul": { "sail": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ocean-fifty-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure Ocean Fifty",
+        "profile": "régate ultime gros temps",
+        "description": "Garde-robe sur-mesure North 3Di pour Multi 50 — performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.05, 0.09],
+          "wearMul": { "sail": 1.6 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "hull-imoca60-standard",
         "slot": "HULL",
         "tier": "SERIE",
