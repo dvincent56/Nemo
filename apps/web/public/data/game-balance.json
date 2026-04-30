@@ -1417,6 +1417,90 @@
         }
       },
       {
+        "id": "foils-figaro-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils Figaro III Mk2",
+        "profile": "foils améliorés",
+        "description": "Version affinée des foils monotype Figaro III. Lift renforcé au reaching et portant, légère sur-sollicitation.",
+        "compat": ["FIGARO"],
+        "cost": 8000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.02, 0.07, 0.12, 0.03],
+          "speedByTws": [-0.01, 0.04, 0.07],
+          "wearMul": { "hull": 1.25, "rig": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 10 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-figaro-proto",
+        "slot": "FOILS",
+        "tier": "PROTO",
+        "name": "Foils Figaro III Proto",
+        "profile": "vol maximum",
+        "description": "Foils proto sur-mesure pour le Figaro III — vol partiel agressif au portant, gains spectaculaires dans la brise.",
+        "compat": ["FIGARO"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 35,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [-0.01, 0.03, 0.10, 0.18, 0.04],
+          "speedByTws": [-0.02, 0.06, 0.12],
+          "wearMul": { "hull": 1.45, "rig": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 12 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-figaro-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di Figaro",
+        "profile": "rendement gros temps",
+        "description": "Voiles 3Di haute performance pour le Figaro III. Gain notable dans la brise, légère sur-usure.",
+        "compat": ["FIGARO"],
+        "cost": 9000,
+        "effects": {
+          "speedByTwa": [0.01, 0.02, 0.04, 0.03, 0.01],
+          "speedByTws": [0.01, 0.02, 0.04],
+          "wearMul": { "sail": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-figaro-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure Figaro",
+        "profile": "régate ultime",
+        "description": "Garde-robe sur-mesure North pour le Figaro III — performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": ["FIGARO"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 25,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0.01, 0.02, 0.05, 0.03, 0.01],
+          "speedByTws": [0.01, 0.03, 0.08],
+          "wearMul": { "sail": 1.6 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "keel-figaro-monotype",
         "slot": "KEEL",
         "tier": "SERIE",
