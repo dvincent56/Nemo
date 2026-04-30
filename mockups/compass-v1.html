@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nemo — Compass redesign v3 · bezel marin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+  rel="stylesheet"
+/>
+<style>
+:root {
+  --ivory:        #f5f0e8;
+  --paper:        #fbf7f0;
+  --paper-warm:   #f3eadb;
+  --paper-edge:   #e8dcc6;
+  --navy:         #1a2840;
+  --navy-2:       #243552;
+  --navy-deep:    #0c1424;
+  --navy-deeper:  #060b18;
+
+  --gold:         #c9a227;
+  --gold-dark:    #a8871e;
+  --gold-bright:  #e2bf3e;
+  --gold-light:   #f0d063;
+
+  --on-dark-1:    #f5f0e8;
+  --on-dark-2:    rgba(245, 240, 232, 0.72);
+  --on-dark-3:    rgba(245, 240, 232, 0.42);
+  --dark-line:    rgba(245, 240, 232, 0.16);
+
+  --font-display: "Bebas Neue", Impact, sans-serif;
+  --font-body:    "Space Grotesk", system-ui, sans-serif;
+  --font-mono:    "Space Mono", ui-monospace, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--navy-deeper);
+  color: var(--on-dark-1);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 40% at 30% 20%, rgba(26, 77, 122, 0.18), transparent 70%),
+    radial-gradient(ellipse 50% 30% at 80% 70%, rgba(12, 20, 36, 0.5), transparent 70%),
+    var(--navy-deeper);
+}
+
+.page-header {
+  padding: 32px clamp(20px, 4vw, 48px) 12px;
+  display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+}
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: 0.10em;
+  margin: 0;
+}
+.page-header h1 em { font-style: normal; color: var(--gold); }
+.page-header .lead {
+  font-size: 13px;
+  color: rgba(245, 240, 232, 0.62);
+  letter-spacing: 0.02em;
+  max-width: 64ch;
+  line-height: 1.5;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  padding: 24px clamp(20px, 4vw, 48px) 64px;
+}
+
+.variant { display: flex; flex-direction: column; gap: 16px; }
+.variant-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.variant-tag .num {
+  width: 26px; height: 26px;
+  border: 1px solid var(--gold);
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.variant-tag .label { color: var(--on-dark-1); }
+.variant-desc {
+  font-size: 12px;
+  color: var(--on-dark-3);
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  margin: -8px 0 0;
+  font-style: italic;
+}
+.hover-hint {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+  margin: -4px 0 4px;
+  opacity: 0.72;
+}
+
+/* ─── Compass panel : wrapper navy intact ─── */
+.compass {
+  position: relative;
+  width: 100%;
+  max-width: 290px;
+  margin: 0 auto;
+
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid var(--dark-line);
+  border-radius: 4px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--dark-line);
+  padding-bottom: 10px;
+}
+.readout-label {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--on-dark-3);
+  margin-bottom: 4px;
+}
+.readout-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--on-dark-1);
+  line-height: 1;
+}
+.readout-value.gold { color: var(--gold); }
+.readout-unit {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--on-dark-3);
+  letter-spacing: 0.12em;
+  margin-left: 2px;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+}
+.stage:active { cursor: grabbing; }
+.stage svg { width: 100%; height: 100%; display: block; }
+
+.actions {
+  display: flex; gap: 6px; justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--dark-line);
+}
+.btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--dark-line);
+  color: var(--on-dark-1);
+  padding: 7px 4px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.btn:hover { background: rgba(255, 255, 255, 0.08); }
+.btn.primary {
+  background: var(--gold);
+  color: var(--navy);
+  border-color: var(--gold-dark);
+}
+.btn.primary:hover { background: var(--gold-bright); }
+.btn.lock, .btn.cancel { flex: 0 0 auto; width: 36px; }
+.btn.cancel { font-size: 16px; }
+
+/* ─── Idle pulse (A3) sur la pointe ─── */
+@keyframes cap-pulse-tip {
+  0%, 100% { transform: scale(1);    opacity: 0.95; }
+  50%      { transform: scale(1.18); opacity: 1;    }
+}
+@keyframes cap-pulse-line {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1;    }
+}
+.cap-tip {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: cap-pulse-tip 2.4s ease-in-out infinite;
+}
+.cap-line {
+  animation: cap-pulse-line 2.4s ease-in-out infinite;
+}
+
+/* ─── γ hover : drag arcs ↺↻ apparaissent ─── */
+.drag-arc {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.stage:hover .drag-arc { opacity: 0.9; }
+.stage:hover .cap-line {
+  stroke: var(--gold-bright);
+  stroke-width: 3.4;
+}
+.stage:hover .cap-tip {
+  fill: var(--gold-bright);
+  animation-duration: 1.0s;
+  filter: drop-shadow(0 0 4px rgba(226, 191, 62, 0.5));
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>Compass v3 — bezel <em>marin</em> · γ hover (drag arcs)</h1>
+  <p class="lead">
+    Vrai cadre de boussole : bezel épais (cadre du cadran) avec ticks, chiffres et cardinaux gravés dessus.
+    Cadran ivoire papier au centre, bateau navy. Idle pulse sur la pointe ; au survol → arcs ↺↻ + flèche brillante.
+    3 traitements de bezel à comparer.
+  </p>
+</header>
+
+<section class="row">
+
+  <!-- ────────────────────── 1 — BEZEL NAVY ────────────────────── -->
+  <div class="variant">
+    <div class="variant-tag">
+      <span class="num">1</span>
+      <span class="label">Bezel navy · sobre</span>
+    </div>
+    <p class="variant-desc">
+      Cadre navy massif (30 px) avec graduations or gravées, chiffres ivoire, cardinaux or Bebas.
+      Étoile de North or façon rose des vents. Cohérent avec la palette HUD existante.
+    </p>
+    <div class="hover-hint">↪ Survole la boussole</div>
+
+    <div class="compass">
+      <div class="readouts">
+        <div><div class="readout-label">Vitesse</div><div class="readout-value gold">14<span class="readout-unit">kn</span></div></div>
+        <div><div class="readout-label">Cap</div><div class="readout-value">038<span class="readout-unit">°</span></div></div>
+        <div><div class="readout-label">TWA</div><div class="readout-value">+52<span class="readout-unit">°</span></div></div>
+      </div>
+
+      <div class="stage">
+        <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg" data-bezel="navy">
+          <defs>
+            <radialGradient id="dial-1" cx="50%" cy="48%" r="55%">
+              <stop offset="0%"  stop-color="#fbf7f0"/>
+              <stop offset="80%" stop-color="#f3eadb"/>
+              <stop offset="100%" stop-color="#e8dcc6"/>
+            </radialGradient>
+            <radialGradient id="bezel-navy" cx="50%" cy="50%" r="55%">
+              <stop offset="60%"  stop-color="#243552"/>
+              <stop offset="100%" stop-color="#0c1424"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Bezel navy plein -->
+          <circle cx="140" cy="140" r="110" fill="url(#bezel-navy)"/>
+          <!-- Liserés or : extérieur, intermédiaire, intérieur -->
+          <circle cx="140" cy="140" r="110" fill="none" stroke="#a8871e" stroke-width="1"   opacity="0.7"/>
+          <circle cx="140" cy="140" r="105" fill="none" stroke="#c9a227" stroke-width="0.6" opacity="0.5"/>
+          <circle cx="140" cy="140" r="80"  fill="none" stroke="#c9a227" stroke-width="1.2" opacity="0.85"/>
+
+          <!-- Cadran ivoire intérieur -->
+          <circle cx="140" cy="140" r="79" fill="url(#dial-1)"/>
+
+          <!-- Ticks GRAVÉS sur le bezel : majeurs (every 30°) traversent presque toute la largeur, mineurs (10°) plus courts -->
+          <g class="bezel-ticks" data-tick-color="gold" data-tick-color-minor="ivory"></g>
+
+          <!-- Chiffres sur le bezel (ivoire mono) -->
+          <g class="bezel-numbers" data-fill="rgba(245,240,232,0.78)"></g>
+          <!-- Cardinaux sur le bezel (or display) avec étoile au Nord -->
+          <g class="bezel-cardinals" data-fill="#c9a227"></g>
+
+          <!-- Étoile de Nord (rose des vents simple) sur le cadran intérieur, sous l'index 0 -->
+          <g transform="translate(140 76)" opacity="0.9">
+            <polygon points="0,-9 2,-2 9,0 2,2 0,9 -2,2 -9,0 -2,-2"
+                     fill="#c9a227"/>
+          </g>
+
+          <!-- Ticks intérieurs sur le cadran ivoire (encre navy fine) -->
+          <g class="inner-ticks" data-color="rgba(26,40,64,0.45)"></g>
+
+          <!-- Wind waves -->
+          <g opacity="0.18" stroke="#1a2840" stroke-width="1" fill="none" stroke-linecap="round" transform="rotate(225 140 140)">
+            <path d="M 70 140 Q 78 134, 86 140 T 102 140 T 118 140 T 134 140"/>
+            <path d="M 70 150 Q 78 144, 86 150 T 102 150 T 118 150 T 134 150"/>
+            <path d="M 70 130 Q 78 124, 86 130 T 102 130 T 118 130 T 134 130"/>
+          </g>
+
+          <!-- Bateau + cap + drag arcs -->
+          <g transform="rotate(38 140 140)">
+            <g class="drag-arc" stroke="#e2bf3e" stroke-width="1.6" fill="none" stroke-linecap="round">
+              <path d="M 122 66 A 22 22 0 0 0 118 80"/>
+              <polygon points="115,78 121,82 117,86" fill="#e2bf3e"/>
+              <path d="M 158 66 A 22 22 0 0 1 162 80"/>
+              <polygon points="165,78 159,82 163,86" fill="#e2bf3e"/>
+            </g>
+
+            <line class="cap-line" x1="140" y1="120" x2="140" y2="74"
+                  stroke="#c9a227" stroke-width="3" stroke-linecap="round"/>
+            <polygon class="cap-tip" points="140,64 134,76 146,76" fill="#c9a227"/>
+            <ellipse cx="140" cy="140" rx="5" ry="18" fill="#1a2840"/>
+            <path d="M 140 125 L 140 140 L 134 140 Z" fill="#1a2840" opacity="0.6"/>
+          </g>
+
+          <circle cx="140" cy="140" r="2.5" fill="#1a2840" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <div class="actions">
+        <button class="btn lock">⚓</button>
+        <button class="btn primary">✓ Valider</button>
+        <button class="btn cancel">×</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────── 2 — BEZEL BRASS ────────────────────── -->
+  <div class="variant">
+    <div class="variant-tag">
+      <span class="num">2</span>
+      <span class="label">Bezel brass · antique</span>
+    </div>
+    <p class="variant-desc">
+      Cadre laiton (gradient gold-dark → gold-bright) avec graduations & chiffres navy gravés.
+      Plus “sextant ancien” / luxe horloger ; bezel doré qui peut entrer en compétition visuelle avec la flèche or.
+    </p>
+    <div class="hover-hint">↪ Survole la boussole</div>
+
+    <div class="compass">
+      <div class="readouts">
+        <div><div class="readout-label">Vitesse</div><div class="readout-value gold">14<span class="readout-unit">kn</span></div></div>
+        <div><div class="readout-label">Cap</div><div class="readout-value">038<span class="readout-unit">°</span></div></div>
+        <div><div class="readout-label">TWA</div><div class="readout-value">+52<span class="readout-unit">°</span></div></div>
+      </div>
+
+      <div class="stage">
+        <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg" data-bezel="brass">
+          <defs>
+            <radialGradient id="dial-2" cx="50%" cy="48%" r="55%">
+              <stop offset="0%"  stop-color="#fbf7f0"/>
+              <stop offset="80%" stop-color="#f3eadb"/>
+              <stop offset="100%" stop-color="#e8dcc6"/>
+            </radialGradient>
+            <linearGradient id="bezel-brass" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stop-color="#a8871e"/>
+              <stop offset="35%"  stop-color="#e2bf3e"/>
+              <stop offset="65%"  stop-color="#c9a227"/>
+              <stop offset="100%" stop-color="#8a6e15"/>
+            </linearGradient>
+          </defs>
+
+          <circle cx="140" cy="140" r="110" fill="url(#bezel-brass)"/>
+          <!-- Liserés navy sur bezel doré pour gravure -->
+          <circle cx="140" cy="140" r="110" fill="none" stroke="#0c1424" stroke-width="1"   opacity="0.55"/>
+          <circle cx="140" cy="140" r="105" fill="none" stroke="#1a2840" stroke-width="0.6" opacity="0.45"/>
+          <circle cx="140" cy="140" r="80"  fill="none" stroke="#0c1424" stroke-width="1.4" opacity="0.7"/>
+
+          <circle cx="140" cy="140" r="79" fill="url(#dial-2)"/>
+
+          <g class="bezel-ticks" data-tick-color="navy" data-tick-color-minor="navy-soft"></g>
+          <g class="bezel-numbers" data-fill="rgba(26,40,64,0.78)"></g>
+          <g class="bezel-cardinals" data-fill="#1a2840"></g>
+
+          <!-- Étoile Nord navy -->
+          <g transform="translate(140 76)" opacity="0.9">
+            <polygon points="0,-9 2,-2 9,0 2,2 0,9 -2,2 -9,0 -2,-2"
+                     fill="#1a2840"/>
+          </g>
+
+          <g class="inner-ticks" data-color="rgba(26,40,64,0.45)"></g>
+
+          <g opacity="0.18" stroke="#1a2840" stroke-width="1" fill="none" stroke-linecap="round" transform="rotate(225 140 140)">
+            <path d="M 70 140 Q 78 134, 86 140 T 102 140 T 118 140 T 134 140"/>
+            <path d="M 70 150 Q 78 144, 86 150 T 102 150 T 118 150 T 134 150"/>
+            <path d="M 70 130 Q 78 124, 86 130 T 102 130 T 118 130 T 134 130"/>
+          </g>
+
+          <g transform="rotate(38 140 140)">
+            <g class="drag-arc" stroke="#1a2840" stroke-width="1.6" fill="none" stroke-linecap="round">
+              <path d="M 122 66 A 22 22 0 0 0 118 80"/>
+              <polygon points="115,78 121,82 117,86" fill="#1a2840"/>
+              <path d="M 158 66 A 22 22 0 0 1 162 80"/>
+              <polygon points="165,78 159,82 163,86" fill="#1a2840"/>
+            </g>
+
+            <line class="cap-line" x1="140" y1="120" x2="140" y2="74"
+                  stroke="#9e2a2a" stroke-width="3" stroke-linecap="round"/>
+            <polygon class="cap-tip" points="140,64 134,76 146,76" fill="#9e2a2a"/>
+            <ellipse cx="140" cy="140" rx="5" ry="18" fill="#1a2840"/>
+            <path d="M 140 125 L 140 140 L 134 140 Z" fill="#1a2840" opacity="0.6"/>
+          </g>
+
+          <circle cx="140" cy="140" r="2.5" fill="#1a2840" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <div class="actions">
+        <button class="btn lock">⚓</button>
+        <button class="btn primary">✓ Valider</button>
+        <button class="btn cancel">×</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────────── 3 — DOUBLE BEZEL ────────────────────── -->
+  <div class="variant">
+    <div class="variant-tag">
+      <span class="num">3</span>
+      <span class="label">Double bezel · layered</span>
+    </div>
+    <p class="variant-desc">
+      Cadre composé : bague navy fine extérieure (graduations or) + bague ivoire intérieure
+      (chiffres + cardinaux navy gravés). Lecture en deux étages, plus riche, plus “instrument”.
+    </p>
+    <div class="hover-hint">↪ Survole la boussole</div>
+
+    <div class="compass">
+      <div class="readouts">
+        <div><div class="readout-label">Vitesse</div><div class="readout-value gold">14<span class="readout-unit">kn</span></div></div>
+        <div><div class="readout-label">Cap</div><div class="readout-value">038<span class="readout-unit">°</span></div></div>
+        <div><div class="readout-label">TWA</div><div class="readout-value">+52<span class="readout-unit">°</span></div></div>
+      </div>
+
+      <div class="stage">
+        <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg" data-bezel="double">
+          <defs>
+            <radialGradient id="dial-3" cx="50%" cy="48%" r="55%">
+              <stop offset="0%"  stop-color="#fbf7f0"/>
+              <stop offset="80%" stop-color="#f3eadb"/>
+              <stop offset="100%" stop-color="#e8dcc6"/>
+            </radialGradient>
+            <radialGradient id="bezel-outer-3" cx="50%" cy="50%" r="55%">
+              <stop offset="60%"  stop-color="#243552"/>
+              <stop offset="100%" stop-color="#0c1424"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Bezel extérieur navy (étroit) -->
+          <circle cx="140" cy="140" r="110" fill="url(#bezel-outer-3)"/>
+          <circle cx="140" cy="140" r="110" fill="none" stroke="#a8871e" stroke-width="1"   opacity="0.7"/>
+          <!-- Ticks or sur bezel extérieur (juste graduations, pas de chiffres) -->
+          <g class="outer-bezel-ticks"></g>
+
+          <!-- Bezel intérieur ivoire (plus large, porte les chiffres + cardinaux) -->
+          <circle cx="140" cy="140" r="100" fill="#f3eadb"/>
+          <circle cx="140" cy="140" r="100" fill="none" stroke="#c9a227" stroke-width="0.8" opacity="0.7"/>
+          <circle cx="140" cy="140" r="78"  fill="none" stroke="#c9a227" stroke-width="1.2" opacity="0.85"/>
+
+          <!-- Cadran intérieur ivoire (plus clair, gradient) -->
+          <circle cx="140" cy="140" r="77" fill="url(#dial-3)"/>
+
+          <!-- Chiffres navy sur la bague ivoire intérieure -->
+          <g class="bezel-numbers-3"></g>
+          <g class="bezel-cardinals-3"></g>
+
+          <!-- Étoile Nord navy sur la bague ivoire -->
+          <g transform="translate(140 84)" opacity="0.85">
+            <polygon points="0,-7 1.6,-1.6 7,0 1.6,1.6 0,7 -1.6,1.6 -7,0 -1.6,-1.6"
+                     fill="#1a2840"/>
+          </g>
+
+          <g class="inner-ticks" data-color="rgba(26,40,64,0.45)"></g>
+
+          <g opacity="0.18" stroke="#1a2840" stroke-width="1" fill="none" stroke-linecap="round" transform="rotate(225 140 140)">
+            <path d="M 68 140 Q 76 134, 84 140 T 100 140 T 116 140 T 132 140"/>
+            <path d="M 68 150 Q 76 144, 84 150 T 100 150 T 116 150 T 132 150"/>
+            <path d="M 68 130 Q 76 124, 84 130 T 100 130 T 116 130 T 132 130"/>
+          </g>
+
+          <g transform="rotate(38 140 140)">
+            <g class="drag-arc" stroke="#e2bf3e" stroke-width="1.6" fill="none" stroke-linecap="round">
+              <path d="M 122 64 A 22 22 0 0 0 118 78"/>
+              <polygon points="115,76 121,80 117,84" fill="#e2bf3e"/>
+              <path d="M 158 64 A 22 22 0 0 1 162 78"/>
+              <polygon points="165,76 159,80 163,84" fill="#e2bf3e"/>
+            </g>
+
+            <line class="cap-line" x1="140" y1="118" x2="140" y2="72"
+                  stroke="#c9a227" stroke-width="3" stroke-linecap="round"/>
+            <polygon class="cap-tip" points="140,62 134,74 146,74" fill="#c9a227"/>
+            <ellipse cx="140" cy="140" rx="5" ry="17" fill="#1a2840"/>
+            <path d="M 140 125 L 140 140 L 134 140 Z" fill="#1a2840" opacity="0.6"/>
+          </g>
+
+          <circle cx="140" cy="140" r="2.5" fill="#1a2840" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <div class="actions">
+        <button class="btn lock">⚓</button>
+        <button class="btn primary">✓ Valider</button>
+        <button class="btn cancel">×</button>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<script>
+const CX = 140, CY = 140;
+const cardinals = [{l:'N',d:0},{l:'E',d:90},{l:'S',d:180},{l:'O',d:270}];
+const nums      = [30, 60, 120, 150, 210, 240, 300, 330];
+
+function ptOf(r, deg) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+}
+
+/* ─── Bezel single (variantes 1 & 2) ─────────────────────────────
+   Bezel: r=80 (intérieur) → r=110 (extérieur). Largeur 30 px.
+   Ticks gravés : majeurs cardinaux traversent (80→108), intercardinaux (80→100), mineurs 10° (80→88).
+   Chiffres au radius 89, cardinaux au radius 99.
+─────────────────────────────────────────────────────────────────── */
+function bezelTick(deg, color, color2) {
+  const isCardinal = deg % 90 === 0;
+  const isInter    = deg % 30 === 0 && !isCardinal;
+  const r1 = 80;
+  const r2 = isCardinal ? 108 : isInter ? 100 : 88;
+  const a = ptOf(r1, deg);
+  const b = ptOf(r2, deg);
+  const stroke = (isCardinal || isInter) ? color : color2;
+  const w = isCardinal ? 1.6 : isInter ? 1.0 : 0.5;
+  const op = isCardinal ? 0.95 : isInter ? 0.75 : 0.45;
+  return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${stroke}" stroke-width="${w}" opacity="${op}"/>`;
+}
+function bezelNumber(deg, fill) {
+  const p = ptOf(89, deg);
+  return `<text x="${p.x}" y="${p.y}"
+                font-family="Space Mono, monospace"
+                font-size="8" font-weight="700"
+                fill="${fill}"
+                letter-spacing="0.04em"
+                text-anchor="middle" dominant-baseline="central">${String(deg).padStart(3,'0')}</text>`;
+}
+function bezelCardinal(letter, deg, fill) {
+  const p = ptOf(99, deg);
+  return `<text x="${p.x}" y="${p.y}"
+                font-family="Bebas Neue, sans-serif"
+                font-size="14"
+                fill="${fill}"
+                letter-spacing="0.06em"
+                text-anchor="middle" dominant-baseline="central">${letter}</text>`;
+}
+function innerTick(deg, color) {
+  const isCardinal = deg % 90 === 0;
+  const isInter    = deg % 30 === 0 && !isCardinal;
+  const r1 = 77;
+  const len = isCardinal ? 8 : isInter ? 5 : 2.5;
+  const a = ptOf(r1, deg);
+  const b = ptOf(r1 - len, deg);
+  const w = isCardinal ? 1.0 : 0.5;
+  const op = isCardinal ? 1 : isInter ? 0.7 : 0.45;
+  return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${color}" stroke-width="${w}" opacity="${op}"/>`;
+}
+
+/* ─── Bezel double (variante 3) ───────────────────────────────────
+   Outer navy ring : 100→110 (étroit, juste graduations or)
+   Inner ivoire ring : 78→100 (porte chiffres + cardinaux navy)
+   Cadran : r<77
+─────────────────────────────────────────────────────────────────── */
+function outerBezelTick3(deg) {
+  const isCardinal = deg % 90 === 0;
+  const isInter    = deg % 30 === 0 && !isCardinal;
+  const r1 = 100, r2 = 109;
+  const a = ptOf(r1, deg);
+  const b = ptOf(r2, deg);
+  const stroke = isCardinal ? '#c9a227' : isInter ? '#c9a227' : 'rgba(245,240,232,0.5)';
+  const w = isCardinal ? 1.6 : isInter ? 1.0 : 0.4;
+  const op = isCardinal ? 0.95 : isInter ? 0.7 : 0.5;
+  return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${stroke}" stroke-width="${w}" opacity="${op}"/>`;
+}
+function bezelNumber3(deg) {
+  const p = ptOf(89, deg);
+  return `<text x="${p.x}" y="${p.y}"
+                font-family="Space Mono, monospace"
+                font-size="8" font-weight="700"
+                fill="rgba(26,40,64,0.78)"
+                letter-spacing="0.04em"
+                text-anchor="middle" dominant-baseline="central">${String(deg).padStart(3,'0')}</text>`;
+}
+function bezelCardinal3(letter, deg) {
+  const p = ptOf(95, deg);
+  return `<text x="${p.x}" y="${p.y}"
+                font-family="Bebas Neue, sans-serif"
+                font-size="14"
+                fill="#1a2840"
+                letter-spacing="0.06em"
+                text-anchor="middle" dominant-baseline="central">${letter}</text>`;
+}
+
+document.querySelectorAll('svg').forEach((svg) => {
+  const kind = svg.dataset.bezel;
+
+  if (kind === 'navy' || kind === 'brass') {
+    const ticksHost     = svg.querySelector('.bezel-ticks');
+    const numbersHost   = svg.querySelector('.bezel-numbers');
+    const cardinalsHost = svg.querySelector('.bezel-cardinals');
+    const innerHost     = svg.querySelector('.inner-ticks');
+
+    const tickColor      = ticksHost.dataset.tickColor === 'gold' ? '#c9a227' : '#0c1424';
+    const tickColorMinor = ticksHost.dataset.tickColorMinor === 'ivory' ? 'rgba(245,240,232,0.65)' : 'rgba(26,40,64,0.45)';
+    const numFill        = numbersHost.dataset.fill;
+    const cardFill       = cardinalsHost.dataset.fill;
+    const innerColor     = innerHost.dataset.color;
+
+    let t = '';
+    for (let d = 0; d < 360; d += 10) t += bezelTick(d, tickColor, tickColorMinor);
+    ticksHost.innerHTML = t;
+
+    numbersHost.innerHTML   = nums.map(d => bezelNumber(d, numFill)).join('');
+    cardinalsHost.innerHTML = cardinals.map(c => bezelCardinal(c.l, c.d, cardFill)).join('');
+
+    let i = '';
+    for (let d = 0; d < 360; d += 10) i += innerTick(d, innerColor);
+    innerHost.innerHTML = i;
+  }
+
+  if (kind === 'double') {
+    const outerHost     = svg.querySelector('.outer-bezel-ticks');
+    const numbersHost   = svg.querySelector('.bezel-numbers-3');
+    const cardinalsHost = svg.querySelector('.bezel-cardinals-3');
+    const innerHost     = svg.querySelector('.inner-ticks');
+
+    let t = '';
+    for (let d = 0; d < 360; d += 10) t += outerBezelTick3(d);
+    outerHost.innerHTML = t;
+
+    numbersHost.innerHTML   = nums.map(bezelNumber3).join('');
+    cardinalsHost.innerHTML = cardinals.map(c => bezelCardinal3(c.l, c.d)).join('');
+
+    let i = '';
+    for (let d = 0; d < 360; d += 10) i += innerTick(d, innerHost.dataset.color);
+    innerHost.innerHTML = i;
+  }
+});
+</script>
+
+</body>
+</html>

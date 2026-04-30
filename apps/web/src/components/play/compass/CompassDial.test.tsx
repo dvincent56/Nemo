@@ -8,7 +8,7 @@ describe('<CompassDial>', () => {
     const { container } = render(<CompassDial value={0} windDir={0} />);
     const svg = container.querySelector('svg');
     expect(svg).not.toBeNull();
-    expect(svg?.getAttribute('viewBox')).toBe('0 0 220 220');
+    expect(svg?.getAttribute('viewBox')).toBe('0 0 240 240');
   });
 
   it('renders 4 cardinal labels (French: N E S O)', () => {
