@@ -1,8 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, and, sql, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { GameBalance, BoatClassZ, type UpgradeSlot } from '@nemo/game-balance';
-import type { BoatClass } from '@nemo/shared-types';
+import { BOAT_CLASSES, type BoatClass } from '@nemo/shared-types';
 import { enforceAuth } from '../auth/cognito.js';
+import { validateBody } from '../lib/validate.js';
 import { getDb, type DbClient } from '../db/client.js';
 import {
   players,
@@ -17,6 +19,11 @@ import {
   isValidUuid,
   type UnlockCriteria,
 } from './marina.helpers.js';
+
+const CreateBoatBodyZ = z.object({
+  boatClass: z.enum(BOAT_CLASSES),
+  name: z.string().trim().min(1).max(40),
+});
 
 const VALID_CLASSES: Set<BoatClass> = new Set(BoatClassZ.options);
 const MAX_BOATS_PER_CLASS = 5;
@@ -202,21 +209,15 @@ export function registerMarinaRoutes(app: FastifyInstance): void {
   // POST /api/v1/boats — create a new hull (free, cap 5 per class)
   // =========================================================================
 
-  app.post<{ Body: { boatClass: string; name: string } }>(
+  app.post(
     '/api/v1/boats',
-    { preHandler: [enforceAuth] },
+    { preHandler: [enforceAuth, validateBody(CreateBoatBodyZ)] },
     async (req, reply) => {
       const auth = req.auth!;
       const db = getDb();
       if (!db) { reply.code(503); return { error: 'database unavailable' }; }
 
-      const { boatClass, name } = req.body ?? {};
-      if (!boatClass || !VALID_CLASSES.has(boatClass as BoatClass)) {
-        reply.code(400); return { error: 'invalid boatClass' };
-      }
-      if (!name || typeof name !== 'string' || name.trim().length === 0 || name.length > 50) {
-        reply.code(400); return { error: 'name required (1-50 chars)' };
-      }
+      const { boatClass, name } = req.validBody as z.infer<typeof CreateBoatBodyZ>;
 
       const player = await findPlayerBySub(db, auth.sub);
       if (!player) { reply.code(404); return { error: 'player not found' }; }
