@@ -6,6 +6,7 @@ import type { ProgMode } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
 import { getCachedPolar } from '@/lib/polar';
+import { earliestSailSlot } from '@/lib/prog/transitionLock';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import ProgBanner from './prog/ProgBanner';
@@ -192,6 +193,18 @@ export default function ProgPanel(): ReactElement {
       const priorOrder = priorAtTimeSails[0];
       const priorIsAuto = priorOrder ? priorOrder.action.auto : sailAuto;
 
+      // Transition lockout floor: AT_TIME sail orders cannot fire while a
+      // prior sail transition is still running. earliestSailSlot walks the
+      // existing AT_TIME orders, simulating each transition, and returns the
+      // earliest free slot. Excludes the order being edited so the user can
+      // freely move it without colliding with itself.
+      const sailTransitionFloor = earliestSailSlot(
+        draft,
+        sailCurrentSail,
+        isNew ? null : editing.id,
+        nowSec,
+      );
+
       return (
         <SailEditor
           initialOrder={initialOrder}
@@ -201,6 +214,7 @@ export default function ProgPanel(): ReactElement {
           minValueSec={floorForNow(nowSec)}
           nowSec={nowSec}
           priorIsAuto={priorIsAuto}
+          minTimeFromTransition={sailTransitionFloor}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             if (isNew) {

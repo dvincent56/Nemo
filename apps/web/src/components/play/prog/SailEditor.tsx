@@ -25,6 +25,12 @@ export interface SailEditorProps {
    *  Auto segment is disabled to make this clear, and a new order
    *  defaults to Manuel rather than Auto. */
   priorIsAuto: boolean;
+  /** Additional floor (unix sec) imposed by a previous AT_TIME sail order
+   *  whose transition has not finished. The TimeStepper's effective minimum
+   *  is `max(minValueSec, minTimeFromTransition)`. Below this floor a warning
+   *  is shown and the order can't be saved. Optional — when omitted, no
+   *  transition lockout applies. */
+  minTimeFromTransition?: number;
   onCancel: () => void;
   onSave: (order: SailOrder) => void;
 }
@@ -36,7 +42,7 @@ function makeId(): string {
 }
 
 export default function SailEditor({
-  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, priorIsAuto, onCancel, onSave,
+  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, priorIsAuto, minTimeFromTransition, onCancel, onSave,
 }: SailEditorProps): ReactElement {
   const isNew = initialOrder === null;
   // If the boat is already in auto at this order's trigger time, emitting
@@ -68,8 +74,16 @@ export default function SailEditor({
   // (e.g. editing an existing auto order whose prior state is still auto).
   const isAutoNoOp = auto && priorIsAuto;
 
+  // Transition lockout: a previous AT_TIME sail order's transition has not
+  // finished by `time`. AT_WAYPOINT triggers are not subject to this floor —
+  // the engine resolves their effective time dynamically based on routing.
+  const transitionFloor = minTimeFromTransition ?? minValueSec;
+  const isBlockedByTransition =
+    effectiveTriggerKind === 'AT_TIME' && time < transitionFloor;
+  const effectiveMinValueSec = Math.max(minValueSec, transitionFloor);
+
   const triggerOk = effectiveTriggerKind === 'AT_TIME' || (effectiveTriggerKind === 'AT_WAYPOINT' && wpId !== '');
-  const canSave = triggerOk && !isAutoNoOp;
+  const canSave = triggerOk && !isAutoNoOp && !isBlockedByTransition;
 
   const handleSave = (): void => {
     if (!canSave) return;
@@ -177,12 +191,19 @@ export default function SailEditor({
 
         {/* Time stepper */}
         {effectiveTriggerKind === 'AT_TIME' && (
-          <TimeStepper
-            value={time}
-            onChange={(t) => setTime(t)}
-            minValue={minValueSec}
-            nowSec={nowSec}
-          />
+          <>
+            <TimeStepper
+              value={time}
+              onChange={(t) => setTime(t)}
+              minValue={effectiveMinValueSec}
+              nowSec={nowSec}
+            />
+            {isBlockedByTransition && (
+              <p className={sailStyles.warnText}>
+                ⚠ Une transition voile précédente n&apos;est pas terminée à cette heure.
+              </p>
+            )}
+          </>
         )}
 
         {/* WP picker */}
