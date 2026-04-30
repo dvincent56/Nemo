@@ -399,7 +399,10 @@ function buildMarkerGeoJson(
     });
   }
 
-  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → offset from WP
+  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → no inline marker
+  // (the previous offset-east-of-WP placement cluttered the view). Sail-at-WP
+  // information is surfaced on WP hover instead — see MapCanvas's hover popup
+  // bound to the prog-order-markers-wp layer.
   for (const sail of draft.sailOrders) {
     if (sail.trigger.type === 'AT_TIME') {
       const pos = findProjectionPointAtTime(run, sail.trigger.time * 1000);
@@ -407,17 +410,6 @@ function buildMarkerGeoJson(
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
-        properties: { kind: 'sail', id: sail.id },
-      });
-    } else {
-      const trig = sail.trigger; // narrow once for TS
-      const wp = draft.wpOrders.find((w) => w.id === trig.waypointOrderId);
-      if (!wp) continue;
-      // ~0.001° east ≈ 60 m at mid-lat — visible separation from the wp
-      // marker without drifting off the actual location at typical zooms.
-      features.push({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [wp.lon + 0.001, wp.lat] },
         properties: { kind: 'sail', id: sail.id },
       });
     }

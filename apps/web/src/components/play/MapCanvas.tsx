@@ -570,6 +570,61 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         });
       }
 
+      // ── Sail-at-WP info on WP hover ──
+      // Sail orders triggered AT_WAYPOINT used to be rendered as a separate
+      // dot offset slightly east of the WP — visually cluttered. Now they're
+      // surfaced via this hover popup on the WP marker itself, listing every
+      // sail order that fires when this WP is captured.
+      const wpHoverPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 16,
+        className: 'projection-maneuver-popup',
+      });
+
+      const SAIL_LABEL: Record<string, string> = {
+        MAIN: 'Grand-voile',
+        JIB: 'Foc',
+        SOLENT: 'Solent',
+        STAYSAIL: 'Trinquette',
+        GENNAKER: 'Gennaker',
+        CODE0: 'Code 0',
+        SPI_LIGHT: 'Spi léger',
+        SPI_HEAVY: 'Spi lourd',
+        SPI_RUN: 'Spi de petit temps',
+        STORM_JIB: 'Tourmentin',
+      };
+
+      map.on('mouseenter', 'prog-order-markers-wp', (e) => {
+        const feature = e.features?.[0];
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const wpId = feature.properties?.['id'];
+        if (typeof wpId !== 'string') return;
+
+        const state = useGameStore.getState();
+        const sailsAtWp = state.prog.draft.sailOrders.filter(
+          (s) => s.trigger.type === 'AT_WAYPOINT'
+            && (s.trigger as { waypointOrderId: string }).waypointOrderId === wpId,
+        );
+        if (sailsAtWp.length === 0) return;
+
+        const html = sailsAtWp.map((s) => {
+          const action = s.action.auto
+            ? 'Voile AUTO'
+            : `Voile → ${SAIL_LABEL[s.action.sail] ?? s.action.sail}`;
+          return `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#c9a227;letter-spacing:0.10em;">${action}</div>`;
+        }).join('');
+
+        wpHoverPopup
+          .setLngLat(feature.geometry.coordinates as [number, number])
+          .setHTML(`<div style="padding:4px 8px;">${html}</div>`)
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'prog-order-markers-wp', () => {
+        wpHoverPopup.remove();
+      });
+
       // Past-trace line layer — inserted just below the projection so the
       // future arc renders on top during replay scrubbing. The past-trace
       // source is added earlier in the load handler.
