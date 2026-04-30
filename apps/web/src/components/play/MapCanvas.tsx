@@ -1157,6 +1157,10 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         captureRadiusNm: 0.5,
       });
       state.setPickingWp(false);
+      // Mark this WP as tentative — if the user clicks "Annuler" instead of
+      // "OK" in the editor that opens next, ProgPanel will remove it from
+      // the draft so the click-on-map placement is fully undone.
+      state.setPendingNewWpId(newId);
       // Smoothly transition the editor from "NEW" mode to editing the just-
       // created WP. The editor re-renders with its capture-radius/trigger UI.
       state.setEditingOrder({ kind: 'wp', id: newId });

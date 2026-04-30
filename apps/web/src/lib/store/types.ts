@@ -335,6 +335,7 @@ export interface GameStore extends RouterActions {
   applyRouteAsCommitted: (next: import('@/lib/prog/types').ProgDraft) => void;
   setEditingOrder: (e: import('@/lib/prog/types').EditingOrder | null) => void;
   setPickingWp: (b: boolean) => void;
+  setPendingNewWpId: (id: string | null) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;

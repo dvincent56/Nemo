@@ -70,4 +70,9 @@ export interface ProgState {
   /** True when the WP editor is in "click on map to place" mode. Read by
    *  MapCanvas to enable map-click→add-wp + cursor change. */
   pickingWp: boolean;
+  /** When a brand-new WP was just placed via map-click and the editor opened
+   *  for it, holds that WP's id. The editor's "Annuler" path calls
+   *  `removeWpOrder(pendingNewWpId)` to undo the tentative placement. Cleared
+   *  on save (the WP is then a confirmed draft entry). */
+  pendingNewWpId: string | null;
 }

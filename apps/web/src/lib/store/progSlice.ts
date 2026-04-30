@@ -17,6 +17,7 @@ export const INITIAL_PROG: ProgState = {
   committed: { ...EMPTY_DRAFT, capOrders: [], wpOrders: [], sailOrders: [] },
   editingOrder: null,
   pickingWp: false,
+  pendingNewWpId: null,
 };
 
 type SetFn = (fn: (s: GameStore) => Partial<GameStore>) => void;
@@ -208,14 +209,16 @@ export function createProgSlice(set: SetFn) {
 
     applyRouteAsCommitted: (next: ProgDraft) =>
       set((s) => ({
-        // Preserve editingOrder + pickingWp — UI state mustn't be squashed by
-        // an incoming route apply (so the user can click a marker, then accept
-        // a route, and still see the editor where they left it).
+        // Preserve editingOrder + pickingWp + pendingNewWpId — UI state mustn't
+        // be squashed by an incoming route apply (so the user can click a
+        // marker, then accept a route, and still see the editor where they
+        // left it).
         prog: {
           draft: clone(next),
           committed: clone(next),
           editingOrder: s.prog.editingOrder,
           pickingWp: s.prog.pickingWp,
+          pendingNewWpId: s.prog.pendingNewWpId,
         },
       })),
 
@@ -227,6 +230,11 @@ export function createProgSlice(set: SetFn) {
     setPickingWp: (b: boolean) =>
       set((s) => ({
         prog: { ...s.prog, pickingWp: b },
+      })),
+
+    setPendingNewWpId: (id: string | null) =>
+      set((s) => ({
+        prog: { ...s.prog, pendingNewWpId: id },
       })),
   };
 }

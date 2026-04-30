@@ -42,6 +42,8 @@ export default function ProgPanel(): ReactElement {
   // as ProgPanel-internal conventions on top of the EditingOrder.id field.
   const editing = useGameStore((s) => s.prog.editingOrder);
   const setEditing = useGameStore((s) => s.setEditingOrder);
+  const pendingNewWpId = useGameStore((s) => s.prog.pendingNewWpId);
+  const setPendingNewWpId = useGameStore((s) => s.setPendingNewWpId);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
@@ -175,8 +177,22 @@ export default function ProgPanel(): ReactElement {
           predecessorIndex={predecessorIndex}
           boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
           minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 3}
-          onCancel={() => setEditing(null)}
+          onCancel={() => {
+            // If this WP was tentatively placed by a click-on-map and the
+            // user is bailing out of the editor without confirming, remove
+            // it from the draft so the placement is fully undone.
+            if (pendingNewWpId && initialOrder?.id === pendingNewWpId) {
+              removeWpOrder(pendingNewWpId);
+              setPendingNewWpId(null);
+            }
+            setEditing(null);
+          }}
           onSave={(order) => {
+            // Confirmed — clear the tentative marker so the WP becomes a
+            // regular committed-to-draft entry.
+            if (pendingNewWpId && pendingNewWpId === order.id) {
+              setPendingNewWpId(null);
+            }
             updateWpOrder(order.id, order);
             setEditing(null);
           }}
