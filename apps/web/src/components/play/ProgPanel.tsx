@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { useGameStore, commitDraft } from '@/lib/store';
+import { useGameStore, commitDraft, firstEffectiveHeading } from '@/lib/store';
 import type { ProgMode } from '@/lib/prog/types';
 import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
+import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
+import { getCachedPolar } from '@/lib/polar';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import ProgBanner from './prog/ProgBanner';
@@ -34,7 +36,15 @@ export default function ProgPanel(): ReactElement {
   const hudTwd = useGameStore((s) => s.hud.twd);
   const hudLat = useGameStore((s) => s.hud.lat);
   const hudLon = useGameStore((s) => s.hud.lon);
+  const hudTwa = useGameStore((s) => s.hud.twa);
+  const hudTws = useGameStore((s) => s.hud.tws);
+  const hudBoatClass = useGameStore((s) => s.hud.boatClass);
+  const hudBspMultiplier = useGameStore((s) => s.hud.bspBaseMultiplier);
   const sailAuto = useGameStore((s) => s.sail.sailAuto);
+  const sailCurrentSail = useGameStore((s) => s.sail.currentSail);
+  const sailTransitionEndMs = useGameStore((s) => s.sail.transitionEndMs);
+  const sailManeuverEndMs = useGameStore((s) => s.sail.maneuverEndMs);
+  const sailManeuverKind = useGameStore((s) => s.sail.maneuverKind);
 
   // Phase 2b Task 3: editing state lives in the store so MapCanvas marker
   // clicks can drive the editor. The 'NEW' magic id (cap/sail/wp create
@@ -65,9 +75,54 @@ export default function ProgPanel(): ReactElement {
 
   const handleConfirm = (): void => {
     const result = commitDraft(draft, nowSec);
-    if (result.ok) markCommitted();
+    if (!result.ok) return;
+    markCommitted();
     // Toast handling can be added here in a follow-up; the visual feedback is
     // the footer flipping back to "Programmation à jour" once committed.
+
+    // Optimistic HUD update — same pattern as Compass.apply().
+    // Only fires when the new programming has an order that takes effect within
+    // the next ~30 s (an IMMEDIATE WP, or a CAP with `time <= now+30s`). This
+    // makes the boat visibly turn and the projection refresh immediately
+    // instead of waiting up to ~30 s for the next server tick.
+    if (typeof hudLat !== 'number' || typeof hudLon !== 'number' || !hudBoatClass) return;
+    const next = firstEffectiveHeading(draft, { lat: hudLat, lon: hudLon }, nowSec);
+    if (!next) return;
+    // Skip if the new heading is essentially the current one (avoid visible
+    // twitch when the WP head is straight ahead).
+    if (Math.abs(((next.newHdg - hudHdg + 540) % 360) - 180) <= 5) return;
+
+    const polar = getCachedPolar(hudBoatClass);
+    if (!polar) return;
+
+    const patch = predictAfterHdg({
+      newHdg: next.newHdg,
+      prevTwa: hudTwa,
+      twd: hudTwd,
+      tws: hudTws,
+      currentSail: sailCurrentSail,
+      sailAuto,
+      bspBaseMultiplier: hudBspMultiplier,
+      transitionEndMs: sailTransitionEndMs,
+      maneuverEndMs: sailManeuverEndMs,
+      maneuverKind: sailManeuverKind,
+      polar,
+      boatClass: hudBoatClass,
+      now: Date.now(),
+    });
+
+    const store = useGameStore.getState();
+    store.applyOptimisticHud(patch.hud);
+    if (patch.sail.maneuver) {
+      store.applyOptimisticManeuver({
+        maneuverKind: patch.sail.maneuver.kind,
+        maneuverStartMs: patch.sail.maneuver.startMs,
+        maneuverEndMs: patch.sail.maneuver.endMs,
+      });
+    }
+    if (patch.sail.sailChange) {
+      store.setOptimisticSailChange(patch.sail.sailChange);
+    }
   };
 
   const handleCancelAll = (): void => {
