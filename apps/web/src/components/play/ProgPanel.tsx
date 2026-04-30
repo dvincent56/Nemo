@@ -47,7 +47,6 @@ export default function ProgPanel(): ReactElement {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
-  const [switchModeTo, setSwitchModeTo] = useState<ProgMode | null>(null);
   const [bannerDismissedAtCount, setBannerDismissedAtCount] = useState<number | null>(null);
 
   // 1Hz tick for sliding floor + obsolescence
@@ -264,21 +263,12 @@ export default function ProgPanel(): ReactElement {
         draft={draft}
         nowSec={nowSec}
         onSwitchMode={(m: ProgMode) => {
-          // Same mode → no-op
+          // Soft toggle — both tracks can coexist in the draft. The inactive
+          // track is dropped only when the user commits (markCommitted) so
+          // they can start drafting in the new mode without losing what they
+          // had in the previous one.
           if (m === draft.mode) return;
-          // Check if the OTHER track is non-empty
-          const hasIncompatibleOrders =
-            (m === 'cap' && (draft.wpOrders.length > 0 || draft.finalCap !== null))
-            || (m === 'wp' && draft.capOrders.length > 0);
-          // Also check sail orders that would be dropped (AT_WAYPOINT in cap mode)
-          const hasIncompatibleSails =
-            m === 'cap'
-            && draft.sailOrders.some((o) => o.trigger.type === 'AT_WAYPOINT');
-          if (hasIncompatibleOrders || hasIncompatibleSails) {
-            setSwitchModeTo(m);
-          } else {
-            setProgMode(m);
-          }
+          setProgMode(m);
         }}
         onAddCap={() => setEditing({ kind: 'cap', id: 'NEW' })}
         onAddWp={() => setEditing({ kind: 'wp', id: 'NEW' })}
@@ -333,22 +323,6 @@ export default function ProgPanel(): ReactElement {
         onCancel={() => setClearAllOpen(false)}
       />
 
-      <ConfirmDialog
-        open={switchModeTo !== null}
-        title="Changer de mode ?"
-        body={
-          switchModeTo === 'cap'
-            ? 'Les waypoints, le cap final, et les ordres voile à un waypoint seront supprimés. Les ordres voile à une heure seront conservés.'
-            : 'Les ordres CAP seront supprimés.'
-        }
-        confirmLabel="Changer"
-        tone="primary"
-        onConfirm={() => {
-          if (switchModeTo) setProgMode(switchModeTo);
-          setSwitchModeTo(null);
-        }}
-        onCancel={() => setSwitchModeTo(null)}
-      />
     </div>
   );
 }

@@ -153,15 +153,15 @@ describe('progSlice wp mutations', () => {
 });
 
 describe('progSlice mode switching', () => {
-  it('setProgMode("wp") clears capOrders', () => {
+  it('setProgMode is a soft toggle — does not clear the other track', () => {
     const store = makeStore();
     store.getState().addCapOrder(cap('c1', 1000));
     store.getState().setProgMode('wp');
-    expect(store.getState().prog.draft.capOrders).toEqual([]);
     expect(store.getState().prog.draft.mode).toBe('wp');
+    expect(store.getState().prog.draft.capOrders).toHaveLength(1);
   });
 
-  it('setProgMode("cap") clears wpOrders, finalCap, and AT_WAYPOINT sailOrders', () => {
+  it('setProgMode preserves wpOrders / finalCap / sailOrders when toggling to cap', () => {
     const store = makeStore();
     store.getState().setProgMode('wp');
     store.getState().addWpOrder(wp('w1'));
@@ -172,12 +172,49 @@ describe('progSlice mode switching', () => {
       twaLock: false,
     });
     store.getState().addSailOrder(sailAtWp('s1', 'w1'));
-    store.getState().addSailOrder(sail('s2', 5000)); // AT_TIME — should survive
+    store.getState().addSailOrder(sail('s2', 5000));
     store.getState().setProgMode('cap');
+    // Nothing dropped — the user can switch back to 'wp' and recover their work.
+    expect(store.getState().prog.draft.mode).toBe('cap');
+    expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
+    expect(store.getState().prog.draft.finalCap).not.toBeNull();
+    expect(store.getState().prog.draft.sailOrders).toHaveLength(2);
+  });
+
+  it('markCommitted drops the inactive track (cap mode → wpOrders cleared)', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().setProgMode('cap');
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.mode).toBe('cap');
+    expect(store.getState().prog.committed.capOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.wpOrders).toEqual([]);
+    // Draft also cleaned, mirroring committed (so isDirty doesn't light up).
     expect(store.getState().prog.draft.wpOrders).toEqual([]);
-    expect(store.getState().prog.draft.finalCap).toBeNull();
-    expect(store.getState().prog.draft.sailOrders).toHaveLength(1);
-    expect(store.getState().prog.draft.sailOrders[0]?.id).toBe('s2');
+  });
+
+  it('markCommitted drops AT_WAYPOINT sail orders in cap mode', () => {
+    const store = makeStore();
+    store.getState().setProgMode('wp');
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().addSailOrder(sailAtWp('s1', 'w1'));
+    store.getState().addSailOrder(sail('s2', 5000));
+    store.getState().setProgMode('cap');
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.sailOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.sailOrders[0]?.id).toBe('s2');
+  });
+
+  it('markCommitted drops capOrders when committing in wp mode', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().setProgMode('wp');
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.mode).toBe('wp');
+    expect(store.getState().prog.committed.capOrders).toEqual([]);
+    expect(store.getState().prog.committed.wpOrders).toHaveLength(1);
   });
 });
 

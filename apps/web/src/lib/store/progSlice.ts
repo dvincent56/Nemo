@@ -43,17 +43,14 @@ export function createProgSlice(set: SetFn) {
     prog: INITIAL_PROG,
 
     setProgMode: (mode: ProgMode) =>
-      set((s) => {
-        const draft: ProgDraft = { ...s.prog.draft, mode };
-        if (mode === 'cap') {
-          draft.wpOrders = [];
-          draft.finalCap = null;
-          draft.sailOrders = draft.sailOrders.filter((o) => o.trigger.type === 'AT_TIME');
-        } else {
-          draft.capOrders = [];
-        }
-        return { prog: { ...s.prog, draft } };
-      }),
+      // Soft toggle — both cap and wp tracks coexist in the draft. The
+      // inactive track is dropped at commit time (see `markCommitted` and
+      // `serializeDraft`). This lets the user start drafting waypoints
+      // without losing their existing cap orders, and only commit one of
+      // the two for the wire.
+      set((s) => ({
+        prog: { ...s.prog, draft: { ...s.prog.draft, mode } },
+      })),
 
     addCapOrder: (o: CapOrder) =>
       set((s) => ({
@@ -203,9 +200,28 @@ export function createProgSlice(set: SetFn) {
       })),
 
     markCommitted: () =>
-      set((s) => ({
-        prog: { ...s.prog, committed: clone(s.prog.draft) },
-      })),
+      // Drop the inactive mode's track at commit so the dirty diff doesn't
+      // light up against orders that were never sent. The cleaned shape is
+      // pushed into BOTH committed and draft, matching the wire output.
+      set((s) => {
+        const d = s.prog.draft;
+        const cleaned: ProgDraft = {
+          mode: d.mode,
+          capOrders: d.mode === 'cap'
+            ? d.capOrders.map((o) => ({ ...o, trigger: { ...o.trigger } }))
+            : [],
+          wpOrders: d.mode === 'wp'
+            ? d.wpOrders.map((o) => ({ ...o, trigger: { ...o.trigger } }))
+            : [],
+          finalCap: d.mode === 'wp' && d.finalCap
+            ? { ...d.finalCap, trigger: { ...d.finalCap.trigger } }
+            : null,
+          sailOrders: d.sailOrders
+            .filter((o) => !(d.mode === 'cap' && o.trigger.type === 'AT_WAYPOINT'))
+            .map((o) => ({ ...o, trigger: { ...o.trigger }, action: { ...o.action } })),
+        };
+        return { prog: { ...s.prog, draft: cleaned, committed: cleaned } };
+      }),
 
     applyRouteAsCommitted: (next: ProgDraft) =>
       set((s) => ({
