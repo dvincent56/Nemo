@@ -26,10 +26,12 @@ export interface TimeStepperProps {
 }
 
 function formatAbsolute(sec: number): string {
-  const totalMin = Math.floor(sec / 60);
-  const h = Math.floor(totalMin / 60) % 24;
-  const m = totalMin % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  // Display the player's wall-clock time, not UTC. `sec` is a Unix timestamp,
+  // and `Date#getHours()` / `getMinutes()` return values in the local TZ —
+  // so a French player in summer (CEST = UTC+2) sees 14:00 for a Unix epoch
+  // representing 12:00 UTC instead of the previous misleading "12:00".
+  const d = new Date(sec * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function formatRelative(sec: number, nowSec: number): string {
