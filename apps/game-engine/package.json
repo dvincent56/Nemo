@@ -24,6 +24,8 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.1",
     "@fastify/cors": "^10.0.1",
+    "@fastify/helmet": "^12.0.0",
+    "@fastify/rate-limit": "^10.1.0",
     "@msgpack/msgpack": "^3.0.0",
     "@nemo/game-balance": "workspace:*",
     "@nemo/game-engine-core": "workspace:*",
@@ -40,7 +42,8 @@
     "ioredis": "^5.4.2",
     "jose": "^5.9.6",
     "pino": "^9.5.0",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

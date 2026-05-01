@@ -11,15 +11,13 @@ import { verifyAccessToken } from '../auth/cognito.js';
  */
 
 export function registerAuthRoutes(app: FastifyInstance): void {
-  const isProd = !!process.env['COGNITO_REGION'];
+  const cognitoConfigured = !!process.env['COGNITO_REGION'];
+  const devAuthAllowed = process.env['NEMO_ALLOW_DEV_AUTH'] === '1';
 
   app.post<{ Body: { username?: string } }>('/api/v1/auth/dev-login', async (req, reply) => {
-    if (isProd) { reply.code(404); return { error: 'disabled in production' }; }
+    if (!devAuthAllowed) { reply.code(404); return { error: 'dev-login disabled (set NEMO_ALLOW_DEV_AUTH=1)' }; }
     const username = req.body?.username?.trim() || 'dev';
     const token = `dev.${username}.${username}`;
-    // Dev : httpOnly=false pour que le client lise le token et le passe en
-    // sub-protocol WS (`bearer.<token>`). En prod Cognito on remettra
-    // httpOnly=true et on utilisera un endpoint ws-ticket dédié.
     reply.setCookie('nemo_access_token', token, {
       path: '/', httpOnly: false, sameSite: 'lax', secure: false, maxAge: 3600,
     });
@@ -29,8 +27,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   app.post<{ Body: { code: string; redirectUri: string } }>(
     '/api/v1/auth/exchange',
     async (_req, reply) => {
-      if (!isProd) { reply.code(501); return { error: 'cognito not configured' }; }
-      // Phase 4 : échange du code contre id/access/refresh token via Cognito token endpoint.
+      if (!cognitoConfigured) { reply.code(501); return { error: 'cognito not configured' }; }
       reply.code(501);
       return { error: 'implemented in phase 4 infra' };
     },

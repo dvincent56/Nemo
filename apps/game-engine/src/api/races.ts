@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'drizzle-orm';
+import { z } from 'zod';
 import pino from 'pino';
+import { BOAT_CLASSES } from '@nemo/shared-types';
 import { getDb } from '../db/client.js';
 import { races as racesTable } from '../db/schema.js';
+import { validateQuery, validateParams } from '../lib/validate.js';
 
 const log = pino({ name: 'api.races' });
 
@@ -135,9 +138,16 @@ async function loadFromDb(): Promise<RaceSummary[] | null> {
   }
 }
 
+const RaceStatusZ = z.enum(['DRAFT', 'PUBLISHED', 'BRIEFING', 'LIVE', 'FINISHED']);
+const ListRacesQueryZ = z.object({
+  class: z.enum(BOAT_CLASSES).optional(),
+  status: RaceStatusZ.optional(),
+});
+const RaceIdParamsZ = z.object({ id: z.string().min(1).max(64) });
+
 export function registerRaceRoutes(app: FastifyInstance): void {
-  app.get('/api/v1/races', async (req) => {
-    const q = req.query as { class?: string; status?: string };
+  app.get('/api/v1/races', { preHandler: [validateQuery(ListRacesQueryZ)] }, async (req) => {
+    const q = req.validQuery as z.infer<typeof ListRacesQueryZ>;
     const fromDb = await loadFromDb();
     let out = fromDb ?? SEED.slice();
     if (q.class) out = out.filter((r) => r.boatClass === q.class);
@@ -145,10 +155,11 @@ export function registerRaceRoutes(app: FastifyInstance): void {
     return { races: out, source: fromDb ? 'db' : 'memory' };
   });
 
-  app.get<{ Params: { id: string } }>('/api/v1/races/:id', async (req, reply) => {
+  app.get('/api/v1/races/:id', { preHandler: [validateParams(RaceIdParamsZ)] }, async (req, reply) => {
+    const { id } = req.validParams as z.infer<typeof RaceIdParamsZ>;
     const fromDb = await loadFromDb();
     const list = fromDb ?? SEED;
-    const race = list.find((r) => r.id === req.params.id);
+    const race = list.find((r) => r.id === id);
     if (!race) { reply.code(404); return { error: 'not found' }; }
     return race;
   });
