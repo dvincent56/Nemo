@@ -28,7 +28,7 @@ import { createWindLookup } from '../lib/projection/windLookup';
 import { CoastlineIndex } from '../lib/projection/coastline';
 import { zoneSpeedModulator, segmentEntersZone } from '../lib/projection/zones';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { haversinePosNM } from '../lib/geo';
+import { haversinePosNM, pointToSegmentClosestNM } from '../lib/geo';
 
 // ── Geo helpers ──
 // Inline great-circle bearing — mirror of @nemo/game-engine-core/src/geo
@@ -67,6 +67,13 @@ const HOUR_1 = 1 * 3600;
 const HOURS_12 = 12 * 3600;
 const HOURS_48 = 48 * 3600;
 const DAYS_5 = 5 * 24 * 3600;
+// Hard cap for WP-mode routing — upwind chains can take 7-15 days to
+// complete, beyond GFS coverage. The wind lookup clamps to the last
+// available timestamp past J+10, so the trajectory is "frozen-wind"
+// extrapolation — good enough to give the player a sense of route
+// completion without time-domain markers (TIME_MARKER_HOURS maxes at 120h
+// = J+5, so no markers are emitted past that anyway).
+const DAYS_30 = 30 * 24 * 3600;
 
 function getStepSize(elapsedSec: number): number {
   if (elapsedSec < HOUR_1) return STEP_1M;
@@ -214,7 +221,6 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   let zonesInside = new Set<string>();
 
   let currentMs = startMs;
-  const endMs = startMs + DAYS_5 * 1000;
 
   // Split orders into:
   //   - time-triggered "segments" (CAP/TWA/SAIL/MODE) processed at triggerMs
@@ -269,6 +275,17 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   }
   let segIdx = 0;
 
+  // Horizon: J+5 by default, extended to J+30 when uncaptured WPs remain.
+  // WP-mode routing must let the polyline reach the last waypoint regardless
+  // of how upwind it sits — capping at J+5 left dangling routes that confused
+  // the player ("why doesn't the line touch my last WP?"). Past J+5 the line
+  // continues without time markers (TIME_MARKER_HOURS maxes at 120h).
+  // CAP-mode (no WPTs) keeps the J+5 cap — there's no "destination" to chase
+  // and 30 days of dead-reckoning would just be visual noise.
+  const wptsPending = wptIdx < wptQueue.length;
+  const horizonSec = wptsPending ? DAYS_30 : DAYS_5;
+  const endMs = startMs + horizonSec * 1000;
+
   // Note: pre-2026-04-28, exhausting the WPT chain ended the simulation
   // ("WPT-mode" routing — no extrapolation past the last WP). That broke the
   // final cap (CAP/TWA + AT_WAYPOINT(lastWp)): it could never drive the
@@ -304,20 +321,31 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   // a zigzag (forward, then backward, then forward again as the boat
   // overshoots/undershoots). Sampling 4 intermediate points along the leg
   // catches the pass-by even when the endpoint is outside the radius.
-  const NUM_SWEEP_SAMPLES = 4;
+  // Capture detection: the swept leg from (prevLat, prevLon) to (curLat,
+  // curLon) "captures" the WP when its closest distance to the WP point is
+  // ≤ the radius. Mirrors the engine's tick.ts capture detection so the
+  // projection lines up with what the server will actually compute.
+  //
+  // We test endpoints with haversine first (cheap) and fall through to the
+  // line-distance check, which uses a local-tangent flat-earth projection —
+  // sub-meter accurate for the 5–30 min steps the worker runs. Point-
+  // sampling at 4 intermediate vertices was the previous strategy and is
+  // catastrophically wrong at meter-level radii: a 5 NM leg with 4 samples
+  // spaces them 1.25 NM apart, missing every fly-by within 0.001 NM (the
+  // game's default radius).
   const sweptInsideRadius = (
     prevLat: number, prevLon: number, curLat: number, curLon: number,
     wptLat: number, wptLon: number, radiusNm: number,
   ): boolean => {
-    if (haversinePosNM({ lat: curLat, lon: curLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
-    if (haversinePosNM({ lat: prevLat, lon: prevLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
-    for (let i = 1; i < NUM_SWEEP_SAMPLES; i++) {
-      const t = i / NUM_SWEEP_SAMPLES;
-      const sLat = prevLat + (curLat - prevLat) * t;
-      const sLon = prevLon + (curLon - prevLon) * t;
-      if (haversinePosNM({ lat: sLat, lon: sLon }, { lat: wptLat, lon: wptLon }) < radiusNm) return true;
-    }
-    return false;
+    const wp = { lat: wptLat, lon: wptLon };
+    if (haversinePosNM({ lat: curLat, lon: curLon }, wp) < radiusNm) return true;
+    if (haversinePosNM({ lat: prevLat, lon: prevLon }, wp) < radiusNm) return true;
+    const d = pointToSegmentClosestNM(
+      wp,
+      { lat: prevLat, lon: prevLon },
+      { lat: curLat, lon: curLon },
+    );
+    return d < radiusNm;
   };
 
   // Capture at most one WPT per call. Returns true when a capture happened
