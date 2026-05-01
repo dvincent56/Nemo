@@ -58,6 +58,8 @@ export const players = pgTable('players', {
   totalNm: real('total_nm').notNull().default(0),
   currentStreak: integer('current_streak').notNull().default(0),
   avatarUrl: text('avatar_url'),
+  trialUntil: timestamp('trial_until', { withTimezone: true }),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
@@ -232,3 +234,80 @@ export const boatTrackPoints = pgTable(
     pk: primaryKey({ columns: [t.participantId, t.ts] }),
   }),
 );
+
+// ---------------------------------------------------------------------------
+// Admin promo campaigns
+// ---------------------------------------------------------------------------
+
+export const campaignTypeEnum = pgEnum('campaign_type', ['CREDITS', 'UPGRADE', 'TRIAL']);
+export const campaignAudienceEnum = pgEnum('campaign_audience', ['SUBSCRIBERS', 'NEW_SIGNUPS']);
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'GIFT_AVAILABLE',
+  'TRIAL_GRANTED',
+  'TEAM_INVITE',
+  'FRIEND_REQUEST',
+  'RACE_REMINDER',
+]);
+
+export const campaigns = pgTable('campaigns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: campaignTypeEnum('type').notNull(),
+  creditsAmount: integer('credits_amount'),
+  upgradeCatalogId: text('upgrade_catalog_id'),
+  trialDays: integer('trial_days'),
+  audience: campaignAudienceEnum('audience').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  // races.id is text (slug), not uuid — see schema.ts:69
+  linkedRaceId: text('linked_race_id').references(() => races.id, { onDelete: 'set null' }),
+  messageTitle: varchar('message_title', { length: 100 }).notNull(),
+  messageBody: varchar('message_body', { length: 500 }).notNull(),
+  createdByAdminId: uuid('created_by_admin_id').notNull().references(() => players.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+}, (t) => [
+  check('campaigns_payload_chk', sql`
+    (${t.type} = 'CREDITS' AND ${t.creditsAmount} IS NOT NULL AND ${t.upgradeCatalogId} IS NULL AND ${t.trialDays} IS NULL) OR
+    (${t.type} = 'UPGRADE' AND ${t.upgradeCatalogId} IS NOT NULL AND ${t.creditsAmount} IS NULL AND ${t.trialDays} IS NULL) OR
+    (${t.type} = 'TRIAL'   AND ${t.trialDays} IS NOT NULL AND ${t.creditsAmount} IS NULL AND ${t.upgradeCatalogId} IS NULL)
+  `),
+  check('campaigns_audience_chk', sql`
+    (${t.type} = 'TRIAL' AND ${t.audience} = 'NEW_SIGNUPS') OR
+    (${t.type} IN ('CREDITS', 'UPGRADE') AND ${t.audience} = 'SUBSCRIBERS')
+  `),
+  check('campaigns_credits_positive', sql`${t.creditsAmount} IS NULL OR ${t.creditsAmount} > 0`),
+  check('campaigns_trial_days_positive', sql`${t.trialDays} IS NULL OR ${t.trialDays} > 0`),
+]);
+
+export const campaignClaims = pgTable('campaign_claims', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  campaignId: uuid('campaign_id').notNull().references(() => campaigns.id, { onDelete: 'cascade' }),
+  playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+  grantedAt: timestamp('granted_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique('uniq_claim_per_player').on(t.campaignId, t.playerId),
+  index('idx_campaign_claims_player').on(t.playerId),
+]);
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  playerId: uuid('player_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+  type: notificationTypeEnum('type').notNull(),
+  payload: jsonb('payload').notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('idx_notifications_player_unread').on(t.playerId, t.readAt, t.createdAt),
+]);
+
+export const adminActions = pgTable('admin_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminId: uuid('admin_id').notNull().references(() => players.id, { onDelete: 'restrict' }),
+  actionType: varchar('action_type', { length: 64 }).notNull(),
+  targetType: varchar('target_type', { length: 32 }),
+  targetId: varchar('target_id', { length: 64 }),
+  payload: jsonb('payload').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index('idx_admin_actions_admin_created').on(t.adminId, t.createdAt),
+  index('idx_admin_actions_type_created').on(t.actionType, t.createdAt),
+]);
