@@ -14,3 +14,8 @@ if (!process.env['DATABASE_URL']) {
   process.env['DATABASE_URL'] = 'postgresql://nemo:nemo@localhost:5432/nemo';
   console.warn('[test-env] DATABASE_URL not set, falling back to localhost dev DB');
 }
+
+if (!process.env['NEMO_ALLOW_DEV_AUTH']) {
+  process.env['NEMO_ALLOW_DEV_AUTH'] = '1';
+  console.warn('[test-env] NEMO_ALLOW_DEV_AUTH not set, enabling dev tokens for tests');
+}

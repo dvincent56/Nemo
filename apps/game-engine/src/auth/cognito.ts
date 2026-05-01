@@ -128,12 +128,3 @@ export async function enforceAuth(req: FastifyRequest, reply: FastifyReply): Pro
   }
 }
 
-/**
- * Use as `{ preHandler: [enforceAuth, requireAdmin] }` on admin-only routes.
- * Reads `req.auth.isAdmin` (populated by enforceAuth from a signed claim).
- * NEVER trusts the username, token suffix, or any client-controlled hint.
- */
-export async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-  if (!req.auth) { reply.code(401).send({ error: 'unauthenticated' }); return; }
-  if (!req.auth.isAdmin) { reply.code(403).send({ error: 'admin only' }); return; }
-}

@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
@@ -17,15 +17,9 @@ async function buildApp(): Promise<FastifyInstance> {
 
 describe('requireAdmin', () => {
   const createdIds: string[] = [];
-  let prevDevAuth: string | undefined;
-  before(() => {
-    prevDevAuth = process.env['NEMO_ALLOW_DEV_AUTH'];
-    process.env['NEMO_ALLOW_DEV_AUTH'] = '1';
-  });
+  // NEMO_ALLOW_DEV_AUTH is set globally by test/setup-env.ts.
   after(async () => {
     await cleanupTestPlayers(getDb()!, createdIds);
-    if (prevDevAuth === undefined) delete process.env['NEMO_ALLOW_DEV_AUTH'];
-    else process.env['NEMO_ALLOW_DEV_AUTH'] = prevDevAuth;
   });
 
   it('returns 403 when the authenticated player is not admin', async () => {
