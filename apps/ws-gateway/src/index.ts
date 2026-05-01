@@ -5,6 +5,7 @@ import { decode, encode } from '@msgpack/msgpack';
 import pino from 'pino';
 import type { OrderEnvelope } from '@nemo/shared-types';
 import { buildEnvelope } from './build-envelope.js';
+import { TokenBucket } from './rate-limit.js';
 
 /**
  * ws-gateway — Phase 3 pipeline complet (implémentation `ws` standard npm).
@@ -37,6 +38,7 @@ interface ClientCtx {
   boatId: string | null;
   channel: string;
   subscribedAt: number;
+  bucket: TokenBucket;
 }
 
 function verifyToken(token: string): { sub: string; username: string } | null {
@@ -132,6 +134,7 @@ async function main(): Promise<void> {
         boatId: 'demo-boat-1',   // Phase 3 hardcoded ; Phase 4 : lookup boats.active_race_id
         channel: `race:${raceId}:tick`,
         subscribedAt: Date.now(),
+        bucket: new TokenBucket({ capacity: 30, refillPerSec: 10 }),
       };
       (ws as WebSocket & { ctx: ClientCtx }).ctx = ctx;
 
@@ -145,6 +148,10 @@ async function main(): Promise<void> {
 
       ws.on('message', (data, isBinary) => {
         if (!isBinary) return;
+        if (!ctx.bucket.tryConsume()) {
+          log.warn({ conn: ctx.connectionId }, 'rate limit hit, dropping message');
+          return;
+        }
         const buf = data instanceof Buffer ? data : Buffer.from(data as ArrayBuffer);
         let decoded: Record<string, unknown>;
         try {
