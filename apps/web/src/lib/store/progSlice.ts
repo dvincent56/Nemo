@@ -9,6 +9,7 @@ import type {
   ProgMode,
   EditingOrder,
   ProgNotice,
+  ProgEditorPreview,
 } from '@/lib/prog/types';
 import { EMPTY_DRAFT } from '@/lib/prog/types';
 import type { GameStore } from './types';
@@ -20,6 +21,7 @@ export const INITIAL_PROG: ProgState = {
   pickingWp: false,
   pendingNewWpId: null,
   notice: null,
+  editorPreview: null,
 };
 
 type SetFn = (fn: (s: GameStore) => Partial<GameStore>) => void;
@@ -227,10 +229,10 @@ export function createProgSlice(set: SetFn) {
 
     applyRouteAsCommitted: (next: ProgDraft) =>
       set((s) => ({
-        // Preserve editingOrder + pickingWp + pendingNewWpId + notice — UI
-        // state mustn't be squashed by an incoming route apply (so the user
-        // can click a marker, then accept a route, and still see the editor
-        // where they left it).
+        // Preserve UI state — editingOrder + pickingWp + pendingNewWpId +
+        // notice + editorPreview must not be squashed by an incoming route
+        // apply (so the user can click a marker, then accept a route, and
+        // still see the editor where they left it).
         prog: {
           draft: clone(next),
           committed: clone(next),
@@ -238,6 +240,7 @@ export function createProgSlice(set: SetFn) {
           pickingWp: s.prog.pickingWp,
           pendingNewWpId: s.prog.pendingNewWpId,
           notice: s.prog.notice,
+          editorPreview: s.prog.editorPreview,
         },
       })),
 
@@ -259,6 +262,11 @@ export function createProgSlice(set: SetFn) {
     setProgNotice: (notice: ProgNotice | null) =>
       set((s) => ({
         prog: { ...s.prog, notice },
+      })),
+
+    setEditorPreview: (preview: ProgEditorPreview | null) =>
+      set((s) => ({
+        prog: { ...s.prog, editorPreview: preview },
       })),
 
     /**

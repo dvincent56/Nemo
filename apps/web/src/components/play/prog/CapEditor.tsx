@@ -1,7 +1,9 @@
 'use client';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import type { CapOrder } from '@/lib/prog/types';
+import { useGameStore } from '@/lib/store';
+import { useThrottledEffect } from '@/hooks/useThrottledEffect';
 import CompassReadouts from '../compass/CompassReadouts';
 import CompassDial from '../compass/CompassDial';
 import CompassLockToggle from '../compass/CompassLockToggle';
@@ -61,19 +63,52 @@ export default function CapEditor({
   const [twaLock, setTwaLock] = useState<boolean>(initialOrder?.twaLock ?? false);
   const [time, setTime] = useState<number>(initialOrder?.trigger.time ?? defaultTime);
 
+  // The CapOrder is stored with `heading` in TWA frame when twaLock=true (so
+  // the engine reads it as relative-to-wind). Mirror handleSave's conversion
+  // here so the ghost matches what would be saved on Confirmer.
+  const storedHeading = twaLock
+    ? Math.round(((heading - windDir + 540) % 360) - 180)
+    : heading;
+
+  // Publish a live editor preview to the store. The projection worker splices
+  // this ghost into the draft segments so the polyline re-simulates with the
+  // in-flight edit; the prog-order-marker-preview layer also slides a
+  // distinct marker at trigger.time.
+  //
+  // Throttled: fire once on the first change, then at most every 100ms. A
+  // plain debounce never fired during a fast TimeStepper hold (each pulse
+  // cancelled the previous timer). Throttle gives live feedback (immediate
+  // first publish) plus a steady ~10 Hz rate during a hold — the worker
+  // can keep up and the polyline doesn't flicker.
+  const setEditorPreview = useGameStore((s) => s.setEditorPreview);
+  useThrottledEffect(() => {
+    const ghost: CapOrder = {
+      id: initialOrder?.id ?? 'editor-ghost-cap',
+      trigger: { type: 'AT_TIME', time },
+      heading: storedHeading,
+      twaLock,
+    };
+    setEditorPreview({
+      kind: 'cap',
+      ghostOrder: ghost,
+      replacesId: initialOrder?.id ?? null,
+    });
+  }, [storedHeading, twaLock, time, initialOrder?.id, setEditorPreview], 100);
+
+  // Unmount-only cleanup: drop the ghost so the projection reverts to the
+  // pre-edit draft. Separate from the throttled publisher above so its
+  // pending trailing fire is cancelled cleanly when the editor closes.
+  useEffect(() => () => setEditorPreview(null), [setEditorPreview]);
+
   const isNew = initialOrder === null;
   const title = isNew
     ? 'NOUVEL ORDRE CAP'
     : `MODIFIER CAP${index !== null ? ` · N°${String(index).padStart(2, '0')}` : ''}`;
 
   const handleSave = (): void => {
-    // When TWA-locked, the order's stored heading must be a TWA in [-180, 180]
-    // — the serializer emits `{ twa: heading }` for TWA orders and the engine
-    // expects a relative-to-wind angle. Convert from the absolute compass dial
-    // value using the current windDir; mirrors Compass.tsx apply() L145-148.
-    const storedHeading = twaLock
-      ? Math.round(((heading - windDir + 540) % 360) - 180)
-      : heading;
+    // `storedHeading` already encodes the TWA-frame conversion (see the
+    // const declaration above) — the serializer emits `{ twa: heading }`
+    // when twaLock is true.
     const order: CapOrder = {
       id: initialOrder?.id ?? makeId(),
       trigger: { type: 'AT_TIME', time },

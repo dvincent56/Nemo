@@ -69,6 +69,28 @@ export interface ProgNotice {
   message: string;
 }
 
+/** Live editor preview snapshot, published by CapEditor / SailEditor on every
+ *  state change. Two consumers:
+ *   1. The projection worker pipeline (`useProjectionLine.requestCompute`)
+ *      splices `ghostOrder` into the draft segment list — replacing
+ *      `replacesId` if set, appending otherwise — so the simulated polyline
+ *      reflects the in-flight edit before the user clicks OK.
+ *   2. The sliding marker layer (`prog-order-marker-preview`) reads
+ *      `ghostOrder.trigger.time` (when AT_TIME) and places a distinct
+ *      "preview" marker at that point on the live polyline.
+ *  Cleared when the editor unmounts (cancel or save). */
+export interface ProgEditorPreview {
+  kind: 'cap' | 'sail';
+  /** Fully-formed order in its current editor state. The `id` is either the
+   *  real id of the order being edited, or a synthetic `editor-ghost-*`
+   *  placeholder for a NEW order — the projection worker only cares about
+   *  trigger + value, not the id. */
+  ghostOrder: CapOrder | SailOrder;
+  /** Real id of the order being edited; null when creating a NEW order.
+   *  Used by the splice logic to know whether to replace or append. */
+  replacesId: string | null;
+}
+
 export interface ProgState {
   draft: ProgDraft;
   committed: ProgDraft;
@@ -87,4 +109,9 @@ export interface ProgState {
   pendingNewWpId: string | null;
   /** Transient toast — auto-dismissed by ProgPanel after a few seconds. */
   notice: ProgNotice | null;
+  /** Live editor preview — populated by CapEditor / SailEditor whenever the
+   *  TimeStepper changes; cleared on editor close. Rendered as a sliding
+   *  marker along the current projection so the player can see WHERE the
+   *  order will fire before saving. */
+  editorPreview: ProgEditorPreview | null;
 }

@@ -17,6 +17,7 @@ export type {
   ProgState,
   EditingOrder,
   ProgNotice,
+  ProgEditorPreview,
 } from '@/lib/prog/types';
 
 export type TwaColor = 'optimal' | 'overlap' | 'neutral' | 'deadzone';
@@ -338,6 +339,7 @@ export interface GameStore extends RouterActions {
   setPickingWp: (b: boolean) => void;
   setPendingNewWpId: (id: string | null) => void;
   setProgNotice: (notice: import('@/lib/prog/types').ProgNotice | null) => void;
+  setEditorPreview: (preview: import('@/lib/prog/types').ProgEditorPreview | null) => void;
   removeCapturedWps: (removedIds: string[]) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;

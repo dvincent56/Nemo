@@ -15,7 +15,9 @@ import type {
 } from '@/lib/projection/types';
 import { serializeDraft } from '@/lib/prog/serialize';
 import { deepEqDraft } from '@/lib/prog/equality';
-import type { ProgDraft } from '@/lib/prog/types';
+import type {
+  ProgDraft, ProgEditorPreview, CapOrder, SailOrder,
+} from '@/lib/prog/types';
 
 const ZONE_DEFAULT_MULTIPLIER = { WARN: 0.8, PENALTY: 0.5 };
 
@@ -338,6 +340,34 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
 }
 
 /**
+ * Apply the editor preview (ghost order) to a draft snapshot before the
+ * worker pipeline serializes it. The ghost replaces the order with id
+ * `replacesId` if present (editing existing), or appends otherwise (NEW).
+ *
+ * Returns the same draft reference when there's nothing to apply — the
+ * caller relies on referential identity to short-circuit equality checks.
+ */
+function applyEditorPreviewToDraft(
+  draft: ProgDraft,
+  preview: ProgEditorPreview | null,
+): ProgDraft {
+  if (!preview) return draft;
+  if (preview.kind === 'cap') {
+    const ghost = preview.ghostOrder as CapOrder;
+    const next: CapOrder[] = preview.replacesId !== null
+      ? draft.capOrders.map((o) => (o.id === preview.replacesId ? ghost : o))
+      : [...draft.capOrders, ghost];
+    return { ...draft, capOrders: next };
+  }
+  // sail
+  const ghost = preview.ghostOrder as SailOrder;
+  const next: SailOrder[] = preview.replacesId !== null
+    ? draft.sailOrders.map((o) => (o.id === preview.replacesId ? ghost : o))
+    : [...draft.sailOrders, ghost];
+  return { ...draft, sailOrders: next };
+}
+
+/**
  * Find the projection point closest to a given target wall-clock time.
  * Buffer layout: [lat, lon, dtMs, bsp, tws, twd] × N — see PROJECTION_POINT_FIELDS.
  * `dtMs` is relative to `run.startMs`; we look for the index whose absolute
@@ -565,6 +595,39 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     src.setData(buildMarkerGeoJson(draft, run));
   }, []);
 
+  /**
+   * Live editor-preview marker — placed at the projection point matching the
+   * ghost order's AT_TIME trigger. Reads from the active run (draft when
+   * dirty, committed otherwise) so the marker tracks whatever line the user
+   * is actively editing. Cleared when preview is null OR when the trigger is
+   * AT_WAYPOINT (in which case the WP marker already shows the firing
+   * point).
+   */
+  const refreshPreviewMarker = useCallback((
+    map: maplibregl.Map,
+    preview: ProgEditorPreview | null,
+    run: ProjectionRun,
+  ): void => {
+    const src = map.getSource('prog-order-marker-preview') as maplibregl.GeoJSONSource | undefined;
+    if (!src) return;
+    const empty = (): void => {
+      src.setData({ type: 'FeatureCollection', features: [] });
+    };
+    if (!preview) { empty(); return; }
+    const trigger = preview.ghostOrder.trigger;
+    if (trigger.type !== 'AT_TIME') { empty(); return; }
+    const pos = findProjectionPointAtTime(run, trigger.time * 1000);
+    if (!pos) { empty(); return; }
+    src.setData({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+        properties: {},
+      }],
+    });
+  }, []);
+
   // Update MapLibre sources with projection result. Renders the committed run
   // into the *-committed source/layer set, and (when the worker found a
   // distinct draft) the draft run into the *-draft set. When draft is absent,
@@ -630,7 +693,11 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     const activeDraft = isDirty ? state.prog.draft : state.prog.committed;
     const activeRun: ProjectionRun = result.draft ?? result;
     refreshOrderMarkers(m, activeDraft, activeRun);
-  }, [writeRunToMap, clearVariant, refreshOrderMarkers]);
+    // Re-anchor the live editor-preview marker against the new run too —
+    // when the projection geometry shifts (new tick / new draft), the
+    // preview's interpolated position must follow.
+    refreshPreviewMarker(m, state.prog.editorPreview, activeRun);
+  }, [writeRunToMap, clearVariant, refreshOrderMarkers, refreshPreviewMarker]);
 
   // Keep mapRef in sync without re-running effects when map changes
   useEffect(() => {
@@ -794,10 +861,17 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     // Equality uses the typed `deepEqDraft` from `@/lib/prog/equality` so the
     // dirty signal is identical to ProgPanel's — no JSON.stringify ordering
     // fragility.
+    //
+    // Live editor preview: when CapEditor / SailEditor is open and publishing
+    // a ghost order, splice it into the draft BEFORE serialization so the
+    // worker sees the in-flight edit as part of the draft trajectory. Cancel
+    // wipes the ghost on unmount; Confirmer adds the real order to the draft
+    // (the ghost vanishes the same render cycle).
+    const draftWithGhost = applyEditorPreviewToDraft(prog.draft, prog.editorPreview);
     const committedSegments = orderQueueToSegments(serializeDraft(prog.committed));
-    const isDirty = !deepEqDraft(prog.draft, prog.committed);
+    const isDirty = !deepEqDraft(draftWithGhost, prog.committed);
     const draftSegments = isDirty
-      ? orderQueueToSegments(serializeDraft(prog.draft))
+      ? orderQueueToSegments(serializeDraft(draftWithGhost))
       : committedSegments; // identical reference → worker skips the 2nd sim
 
     const input: ProjectionInput = {
@@ -866,6 +940,10 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     let prevPreviewSail = useGameStore.getState().preview.sail;
     let prevPreviewTwaLocked = useGameStore.getState().preview.twaLocked;
     let prevPreviewLockedTwa = useGameStore.getState().preview.lockedTwa;
+    // Editor live preview: ghostOrder snapshot is spliced into the draft
+    // by `applyEditorPreviewToDraft` before the worker simulates, so a
+    // change here must trigger a recompute.
+    let prevEditorPreview: unknown = useGameStore.getState().prog.editorPreview;
 
     const unsub = useGameStore.subscribe((s) => {
       const hdgChanged = s.hud.hdg !== prevHdg;
@@ -880,6 +958,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       const previewSailChanged = s.preview.sail !== prevPreviewSail;
       const previewTwaLockedChanged = s.preview.twaLocked !== prevPreviewTwaLocked;
       const previewLockedTwaChanged = s.preview.lockedTwa !== prevPreviewLockedTwa;
+      const editorPreviewChanged = s.prog.editorPreview !== prevEditorPreview;
 
       prevHdg = s.hud.hdg;
       prevSail = s.sail.currentSail;
@@ -894,6 +973,7 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
       prevPreviewSail = s.preview.sail;
       prevPreviewTwaLocked = s.preview.twaLocked;
       prevPreviewLockedTwa = s.preview.lockedTwa;
+      prevEditorPreview = s.prog.editorPreview;
 
       // All state changes funnel through the same coalescing path —
       // backpressure is handled by inFlight/pending refs, not by debounce.
@@ -902,7 +982,8 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
         sailChanged || autoChanged || committedChanged || draftChanged ||
         tickChanged || gridChanged ||
         zonesChanged ||
-        previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged
+        previewSailChanged || previewTwaLockedChanged || previewLockedTwaChanged ||
+        editorPreviewChanged
       ) {
         requestCompute();
       }
@@ -913,4 +994,5 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
 
     return unsub;
   }, [requestCompute]);
+
 }

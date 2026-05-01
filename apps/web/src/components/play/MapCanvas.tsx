@@ -111,6 +111,11 @@ const PROJECTION_LAYER_IDS = [
   'prog-order-markers-sail',
   'prog-order-markers-wp',
   'prog-order-markers-finalCap',
+  // Live editor-preview marker (sliding along the projection while the user
+  // drags the TimeStepper inside CapEditor / SailEditor). Two sub-layers so
+  // we can render a pulsed-outline glow + a solid core circle.
+  'prog-order-marker-preview-glow',
+  'prog-order-marker-preview-core',
 ] as const;
 const PROJECTION_SOURCE_IDS = [
   'projection-line-committed',
@@ -120,6 +125,7 @@ const PROJECTION_SOURCE_IDS = [
   'projection-markers-time-draft',
   'projection-markers-maneuver-draft',
   'prog-order-markers',
+  'prog-order-marker-preview',
 ] as const;
 
 /**
@@ -235,6 +241,40 @@ function installProgOrderMarkers(map: maplibregl.Map): void {
       'circle-color': '#c9a227',
       'circle-stroke-color': '#f5f0e8',
       'circle-stroke-width': 3,
+    },
+  });
+
+  // Live editor-preview marker — a single feature whose lat/lon is updated by
+  // useProjectionLine each time the editor publishes a new editorPreview
+  // (TimeStepper drag). Two layers: a soft outer glow + a solid core circle
+  // so the marker reads as "in-flight, not yet committed" against the
+  // committed/draft markers above.
+  map.addSource('prog-order-marker-preview', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'prog-order-marker-preview-glow',
+    source: 'prog-order-marker-preview',
+    type: 'circle',
+    paint: {
+      'circle-radius': 16,
+      'circle-color': '#c9a227',
+      'circle-opacity': 0.20,
+      'circle-stroke-color': '#c9a227',
+      'circle-stroke-opacity': 0.55,
+      'circle-stroke-width': 2,
+    },
+  });
+  map.addLayer({
+    id: 'prog-order-marker-preview-core',
+    source: 'prog-order-marker-preview',
+    type: 'circle',
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#f5f0e8',
+      'circle-stroke-color': '#c9a227',
+      'circle-stroke-width': 2,
     },
   });
 }

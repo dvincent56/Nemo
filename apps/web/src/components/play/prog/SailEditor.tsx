@@ -1,8 +1,10 @@
 'use client';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import type { SailId } from '@nemo/shared-types';
 import type { SailOrder, WpOrder, ProgMode } from '@/lib/prog/types';
+import { useGameStore } from '@/lib/store';
+import { useThrottledEffect } from '@/hooks/useThrottledEffect';
 import { SAIL_DEFS, SAIL_ICONS } from '@/lib/sails/icons';
 import TimeStepper from '../TimeStepper';
 import styles from './Editor.module.css';
@@ -68,6 +70,48 @@ export default function SailEditor({
 
   // Force AT_TIME in cap mode (segmented picker not shown)
   const effectiveTriggerKind: TriggerKind = draftMode === 'cap' ? 'AT_TIME' : triggerKind;
+
+  // Publish a live editor preview to the store. AT_TIME ghosts splice into
+  // the draft segments AND drive the sliding marker; AT_WAYPOINT ghosts
+  // splice into segments too (so the polyline reflects the upcoming sail
+  // change at WP capture) but skip the marker (the WP location is already
+  // a separate marker). When wpId is empty the AT_WAYPOINT ghost is
+  // invalid — skip publishing so the worker isn't fed a half-built order.
+  //
+  // Throttled at 100 ms (mirrors CapEditor): fire on first change then at
+  // most ~10 Hz. Solves the flicker the original debounce caused during a
+  // fast TimeStepper hold.
+  const setEditorPreview = useGameStore((s) => s.setEditorPreview);
+  useThrottledEffect(() => {
+    let trigger: SailOrder['trigger'] | null;
+    if (effectiveTriggerKind === 'AT_TIME') {
+      trigger = { type: 'AT_TIME', time };
+    } else if (wpId !== '') {
+      trigger = { type: 'AT_WAYPOINT', waypointOrderId: wpId };
+    } else {
+      trigger = null;
+    }
+    if (trigger === null) {
+      setEditorPreview(null);
+      return;
+    }
+    const action: SailOrder['action'] = auto
+      ? { auto: true }
+      : { auto: false, sail: sailId };
+    const ghost: SailOrder = {
+      id: initialOrder?.id ?? 'editor-ghost-sail',
+      trigger,
+      action,
+    };
+    setEditorPreview({
+      kind: 'sail',
+      ghostOrder: ghost,
+      replacesId: initialOrder?.id ?? null,
+    });
+  }, [effectiveTriggerKind, time, wpId, auto, sailId, initialOrder?.id, setEditorPreview], 100);
+
+  // Unmount-only cleanup: drop the ghost on editor close.
+  useEffect(() => () => setEditorPreview(null), [setEditorPreview]);
 
   // No-op guard: an auto-sail order when the boat is already in auto-sail at
   // the trigger time changes nothing. Refuse to save instead of letting the
