@@ -271,6 +271,44 @@
     },
     "items": [
       {
+        "id": "hull-cruiser-racer-standard",
+        "slot": "HULL",
+        "tier": "SERIE",
+        "name": "Coque Croisière-Régate Standard",
+        "profile": "polyvalent",
+        "description": "Coque de série croisière-régate, polyvalente et fiable sur tous les allures.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-cruiser-racer-dacron",
+        "slot": "SAILS",
+        "tier": "SERIE",
+        "name": "Voiles Dacron Croisière-Régate",
+        "profile": "polyvalent",
+        "description": "Jeu de voiles dacron de série, polyvalent et durable.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "hull-cruiser-racer-racing-prep",
         "slot": "HULL",
         "tier": "BRONZE",

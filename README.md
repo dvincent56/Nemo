@@ -5,10 +5,13 @@ Jeu de voile offshore en ligne — PWA, concurrent éthique de Virtual Regatta.
 ## Stack
 
 - **Monorepo** : Turborepo + pnpm workspaces
-- **Frontend** : Next.js 16.2.3, React 19.2, TypeScript strict, CSS Modules
+- **Node** : 22 LTS (CI builde sur Node 22)
+- **Frontend** : Next.js 16.2.3, React 19.2, TypeScript strict, CSS Modules, MapLibre GL 5
 - **Game Engine** : Node.js + Fastify + Worker Threads, tick 1 Hz event-sourced
+- **Engine Core** : `@nemo/game-engine-core` — logique pure (tick, voiles, zones, wear, segments, speed-model) extraite pour être testable et exécutable côté simulateur navigateur
+- **Routing** : `@nemo/routing` — isochrones, élagage, polyline, weatherSampler (worker dédié)
 - **WS Gateway** : Node.js + `ws` (npm) — sharding par course
-- **Weather Engine** : Python (cfgrib / xarray) → Redis
+- **Weather Engine** : Python (cfgrib / xarray) → Redis (NOAA GFS)
 - **DB** : PostgreSQL 16 + Drizzle ORM
 - **Cache / pub-sub** : Redis 7
 
@@ -27,12 +30,16 @@ apps/
   web/                       # Next.js — frontend joueur + backoffice
   game-engine/               # Fastify + Worker Threads + tick loop + Drizzle
   ws-gateway/                # WebSocket (ws) — sharding par course
-  weather-engine/            # Python — ingest NOAA GFS (Phase 4)
+  weather-engine/            # Python — ingest NOAA GFS → Redis
 packages/
   shared-types/              # Types TypeScript partagés
   polar-lib/                 # Polaires 4 classes + interpolation bilinéaire
   game-balance/              # game-balance.json (seule source de vérité gameplay)
+  game-engine-core/          # Logique tick pure (bands, sails, zones, wear, segments, speed-model, weather)
+  routing/                   # Isochrones + élagage + weatherSampler (worker)
 mockups/                     # HTML de référence design (validés avant intégration)
+docs/runbooks/               # Procédures pas-à-pas (ex. ajouter une classe de bateau)
+scripts/                     # Outils dev (sync-game-balance.mjs, etc.)
 ```
 
 ---
@@ -41,21 +48,28 @@ mockups/                     # HTML de référence design (validés avant intég
 
 | Route | Page | État |
 |---|---|---|
-| `/` | Redirection vers `/races` | ✅ |
+| `/` | Home éditoriale (hero + actus + CTA) | ✅ |
 | `/login` | Connexion dev (cookie `nemo_access_token`) | ✅ |
+| `/news` · `/news/[slug]` | Index actus + page article | ✅ |
 | `/races` | Liste des courses, filtres classe, CTA inscription | ✅ API réelle |
-| `/marina` | Flotte du joueur (5 slots max, 1 par classe) | ✅ |
-| `/marina/[boatId]` | Détail bateau + 6 catégories d'upgrades | ✅ |
+| `/marina` | Flotte du joueur (5 slots max, 1 par classe) | ✅ API réelle |
+| `/marina/inventory` | Inventaire pièces / upgrades | ✅ |
+| `/marina/[boatId]` | Détail bateau + 6 catégories d'upgrades | ✅ API réelle |
 | `/marina/[boatId]/customize` | Personnalisation coque/mât/voiles/marquages | ✅ |
-| `/classement` | Classement saison (filtres classe + périmètre) | ✅ |
-| `/classement/courses` | Liste des courses en cours / terminées | ✅ API réelle |
-| `/classement/[raceId]` | Classement d'une course précise | ✅ |
+| `/ranking` | Classement saison (filtres classe + périmètre) | ✅ |
+| `/ranking/courses` | Liste des courses en cours / terminées | ✅ |
+| `/ranking/[raceId]` | Classement d'une course précise | ✅ |
+| `/ranking/teams` | Classement des équipes | ✅ |
 | `/profile` | Profil du joueur connecté (stats, palmarès, flotte) | ✅ |
 | `/profile/[username]` | Profil public d'un autre skipper | ✅ |
 | `/profile/settings` | Identité, compte, préférences, notifications | ✅ |
 | `/profile/social` | Amis, équipe, invitations reçues/envoyées | ✅ |
 | `/team/[slug]` | Profil public d'une équipe (roster paginé) | ✅ |
-| `/play/[raceId]` | Écran de course (MapLibre + HUD + Sail Panel) | 🟡 ancien design, refonte à venir |
+| `/play/[raceId]` | Écran de course (MapLibre + HUD + ProgPanel + timeline météo) | ✅ refonte structurelle terminée — `ProgPanel` en cours (Phase 2b) |
+| `/dev/simulator` | Simulateur local engine-core (sans WS) | 🛠 outil interne |
+| `/cgu` · `/privacy` · `/cookies` · `/legal` | Pages légales | ✅ |
+
+> Le préfixe `[locale]` (i18n `next-intl`) n'est **pas encore en place** — il sera introduit en Phase 4.
 
 ---
 
@@ -77,7 +91,7 @@ mockups/                     # HTML de référence design (validés avant intég
 ### 2. Prérequis dans WSL2 Ubuntu
 
 ```bash
-# Node.js 22 LTS
+# Node.js 22 LTS (requis — la CI builde en 22, le test runner s'appuie sur l'expansion native des globs)
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
 sudo apt-get install -y nodejs build-essential git python3 python3-pip
 
@@ -105,18 +119,20 @@ code .   # ouvre VS Code en mode WSL
 
 ## Démarrage local
 
-### Phase 3 — mode stub (sans Postgres/Redis/Cognito)
+### Mode stub (sans Postgres/Redis/Cognito)
 
 ```bash
 pnpm install
 cp .env.example .env
 
-# Fixture météo (une seule fois)
+# Fixture météo (une seule fois — bascule NEMO_WEATHER_MODE=fixture dans .env)
 pnpm fixture
 
-# Lancer les 3 apps en parallèle
+# Lancer web + game-engine + ws-gateway en parallèle
 pnpm dev
 ```
+
+> `pnpm dev` côté `apps/web` exécute `predev` qui synchronise `game-balance.json` vers `apps/web/public/data/` via `scripts/sync-game-balance.mjs`.
 
 Services exposés :
 - [http://localhost:3000](http://localhost:3000) — Next.js
@@ -124,11 +140,11 @@ Services exposés :
 - `ws://localhost:3002/race/:id` — ws-gateway
 
 Flow minimal :
-1. [http://localhost:3000](http://localhost:3000) → redirection `/races`
-2. `/login`, saisir un pseudo → cookie posé, redirigé vers `/races`
-3. Cliquer sur une course → `/play/:raceId`
+1. [http://localhost:3000](http://localhost:3000) → home + entrée vers `/races`
+2. `/login`, saisir un pseudo → cookie posé, redirigé vers la home
+3. `/races` → cliquer sur une course → `/play/:raceId`
 
-### Phase 4 — avec infra Postgres/Redis
+### Avec infra Postgres + Redis (mode "complet")
 
 ```bash
 pnpm infra:up                # Postgres 16 + Redis 7 via Docker
@@ -175,7 +191,7 @@ Direction éditoriale inspirée de **North Sails / SailGP / Rolex Yacht-Master /
 
 Tout nouvel écran commence par un HTML standalone dans `mockups/`. Une fois validé visuellement, il est transposé en composants React (`page.tsx` + `View.tsx` + `page.module.css`). La palette et les patterns viennent de `mockups/races-v1.html` qui fait référence.
 
-Mockups actuels (13) : `races`, `login`, `play`, `marina`, `marina-boat`, `marina-customize`, `profile`, `profile-settings`, `profile-social`, `classement`, `classement-race`, `admin-races`, `admin-races-edit`.
+Mockups actuels (18) : `home`, `races`, `login`, `play`, `marina`, `marina-boat`, `marina-customize`, `profile`, `profile-settings`, `profile-social`, `classement`, `classement-race`, `admin-races`, `admin-races-edit`, `news-detail`, `not-found`, `router-panel`, `timeline`.
 
 ---
 
@@ -185,14 +201,14 @@ Mockups actuels (13) : `races`, `login`, `play`, `marina`, `marina-boat`, `marin
 |---|---|
 | `pnpm dev` | Lance web + game-engine + ws-gateway (Turborepo `persistent`) |
 | `pnpm typecheck` | Typecheck tous les workspaces (strict) |
+| `pnpm lint` | ESLint sur tous les workspaces |
+| `pnpm test` | Tests unitaires (Vitest côté web, `node --test` côté core) |
 | `pnpm build` | Build prod tous les workspaces |
 | `pnpm e2e:tick` | Test tick loop Phase 1 (10 ticks) |
 | `pnpm e2e:phase2` | Test Phase 2 (1 h sim, zones + sails + wear) |
 | `pnpm fixture` | Regénère `apps/game-engine/fixtures/weather-grid.json` |
 | `pnpm infra:up` / `:down` / `:logs` | Docker compose dev (Postgres + Redis) |
 | `pnpm db:push` / `:migrate` / `:studio` | Drizzle Kit |
-| `pnpm bench:tick` | Bench CPU tick (jusqu'à 500k bateaux) |
-| `pnpm bench:broadcast` | Bench sérialisation/broadcast payload |
 
 ---
 
@@ -211,11 +227,15 @@ Mockups actuels (13) : `races`, `login`, `play`, `marina`, `marina-boat`, `marin
 
 ## État des phases
 
+> Source de vérité détaillée : [ROADMAP.md](ROADMAP.md). Résumé ci-dessous.
+
 - ✅ **Phase 1** — tick loop + polaires + Fastify + fixtures météo
 - ✅ **Phase 2** — sails + zones + wear + segments + e2e 1h
-- ✅ **Phase 3** — Redis pub/sub + ws-gateway + orders RPC + DB hydration + visibility broadcast
-- 🟡 **Phase 3bis (en cours)** — refonte design Nautical Luxury sur toutes les pages
-- ⏳ **Phase 4** — Stripe abonnement, backend schema extensions (friendships, teams, invitations, notifications, player_class_stats, user_settings — voir memory `project_backend_schema_gaps`), i18n next-intl, Cognito Hosted UI
+- 🟢 **Phase 3 (~75 %)** — backend live (Redis pub/sub + ws-gateway + orders RPC + DB hydration), refonte design Nautical Luxury terminée sur toutes les pages publiques. **Reste** : démock progressif (rankings, profile, team, social toujours sur seed), refonte ergonomie `ProgPanel` (Phases 0 → 2b livrées : ORDER_REPLACE_QUEUE wire, primitives Compass/TimeStepper extraites, schéma typed-draft, projection 2 couches commit/draft, intégration carte avec markers + drag), affichage des bateaux adverses, mode replay multi-bateaux
+- ⏳ **Phase 4** — i18n `next-intl` (priorité, routing `[locale]/`), Stripe abonnement, marina DB (cosmétique persistée + upgrades + crédits anti-P2W), Cognito Hosted UI, finalisation routeur (cache Redis, ETA, gate Carrière), NOAA prod
+- ⏳ **Phase 5** — Admin (`/admin/system` super-admin : maintenance, bandeaux, kill-switches sans redeploy)
+- ⏳ **Phase 6** — Schémas backend social (friendships, teams, invitations, player_class_stats, user_settings, profiles), push notifications, deploy AWS, charge
+- ⏳ **Phase 7** — calibration vs joueurs VR réels, V2, légal
 
 **Cible de charge** : 1M joueurs sur 1–10 courses, mono-course massive possible. Bench tick OK jusqu'à 500k bateaux — goulot actuel : payload broadcast dès 100k (3 optims identifiées : delta diff, quantization, visibility).
 
