@@ -4,10 +4,17 @@
  *
  * Used by the future ProgPanel order editors (Phase 2). Format: HH:MM
  * absolute + +Xh Ymin relative. Snapped to whole minutes by the consumer.
- * Floor enforced at `minValue`.
+ * Floor enforced at `minValue`, ceiling at optional `maxValue`.
  *
- * Cf. spec `docs/superpowers/specs/2026-04-28-progpanel-redesign-design.md`
- * (Time logic & obsolescence section).
+ * Layout: 4 buttons + display.
+ *   [ ─h ] [ −m ] [ display ] [ +m ] [ +h ]
+ * - Minute buttons (smaller): 1 min/pulse with the existing accelerating
+ *   delay curve (350 → 15 ms across the hold) — fine-grained tuning.
+ * - Hour buttons (larger): 1 hour/pulse at a constant 400 ms delay — coarse
+ *   stepping without acceleration so a long hold doesn't shoot past the
+ *   J+5 ceiling instantly.
+ *
+ * Cf. spec `docs/superpowers/specs/2026-04-28-progpanel-redesign-design.md`.
  */
 
 'use client';
@@ -23,11 +30,14 @@ export interface TimeStepperProps {
   minValue: number;
   /** Optional ceiling — typically `nowSec + J5_HORIZON_SEC` because the
    *  projection has no GFS coverage past J+5. When `value >= maxValue`
-   *  the `+` button locks and a "Plafond" warning is displayed. */
+   *  the `+` buttons lock and a "Plafond" warning is displayed. */
   maxValue?: number;
   nowSec: number;
   className?: string;
 }
+
+const HOUR_STEP_SEC = 3600;
+const HOUR_DELAY_MS = 400;
 
 function formatAbsolute(sec: number): string {
   // Display the player's wall-clock time, not UTC. `sec` is a Unix timestamp,
@@ -69,34 +79,46 @@ export default function TimeStepper({
 
   useEffect(() => () => stop(), [stop]);
 
-  const startLoop = useCallback((direction: 1 | -1) => {
+  // Clamp the candidate to [minValue, maxValue]. Returns the actual next
+  // value AND whether it differs from the current value. When clamped to a
+  // boundary that we've already reached, the loop must stop (otherwise it
+  // would tick forever at the same value).
+  const clamp = useCallback((candidate: number, direction: 1 | -1): number => {
+    if (direction === -1) return Math.max(candidate, minValue);
+    return maxValue !== undefined ? Math.min(candidate, maxValue) : candidate;
+  }, [minValue, maxValue]);
+
+  // Minute loop — accelerating delay (350 → 15 ms) via holdAccelerationCurve.
+  const startMinuteLoop = useCallback((direction: 1 | -1) => {
     let pulse = 1;
     const tick = () => {
       const { stepSec, delayMs } = holdAccelerationCurve(pulse);
-      const candidate = valueRef.current + direction * stepSec;
-      let next: number;
-      if (direction === -1) {
-        next = Math.max(candidate, minValue);
-        if (next === valueRef.current) {
-          stop();
-          return;
-        }
-      } else {
-        next = maxValue !== undefined ? Math.min(candidate, maxValue) : candidate;
-        if (next === valueRef.current) {
-          stop();
-          return;
-        }
-      }
+      const next = clamp(valueRef.current + direction * stepSec, direction);
+      if (next === valueRef.current) { stop(); return; }
       onChange(next);
       pulse += 1;
       timerRef.current = setTimeout(tick, delayMs);
     };
     tick();
-  }, [minValue, maxValue, onChange, stop]);
+  }, [clamp, onChange, stop]);
+
+  // Hour loop — fixed 1h step, fixed 400 ms delay. No acceleration: a long
+  // hold should not blow past the J+5 ceiling in a fraction of a second.
+  const startHourLoop = useCallback((direction: 1 | -1) => {
+    const tick = () => {
+      const next = clamp(valueRef.current + direction * HOUR_STEP_SEC, direction);
+      if (next === valueRef.current) { stop(); return; }
+      onChange(next);
+      timerRef.current = setTimeout(tick, HOUR_DELAY_MS);
+    };
+    tick();
+  }, [clamp, onChange, stop]);
 
   const blockMinus = value <= minValue;
   const blockPlus = maxValue !== undefined && value >= maxValue;
+  // Hour buttons block on the same boundaries as the minute buttons — once
+  // value === minValue / maxValue, no direction has room to move regardless
+  // of step size.
 
   // setPointerCapture may throw in JSDOM — wrap in try/catch defensively.
   const safeCapture = (target: HTMLElement, pointerId: number) => {
@@ -107,19 +129,38 @@ export default function TimeStepper({
     <div className={`${styles.stepper} ${className ?? ''}`}>
       <button
         type="button"
-        className={styles.btn}
+        className={styles.btnHour}
         disabled={blockMinus}
-        aria-label="Reculer"
+        aria-label="Reculer d'une heure"
         onPointerDown={(e) => {
           if (blockMinus) return;
           safeCapture(e.currentTarget, e.pointerId);
-          startLoop(-1);
+          startHourLoop(-1);
         }}
         onPointerUp={stop}
         onPointerLeave={stop}
         onPointerCancel={stop}
       >
-        <Minus size={20} strokeWidth={2.5} />
+        <Minus size={22} strokeWidth={2.5} />
+        <span className={styles.btnUnit}>1h</span>
+      </button>
+
+      <button
+        type="button"
+        className={styles.btnMin}
+        disabled={blockMinus}
+        aria-label="Reculer d'une minute"
+        onPointerDown={(e) => {
+          if (blockMinus) return;
+          safeCapture(e.currentTarget, e.pointerId);
+          startMinuteLoop(-1);
+        }}
+        onPointerUp={stop}
+        onPointerLeave={stop}
+        onPointerCancel={stop}
+      >
+        <Minus size={16} strokeWidth={2.5} />
+        <span className={styles.btnUnit}>1m</span>
       </button>
 
       <div className={styles.display}>
@@ -129,19 +170,38 @@ export default function TimeStepper({
 
       <button
         type="button"
-        className={styles.btn}
+        className={styles.btnMin}
         disabled={blockPlus}
-        aria-label="Avancer"
+        aria-label="Avancer d'une minute"
         onPointerDown={(e) => {
           if (blockPlus) return;
           safeCapture(e.currentTarget, e.pointerId);
-          startLoop(1);
+          startMinuteLoop(1);
         }}
         onPointerUp={stop}
         onPointerLeave={stop}
         onPointerCancel={stop}
       >
-        <Plus size={20} strokeWidth={2.5} />
+        <Plus size={16} strokeWidth={2.5} />
+        <span className={styles.btnUnit}>1m</span>
+      </button>
+
+      <button
+        type="button"
+        className={styles.btnHour}
+        disabled={blockPlus}
+        aria-label="Avancer d'une heure"
+        onPointerDown={(e) => {
+          if (blockPlus) return;
+          safeCapture(e.currentTarget, e.pointerId);
+          startHourLoop(1);
+        }}
+        onPointerUp={stop}
+        onPointerLeave={stop}
+        onPointerCancel={stop}
+      >
+        <Plus size={22} strokeWidth={2.5} />
+        <span className={styles.btnUnit}>1h</span>
       </button>
 
       {blockMinus && (

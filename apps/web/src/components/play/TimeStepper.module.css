@@ -1,7 +1,8 @@
 .stepper {
   display: grid;
-  grid-template-columns: 56px 1fr 56px;
-  gap: 8px;
+  /* [-h] [-m] [display] [+m] [+h] — hours wider, minutes narrower */
+  grid-template-columns: 56px 40px 1fr 40px 56px;
+  gap: 6px;
   align-items: stretch;
   padding: 12px;
   background: rgba(0, 0, 0, 0.30);
@@ -10,35 +11,68 @@
   position: relative;
 }
 
-.btn {
+.btnHour, .btnMin {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(245, 240, 232, 0.16);
   border-radius: 4px;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #f5f0e8;
-  height: 56px;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
   transition: background 120ms, border-color 120ms, color 120ms;
+  gap: 2px;
 }
 
-.btn:not(:disabled):hover {
+.btnHour {
+  height: 56px;
+}
+
+.btnMin {
+  height: 56px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.btnUnit {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  color: rgba(245, 240, 232, 0.55);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.btnHour:not(:disabled):hover,
+.btnMin:not(:disabled):hover {
   background: rgba(201, 162, 39, 0.18);
   border-color: #c9a227;
   color: #c9a227;
 }
 
-.btn:not(:disabled):active {
+.btnHour:not(:disabled):hover .btnUnit,
+.btnMin:not(:disabled):hover .btnUnit {
+  color: #c9a227;
+}
+
+.btnHour:not(:disabled):active,
+.btnMin:not(:disabled):active {
   background: #c9a227;
   color: #1a2840;
   border-color: #c9a227;
 }
 
-.btn:disabled {
+.btnHour:not(:disabled):active .btnUnit,
+.btnMin:not(:disabled):active .btnUnit {
+  color: #1a2840;
+}
+
+.btnHour:disabled,
+.btnMin:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }

@@ -54,7 +54,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText } = render(
       <TimeStepper value={t} onChange={() => {}} minValue={t} nowSec={t} />
     );
-    const minus = getByLabelText('Reculer');
+    const minus = getByLabelText("Reculer d'une minute");
     expect(minus).toHaveProperty('disabled', true);
   });
 
@@ -72,7 +72,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText } = render(
       <TimeStepper value={t} onChange={onChange} minValue={0} nowSec={t} />
     );
-    const plus = getByLabelText('Avancer');
+    const plus = getByLabelText("Avancer d'une minute");
     fireEvent.pointerDown(plus, { pointerId: 1 });
     fireEvent.pointerUp(plus, { pointerId: 1 });
     expect(onChange).toHaveBeenCalledWith(t + 60);
@@ -84,7 +84,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText } = render(
       <TimeStepper value={t} onChange={onChange} minValue={0} nowSec={t} />
     );
-    const minus = getByLabelText('Reculer');
+    const minus = getByLabelText("Reculer d'une minute");
     fireEvent.pointerDown(minus, { pointerId: 1 });
     fireEvent.pointerUp(minus, { pointerId: 1 });
     expect(onChange).toHaveBeenCalledWith(t - 60);
@@ -96,7 +96,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText } = render(
       <TimeStepper value={t} onChange={onChange} minValue={t} nowSec={t} />
     );
-    const minus = getByLabelText('Reculer');
+    const minus = getByLabelText("Reculer d'une minute");
     fireEvent.pointerDown(minus, { pointerId: 1 });
     fireEvent.pointerUp(minus, { pointerId: 1 });
     expect(onChange).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText, unmount } = render(
       <TimeStepper value={t} onChange={onChange} minValue={0} nowSec={t} />
     );
-    const plus = getByLabelText('Avancer');
+    const plus = getByLabelText("Avancer d'une minute");
 
     fireEvent.pointerDown(plus, { pointerId: 1 });
     expect(onChange).toHaveBeenCalledTimes(1);
@@ -138,7 +138,7 @@ describe('<TimeStepper>', () => {
     const { getByLabelText, rerender, unmount } = render(
       <TimeStepper value={v} onChange={onChange} minValue={0} nowSec={t0} />
     );
-    const plus = getByLabelText('Avancer');
+    const plus = getByLabelText("Avancer d'une minute");
 
     fireEvent.pointerDown(plus, { pointerId: 1 });
     expect(onChange).toHaveBeenLastCalledWith(t0 + 60);
