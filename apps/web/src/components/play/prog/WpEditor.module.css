@@ -45,23 +45,6 @@
   margin: 6px 0 0;
 }
 
-.numInput {
-  width: 100%;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.30);
-  border: 1px solid rgba(245, 240, 232, 0.16);
-  border-radius: 4px;
-  color: #f5f0e8;
-  font-family: 'Space Mono', ui-monospace, monospace;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.numInput:focus {
-  outline: none;
-  border-color: #c9a227;
-}
-
 .pickBtn {
   width: 100%;
   padding: 14px 12px;

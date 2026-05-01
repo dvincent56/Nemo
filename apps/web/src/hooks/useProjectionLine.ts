@@ -280,10 +280,21 @@ function toProjectionZone(z: ExclusionZone): ProjectionZone | null {
  * Convert store's orderQueue to ProjectionSegments. Includes WPT orders so
  * the projection follows the route's waypoints (mirrors the engine tick's
  * applyOrder WPT case which recomputes heading toward the active waypoint).
- * AT_WAYPOINT triggers don't carry a time — they cascade — so we record the
- * predecessor id and let the worker activate WPTs sequentially as they are
- * captured.
+ *
+ * AT_WAYPOINT triggers don't carry a time — they cascade. We record the
+ * predecessor id on the segment and stamp triggerMs with the
+ * Number.MAX_SAFE_INTEGER sentinel so the segment never fires by pure time
+ * comparison. The worker rewrites triggerMs to the capture moment when the
+ * referenced WPT is captured. This matters for:
+ *   - WPT chain ordering (existing behaviour, preserved).
+ *   - Final cap (CAP/TWA with AT_WAYPOINT(lastWp)): used to fire at Date.now()
+ *     in the old code, getting overridden by the WPT chain heading and never
+ *     observable. Now it fires at the moment the last WP is captured and
+ *     drives the projection past the last WP.
+ *   - Sail-at-WP (SAIL with AT_WAYPOINT(wpN)): same fix — fires at WP capture.
  */
+const TRIGGER_MS_PENDING = Number.MAX_SAFE_INTEGER;
+
 function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: { type: string; time?: number; waypointOrderId?: string }; value: Record<string, unknown> }>): ProjectionSegment[] {
   return queue
     .filter((o) => o.type === 'CAP' || o.type === 'TWA' || o.type === 'SAIL' || o.type === 'MODE' || o.type === 'WPT')
@@ -298,11 +309,13 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
         const lat = Number(o.value['lat'] ?? 0);
         const lon = Number(o.value['lon'] ?? 0);
         const radiusRaw = Number(o.value['captureRadiusNm']);
-        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.5;
+        const captureRadiusNm = Number.isFinite(radiusRaw) && radiusRaw > 0 ? radiusRaw : 0.001;
         value = { lat, lon, captureRadiusNm };
       }
 
-      let triggerMs = Date.now();
+      // Default: AT_WAYPOINT triggers are pending until the worker sees the
+      // referenced WPT captured. AT_TIME stamps the order in ms.
+      let triggerMs = TRIGGER_MS_PENDING;
       if (o.trigger.type === 'AT_TIME' && o.trigger.time) {
         // OrderTrigger.time is Unix seconds (matches engine convention
         // `nowUnix >= trigger.time`); the projection worker expects
@@ -311,14 +324,14 @@ function orderQueueToSegments(queue: Array<{ id: string; type: string; trigger: 
         // worker applies all CAP/TWA orders on the first iteration —
         // collapsing the projection to a straight line in the last heading.
         triggerMs = o.trigger.time * 1000;
+      } else if (o.trigger.type === 'IMMEDIATE') {
+        triggerMs = Date.now();
       }
 
       const seg: ProjectionSegment = { triggerMs, type: o.type as ProjectionSegment['type'], value };
-      if (o.type === 'WPT') {
-        seg.id = o.id;
-        if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
-          seg.waypointPredecessorId = o.trigger.waypointOrderId;
-        }
+      seg.id = o.id;
+      if (o.trigger.type === 'AT_WAYPOINT' && o.trigger.waypointOrderId) {
+        seg.waypointPredecessorId = o.trigger.waypointOrderId;
       }
       return seg;
     });
@@ -386,7 +399,10 @@ function buildMarkerGeoJson(
     });
   }
 
-  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → offset from WP
+  // Sail orders: AT_TIME → projection lookup; AT_WAYPOINT → no inline marker
+  // (the previous offset-east-of-WP placement cluttered the view). Sail-at-WP
+  // information is surfaced on WP hover instead — see MapCanvas's hover popup
+  // bound to the prog-order-markers-wp layer.
   for (const sail of draft.sailOrders) {
     if (sail.trigger.type === 'AT_TIME') {
       const pos = findProjectionPointAtTime(run, sail.trigger.time * 1000);
@@ -394,17 +410,6 @@ function buildMarkerGeoJson(
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
-        properties: { kind: 'sail', id: sail.id },
-      });
-    } else {
-      const trig = sail.trigger; // narrow once for TS
-      const wp = draft.wpOrders.find((w) => w.id === trig.waypointOrderId);
-      if (!wp) continue;
-      // ~0.001° east ≈ 60 m at mid-lat — visible separation from the wp
-      // marker without drifting off the actual location at typical zooms.
-      features.push({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [wp.lon + 0.001, wp.lat] },
         properties: { kind: 'sail', id: sail.id },
       });
     }
@@ -602,11 +607,12 @@ export function useProjectionLine(map: maplibregl.Map | null): void {
     writeRunToMap(m, result, 'committed');
 
     // Drive the committed line opacity from `isDirty`. When draft is present,
-    // the committed projection becomes the "ghost" reference at 40% so the
-    // draft can dominate visually; when not, it's the only line and stays at
-    // full opacity (~0.85, the legacy value baked into the layer paint).
+    // the committed projection becomes a faint "ghost" reference at 25% so
+    // the draft (full opacity) is unambiguously the line the user is editing;
+    // when not, the committed line is the only one and stays at full opacity
+    // (~0.85, the legacy value baked into the layer paint).
     if (m.getLayer('projection-line-committed-layer')) {
-      m.setPaintProperty('projection-line-committed-layer', 'line-opacity', result.draft ? 0.4 : 0.85);
+      m.setPaintProperty('projection-line-committed-layer', 'line-opacity', result.draft ? 0.25 : 0.85);
     }
 
     if (result.draft) {

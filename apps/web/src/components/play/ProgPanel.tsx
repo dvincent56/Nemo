@@ -1,12 +1,16 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { GameBalance } from '@nemo/game-balance/browser';
-import { useGameStore, commitDraft } from '@/lib/store';
+import { useGameStore, commitDraft, firstEffectiveHeading } from '@/lib/store';
 import type { ProgMode } from '@/lib/prog/types';
-import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
+import { defaultCapAnchor, defaultSailAnchor, floorForNow, ceilingForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
+import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
+import { getCachedPolar } from '@/lib/polar';
+import { earliestSailSlot } from '@/lib/prog/transitionLock';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import ProgBanner from './prog/ProgBanner';
+import ProgToast from './prog/ProgToast';
 import CapEditor from './prog/CapEditor';
 import SailEditor from './prog/SailEditor';
 import WpEditor from './prog/WpEditor';
@@ -34,6 +38,15 @@ export default function ProgPanel(): ReactElement {
   const hudTwd = useGameStore((s) => s.hud.twd);
   const hudLat = useGameStore((s) => s.hud.lat);
   const hudLon = useGameStore((s) => s.hud.lon);
+  const hudTwa = useGameStore((s) => s.hud.twa);
+  const hudTws = useGameStore((s) => s.hud.tws);
+  const hudBoatClass = useGameStore((s) => s.hud.boatClass);
+  const hudBspMultiplier = useGameStore((s) => s.hud.bspBaseMultiplier);
+  const sailAuto = useGameStore((s) => s.sail.sailAuto);
+  const sailCurrentSail = useGameStore((s) => s.sail.currentSail);
+  const sailTransitionEndMs = useGameStore((s) => s.sail.transitionEndMs);
+  const sailManeuverEndMs = useGameStore((s) => s.sail.maneuverEndMs);
+  const sailManeuverKind = useGameStore((s) => s.sail.maneuverKind);
 
   // Phase 2b Task 3: editing state lives in the store so MapCanvas marker
   // clicks can drive the editor. The 'NEW' magic id (cap/sail/wp create
@@ -41,10 +54,13 @@ export default function ProgPanel(): ReactElement {
   // as ProgPanel-internal conventions on top of the EditingOrder.id field.
   const editing = useGameStore((s) => s.prog.editingOrder);
   const setEditing = useGameStore((s) => s.setEditingOrder);
+  const pendingNewWpId = useGameStore((s) => s.prog.pendingNewWpId);
+  const setPendingNewWpId = useGameStore((s) => s.setPendingNewWpId);
+  const notice = useGameStore((s) => s.prog.notice);
+  const setProgNotice = useGameStore((s) => s.setProgNotice);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
-  const [switchModeTo, setSwitchModeTo] = useState<ProgMode | null>(null);
   const [bannerDismissedAtCount, setBannerDismissedAtCount] = useState<number | null>(null);
 
   // 1Hz tick for sliding floor + obsolescence
@@ -52,6 +68,15 @@ export default function ProgPanel(): ReactElement {
     const id = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Auto-dismiss the desync notice after ~5s. Re-keys on `notice.id` so a
+  // back-to-back trigger restarts the timer instead of being swallowed by a
+  // stale cleanup.
+  useEffect(() => {
+    if (!notice) return;
+    const id = setTimeout(() => setProgNotice(null), 5000);
+    return () => clearTimeout(id);
+  }, [notice, setProgNotice]);
 
   const isDirty = useMemo(() => !deepEqDraft(draft, committed), [draft, committed]);
 
@@ -63,9 +88,54 @@ export default function ProgPanel(): ReactElement {
 
   const handleConfirm = (): void => {
     const result = commitDraft(draft, nowSec);
-    if (result.ok) markCommitted();
+    if (!result.ok) return;
+    markCommitted();
     // Toast handling can be added here in a follow-up; the visual feedback is
     // the footer flipping back to "Programmation à jour" once committed.
+
+    // Optimistic HUD update — same pattern as Compass.apply().
+    // Only fires when the new programming has an order that takes effect within
+    // the next ~30 s (an IMMEDIATE WP, or a CAP with `time <= now+30s`). This
+    // makes the boat visibly turn and the projection refresh immediately
+    // instead of waiting up to ~30 s for the next server tick.
+    if (typeof hudLat !== 'number' || typeof hudLon !== 'number' || !hudBoatClass) return;
+    const next = firstEffectiveHeading(draft, { lat: hudLat, lon: hudLon }, nowSec);
+    if (!next) return;
+    // Skip if the new heading is essentially the current one (avoid visible
+    // twitch when the WP head is straight ahead).
+    if (Math.abs(((next.newHdg - hudHdg + 540) % 360) - 180) <= 5) return;
+
+    const polar = getCachedPolar(hudBoatClass);
+    if (!polar) return;
+
+    const patch = predictAfterHdg({
+      newHdg: next.newHdg,
+      prevTwa: hudTwa,
+      twd: hudTwd,
+      tws: hudTws,
+      currentSail: sailCurrentSail,
+      sailAuto,
+      bspBaseMultiplier: hudBspMultiplier,
+      transitionEndMs: sailTransitionEndMs,
+      maneuverEndMs: sailManeuverEndMs,
+      maneuverKind: sailManeuverKind,
+      polar,
+      boatClass: hudBoatClass,
+      now: Date.now(),
+    });
+
+    const store = useGameStore.getState();
+    store.applyOptimisticHud(patch.hud);
+    if (patch.sail.maneuver) {
+      store.applyOptimisticManeuver({
+        maneuverKind: patch.sail.maneuver.kind,
+        maneuverStartMs: patch.sail.maneuver.startMs,
+        maneuverEndMs: patch.sail.maneuver.endMs,
+      });
+    }
+    if (patch.sail.sailChange) {
+      store.setOptimisticSailChange(patch.sail.sailChange);
+    }
   };
 
   const handleCancelAll = (): void => {
@@ -92,6 +162,7 @@ export default function ProgPanel(): ReactElement {
           defaultHeading={hudHdg}
           defaultTime={defaultCapAnchor(draft, nowSec)}
           minValueSec={floorForNow(nowSec)}
+          maxValueSec={ceilingForNow(nowSec)}
           nowSec={nowSec}
           index={index}
           onCancel={() => setEditing(null)}
@@ -119,6 +190,34 @@ export default function ProgPanel(): ReactElement {
       );
       const availableWps = draft.wpOrders.filter((wp) => !wpIdsUsedByOtherSails.has(wp.id));
 
+      // Determine the boat's auto-mode state at the moment THIS order would
+      // fire. We only consider AT_TIME prior orders here — AT_WAYPOINT
+      // triggers depend on routing dynamics that aren't ordered linearly
+      // against AT_TIME triggers. If there's no AT_TIME predecessor, fall
+      // back to the live boat state (`sail.sailAuto`). This is what powers
+      // the "Auto button disabled when already in auto" UX in SailEditor.
+      const editingTime = (initialOrder?.trigger.type === 'AT_TIME'
+        ? initialOrder.trigger.time
+        : null) ?? defaultSailAnchor(draft, nowSec);
+      const priorAtTimeSails = draft.sailOrders
+        .filter((s) => s.id !== editing.id && s.trigger.type === 'AT_TIME')
+        .filter((s) => (s.trigger as { time: number }).time < editingTime)
+        .sort((a, b) => (b.trigger as { time: number }).time - (a.trigger as { time: number }).time);
+      const priorOrder = priorAtTimeSails[0];
+      const priorIsAuto = priorOrder ? priorOrder.action.auto : sailAuto;
+
+      // Transition lockout floor: AT_TIME sail orders cannot fire while a
+      // prior sail transition is still running. earliestSailSlot walks the
+      // existing AT_TIME orders, simulating each transition, and returns the
+      // earliest free slot. Excludes the order being edited so the user can
+      // freely move it without colliding with itself.
+      const sailTransitionFloor = earliestSailSlot(
+        draft,
+        sailCurrentSail,
+        isNew ? null : editing.id,
+        nowSec,
+      );
+
       return (
         <SailEditor
           initialOrder={initialOrder}
@@ -126,7 +225,10 @@ export default function ProgPanel(): ReactElement {
           availableWps={availableWps}
           defaultTime={defaultSailAnchor(draft, nowSec)}
           minValueSec={floorForNow(nowSec)}
+          maxValueSec={ceilingForNow(nowSec)}
           nowSec={nowSec}
+          priorIsAuto={priorIsAuto}
+          minTimeFromTransition={sailTransitionFloor}
           onCancel={() => setEditing(null)}
           onSave={(order) => {
             if (isNew) {
@@ -156,9 +258,23 @@ export default function ProgPanel(): ReactElement {
           index={index}
           predecessorIndex={predecessorIndex}
           boat={{ lat: hudLat ?? 0, lon: hudLon ?? 0 }}
-          minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 3}
-          onCancel={() => setEditing(null)}
+          minWpDistanceNm={GameBalance.programming?.minWpDistanceNm ?? 0.5}
+          onCancel={() => {
+            // If this WP was tentatively placed by a click-on-map and the
+            // user is bailing out of the editor without confirming, remove
+            // it from the draft so the placement is fully undone.
+            if (pendingNewWpId && initialOrder?.id === pendingNewWpId) {
+              removeWpOrder(pendingNewWpId);
+              setPendingNewWpId(null);
+            }
+            setEditing(null);
+          }}
           onSave={(order) => {
+            // Confirmed — clear the tentative marker so the WP becomes a
+            // regular committed-to-draft entry.
+            if (pendingNewWpId && pendingNewWpId === order.id) {
+              setPendingNewWpId(null);
+            }
             updateWpOrder(order.id, order);
             setEditing(null);
           }}
@@ -220,6 +336,12 @@ export default function ProgPanel(): ReactElement {
   // Idle / Dirty queue view
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {notice && (
+        <ProgToast
+          message={notice.message}
+          onDismiss={() => setProgNotice(null)}
+        />
+      )}
       {bannerDismissedAtCount !== obsoleteCount && obsoleteCount > 0 && (
         <ProgBanner
           obsoleteCount={obsoleteCount}
@@ -230,21 +352,12 @@ export default function ProgPanel(): ReactElement {
         draft={draft}
         nowSec={nowSec}
         onSwitchMode={(m: ProgMode) => {
-          // Same mode → no-op
+          // Soft toggle — both tracks can coexist in the draft. The inactive
+          // track is dropped only when the user commits (markCommitted) so
+          // they can start drafting in the new mode without losing what they
+          // had in the previous one.
           if (m === draft.mode) return;
-          // Check if the OTHER track is non-empty
-          const hasIncompatibleOrders =
-            (m === 'cap' && (draft.wpOrders.length > 0 || draft.finalCap !== null))
-            || (m === 'wp' && draft.capOrders.length > 0);
-          // Also check sail orders that would be dropped (AT_WAYPOINT in cap mode)
-          const hasIncompatibleSails =
-            m === 'cap'
-            && draft.sailOrders.some((o) => o.trigger.type === 'AT_WAYPOINT');
-          if (hasIncompatibleOrders || hasIncompatibleSails) {
-            setSwitchModeTo(m);
-          } else {
-            setProgMode(m);
-          }
+          setProgMode(m);
         }}
         onAddCap={() => setEditing({ kind: 'cap', id: 'NEW' })}
         onAddWp={() => setEditing({ kind: 'wp', id: 'NEW' })}
@@ -299,22 +412,6 @@ export default function ProgPanel(): ReactElement {
         onCancel={() => setClearAllOpen(false)}
       />
 
-      <ConfirmDialog
-        open={switchModeTo !== null}
-        title="Changer de mode ?"
-        body={
-          switchModeTo === 'cap'
-            ? 'Les waypoints, le cap final, et les ordres voile à un waypoint seront supprimés. Les ordres voile à une heure seront conservés.'
-            : 'Les ordres CAP seront supprimés.'
-        }
-        confirmLabel="Changer"
-        tone="primary"
-        onConfirm={() => {
-          if (switchModeTo) setProgMode(switchModeTo);
-          setSwitchModeTo(null);
-        }}
-        onCancel={() => setSwitchModeTo(null)}
-      />
     </div>
   );
 }

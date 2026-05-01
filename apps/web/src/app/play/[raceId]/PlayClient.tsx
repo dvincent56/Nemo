@@ -436,7 +436,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           if (typeof lat !== 'number' || typeof lon !== 'number') continue;
           const radiusRaw = (o.value as { captureRadiusNm?: unknown }).captureRadiusNm;
           const radius =
-            typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.5;
+            typeof radiusRaw === 'number' && radiusRaw > 0 ? radiusRaw : 0.001;
           const d = haversinePosNM(
             { lat: boatLatLocal, lon: boatLonLocal },
             { lat, lon },
@@ -604,6 +604,97 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     return () => cancelAnimationFrame(handle);
   }, [routerRoute]);
 
+  // Periodic capture detection — every 5s, scan committed.wpOrders for any
+  // WP within the boat's capture radius and remove it from BOTH committed
+  // and draft. The engine has its own authoritative state; this client-side
+  // mirror keeps the panel/projection in sync so a Confirmer doesn't re-emit
+  // an already-traversed WP (which would otherwise make the boat backtrack
+  // — VR-style bug).
+  useEffect(() => {
+    const tick = (): void => {
+      const state = useGameStore.getState();
+      const lat = state.hud.lat;
+      const lon = state.hud.lon;
+      if (typeof lat !== 'number' || typeof lon !== 'number') return;
+
+      const wpOrders = state.prog.committed.wpOrders;
+      if (wpOrders.length === 0) return;
+
+      const boatPos = { lat, lon };
+      const captured = new Set<string>();
+
+      // Pass 1: WPs whose center is within captureRadius of the boat.
+      for (const wp of wpOrders) {
+        const dNm = haversinePosNM(boatPos, { lat: wp.lat, lon: wp.lon });
+        const radius = wp.captureRadiusNm > 0 ? wp.captureRadiusNm : 0.001;
+        if (dNm < radius) captured.add(wp.id);
+      }
+
+      // Pass 2: walk the AT_WAYPOINT chain backward from each captured WP.
+      // If WP C is captured, every predecessor (B, A, …) referenced through
+      // trigger.waypointOrderId is also done — engine semantics.
+      for (const wp of wpOrders) {
+        if (!captured.has(wp.id)) continue;
+        if (wp.trigger.type !== 'AT_WAYPOINT') continue;
+        let prevId: string | undefined = wp.trigger.waypointOrderId;
+        const guard = new Set<string>();
+        while (prevId && !guard.has(prevId)) {
+          guard.add(prevId);
+          captured.add(prevId);
+          const prev = wpOrders.find((x) => x.id === prevId);
+          if (!prev || prev.trigger.type !== 'AT_WAYPOINT') break;
+          prevId = prev.trigger.waypointOrderId;
+        }
+      }
+
+      if (captured.size > 0) {
+        // Desync guard: if the user is currently editing an order whose
+        // referenced WP was just captured, the editor is about to operate on
+        // stale state (the WP — and any sail order or finalCap pinned to it
+        // — disappears from the draft on the next set call). Close the
+        // editor first and surface a one-shot notice so the player notices.
+        const editing = state.prog.editingOrder;
+        let editorAffected = false;
+        if (editing) {
+          if (editing.kind === 'wp' && captured.has(editing.id)) {
+            editorAffected = true;
+          } else if (editing.kind === 'sail') {
+            const sailOrder = state.prog.draft.sailOrders.find(
+              (s) => s.id === editing.id,
+            );
+            if (
+              sailOrder
+              && sailOrder.trigger.type === 'AT_WAYPOINT'
+              && captured.has(sailOrder.trigger.waypointOrderId)
+            ) {
+              editorAffected = true;
+            }
+          } else if (editing.kind === 'finalCap') {
+            const fc = state.prog.draft.finalCap;
+            if (fc && captured.has(fc.trigger.waypointOrderId)) {
+              editorAffected = true;
+            }
+          }
+        }
+
+        state.removeCapturedWps([...captured]);
+
+        if (editorAffected) {
+          state.setEditingOrder(null);
+          state.setProgNotice({
+            id: `desync-${Date.now()}`,
+            message:
+              'Un waypoint a été atteint pendant votre édition — éditeur fermé.',
+          });
+        }
+      }
+    };
+
+    tick(); // initial run
+    const interval = setInterval(tick, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (access.kind === 'blocked') {
     return (
       <div className={styles.blockedShell}>
@@ -739,7 +830,25 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <SailPanel />
             </SlidePanel>
-            <SlidePanel side="right" width={420} title="Programmation" isOpen={activePanel === 'programming'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
+            <SlidePanel
+              side="right"
+              width={420}
+              title="Programmation"
+              isOpen={activePanel === 'programming'}
+              onClose={() => {
+                // Closing the prog panel without confirming = discard the
+                // in-flight draft. This rolls draft back to committed (so
+                // the projection stops previewing un-saved orders) and
+                // clears any open editor / map-pick state so the next
+                // open lands on a clean queue view.
+                const state = useGameStore.getState();
+                state.resetDraft();
+                state.setEditingOrder(null);
+                state.setPickingWp(false);
+                state.closePanel();
+              }}
+              mode={panelMode}
+            >
               <ProgPanel />
             </SlidePanel>
             <SlidePanel

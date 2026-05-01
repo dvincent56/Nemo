@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "updatedAt": "2026-04-14T00:00:00Z",
-  "updatedBy": "bootstrap",
+  "version": "1.1.0",
+  "updatedAt": "2026-04-29T00:00:00Z",
+  "updatedBy": "imoca-and-ultim-rebalance",
   "wear": {
     "minCondition": 35,
     "maxSpeedPenalty": 8,
@@ -18,35 +18,35 @@
     "baseRatesPerHour": {
       "hull": 0.003,
       "rig": 0.006,
-      "sails": 0.010,
+      "sails": 0.01,
       "electronics": 0.002
     },
     "windMultipliers": {
       "zeroBelowKnots": 15,
       "rampEndKnots": 25,
-      "midFactor": 1.0,
+      "midFactor": 1,
       "midEndKnots": 35,
       "highFactor": 2.5,
       "stormEndKnots": 45,
-      "stormFactor": 5.0
+      "stormFactor": 5
     },
     "swellMultipliers": {
       "zeroBelowMeters": 1.5,
-      "rampEndMeters": 4.0,
-      "midFactor": 1.0,
-      "midEndMeters": 7.0,
+      "rampEndMeters": 4,
+      "midFactor": 1,
+      "midEndMeters": 7,
       "highFactor": 2.5,
       "shortPeriodThresholdSec": 8,
       "shortPeriodBonus": 0.3,
       "dirFaceFactor": 1.5,
-      "dirBeamFactor": 1.0,
+      "dirBeamFactor": 1,
       "dirBackFactor": 0.5
     },
     "upgradeMultipliers": {
       "foils_rig": 1.8,
       "foils_hull": 1.3,
       "reinforced_hull": 0.45,
-      "carbon_rig_normal": 1.0,
+      "carbon_rig_normal": 1,
       "carbon_rig_strong": 1.6,
       "carbon_threshold_kts": 35,
       "kevlar_sails": 0.35,
@@ -55,8 +55,8 @@
     }
   },
   "swell": {
-    "thresholdMeters": 2.0,
-    "maxHeightMeters": 5.0,
+    "thresholdMeters": 2,
+    "maxHeightMeters": 5,
     "maxSpeedBonus": 5,
     "maxSpeedMalus": 4,
     "sideMaxMalus": 2,
@@ -128,19 +128,19 @@
       "CRUISER_RACER": 0.5,
       "MINI650": 0.6,
       "FIGARO": 0.8,
-      "CLASS40": 1.0,
+      "CLASS40": 1,
       "OCEAN_FIFTY": 1.6,
       "IMOCA60": 1.4,
-      "ULTIM": 2.0
+      "ULTIM": 2
     },
     "rankMultipliers": [
       {
         "threshold": 0.1,
-        "multiplier": 3.0
+        "multiplier": 3
       },
       {
         "threshold": 0.25,
-        "multiplier": 2.0
+        "multiplier": 2
       },
       {
         "threshold": 0.5,
@@ -151,14 +151,14 @@
         "multiplier": 1.1
       },
       {
-        "threshold": 1.0,
-        "multiplier": 1.0
+        "threshold": 1,
+        "multiplier": 1
       }
     ],
     "sponsorVisibilityRatio": 0.5,
     "leaderBonusRatio": 0.4,
     "streakBonus": 0.1,
-    "streakMax": 2.0
+    "streakMax": 2
   },
   "upgrades": {
     "slots": [
@@ -176,7 +176,7 @@
           0,
           0
         ],
-        "maintenanceMul": 1.0
+        "maintenanceMul": 1
       },
       "BRONZE": {
         "priceRange": [
@@ -190,14 +190,14 @@
           3500,
           6500
         ],
-        "maintenanceMul": 2.0
+        "maintenanceMul": 2
       },
       "GOLD": {
         "priceRange": [
           7000,
           11000
         ],
-        "maintenanceMul": 3.0
+        "maintenanceMul": 3
       },
       "PROTO": {
         "priceRange": null,
@@ -206,9 +206,9 @@
     },
     "slotsByClass": {
       "CRUISER_RACER": {
-        "HULL": "absent",
+        "HULL": "open",
         "MAST": "absent",
-        "SAILS": "absent",
+        "SAILS": "open",
         "FOILS": "absent",
         "KEEL": "absent",
         "ELECTRONICS": "absent",
@@ -270,6 +270,101 @@
       }
     },
     "items": [
+      {
+        "id": "hull-cruiser-racer-standard",
+        "slot": "HULL",
+        "tier": "SERIE",
+        "name": "Coque Croisière-Régate Standard",
+        "profile": "polyvalent",
+        "description": "Coque de série croisière-régate, polyvalente et fiable sur tous les allures.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-cruiser-racer-dacron",
+        "slot": "SAILS",
+        "tier": "SERIE",
+        "name": "Voiles Dacron Croisière-Régate",
+        "profile": "polyvalent",
+        "description": "Jeu de voiles dacron de série, polyvalent et durable.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 0,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0, 0],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "hull-cruiser-racer-racing-prep",
+        "slot": "HULL",
+        "tier": "BRONZE",
+        "name": "Préparation Course Croisière-Régate",
+        "profile": "finition racing",
+        "description": "Antifouling racing et carène poncée. Gain de glisse régulier, légère sur-usure de la coque.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 2500,
+        "effects": {
+          "speedByTwa": [0.02, 0.02, 0.03, 0.03, 0.02],
+          "speedByTws": [0.01, 0.02, 0.04],
+          "wearMul": { "hull": 1.15 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-cruiser-racer-performance",
+        "slot": "SAILS",
+        "tier": "BRONZE",
+        "name": "Voiles Performance Croisière-Régate",
+        "profile": "rendement tous allures",
+        "description": "Jeu de voiles laminées course-croisière. Gain notable sur tous les allures dans la brise.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 3000,
+        "effects": {
+          "speedByTwa": [0.03, 0.03, 0.04, 0.04, 0.02],
+          "speedByTws": [0.01, 0.03, 0.06],
+          "wearMul": { "sail": 1.3 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-cruiser-racer-racing",
+        "slot": "SAILS",
+        "tier": "SILVER",
+        "name": "Voiles Course Croisière-Régate",
+        "profile": "portant débridé",
+        "description": "Garde-robe course haut de gamme avec grand spi asymétrique. Gain fort au portant dans la brise.",
+        "compat": ["CRUISER_RACER"],
+        "cost": 7500,
+        "effects": {
+          "speedByTwa": [0.03, 0.04, 0.06, 0.09, 0.05],
+          "speedByTws": [0.02, 0.05, 0.13],
+          "wearMul": { "sail": 1.5 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
       {
         "id": "hull-class40-standard",
         "slot": "HULL",
@@ -349,14 +444,14 @@
           "speedByTwa": [
             -0.03,
             -0.02,
-            0.04,
-            0.08,
-            0.04
+            0.03,
+            0.05,
+            0.03
           ],
           "speedByTws": [
             0,
-            0.02,
-            0.03
+            0.01,
+            0.02
           ],
           "wearMul": {
             "hull": 1.2
@@ -383,16 +478,16 @@
         },
         "effects": {
           "speedByTwa": [
-            0.06,
-            0.06,
-            0.06,
-            0.06,
-            0.06
+            0.04,
+            0.04,
+            0.04,
+            0.04,
+            0.04
           ],
           "speedByTws": [
-            0.02,
-            0.02,
-            0.02
+            0.01,
+            0.01,
+            0.01
           ],
           "wearMul": {
             "hull": 1.8
@@ -442,8 +537,7 @@
         "profile": "vif raidi",
         "description": "Mât carbone standard, plus rigide et plus réactif.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 3200,
         "effects": {
@@ -476,8 +570,7 @@
         "profile": "stable musclé",
         "description": "Carbone haut module, manœuvres accélérées et puissance accrue.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 5800,
         "effects": {
@@ -550,9 +643,7 @@
         "profile": "polyvalent stable",
         "description": "Mylar laminé, bon équilibre rendement/durabilité.",
         "compat": [
-          "CLASS40",
-          "IMOCA60",
-          "MINI650"
+          "CLASS40"
         ],
         "cost": 5800,
         "effects": {
@@ -585,8 +676,7 @@
         "profile": "rendement haut",
         "description": "Technologie 3Di North Sails, rendement exceptionnel sur tous les allures.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 10000,
         "effects": {
@@ -598,9 +688,9 @@
             0.04
           ],
           "speedByTws": [
+            0.01,
             0.02,
-            0.03,
-            0.02
+            0.01
           ],
           "wearMul": {
             "sail": 1.45
@@ -619,8 +709,7 @@
         "profile": "sur-mesure expert",
         "description": "Voiles taillées spécifiquement pour le bateau, réservées aux experts.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": null,
         "unlockCriteria": {
@@ -628,16 +717,16 @@
         },
         "effects": {
           "speedByTwa": [
-            0.06,
-            0.07,
-            0.08,
-            0.07,
-            0.06
+            0.01,
+            0.02,
+            0.02,
+            0.02,
+            0.01
           ],
           "speedByTws": [
+            0.02,
             0.03,
-            0.04,
-            0.03
+            0.02
           ],
           "wearMul": {
             "sail": 1.6
@@ -735,16 +824,16 @@
         "cost": 6500,
         "effects": {
           "speedByTwa": [
-            -0.04,
-            -0.02,
-            0.08,
-            0.14,
-            0.05
+            -0.03,
+            -0.01,
+            0.04,
+            0.07,
+            0.03
           ],
           "speedByTws": [
-            -0.02,
-            0.06,
-            0.1
+            -0.01,
+            0.03,
+            0.05
           ],
           "wearMul": {
             "hull": 1.8,
@@ -781,16 +870,16 @@
         },
         "effects": {
           "speedByTwa": [
-            -0.06,
             -0.03,
-            0.12,
-            0.22,
-            0.1
+            -0.02,
+            0.06,
+            0.08,
+            0.04
           ],
           "speedByTws": [
-            -0.03,
-            0.08,
-            0.14
+            -0.02,
+            0.04,
+            0.05
           ],
           "wearMul": {
             "hull": 2.2,
@@ -850,8 +939,7 @@
         "profile": "puissance redresseur",
         "description": "Quille pendulaire améliorant le couple de redressement au près.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 2800,
         "effects": {
@@ -884,8 +972,7 @@
         "profile": "couple max",
         "description": "Quille basculante pour un couple de redressement maximal.",
         "compat": [
-          "CLASS40",
-          "IMOCA60"
+          "CLASS40"
         ],
         "cost": 5600,
         "effects": {
@@ -1145,6 +1232,117 @@
         }
       },
       {
+        "id": "polish-bronze",
+        "slot": "REINFORCEMENT",
+        "tier": "BRONZE",
+        "name": "Polish Bronze",
+        "profile": "finition glisse",
+        "description": "Antifouling racing et carène poncée. Gain de glisse régulier sur tous les angles, usure de coque légèrement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 3000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.01,
+            0.01,
+            0.01
+          ],
+          "wearMul": {
+            "hull": 1.15
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "polish-silver",
+        "slot": "REINFORCEMENT",
+        "tier": "SILVER",
+        "name": "Polish Silver",
+        "profile": "finition course",
+        "description": "Polish de carène complet et appendices polis miroir. Glisse nette, usure de coque sensiblement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 8000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "wearMul": {
+            "hull": 1.25
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "polish-gold",
+        "slot": "REINFORCEMENT",
+        "tier": "GOLD",
+        "name": "Polish Gold",
+        "profile": "préparation course pro",
+        "description": "Préparation course professionnelle : antifouling teflon haut de gamme, polish miroir intégral. Gain maximal, usure de coque fortement accrue.",
+        "compat": [
+          "FIGARO",
+          "CLASS40",
+          "OCEAN_FIFTY",
+          "IMOCA60",
+          "ULTIM"
+        ],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0.03,
+            0.03,
+            0.03
+          ],
+          "wearMul": {
+            "hull": 1.4
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "hull-figaro-monotype",
         "slot": "HULL",
         "tier": "SERIE",
@@ -1314,6 +1512,90 @@
         }
       },
       {
+        "id": "foils-figaro-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils Figaro III Mk2",
+        "profile": "foils améliorés",
+        "description": "Version affinée des foils monotype Figaro III. Lift renforcé au reaching et portant, légère sur-sollicitation.",
+        "compat": ["FIGARO"],
+        "cost": 8000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.02, 0.07, 0.12, 0.03],
+          "speedByTws": [-0.01, 0.04, 0.07],
+          "wearMul": { "hull": 1.25, "rig": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 10 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-figaro-proto",
+        "slot": "FOILS",
+        "tier": "PROTO",
+        "name": "Foils Figaro III Proto",
+        "profile": "vol maximum",
+        "description": "Foils proto sur-mesure pour le Figaro III — vol partiel agressif au portant, gains spectaculaires dans la brise.",
+        "compat": ["FIGARO"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 35,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [-0.01, 0.03, 0.10, 0.18, 0.04],
+          "speedByTws": [-0.02, 0.06, 0.12],
+          "wearMul": { "hull": 1.45, "rig": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 12 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-figaro-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di Figaro",
+        "profile": "rendement gros temps",
+        "description": "Voiles 3Di haute performance pour le Figaro III. Gain notable dans la brise, légère sur-usure.",
+        "compat": ["FIGARO"],
+        "cost": 9000,
+        "effects": {
+          "speedByTwa": [0.01, 0.02, 0.04, 0.03, 0.01],
+          "speedByTws": [0.01, 0.02, 0.04],
+          "wearMul": { "sail": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-figaro-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure Figaro",
+        "profile": "régate ultime",
+        "description": "Garde-robe sur-mesure North pour le Figaro III — performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": ["FIGARO"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 25,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0.01, 0.02, 0.05, 0.03, 0.01],
+          "speedByTws": [0.01, 0.03, 0.08],
+          "wearMul": { "sail": 1.6 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "keel-figaro-monotype",
         "slot": "KEEL",
         "tier": "SERIE",
@@ -1478,6 +1760,86 @@
               0
             ]
           }
+        }
+      },
+      {
+        "id": "foils-ocean-fifty-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils Ocean Fifty Mk2",
+        "profile": "foils intermédiaires",
+        "description": "Foils tunés génération intermédiaire. Lift accru au largue et portant, léger surcroît de sollicitation de la structure.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 12000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.02, 0.06, 0.08, 0.02],
+          "speedByTws": [-0.01, 0.04, 0.05],
+          "wearMul": { "hull": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 10 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-ocean-fifty-proto",
+        "slot": "FOILS",
+        "tier": "SILVER",
+        "name": "Foils Ocean Fifty Proto",
+        "profile": "vol ultime course",
+        "description": "Foils sur-mesure Multi 50 — lift maximal au portant, surcroît de sollicitation marquée sur les bras.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 28000,
+        "effects": {
+          "speedByTwa": [-0.01, 0.03, 0.08, 0.14, 0.03],
+          "speedByTws": [-0.02, 0.06, 0.08],
+          "wearMul": { "hull": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 12 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ocean-fifty-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di Ocean Fifty",
+        "profile": "course gros temps",
+        "description": "Garde-robe 3Di haute performance optimisée pour la brise. Gain net dans le medium/fort, légère sur-usure des voiles.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.03, 0.06],
+          "wearMul": { "sail": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ocean-fifty-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure Ocean Fifty",
+        "profile": "régate ultime gros temps",
+        "description": "Garde-robe sur-mesure North 3Di pour Multi 50 — performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": ["OCEAN_FIFTY"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.05, 0.09],
+          "wearMul": { "sail": 1.6 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
         }
       },
       {
@@ -1748,34 +2110,158 @@
         "cost": 0,
         "effects": {
           "speedByTwa": [
-            -0.04,
             0,
-            0.1,
-            0.2,
-            0.1
+            0,
+            0,
+            0,
+            0
           ],
           "speedByTws": [
-            -0.02,
-            0.08,
-            0.1
+            0,
+            0,
+            0
+          ],
+          "wearMul": {},
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-ultim-mk2",
+        "slot": "FOILS",
+        "tier": "BRONZE",
+        "name": "Foils ULTIM Mk2",
+        "profile": "foils intermédiaires",
+        "description": "Foils tunés génération intermédiaire. Lift correct au largue, légère sur-sollicitation de la coque.",
+        "compat": [
+          "ULTIM"
+        ],
+        "cost": 10000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0.02,
+            0.04,
+            0.04,
+            0
+          ],
+          "speedByTws": [
+            -0.01,
+            0.02,
+            0.03
           ],
           "wearMul": {
-            "hull": 1.8,
-            "rig": 1.4
+            "hull": 1.05
           },
           "maneuverMul": {},
           "polarTargetsDeg": null,
-          "activation": {
-            "minTws": 12
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-ultim-proto",
+        "slot": "FOILS",
+        "tier": "SILVER",
+        "name": "Foils ULTIM Proto",
+        "profile": "foils ultime course",
+        "description": "Foils sur-mesure dernière génération. Lift maximum au largue/portant, sur-sollicitation marquée de la coque.",
+        "compat": [
+          "ULTIM"
+        ],
+        "cost": 25000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0.02,
+            0.05,
+            0.05,
+            0
+          ],
+          "speedByTws": [
+            -0.02,
+            0.03,
+            0.04
+          ],
+          "wearMul": {
+            "hull": 1.15
           },
-          "groundingLossMul": null,
-          "passiveEffects": {
-            "speedByTws": [
-              -0.01,
-              -0.01,
-              0
-            ]
-          }
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ultim-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di ULTIM",
+        "profile": "course gros temps",
+        "description": "Garde-robe 3Di haute performance optimisée medium/strong. Gain net dans la brise, légère sur-usure des voiles.",
+        "compat": [
+          "ULTIM"
+        ],
+        "cost": 22000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.03,
+            0.04
+          ],
+          "wearMul": {
+            "sail": 1.4
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-ultim-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure ULTIM",
+        "profile": "régate ultime gros temps",
+        "description": "Garde-robe sur-mesure North 3Di Endurance avec setup record. Performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": [
+          "ULTIM"
+        ],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.04,
+            0.05
+          ],
+          "wearMul": {
+            "sail": 1.6
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
         }
       },
       {
@@ -1946,6 +2432,48 @@
         }
       },
       {
+        "id": "foils-mini650-silver",
+        "slot": "FOILS",
+        "tier": "SILVER",
+        "name": "Foils Mini 6.50 Course",
+        "profile": "vol agressif",
+        "description": "Foils Mini Proto de compétition — vol partiel marqué au portant, gains importants dans la brise.",
+        "compat": ["MINI650"],
+        "cost": 7500,
+        "effects": {
+          "speedByTwa": [-0.02, 0.02, 0.09, 0.18, 0.05],
+          "speedByTws": [-0.02, 0.06, 0.10],
+          "wearMul": { "hull": 1.5, "rig": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 12 },
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "foils-mini650-proto",
+        "slot": "FOILS",
+        "tier": "PROTO",
+        "name": "Foils Mini 6.50 Proto",
+        "profile": "surf extrême",
+        "description": "Foils proto Mini surf — vol maximal au grand largue, gains spectaculaires mais usure extrême.",
+        "compat": ["MINI650"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [-0.02, 0.03, 0.12, 0.25, 0.06],
+          "speedByTws": [-0.03, 0.08, 0.15],
+          "wearMul": { "hull": 1.9, "rig": 1.4 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": { "minTws": 14 },
+          "groundingLossMul": null
+        }
+      },
+      {
         "id": "sails-mini650-dacron",
         "slot": "SAILS",
         "tier": "SERIE",
@@ -2003,6 +2531,48 @@
           "wearMul": {
             "sail": 1.3
           },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-mini650-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di Mini 6.50",
+        "profile": "rendement gros temps",
+        "description": "Voiles 3Di haute performance pour le Mini 6.50. Gain net dans la brise, légère sur-usure.",
+        "compat": ["MINI650"],
+        "cost": 7000,
+        "effects": {
+          "speedByTwa": [0.02, 0.03, 0.05, 0.06, 0.02],
+          "speedByTws": [0.01, 0.03, 0.06],
+          "wearMul": { "sail": 1.45 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-mini650-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure Mini",
+        "profile": "surf extrême",
+        "description": "Garde-robe sur-mesure North pour Mini 6.50 Proto — performance maximale dans la brise, usure très accrue.",
+        "compat": ["MINI650"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 20,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0.02, 0.04, 0.06, 0.06, 0.02],
+          "speedByTws": [0.01, 0.04, 0.08],
+          "wearMul": { "sail": 1.65 },
           "maneuverMul": {},
           "polarTargetsDeg": null,
           "activation": {},
@@ -2107,28 +2677,98 @@
         }
       },
       {
-        "id": "hull-imoca60-non-foiler",
-        "slot": "HULL",
-        "tier": "SILVER",
-        "name": "Coque IMOCA non-foiler",
-        "profile": "archimédienne petit temps",
-        "description": "Carène plus fine sans dérives profondes, performante au près et par petit temps, handicapée en glisse forte.",
+        "id": "sails-imoca60-3di",
+        "slot": "SAILS",
+        "tier": "GOLD",
+        "name": "Voiles 3Di IMOCA",
+        "profile": "course gros temps",
+        "description": "Garde-robe 3Di haute performance optimisée medium/strong. Gain net dans la brise, légère sur-usure des voiles.",
         "compat": [
           "IMOCA60"
         ],
-        "cost": 15000,
+        "cost": 22000,
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.04,
+            0.06
+          ],
+          "wearMul": {
+            "sail": 1.4
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "sails-imoca60-north-custom",
+        "slot": "SAILS",
+        "tier": "PROTO",
+        "name": "Voiles North Sur-Mesure IMOCA",
+        "profile": "régate ultime gros temps",
+        "description": "Garde-robe sur-mesure North 3Di Endurance avec setup Vendée Globe. Performance maximale dans la brise, usure des voiles très accrue.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "speedByTws": [
+            0,
+            0.06,
+            0.08
+          ],
+          "wearMul": {
+            "sail": 1.6
+          },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "hull-imoca60-light-air",
+        "slot": "HULL",
+        "tier": "SILVER",
+        "name": "Coque IMOCA Affinée Petit Temps",
+        "profile": "petit temps spécialiste",
+        "description": "Carène allégée et finement profilée, optimisée pour le près et le petit temps. Brille avec un setup dérive droite ; ses gains se réduisent quand on monte en foils performance.",
+        "compat": [
+          "IMOCA60"
+        ],
+        "cost": 12000,
         "effects": {
           "speedByTwa": [
             0.06,
-            0.05,
-            0.03,
+            0.04,
             0.02,
-            0.01
+            0,
+            0
           ],
           "speedByTws": [
-            0.1,
-            0.04,
-            -0.06
+            0.08,
+            0.02,
+            -0.05
           ],
           "wearMul": {},
           "maneuverMul": {},
@@ -2150,16 +2790,16 @@
         "cost": 45000,
         "effects": {
           "speedByTwa": [
-            -0.02,
-            -0.01,
+            0,
+            0.04,
             0.06,
-            0.12,
-            0.05
+            0.04,
+            0
           ],
           "speedByTws": [
             -0.01,
-            0.05,
-            0.07
+            0.04,
+            0.05
           ],
           "wearMul": {
             "hull": 1.05
@@ -2192,16 +2832,16 @@
         "cost": 80000,
         "effects": {
           "speedByTwa": [
-            -0.03,
-            -0.02,
-            0.10,
-            0.22,
-            0.10
+            0,
+            0.06,
+            0.1,
+            0.06,
+            0
           ],
           "speedByTws": [
-            -0.03,
-            0.08,
-            0.12
+            -0.02,
+            0.06,
+            0.08
           ],
           "wearMul": {
             "hull": 1.15
@@ -2219,6 +2859,67 @@
               0
             ]
           }
+        }
+      },
+      {
+        "id": "mast-imoca60-carbon-hm",
+        "slot": "MAST",
+        "tier": "SILVER",
+        "name": "Mât Carbone Haut Module IMOCA",
+        "profile": "léger réactif",
+        "description": "Mât carbone haut module Lorima/Multiplast. Allègement gréement, gain de stabilité de route et performance fort vent.",
+        "compat": ["IMOCA60"],
+        "cost": 18000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.01, 0.06],
+          "wearMul": { "rig": 1.3 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "keel-imoca60-canting-pro",
+        "slot": "KEEL",
+        "tier": "SILVER",
+        "name": "Quille Basculante Pro IMOCA",
+        "profile": "couple de redressement augmenté",
+        "description": "Mécanisme de basculement quille révisé, course augmentée et asservissement précis. Plus de couple de redressement, surtout dans la brise.",
+        "compat": ["IMOCA60"],
+        "cost": 22000,
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.02, 0.04],
+          "wearMul": { "hull": 1.1 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
+        }
+      },
+      {
+        "id": "keel-imoca60-canting-titanium",
+        "slot": "KEEL",
+        "tier": "PROTO",
+        "name": "Quille Titane IMOCA",
+        "profile": "régate ultime",
+        "description": "Quille basculante en titane et bulbe sur-mesure. Couple de redressement maximal pour les conditions extrêmes du Vendée Globe.",
+        "compat": ["IMOCA60"],
+        "cost": null,
+        "unlockCriteria": {
+          "racesFinished": 30,
+          "or": false
+        },
+        "effects": {
+          "speedByTwa": [0, 0, 0, 0, 0],
+          "speedByTws": [0, 0.03, 0.06],
+          "wearMul": { "hull": 1.2 },
+          "maneuverMul": {},
+          "polarTargetsDeg": null,
+          "activation": {},
+          "groundingLossMul": null
         }
       }
     ]
@@ -2263,11 +2964,11 @@
   },
   "grounding": {
     "basePenaltySeconds": 600,
-    "speedFactorMax": 2.0,
+    "speedFactorMax": 2,
     "conditionLossMin": 2,
     "conditionLossMax": 8,
     "detectionIntermediatePoints": 20,
-    "forcedTurnAroundBspKnots": 2.0
+    "forcedTurnAroundBspKnots": 2
   },
   "zones": {
     "warnDefaultMultiplier": 0.8,
@@ -2292,7 +2993,7 @@
     }
   },
   "programming": {
-    "minWpDistanceNm": 3
+    "minWpDistanceNm": 0.5
   },
   "tick": {
     "intervalSeconds": 30

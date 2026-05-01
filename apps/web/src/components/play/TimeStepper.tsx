@@ -21,15 +21,21 @@ export interface TimeStepperProps {
   value: number;
   onChange: (nextSec: number) => void;
   minValue: number;
+  /** Optional ceiling — typically `nowSec + J5_HORIZON_SEC` because the
+   *  projection has no GFS coverage past J+5. When `value >= maxValue`
+   *  the `+` button locks and a "Plafond" warning is displayed. */
+  maxValue?: number;
   nowSec: number;
   className?: string;
 }
 
 function formatAbsolute(sec: number): string {
-  const totalMin = Math.floor(sec / 60);
-  const h = Math.floor(totalMin / 60) % 24;
-  const m = totalMin % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  // Display the player's wall-clock time, not UTC. `sec` is a Unix timestamp,
+  // and `Date#getHours()` / `getMinutes()` return values in the local TZ —
+  // so a French player in summer (CEST = UTC+2) sees 14:00 for a Unix epoch
+  // representing 12:00 UTC instead of the previous misleading "12:00".
+  const d = new Date(sec * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function formatRelative(sec: number, nowSec: number): string {
@@ -46,6 +52,7 @@ export default function TimeStepper({
   value,
   onChange,
   minValue,
+  maxValue,
   nowSec,
   className,
 }: TimeStepperProps): ReactElement {
@@ -75,16 +82,21 @@ export default function TimeStepper({
           return;
         }
       } else {
-        next = candidate;
+        next = maxValue !== undefined ? Math.min(candidate, maxValue) : candidate;
+        if (next === valueRef.current) {
+          stop();
+          return;
+        }
       }
       onChange(next);
       pulse += 1;
       timerRef.current = setTimeout(tick, delayMs);
     };
     tick();
-  }, [minValue, onChange, stop]);
+  }, [minValue, maxValue, onChange, stop]);
 
   const blockMinus = value <= minValue;
+  const blockPlus = maxValue !== undefined && value >= maxValue;
 
   // setPointerCapture may throw in JSDOM — wrap in try/catch defensively.
   const safeCapture = (target: HTMLElement, pointerId: number) => {
@@ -118,8 +130,10 @@ export default function TimeStepper({
       <button
         type="button"
         className={styles.btn}
+        disabled={blockPlus}
         aria-label="Avancer"
         onPointerDown={(e) => {
+          if (blockPlus) return;
           safeCapture(e.currentTarget, e.pointerId);
           startLoop(1);
         }}
@@ -133,6 +147,11 @@ export default function TimeStepper({
       {blockMinus && (
         <div className={styles.floorWarning}>
           ⛔ Délai mini : now + 5min
+        </div>
+      )}
+      {!blockMinus && blockPlus && (
+        <div className={styles.floorWarning}>
+          ⛔ Plafond : J+5 (limite météo)
         </div>
       )}
     </div>

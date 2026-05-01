@@ -5,6 +5,7 @@ import { mapInstance } from './MapCanvas';
 import { useGameStore } from '@/lib/store';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
 import { tileMaxValidMs } from '@/lib/weather/tacticalTile';
+import { haversinePosNM } from '@/lib/geo';
 import { formatDMS } from './formatDMS';
 import styles from './CursorTooltip.module.css';
 
@@ -18,6 +19,7 @@ interface CursorData {
   swellHeight: number;
   swellDir: number;
   swellPeriod: number;
+  dtuNm: number | null;
 }
 
 export default function CursorTooltip(): React.ReactElement | null {
@@ -29,6 +31,8 @@ export default function CursorTooltip(): React.ReactElement | null {
   const windOn = useGameStore((s) => s.layers.wind);
   const currentTimeMs = useGameStore((s) => s.timeline.currentTime.getTime());
   const isLive = useGameStore((s) => s.timeline.isLive);
+  const boatLat = useGameStore((s) => s.hud.lat);
+  const boatLon = useGameStore((s) => s.hud.lon);
 
   // Wait for mapInstance to be available (dynamic import)
   useEffect(() => {
@@ -97,6 +101,13 @@ export default function CursorTooltip(): React.ReactElement | null {
       }
     }
 
+    const bLat = state.hud.lat;
+    const bLon = state.hud.lon;
+    const dtuNm =
+      typeof bLat === 'number' && typeof bLon === 'number'
+        ? haversinePosNM({ lat: bLat, lon: bLon }, { lat: lngLat.lat, lon: lngLat.lng })
+        : null;
+
     setData({
       x: ev.clientX,
       y: ev.clientY,
@@ -107,6 +118,7 @@ export default function CursorTooltip(): React.ReactElement | null {
       swellHeight,
       swellDir,
       swellPeriod,
+      dtuNm,
     });
   }, []);
 
@@ -153,9 +165,11 @@ export default function CursorTooltip(): React.ReactElement | null {
 
   // Re-sample the cursor wind when the timeline scrubs even if the mouse
   // stays still — otherwise the displayed value would lag the timeline.
+  // Boat lat/lon are deps too so DTU stays in sync as the boat moves under a
+  // stationary cursor.
   useEffect(() => {
     if (lastEvent.current) compute();
-  }, [currentTimeMs, isLive, compute]);
+  }, [currentTimeMs, isLive, boatLat, boatLon, compute]);
 
   if (!data) return null;
 
@@ -170,6 +184,18 @@ export default function CursorTooltip(): React.ReactElement | null {
           {formatDMS(data.lat, true)} {formatDMS(data.lon, false)}
         </span>
       </div>
+      {data.dtuNm !== null && (
+        <div className={styles.row}>
+          <span className={styles.label}>DTU</span>
+          <span className={styles.value}>
+            {data.dtuNm < 0.1
+              ? data.dtuNm.toFixed(3)
+              : data.dtuNm < 10
+                ? data.dtuNm.toFixed(1)
+                : Math.round(data.dtuNm).toLocaleString('fr-FR')} NM
+          </span>
+        </div>
+      )}
       {swellOn && !windOn ? (
         <>
           <div className={styles.row}>

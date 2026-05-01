@@ -78,6 +78,25 @@ export function getTransitionDuration(from: SailId, to: SailId, loadoutEffects?:
 }
 
 /**
+ * Maximum sail transition duration (seconds) across every sail pair. Used as
+ * the half-width of the auto-switch lockout window around a programmed manual
+ * SAIL order: when |now − orderTime| ≤ this value, the engine refuses to
+ * auto-switch sails so the queued manual order isn't pre-empted by an
+ * auto-mode change running its own transition.
+ *
+ * Loadout multipliers shorten transitions but never extend them, so the
+ * un-multiplied catalog max is the safe bound for the lockout window.
+ */
+export function getMaxTransitionSec(): number {
+  const times = GameBalance.sails.transitionTimes;
+  let max = 0;
+  for (const v of Object.values(times)) {
+    if (typeof v === 'number' && v > max) max = v;
+  }
+  return max;
+}
+
+/**
  * Avance la state machine sails d'un tick :
  * - si transition en cours, décrémente le timer ; à 0, bascule la voile active
  * - sinon, si auto mode + voile sous-optimale hors zone overlap, déclenche une
@@ -95,6 +114,13 @@ export function advanceSailState(
    *  Defaults to nowMs. Pass Date.now() from the caller so auto-switch
    *  timestamps are never tied to a miscalibrated tickStartMs. */
   wallNowMs?: number,
+  /** When true, skip the auto-switch evaluation entirely. Set by `tick.ts`
+   *  whenever `nowMs` falls within ±getMaxTransitionSec() of a programmed
+   *  manual SAIL order — keeps the boat on its current sail so the queued
+   *  manual change isn't pre-empted by an auto-mode transition.
+   *  Transitions already in flight finish normally; only the *triggering*
+   *  of a new auto switch is gated. */
+  suppressAutoSwitch?: boolean,
 ): SailRuntimeState {
   const twaAbs = Math.min(Math.abs(twa), 180);
   const next: SailRuntimeState = { ...state };
@@ -113,7 +139,7 @@ export function advanceSailState(
   }
 
   const isManoeuvring = next.transitionEndMs > 0 && nowMs < next.transitionEndMs;
-  if (next.autoMode && !isManoeuvring) {
+  if (next.autoMode && !isManoeuvring && !suppressAutoSwitch) {
     // Hystérésis BSP : on ne déclenche un changement de voile que si l'optimale
     // bat l'active d'au moins `overlapThreshold` (+1.4% par défaut). Sous ce
     // seuil, l'overlap applique la BSP optimale à la voile active (voir

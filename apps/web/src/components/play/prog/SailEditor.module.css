@@ -43,17 +43,20 @@
   color: #c9a227 !important;
 }
 
-.sailGrid4 {
+.sailGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  margin-bottom: 6px;
 }
 
-.sailGrid3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+.warnText {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  color: #f0b96b;
+  text-transform: uppercase;
+  margin: 6px 0 0;
 }
 
 .sailTile {

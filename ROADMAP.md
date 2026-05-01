@@ -225,6 +225,19 @@ Gardée par middleware `role === 'super_admin'`, regroupe les manettes ops :
 - [ ] Alertes marina : bateau prêt après réparation
 - [ ] Toggle par type dans les paramètres profil (déjà UI-ready)
 
+### Backup & Disaster Recovery (**bloquant avant toute mise en prod**)
+> Aucune ouverture publique tant que les trois cases ci-dessous ne sont pas cochées.
+> Un backup non testé n'est pas un backup — le restore drill est obligatoire.
+
+- [ ] **RDS automated backups** activés sur la base prod : rétention 14 jours minimum, fenêtre de backup hors heures de pointe (ex. 03:00–04:00 UTC)
+- [ ] **Point-in-time recovery (PITR)** activé — RPO cible ≤ 5 min
+- [ ] **Snapshot manuel** systématique avant chaque migration Drizzle prod (procédure documentée + checklist CI/CD)
+- [ ] **Cross-region snapshot copy** (réplication automatique vers une seconde région AWS) — survit à la perte d'une région
+- [ ] **Restore drill** réel sur env de staging documenté : restaurer le dernier snapshot, relancer game-engine + web, vérifier que tout repart. RTO cible ≤ 30 min
+- [ ] Runbook DR rédigé dans `docs/runbooks/disaster-recovery.md` : qui appelle qui, quel snapshot prendre, commandes exactes
+- [ ] Alerte Slack/email si un backup automatique échoue (CloudWatch event sur RDS)
+- [ ] Rétention long terme : export mensuel d'un snapshot vers S3 Glacier (conservation 1 an minimum, conformité RGPD article 32)
+
 ### Premier déploiement AWS
 - [ ] ECS Fargate : game-engine + ws-gateway
 - [ ] RDS PostgreSQL prod (`db.t3.small`)

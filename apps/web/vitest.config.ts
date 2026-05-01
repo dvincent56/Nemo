@@ -23,6 +23,8 @@ export default defineConfig({
       'src/hooks/**/*.test.ts',
       'src/components/**/*.test.ts',
       'src/components/**/*.test.tsx',
+      'src/app/**/*.test.ts',
+      'src/app/**/*.test.tsx',
     ],
   },
 });

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import type { WpOrder } from '@/lib/prog/types';
 import { useGameStore } from '@/lib/store';
@@ -22,16 +22,13 @@ export interface WpEditorProps {
 }
 
 export default function WpEditor({
-  initialOrder, index, predecessorIndex, boat: _boat, minWpDistanceNm,
+  initialOrder, index, predecessorIndex: _predecessorIndex, boat: _boat, minWpDistanceNm,
   onCancel, onSave,
 }: WpEditorProps): ReactElement {
   const isNew = initialOrder === null;
   const pickingWp = useGameStore((s) => s.prog.pickingWp);
   const setPickingWp = useGameStore((s) => s.setPickingWp);
 
-  const [captureRadiusNm, setCaptureRadiusNm] = useState<number>(initialOrder?.captureRadiusNm ?? 0.5);
-
-  const triggerLabel = predecessorIndex === null ? 'AU DÉPART' : `APRÈS WP ${predecessorIndex}`;
   const title = isNew ? 'NOUVEAU WAYPOINT' : `MODIFIER WP ${index ?? ''}`;
 
   // If the user navigates away from the editor (Annuler) while picking is on,
@@ -47,7 +44,12 @@ export default function WpEditor({
 
   const handleSave = (): void => {
     if (!initialOrder) return; // NEW path is auto-saved by MapCanvas on map click
-    onSave({ ...initialOrder, captureRadiusNm });
+    // captureRadiusNm is preserved from initialOrder — it's still part of the
+    // engine model (default 0.5 NM) but is no longer player-editable from
+    // this UI. The trigger field (IMMEDIATE / AT_WAYPOINT) is also a derived
+    // chain property, not something the player picks — both fields were
+    // removed from the editor surface.
+    onSave({ ...initialOrder });
   };
 
   const handleCancel = (): void => {
@@ -84,35 +86,15 @@ export default function WpEditor({
             </p>
           </div>
         ) : (
-          <>
-            <div>
-              <p className={styles.fieldLabel}>POSITION</p>
-              <div className={wpStyles.coordReadout}>
-                {initialOrder!.lat.toFixed(4)}° · {initialOrder!.lon.toFixed(4)}°
-              </div>
-              <p className={wpStyles.coordHint}>
-                Glissez le marker sur la carte pour déplacer.
-              </p>
+          <div>
+            <p className={styles.fieldLabel}>POSITION</p>
+            <div className={wpStyles.coordReadout}>
+              {initialOrder!.lat.toFixed(4)}° · {initialOrder!.lon.toFixed(4)}°
             </div>
-
-            <div>
-              <p className={styles.fieldLabel}>RAYON DE CAPTURE (NM)</p>
-              <input
-                type="number"
-                min={0.1}
-                max={5}
-                step={0.1}
-                value={captureRadiusNm}
-                onChange={(e) => setCaptureRadiusNm(Number(e.target.value))}
-                className={wpStyles.numInput}
-              />
-            </div>
-
-            <div>
-              <p className={styles.fieldLabel}>DÉCLENCHEUR</p>
-              <div className={styles.triggerReadout}>{triggerLabel}</div>
-            </div>
-          </>
+            <p className={wpStyles.coordHint}>
+              Glissez le marker sur la carte pour déplacer.
+            </p>
+          </div>
         )}
       </div>
 

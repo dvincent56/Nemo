@@ -59,6 +59,16 @@ export type EditingOrder =
   | { kind: 'wp'; id: string }
   | { kind: 'finalCap'; id: string };
 
+/** Transient toast surfaced by the prog panel — currently only used by the
+ *  capture-detection effect to inform the user when an editor was force-
+ *  closed because its order's referenced WP was just captured by the boat.
+ *  `id` makes the value structurally distinct on each set so a new notice
+ *  with the same message still triggers the auto-dismiss timer. */
+export interface ProgNotice {
+  id: string;
+  message: string;
+}
+
 export interface ProgState {
   draft: ProgDraft;
   committed: ProgDraft;
@@ -70,4 +80,11 @@ export interface ProgState {
   /** True when the WP editor is in "click on map to place" mode. Read by
    *  MapCanvas to enable map-click→add-wp + cursor change. */
   pickingWp: boolean;
+  /** When a brand-new WP was just placed via map-click and the editor opened
+   *  for it, holds that WP's id. The editor's "Annuler" path calls
+   *  `removeWpOrder(pendingNewWpId)` to undo the tentative placement. Cleared
+   *  on save (the WP is then a confirmed draft entry). */
+  pendingNewWpId: string | null;
+  /** Transient toast — auto-dismissed by ProgPanel after a few seconds. */
+  notice: ProgNotice | null;
 }

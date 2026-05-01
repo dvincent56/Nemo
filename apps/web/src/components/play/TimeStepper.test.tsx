@@ -6,21 +6,33 @@ import TimeStepper from './TimeStepper';
 const HOUR = 3600;
 const MIN = 60;
 
+// Compute a Unix timestamp that — under LOCAL-time formatting — reads as
+// "12:00". This anchor is TZ-independent: today's noon in local time is
+// guaranteed to format as "12:00" regardless of whether the test runner is
+// on UTC, CEST, EST, or anything else. (Previously these tests passed
+// `12 * HOUR` and assumed UTC formatting; the real component now formats
+// in local time, matching the player's wall clock.)
+function noonTodaySec(): number {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  return Math.floor(d.getTime() / 1000);
+}
+
 describe('<TimeStepper>', () => {
   afterEach(() => {
     cleanup();
   });
 
   it('renders the value as HH:MM in the center display', () => {
-    const noon = 12 * HOUR;
+    const noon = noonTodaySec();
     const { container } = render(
-      <TimeStepper value={noon} onChange={() => {}} minValue={0} nowSec={0} />
+      <TimeStepper value={noon} onChange={() => {}} minValue={0} nowSec={noon} />
     );
     expect(container.textContent).toContain('12:00');
   });
 
   it('formats relative offset under 1h as +Nmin', () => {
-    const now = 12 * HOUR;
+    const now = noonTodaySec();
     const target = now + 30 * MIN;
     const { container } = render(
       <TimeStepper value={target} onChange={() => {}} minValue={0} nowSec={now} />
@@ -29,7 +41,7 @@ describe('<TimeStepper>', () => {
   });
 
   it('formats relative offset over 1h as +Xh Ymin', () => {
-    const now = 12 * HOUR;
+    const now = noonTodaySec();
     const target = now + 2 * HOUR + 27 * MIN;
     const { container } = render(
       <TimeStepper value={target} onChange={() => {}} minValue={0} nowSec={now} />

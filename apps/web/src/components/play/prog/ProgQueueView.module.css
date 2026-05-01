@@ -5,45 +5,54 @@
   padding: 16px 18px;
 }
 
+/* Cap / Waypoints mode toggle — visually identical to SailPanel's
+ * .modeToggle (Auto/Manuel) so the segmented "tab" feel is consistent
+ * across the play screen's right-hand panels. Source of truth: see
+ * apps/web/src/components/play/SailPanel.module.css → `.modeToggle`. */
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(245, 240, 232, 0.16);
   border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .tab {
+  background: transparent;
+  border: none;
+  color: rgba(245, 240, 232, 0.72);
   padding: 10px 12px;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  transition: all 150ms;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-family: 'Space Mono', ui-monospace, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(245, 240, 232, 0.72);
-  background: transparent;
-  border: none;
-  border-right: 1px solid rgba(245, 240, 232, 0.16);
-  cursor: pointer;
 }
 
-.tab:last-child {
-  border-right: none;
-}
-
-.tab:hover {
+.tab:hover:not(.tabActive) {
   background: rgba(255, 255, 255, 0.04);
   color: #f5f0e8;
 }
 
 .tabActive {
-  background: rgba(201, 162, 39, 0.18);
-  color: #c9a227;
+  background: #c9a227;
+  color: #1a2840;
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  .tabs { margin-bottom: 12px; padding: 3px; gap: 4px; }
+  .tab { padding: 8px 10px; font-size: 9px; letter-spacing: 0.12em; }
 }
 
 .section {
@@ -255,4 +264,25 @@
 
 .clearAll:hover {
   color: #d97b5a;
+}
+
+.multiTabNote {
+  margin-top: 16px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(245, 240, 232, 0.10);
+  border-radius: 4px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(245, 240, 232, 0.50);
+}
+
+.multiTabNote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: rgba(245, 240, 232, 0.42);
 }

@@ -135,4 +135,72 @@ describe('serializeDraft', () => {
     const out = serializeDraft(draft);
     expect(out.map((o) => o.id)).toEqual(['c1', 'c2', 's1']);
   });
+
+  describe('mode filtering (soft toggle semantics)', () => {
+    it('cap mode drops wpOrders / finalCap from the wire', () => {
+      const draft: ProgDraft = {
+        mode: 'cap',
+        capOrders: [
+          { id: 'c1', trigger: { type: 'AT_TIME', time: 1000 }, heading: 100, twaLock: false },
+        ],
+        wpOrders: [
+          { id: 'w1', trigger: { type: 'IMMEDIATE' }, lat: 45, lon: -3, captureRadiusNm: 0.5 },
+        ],
+        finalCap: { id: 'fc', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, heading: 90, twaLock: false },
+        sailOrders: [],
+      };
+      const out = serializeDraft(draft);
+      expect(out.map((o) => o.id)).toEqual(['c1']);
+    });
+
+    it('cap mode drops AT_WAYPOINT sail orders but keeps AT_TIME ones', () => {
+      const draft: ProgDraft = {
+        mode: 'cap',
+        capOrders: [],
+        wpOrders: [
+          { id: 'w1', trigger: { type: 'IMMEDIATE' }, lat: 45, lon: -3, captureRadiusNm: 0.5 },
+        ],
+        finalCap: null,
+        sailOrders: [
+          { id: 's1', trigger: { type: 'AT_TIME', time: 5000 }, action: { auto: true } },
+          { id: 's2', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, action: { auto: false, sail: 'SPI' } },
+        ],
+      };
+      const out = serializeDraft(draft);
+      expect(out.map((o) => o.id)).toEqual(['s1']);
+    });
+
+    it('wp mode drops capOrders from the wire', () => {
+      const draft: ProgDraft = {
+        mode: 'wp',
+        capOrders: [
+          { id: 'c1', trigger: { type: 'AT_TIME', time: 1000 }, heading: 100, twaLock: false },
+        ],
+        wpOrders: [
+          { id: 'w1', trigger: { type: 'IMMEDIATE' }, lat: 45, lon: -3, captureRadiusNm: 0.5 },
+        ],
+        finalCap: null,
+        sailOrders: [],
+      };
+      const out = serializeDraft(draft);
+      expect(out.map((o) => o.id)).toEqual(['w1']);
+    });
+
+    it('wp mode keeps both AT_TIME and AT_WAYPOINT sail orders', () => {
+      const draft: ProgDraft = {
+        mode: 'wp',
+        capOrders: [],
+        wpOrders: [
+          { id: 'w1', trigger: { type: 'IMMEDIATE' }, lat: 45, lon: -3, captureRadiusNm: 0.5 },
+        ],
+        finalCap: null,
+        sailOrders: [
+          { id: 's1', trigger: { type: 'AT_TIME', time: 5000 }, action: { auto: true } },
+          { id: 's2', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, action: { auto: false, sail: 'SPI' } },
+        ],
+      };
+      const out = serializeDraft(draft);
+      expect(out.map((o) => o.id)).toEqual(['w1', 's1', 's2']);
+    });
+  });
 });

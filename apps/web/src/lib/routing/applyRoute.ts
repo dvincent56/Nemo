@@ -116,7 +116,7 @@ export function waypointsToProgDraft(
         : { type: 'IMMEDIATE' },
       lat: wp.lat,
       lon: wp.lon,
-      captureRadiusNm: 0.5,
+      captureRadiusNm: 0.001,
     });
     prevId = id;
   }

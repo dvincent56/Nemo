@@ -46,6 +46,14 @@ function bearingDeg(from: { lat: number; lon: number }, to: { lat: number; lon: 
   return ((theta * RAD_TO_DEG) + 360) % 360;
 }
 
+// ── AT_WAYPOINT-trigger sentinel ──
+// orderQueueToSegments stamps AT_WAYPOINT-triggered non-WPT segments (final
+// cap, sail-at-WP) with Number.MAX_SAFE_INTEGER so they sort to the end and
+// don't fire by time. The worker rewrites triggerMs to currentMs when the
+// referenced WPT is captured. This threshold detects "still pending" — any
+// triggerMs at or above it is treated as not-yet-activated.
+const TRIGGER_MS_PENDING_THRESHOLD = Number.MAX_SAFE_INTEGER - 1;
+
 // ── Adaptive step config ──
 // Tuned for responsiveness: fine grain where course/manoeuvres matter,
 // coarser for long-range where wind varies slowly.
@@ -218,6 +226,10 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   // advancing the chain on capture (mirrors tick.ts WPT capture detection
   // and the orderHistory purge filter that keeps un-captured WPTs alive).
   const sourceSegments = segmentsOverride ?? input.segments;
+  // Sort by triggerMs. AT_WAYPOINT-triggered segments carry the
+  // Number.MAX_SAFE_INTEGER sentinel and naturally sort to the end — they
+  // become eligible for processing only once their predecessor WPT is
+  // captured (we rewrite triggerMs at that moment, see captureCallbacks).
   const allSegments = [...sourceSegments].sort((a, b) => a.triggerMs - b.triggerMs);
   const segments: ProjectionSegment[] = allSegments.filter((s) => s.type !== 'WPT');
   const wptList: ProjectionSegment[] = allSegments.filter((s) => s.type === 'WPT');
@@ -257,14 +269,16 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   }
   let segIdx = 0;
 
-  // Whether this projection is driving toward a known WPT chain. When we
-  // had WPTs at start (regardless of pre-pruning), we treat this as
-  // "WPT-mode" routing: once the chain is exhausted there's nothing
-  // meaningful left to project — the player has explicit waypoints and
-  // doesn't want a 5-day extrapolation past the last one. CAP/TWA/no-orders
-  // projections still run the full DAYS_5 horizon.
-  const hadWptOrders = wptQueue.length > 0;
-  let lastWptCaptured = wptIdx >= wptQueue.length;
+  // Note: pre-2026-04-28, exhausting the WPT chain ended the simulation
+  // ("WPT-mode" routing — no extrapolation past the last WP). That broke the
+  // final cap (CAP/TWA + AT_WAYPOINT(lastWp)): it could never drive the
+  // trajectory because the loop exited the moment the last WPT was captured.
+  // Now the simulation always runs to DAYS_5 (or weather coverage end). When
+  // a final cap is present, it activates on capture (driveWptOnce stamps its
+  // triggerMs to currentMs) and applies via the normal segment loop on the
+  // next outer iteration. When no final cap is present, the heading set just
+  // before capture (toward the final WP) carries the boat onward — natural
+  // "continue at boat heading" past the last WP.
 
   // Drive the WPT chain at the boat's CURRENT position: capture any WPTs
   // we are inside (or just swept past during the optional prev→curr leg),
@@ -308,10 +322,9 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
 
   // Capture at most one WPT per call. Returns true when a capture happened
   // (caller can re-call to handle WPT chains where the snapped position is
-  // already inside the next WPT's radius). When the chain is exhausted,
-  // returns false and the caller checks `lastWptCaptured` to break the outer
-  // loop. Heading is overridden toward the active WPT on every call where no
-  // capture occurred.
+  // already inside the next WPT's radius). Returns false when the queue is
+  // empty or the boat is still outside the next WPT's radius. Heading is
+  // overridden toward the active WPT on every call where no capture occurred.
   const driveWptOnce = (prevLat?: number, prevLon?: number): boolean => {
     if (wptIdx >= wptQueue.length) return false;
     const w = wptQueue[wptIdx]!;
@@ -361,8 +374,34 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
     // the bend point itself.
     lat = v.lat;
     lon = v.lon;
+
+    // Activate any AT_WAYPOINT-triggered non-WPT segments that referenced
+    // THIS WPT. We stamp their triggerMs to currentMs so the existing
+    // segment-trigger loop (above) catches them on the next outer iteration
+    // — keeping a single code path for CAP/TWA/SAIL/MODE application. This
+    // is what makes the final cap (CAP/TWA + AT_WAYPOINT(lastWp)) and
+    // sail-at-WP changes actually fire in the projection.
+    const capturedId = w.id;
+    if (capturedId) {
+      for (const s of segments) {
+        if (s.waypointPredecessorId === capturedId && s.triggerMs >= TRIGGER_MS_PENDING_THRESHOLD) {
+          s.triggerMs = currentMs;
+        }
+      }
+      // Re-sort to bring newly-activated segments into chronological order.
+      // Cheap (small array) — and required because segIdx walks in sorted order.
+      segments.sort((a, b) => a.triggerMs - b.triggerMs);
+      // segIdx may now point past activated segments; reset to first un-applied.
+      // Conservative: any segment whose triggerMs <= currentMs hasn't been
+      // applied yet if its index is >= segIdx in the new sorted order.
+      // Simpler approach: scan once for the smallest index whose triggerMs
+      // is in the future relative to currentMs. We don't decrement segIdx
+      // (segments before our current position were either already applied
+      // or stamped in the past; either way the next segment loop iteration
+      // handles only triggerMs <= currentMs + dt*1000).
+    }
+
     wptIdx++;
-    if (wptIdx >= wptQueue.length) lastWptCaptured = true;
     return true;
   };
 
@@ -371,9 +410,17 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
   // The loop handles WPT chains where post-snap position is already inside
   // the next WPT's radius (tight clusters). MAX_CAPTURES_PER_STEP guards
   // against pathological cases (degenerate chain, all WPTs at same point).
-  // Returns true once the chain is exhausted (caller should break).
+  //
+  // Always returns false — the outer loop never breaks on chain exhaustion
+  // anymore. After the last WPT is captured the boat continues with whatever
+  // heading was last set: the bearing toward the final WPT (set just before
+  // the snap), or — if a final-cap CAP/TWA segment with AT_WAYPOINT(lastWp)
+  // was activated by the capture — the explicit final cap applied in the
+  // upcoming segment loop iteration. This makes the final cap projection
+  // visible past the last WP, and gives a natural "continue at boat heading"
+  // when no final cap is present (matches user expectation).
   const MAX_CAPTURES_PER_STEP = 10;
-  const driveWpt = (prevLat?: number, prevLon?: number): boolean => {
+  const driveWpt = (prevLat?: number, prevLon?: number): void => {
     let captures = 0;
     // First pass: use the swept leg (if provided) — only for the FIRST capture
     // since after a snap we're at the WPT itself, no swept leg to consider.
@@ -381,7 +428,6 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
       captures++;
       if (captures >= MAX_CAPTURES_PER_STEP) break;
     }
-    return hadWptOrders && lastWptCaptured;
   };
 
   // Track which time marker hours we've passed
@@ -404,7 +450,7 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
     // the next one BEFORE processing segments. Without this, a SAIL trigger
     // inside the same step would partial-advance along the stale toward-
     // current-WPT heading and push an overshoot vertex (the spur).
-    if (driveWpt()) break;
+    driveWpt();
 
     // Check if a segment triggers within this step — force exact computation at trigger
     let segmentTriggered = false;
@@ -436,14 +482,10 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
         // segment-trigger pushPoint below sits on a clean bend rather than
         // overshooting along the now-stale heading. Pass prev pos so the
         // sweep-sample test catches a fly-by even if the endpoint is
-        // outside the radius.
-        if (driveWpt(prevLat, prevLon)) {
-          // Chain exhausted mid-step. Push the partial-advance point as the
-          // final vertex (so the segment marker has somewhere to anchor) and
-          // exit the segment loop; the outer loop's break-on-driveWpt at the
-          // top of the next iter will end the projection.
-          break;
-        }
+        // outside the radius. driveWpt no longer signals chain exhaustion —
+        // post-last-WP simulation continues so the final cap (if any) and
+        // continued-heading projection are visible.
+        driveWpt(prevLat, prevLon);
       }
 
       // Apply segment order
@@ -530,10 +572,11 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
     // ── WPT chain: drive heading + capture. The post-segment-advance
     // position may also have crossed a WPT capture radius (segments
     // partial-advance the boat earlier in this iteration). driveWpt()
-    // handles capture, marker emission, and heading override. Stops the
-    // projection once the chain is exhausted (WPT-mode only — CAP/TWA/no-
-    // orders projections still run the full DAYS_5 horizon).
-    if (driveWpt()) break;
+    // handles capture, marker emission, and heading override. After chain
+    // exhaustion the simulation continues with the heading set just before
+    // the last capture (or the AT_WAYPOINT-final-cap if one was activated)
+    // until the DAYS_5 horizon — projection extends past the last WP.
+    driveWpt();
 
     // Get weather at current position/time
     const weather = getWeatherAt(lat, lon, currentMs);
@@ -662,7 +705,7 @@ function simulate(input: ProjectionInput, segmentsOverride?: ProjectionSegment[]
     // visible zigzag (forward → backward → forward) in the projection line.
     // Mirrors tick.ts' wptCheckPositions strategy (capture at every segment
     // boundary, not just the endpoint).
-    if (driveWpt(advancePrevLat, advancePrevLon)) break;
+    driveWpt(advancePrevLat, advancePrevLon);
 
     // Wear progression
     const wearDelta = computeWearDelta(weather, hdg, dt, effects);

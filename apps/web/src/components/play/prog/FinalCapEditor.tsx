@@ -28,7 +28,16 @@ function makeId(): string {
 export default function FinalCapEditor({
   initialOrder, lastWpId, lastWpIndex, windDir, defaultHeading, onCancel, onSave,
 }: FinalCapEditorProps): ReactElement {
-  const [heading, setHeading] = useState<number>(initialOrder?.heading ?? defaultHeading);
+  // When TWA-locked, the stored heading is a TWA in [-180, 180]. The dial
+  // works in absolute 0..359, so convert back on open. Cf. CapEditor for the
+  // full reasoning behind this conversion.
+  const initialHeading = (() => {
+    if (initialOrder && initialOrder.twaLock) {
+      return (((initialOrder.heading + windDir) % 360) + 360) % 360;
+    }
+    return initialOrder?.heading ?? defaultHeading;
+  })();
+  const [heading, setHeading] = useState<number>(initialHeading);
   const [twaLock, setTwaLock] = useState<boolean>(initialOrder?.twaLock ?? false);
 
   const isNew = initialOrder === null;
@@ -38,10 +47,15 @@ export default function FinalCapEditor({
   const twa = ((heading - windDir + 540) % 360) - 180;
 
   const handleSave = (): void => {
+    // TWA-locked → store a relative-to-wind angle so the serializer emits
+    // `{ twa }`. Mirrors CapEditor + Compass.tsx apply() math.
+    const storedHeading = twaLock
+      ? Math.round(((heading - windDir + 540) % 360) - 180)
+      : heading;
     const order: FinalCapOrder = {
       id: initialOrder?.id ?? makeId(),
       trigger: { type: 'AT_WAYPOINT', waypointOrderId: lastWpId },
-      heading,
+      heading: storedHeading,
       twaLock,
     };
     onSave(order);

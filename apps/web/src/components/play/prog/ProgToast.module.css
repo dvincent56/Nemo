@@ -1,0 +1,44 @@
+.toast {
+  display: grid;
+  grid-template-columns: 22px 1fr 22px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(201, 162, 39, 0.10);
+  border: 1px solid #c9a227;
+  border-radius: 4px;
+  margin: 12px 18px 0;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #c9a227;
+}
+
+.body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  color: #f5f0e8;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.close {
+  width: 22px;
+  height: 22px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(245, 240, 232, 0.42);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  color: #f5f0e8;
+  border-color: rgba(245, 240, 232, 0.16);
+}

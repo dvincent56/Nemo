@@ -28,6 +28,8 @@ interface TestStore {
   applyRouteAsCommitted: ReturnType<typeof createProgSlice>['applyRouteAsCommitted'];
   setEditingOrder: ReturnType<typeof createProgSlice>['setEditingOrder'];
   setPickingWp: ReturnType<typeof createProgSlice>['setPickingWp'];
+  setPendingNewWpId: ReturnType<typeof createProgSlice>['setPendingNewWpId'];
+  removeCapturedWps: ReturnType<typeof createProgSlice>['removeCapturedWps'];
 }
 
 function makeStore() {
@@ -152,15 +154,15 @@ describe('progSlice wp mutations', () => {
 });
 
 describe('progSlice mode switching', () => {
-  it('setProgMode("wp") clears capOrders', () => {
+  it('setProgMode is a soft toggle — does not clear the other track', () => {
     const store = makeStore();
     store.getState().addCapOrder(cap('c1', 1000));
     store.getState().setProgMode('wp');
-    expect(store.getState().prog.draft.capOrders).toEqual([]);
     expect(store.getState().prog.draft.mode).toBe('wp');
+    expect(store.getState().prog.draft.capOrders).toHaveLength(1);
   });
 
-  it('setProgMode("cap") clears wpOrders, finalCap, and AT_WAYPOINT sailOrders', () => {
+  it('setProgMode preserves wpOrders / finalCap / sailOrders when toggling to cap', () => {
     const store = makeStore();
     store.getState().setProgMode('wp');
     store.getState().addWpOrder(wp('w1'));
@@ -171,12 +173,49 @@ describe('progSlice mode switching', () => {
       twaLock: false,
     });
     store.getState().addSailOrder(sailAtWp('s1', 'w1'));
-    store.getState().addSailOrder(sail('s2', 5000)); // AT_TIME — should survive
+    store.getState().addSailOrder(sail('s2', 5000));
     store.getState().setProgMode('cap');
+    // Nothing dropped — the user can switch back to 'wp' and recover their work.
+    expect(store.getState().prog.draft.mode).toBe('cap');
+    expect(store.getState().prog.draft.wpOrders).toHaveLength(1);
+    expect(store.getState().prog.draft.finalCap).not.toBeNull();
+    expect(store.getState().prog.draft.sailOrders).toHaveLength(2);
+  });
+
+  it('markCommitted drops the inactive track (cap mode → wpOrders cleared)', () => {
+    const store = makeStore();
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().setProgMode('cap');
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.mode).toBe('cap');
+    expect(store.getState().prog.committed.capOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.wpOrders).toEqual([]);
+    // Draft also cleaned, mirroring committed (so isDirty doesn't light up).
     expect(store.getState().prog.draft.wpOrders).toEqual([]);
-    expect(store.getState().prog.draft.finalCap).toBeNull();
-    expect(store.getState().prog.draft.sailOrders).toHaveLength(1);
-    expect(store.getState().prog.draft.sailOrders[0]?.id).toBe('s2');
+  });
+
+  it('markCommitted drops AT_WAYPOINT sail orders in cap mode', () => {
+    const store = makeStore();
+    store.getState().setProgMode('wp');
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().addSailOrder(sailAtWp('s1', 'w1'));
+    store.getState().addSailOrder(sail('s2', 5000));
+    store.getState().setProgMode('cap');
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.sailOrders).toHaveLength(1);
+    expect(store.getState().prog.committed.sailOrders[0]?.id).toBe('s2');
+  });
+
+  it('markCommitted drops capOrders when committing in wp mode', () => {
+    const store = makeStore();
+    store.getState().addCapOrder(cap('c1', 1000));
+    store.getState().setProgMode('wp');
+    store.getState().addWpOrder(wp('w1'));
+    store.getState().markCommitted();
+    expect(store.getState().prog.committed.mode).toBe('wp');
+    expect(store.getState().prog.committed.capOrders).toEqual([]);
+    expect(store.getState().prog.committed.wpOrders).toHaveLength(1);
   });
 });
 
@@ -295,5 +334,86 @@ describe('progSlice pickingWp', () => {
     };
     store.getState().applyRouteAsCommitted(next);
     expect(store.getState().prog.pickingWp).toBe(true);
+  });
+});
+
+describe('progSlice pendingNewWpId', () => {
+  it('starts with pendingNewWpId = null', () => {
+    const store = makeStore();
+    expect(store.getState().prog.pendingNewWpId).toBeNull();
+  });
+
+  it('setPendingNewWpId updates the field', () => {
+    const store = makeStore();
+    store.getState().setPendingNewWpId('w42');
+    expect(store.getState().prog.pendingNewWpId).toBe('w42');
+    store.getState().setPendingNewWpId(null);
+    expect(store.getState().prog.pendingNewWpId).toBeNull();
+  });
+
+  it('applyRouteAsCommitted preserves pendingNewWpId', () => {
+    const store = makeStore();
+    store.getState().setPendingNewWpId('w7');
+    const next: ProgDraft = {
+      mode: 'wp',
+      capOrders: [],
+      wpOrders: [wp('w1')],
+      finalCap: null,
+      sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    expect(store.getState().prog.pendingNewWpId).toBe('w7');
+  });
+});
+
+describe('progSlice removeCapturedWps', () => {
+  it('removes captured WPs from both committed and draft', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp', capOrders: [],
+      wpOrders: [
+        wp('w1'),
+        wp('w2', 46, -2, 'w1'),
+        wp('w3', 47, -1, 'w2'),
+      ],
+      finalCap: null, sailOrders: [],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    // Simulate user edits w3
+    store.getState().updateWpOrder('w3', { lat: 48 });
+
+    store.getState().removeCapturedWps(['w1']);
+
+    expect(store.getState().prog.committed.wpOrders.map((w) => w.id)).toEqual(['w2', 'w3']);
+    expect(store.getState().prog.draft.wpOrders.map((w) => w.id)).toEqual(['w2', 'w3']);
+    // w2 was AT_WAYPOINT(w1) — now IMMEDIATE since w1 is gone
+    expect(store.getState().prog.committed.wpOrders[0]?.trigger).toEqual({ type: 'IMMEDIATE' });
+  });
+
+  it('cascades to sail orders + finalCap referencing the removed WPs', () => {
+    const store = makeStore();
+    const next: ProgDraft = {
+      mode: 'wp', capOrders: [],
+      wpOrders: [wp('w1'), wp('w2', 46, -2, 'w1')],
+      finalCap: { id: 'fc', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, heading: 45, twaLock: false },
+      sailOrders: [{ id: 's1', trigger: { type: 'AT_WAYPOINT', waypointOrderId: 'w1' }, action: { auto: true } }],
+    };
+    store.getState().applyRouteAsCommitted(next);
+    store.getState().removeCapturedWps(['w1']);
+
+    expect(store.getState().prog.committed.finalCap).toBeNull();
+    expect(store.getState().prog.committed.sailOrders).toEqual([]);
+    // w2 rebinds to IMMEDIATE
+    expect(store.getState().prog.committed.wpOrders[0]?.trigger.type).toBe('IMMEDIATE');
+  });
+
+  it('is a no-op when removedIds is empty', () => {
+    const store = makeStore();
+    store.getState().applyRouteAsCommitted({
+      mode: 'wp', capOrders: [], wpOrders: [wp('w1')], finalCap: null, sailOrders: [],
+    });
+    const beforeCommitted = store.getState().prog.committed;
+    store.getState().removeCapturedWps([]);
+    expect(store.getState().prog.committed).toBe(beforeCommitted); // referential identity preserved
   });
 });

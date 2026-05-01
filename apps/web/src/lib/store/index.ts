@@ -359,6 +359,68 @@ import { serializeDraft } from '@/lib/prog/serialize';
 import { isObsoleteAtTime } from '@/lib/prog/anchors';
 import type { ProgDraft } from '@/lib/prog/types';
 
+const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
+
+/**
+ * Great-circle initial bearing from `from` to `to`, in degrees [0, 360).
+ *
+ * Mirrors the helper in `PlayClient.tsx` and `projection.worker.ts` — copy
+ * is intentional for now; later candidate for extraction to `lib/geo`.
+ */
+function bearingDeg(
+  from: { lat: number; lon: number },
+  to: { lat: number; lon: number },
+): number {
+  const f1 = from.lat * DEG_TO_RAD;
+  const f2 = to.lat * DEG_TO_RAD;
+  const dLon = (to.lon - from.lon) * DEG_TO_RAD;
+  const y = Math.sin(dLon) * Math.cos(f2);
+  const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dLon);
+  const theta = Math.atan2(y, x);
+  return ((theta * RAD_TO_DEG) + 360) % 360;
+}
+
+/**
+ * Compute the boat's first effective heading after committing a programming.
+ *
+ * Returns `null` when there's no near-future order whose trigger fires within
+ * ~30 s, OR when the order doesn't change the heading meaningfully (caller
+ * skips the optimistic patch in that case so the boat doesn't visibly twitch).
+ *
+ * Used by `ProgPanel.handleConfirm` to drive an optimistic HUD update so the
+ * boat visibly turns and the projection rebuilds without waiting for the next
+ * server tick (~30 s).
+ *
+ * Rules:
+ * - **WP mode**: head toward the first WP (chain head, IMMEDIATE trigger).
+ * - **Cap mode**: pick the earliest CAP order; only optimistic if its trigger
+ *   time is `<= nowSec + 30`.
+ */
+export function firstEffectiveHeading(
+  draft: ProgDraft,
+  boatPos: { lat: number; lon: number },
+  nowSec: number,
+): { newHdg: number; reason: 'wp' | 'cap' } | null {
+  if (draft.mode === 'wp' && draft.wpOrders.length > 0) {
+    const head = draft.wpOrders[0];
+    if (!head) return null;
+    const newHdg = Math.round(bearingDeg(boatPos, { lat: head.lat, lon: head.lon }));
+    return { newHdg, reason: 'wp' };
+  }
+
+  if (draft.mode === 'cap' && draft.capOrders.length > 0) {
+    const earliest = draft.capOrders.reduce(
+      (min, o) => (o.trigger.time < min.trigger.time ? o : min),
+    );
+    if (earliest.trigger.time <= nowSec + 30) {
+      return { newHdg: Math.round(earliest.heading), reason: 'cap' };
+    }
+  }
+
+  return null;
+}
+
 /**
  * Commit the current draft to the server.
  *

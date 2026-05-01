@@ -8,6 +8,7 @@ import type {
   SailOrder,
   ProgMode,
   EditingOrder,
+  ProgNotice,
 } from '@/lib/prog/types';
 import { EMPTY_DRAFT } from '@/lib/prog/types';
 import type { GameStore } from './types';
@@ -17,6 +18,8 @@ export const INITIAL_PROG: ProgState = {
   committed: { ...EMPTY_DRAFT, capOrders: [], wpOrders: [], sailOrders: [] },
   editingOrder: null,
   pickingWp: false,
+  pendingNewWpId: null,
+  notice: null,
 };
 
 type SetFn = (fn: (s: GameStore) => Partial<GameStore>) => void;
@@ -42,17 +45,14 @@ export function createProgSlice(set: SetFn) {
     prog: INITIAL_PROG,
 
     setProgMode: (mode: ProgMode) =>
-      set((s) => {
-        const draft: ProgDraft = { ...s.prog.draft, mode };
-        if (mode === 'cap') {
-          draft.wpOrders = [];
-          draft.finalCap = null;
-          draft.sailOrders = draft.sailOrders.filter((o) => o.trigger.type === 'AT_TIME');
-        } else {
-          draft.capOrders = [];
-        }
-        return { prog: { ...s.prog, draft } };
-      }),
+      // Soft toggle — both cap and wp tracks coexist in the draft. The
+      // inactive track is dropped at commit time (see `markCommitted` and
+      // `serializeDraft`). This lets the user start drafting waypoints
+      // without losing their existing cap orders, and only commit one of
+      // the two for the wire.
+      set((s) => ({
+        prog: { ...s.prog, draft: { ...s.prog.draft, mode } },
+      })),
 
     addCapOrder: (o: CapOrder) =>
       set((s) => ({
@@ -202,20 +202,42 @@ export function createProgSlice(set: SetFn) {
       })),
 
     markCommitted: () =>
-      set((s) => ({
-        prog: { ...s.prog, committed: clone(s.prog.draft) },
-      })),
+      // Drop the inactive mode's track at commit so the dirty diff doesn't
+      // light up against orders that were never sent. The cleaned shape is
+      // pushed into BOTH committed and draft, matching the wire output.
+      set((s) => {
+        const d = s.prog.draft;
+        const cleaned: ProgDraft = {
+          mode: d.mode,
+          capOrders: d.mode === 'cap'
+            ? d.capOrders.map((o) => ({ ...o, trigger: { ...o.trigger } }))
+            : [],
+          wpOrders: d.mode === 'wp'
+            ? d.wpOrders.map((o) => ({ ...o, trigger: { ...o.trigger } }))
+            : [],
+          finalCap: d.mode === 'wp' && d.finalCap
+            ? { ...d.finalCap, trigger: { ...d.finalCap.trigger } }
+            : null,
+          sailOrders: d.sailOrders
+            .filter((o) => !(d.mode === 'cap' && o.trigger.type === 'AT_WAYPOINT'))
+            .map((o) => ({ ...o, trigger: { ...o.trigger }, action: { ...o.action } })),
+        };
+        return { prog: { ...s.prog, draft: cleaned, committed: cleaned } };
+      }),
 
     applyRouteAsCommitted: (next: ProgDraft) =>
       set((s) => ({
-        // Preserve editingOrder + pickingWp — UI state mustn't be squashed by
-        // an incoming route apply (so the user can click a marker, then accept
-        // a route, and still see the editor where they left it).
+        // Preserve editingOrder + pickingWp + pendingNewWpId + notice — UI
+        // state mustn't be squashed by an incoming route apply (so the user
+        // can click a marker, then accept a route, and still see the editor
+        // where they left it).
         prog: {
           draft: clone(next),
           committed: clone(next),
           editingOrder: s.prog.editingOrder,
           pickingWp: s.prog.pickingWp,
+          pendingNewWpId: s.prog.pendingNewWpId,
+          notice: s.prog.notice,
         },
       })),
 
@@ -228,5 +250,66 @@ export function createProgSlice(set: SetFn) {
       set((s) => ({
         prog: { ...s.prog, pickingWp: b },
       })),
+
+    setPendingNewWpId: (id: string | null) =>
+      set((s) => ({
+        prog: { ...s.prog, pendingNewWpId: id },
+      })),
+
+    setProgNotice: (notice: ProgNotice | null) =>
+      set((s) => ({
+        prog: { ...s.prog, notice },
+      })),
+
+    /**
+     * Remove WPs that have been captured by the boat from BOTH committed and
+     * draft. Cascades: drops sail orders + finalCap referencing removed WPs.
+     *
+     * Called by a 5Hz client-side capture detector in PlayClient. The engine
+     * has its own authoritative state; this mirror keeps the panel/projection
+     * in sync so a Confirmer doesn't re-emit already-traversed WPs.
+     *
+     * @param removedIds - the set of WP ids the heuristic detected as captured
+     */
+    removeCapturedWps: (removedIds: string[]) => set((s) => {
+      if (removedIds.length === 0) return s;
+      const removed = new Set(removedIds);
+
+      function cleanDraft(d: ProgDraft): ProgDraft {
+        const wpOrders = d.wpOrders.filter((wp) => !removed.has(wp.id));
+        // Successors of removed WPs need to rebind to the new chain
+        // head/predecessor.
+        const reboundWps = wpOrders.map((wp) => {
+          if (wp.trigger.type !== 'AT_WAYPOINT') return wp;
+          if (!removed.has(wp.trigger.waypointOrderId)) return wp;
+          // The predecessor was captured. Walk back through the original list
+          // to find the most recent NON-captured predecessor.
+          const origIdx = d.wpOrders.findIndex((x) => x.id === wp.id);
+          for (let i = origIdx - 1; i >= 0; i--) {
+            const cand = d.wpOrders[i];
+            if (cand && !removed.has(cand.id)) {
+              return { ...wp, trigger: { type: 'AT_WAYPOINT' as const, waypointOrderId: cand.id } };
+            }
+          }
+          // No predecessor survived → this WP is now the chain head (IMMEDIATE).
+          return { ...wp, trigger: { type: 'IMMEDIATE' as const } };
+        });
+        const sailOrders = d.sailOrders.filter((so) =>
+          !(so.trigger.type === 'AT_WAYPOINT' && removed.has(so.trigger.waypointOrderId))
+        );
+        const finalCap = d.finalCap && removed.has(d.finalCap.trigger.waypointOrderId)
+          ? null
+          : d.finalCap;
+        return { ...d, wpOrders: reboundWps, sailOrders, finalCap };
+      }
+
+      return {
+        prog: {
+          ...s.prog,
+          committed: cleanDraft(s.prog.committed),
+          draft: cleanDraft(s.prog.draft),
+        },
+      };
+    }),
   };
 }

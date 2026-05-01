@@ -10,7 +10,7 @@ import {
   DEFAULT_OCEAN_ID,
 } from '@/lib/mapAppearance';
 import { decodedGridToWeatherGridAtNow } from '@/lib/weather/gridFromBinary';
-import { validateWpDistance } from '@/lib/prog/safetyRadius';
+import { validateWpDistance, wpDistanceNm } from '@/lib/prog/safetyRadius';
 import styles from './MapCanvas.module.css';
 import { useProjectionLine } from '@/hooks/useProjectionLine';
 import { selectGhostPosition } from '@/lib/store/timeline-selectors';
@@ -569,6 +569,61 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
           map.getCanvas().style.cursor = '';
         });
       }
+
+      // ── Sail-at-WP info on WP hover ──
+      // Sail orders triggered AT_WAYPOINT used to be rendered as a separate
+      // dot offset slightly east of the WP — visually cluttered. Now they're
+      // surfaced via this hover popup on the WP marker itself, listing every
+      // sail order that fires when this WP is captured.
+      const wpHoverPopup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 16,
+        className: 'projection-maneuver-popup',
+      });
+
+      const SAIL_LABEL: Record<string, string> = {
+        MAIN: 'Grand-voile',
+        JIB: 'Foc',
+        SOLENT: 'Solent',
+        STAYSAIL: 'Trinquette',
+        GENNAKER: 'Gennaker',
+        CODE0: 'Code 0',
+        SPI_LIGHT: 'Spi léger',
+        SPI_HEAVY: 'Spi lourd',
+        SPI_RUN: 'Spi de petit temps',
+        STORM_JIB: 'Tourmentin',
+      };
+
+      map.on('mouseenter', 'prog-order-markers-wp', (e) => {
+        const feature = e.features?.[0];
+        if (!feature || feature.geometry.type !== 'Point') return;
+        const wpId = feature.properties?.['id'];
+        if (typeof wpId !== 'string') return;
+
+        const state = useGameStore.getState();
+        const sailsAtWp = state.prog.draft.sailOrders.filter(
+          (s) => s.trigger.type === 'AT_WAYPOINT'
+            && (s.trigger as { waypointOrderId: string }).waypointOrderId === wpId,
+        );
+        if (sailsAtWp.length === 0) return;
+
+        const html = sailsAtWp.map((s) => {
+          const action = s.action.auto
+            ? 'Voile AUTO'
+            : `Voile → ${SAIL_LABEL[s.action.sail] ?? s.action.sail}`;
+          return `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#c9a227;letter-spacing:0.10em;">${action}</div>`;
+        }).join('');
+
+        wpHoverPopup
+          .setLngLat(feature.geometry.coordinates as [number, number])
+          .setHTML(`<div style="padding:4px 8px;">${html}</div>`)
+          .addTo(map);
+      });
+
+      map.on('mouseleave', 'prog-order-markers-wp', () => {
+        wpHoverPopup.remove();
+      });
 
       // Past-trace line layer — inserted just below the projection so the
       // future arc renders on top during replay scrubbing. The past-trace
@@ -1131,14 +1186,15 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         if (features.length > 0) return;
       }
 
-      const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
+      const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
       const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
       const wp = { lat: e.lngLat.lat, lon: e.lngLat.lng };
 
       if (!validateWpDistance(boat, wp, minNm)) {
         // TODO Phase 2b: surface this as a toast. For now, console.warn keeps
         // the user state intact (still in picking mode) so they can try again.
-        console.warn(`[ProgPanel] WP trop proche du bateau (min ${minNm} NM)`);
+        const actualNm = wpDistanceNm(boat, wp);
+        console.warn(`[ProgPanel] WP placement rejected — ${actualNm.toFixed(2)} NM from boat (min ${minNm} NM)`);
         return;
       }
 
@@ -1154,9 +1210,13 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         trigger,
         lat: wp.lat,
         lon: wp.lon,
-        captureRadiusNm: 0.5,
+        captureRadiusNm: 0.001,
       });
       state.setPickingWp(false);
+      // Mark this WP as tentative — if the user clicks "Annuler" instead of
+      // "OK" in the editor that opens next, ProgPanel will remove it from
+      // the draft so the click-on-map placement is fully undone.
+      state.setPendingNewWpId(newId);
       // Smoothly transition the editor from "NEW" mode to editing the just-
       // created WP. The editor re-renders with its capture-radius/trigger UI.
       state.setEditingOrder({ kind: 'wp', id: newId });
@@ -1247,9 +1307,25 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
         .setLngLat([wp.lon, wp.lat])
         .addTo(map);
 
+      // Live update during drag: fires on every pointer-move, so the
+      // projection re-computes in real time as the WP slides instead of
+      // jumping only on release. We skip the store update if the candidate
+      // position would violate the minWp safety radius (the user can keep
+      // dragging — the marker visually moves, but the WP order stays at the
+      // last valid position). dragend handles the final commit + snap-back.
+      marker.on('drag', () => {
+        const ll = marker.getLngLat();
+        const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
+        const state = useGameStore.getState();
+        const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
+        const newWp = { lat: ll.lat, lon: ll.lng };
+        if (!validateWpDistance(boat, newWp, minNm)) return;
+        state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });
+      });
+
       marker.on('dragend', () => {
         const ll = marker.getLngLat();
-        const minNm = GameBalance.programming?.minWpDistanceNm ?? 3;
+        const minNm = GameBalance.programming?.minWpDistanceNm ?? 0.5;
         const state = useGameStore.getState();
         const boat = { lat: state.hud.lat ?? 0, lon: state.hud.lon ?? 0 };
         const newWp = { lat: ll.lat, lon: ll.lng };
@@ -1260,7 +1336,8 @@ export default function MapCanvas({ enableProjection = true, simTimeMs }: MapCan
             .getState()
             .prog.draft.wpOrders.find((w) => w.id === wp.id);
           if (cur) marker.setLngLat([cur.lon, cur.lat]);
-          console.warn(`[ProgPanel] WP drag rejected — too close to boat (min ${minNm} NM)`);
+          const actualNm = wpDistanceNm(boat, newWp);
+          console.warn(`[ProgPanel] WP placement rejected — ${actualNm.toFixed(2)} NM from boat (min ${minNm} NM)`);
           return;
         }
         state.updateWpOrder(wp.id, { lat: newWp.lat, lon: newWp.lon });

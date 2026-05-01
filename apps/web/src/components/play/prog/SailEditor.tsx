@@ -19,7 +19,20 @@ export interface SailEditorProps {
   defaultTime: number;
   /** Floor for the TimeStepper minValue */
   minValueSec: number;
+  /** Ceiling for the TimeStepper maxValue (now+J+5). Optional. */
+  maxValueSec?: number;
   nowSec: number;
+  /** When true, the boat is already in sail-auto by the time this order
+   *  would fire — so emitting another auto-sail order is a no-op. The
+   *  Auto segment is disabled to make this clear, and a new order
+   *  defaults to Manuel rather than Auto. */
+  priorIsAuto: boolean;
+  /** Additional floor (unix sec) imposed by a previous AT_TIME sail order
+   *  whose transition has not finished. The TimeStepper's effective minimum
+   *  is `max(minValueSec, minTimeFromTransition)`. Below this floor a warning
+   *  is shown and the order can't be saved. Optional — when omitted, no
+   *  transition lockout applies. */
+  minTimeFromTransition?: number;
   onCancel: () => void;
   onSave: (order: SailOrder) => void;
 }
@@ -31,10 +44,13 @@ function makeId(): string {
 }
 
 export default function SailEditor({
-  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, onCancel, onSave,
+  initialOrder, draftMode, availableWps, defaultTime, minValueSec, maxValueSec, nowSec, priorIsAuto, minTimeFromTransition, onCancel, onSave,
 }: SailEditorProps): ReactElement {
   const isNew = initialOrder === null;
-  const initialAuto = initialOrder?.action.auto ?? true;
+  // If the boat is already in auto at this order's trigger time, emitting
+  // another auto-sail order is a no-op — default a new order to Manuel so
+  // the user has a meaningful action to confirm.
+  const initialAuto = initialOrder?.action.auto ?? !priorIsAuto;
   const initialSail: SailId = initialOrder && initialOrder.action.auto === false
     ? initialOrder.action.sail
     : 'JIB';
@@ -53,7 +69,23 @@ export default function SailEditor({
   // Force AT_TIME in cap mode (segmented picker not shown)
   const effectiveTriggerKind: TriggerKind = draftMode === 'cap' ? 'AT_TIME' : triggerKind;
 
-  const canSave = effectiveTriggerKind === 'AT_TIME' || (effectiveTriggerKind === 'AT_WAYPOINT' && wpId !== '');
+  // No-op guard: an auto-sail order when the boat is already in auto-sail at
+  // the trigger time changes nothing. Refuse to save instead of letting the
+  // user pile up phantom orders. Validated on save in addition to the segment
+  // disabled state so the safeguard works even when the segment is bypassed
+  // (e.g. editing an existing auto order whose prior state is still auto).
+  const isAutoNoOp = auto && priorIsAuto;
+
+  // Transition lockout: a previous AT_TIME sail order's transition has not
+  // finished by `time`. AT_WAYPOINT triggers are not subject to this floor —
+  // the engine resolves their effective time dynamically based on routing.
+  const transitionFloor = minTimeFromTransition ?? minValueSec;
+  const isBlockedByTransition =
+    effectiveTriggerKind === 'AT_TIME' && time < transitionFloor;
+  const effectiveMinValueSec = Math.max(minValueSec, transitionFloor);
+
+  const triggerOk = effectiveTriggerKind === 'AT_TIME' || (effectiveTriggerKind === 'AT_WAYPOINT' && wpId !== '');
+  const canSave = triggerOk && !isAutoNoOp && !isBlockedByTransition;
 
   const handleSave = (): void => {
     if (!canSave) return;
@@ -90,6 +122,8 @@ export default function SailEditor({
               type="button"
               className={`${sailStyles.segBtn} ${auto ? sailStyles.segBtnActive : ''}`}
               onClick={() => setAuto(true)}
+              disabled={priorIsAuto}
+              title={priorIsAuto ? 'Le bateau est déjà en voile auto à cette heure' : undefined}
               aria-pressed={auto}
             >
               AUTO
@@ -103,28 +137,19 @@ export default function SailEditor({
               MANUEL
             </button>
           </div>
+          {isAutoNoOp && (
+            <p className={sailStyles.warnText}>
+              ⚠ Le bateau est déjà en voile auto à cette heure. L&apos;ordre serait sans effet.
+            </p>
+          )}
         </div>
 
         {/* Sail grid (only when Manuel) */}
         {!auto && (
           <div>
             <p className={styles.fieldLabel}>VOILE À HISSER</p>
-            <div className={sailStyles.sailGrid4}>
-              {SAIL_DEFS.slice(0, 4).map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`${sailStyles.sailTile} ${sailId === s.id ? sailStyles.sailTileActive : ''}`}
-                  onClick={() => setSailId(s.id)}
-                  aria-pressed={sailId === s.id}
-                >
-                  <div className={sailStyles.sailIconWrap}>{SAIL_ICONS[s.id]}</div>
-                  <span className={sailStyles.sailIdLabel}>{s.id}</span>
-                </button>
-              ))}
-            </div>
-            <div className={sailStyles.sailGrid3}>
-              {SAIL_DEFS.slice(4).map((s) => (
+            <div className={sailStyles.sailGrid}>
+              {SAIL_DEFS.map((s) => (
                 <button
                   key={s.id}
                   type="button"
@@ -168,12 +193,20 @@ export default function SailEditor({
 
         {/* Time stepper */}
         {effectiveTriggerKind === 'AT_TIME' && (
-          <TimeStepper
-            value={time}
-            onChange={(t) => setTime(t)}
-            minValue={minValueSec}
-            nowSec={nowSec}
-          />
+          <>
+            <TimeStepper
+              value={time}
+              onChange={(t) => setTime(t)}
+              minValue={effectiveMinValueSec}
+              {...(maxValueSec !== undefined ? { maxValue: maxValueSec } : {})}
+              nowSec={nowSec}
+            />
+            {isBlockedByTransition && (
+              <p className={sailStyles.warnText}>
+                ⚠ Une transition voile précédente n&apos;est pas terminée à cette heure.
+              </p>
+            )}
+          </>
         )}
 
         {/* WP picker */}

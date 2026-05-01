@@ -49,6 +49,7 @@ export {
   transitionSpeedFactor,
   computeOverlapFactor,
   getTransitionDuration,
+  getMaxTransitionSec,
   pickOptimalSail,
   maneuverSpeedFactor,
   type ManeuverPenaltyState,

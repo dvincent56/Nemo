@@ -6,32 +6,17 @@ import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
 import { pickOptimalSail } from '@/lib/polar/pickOptimalSail';
 import { SAIL_ICONS, SAIL_DEFS } from '@/lib/sails/icons';
+import {
+  getTransitionDuration,
+  getMaxTransitionSec,
+} from '@nemo/game-engine-core/browser';
 import styles from './SailPanel.module.css';
-
-/** Transition durations by sail pair (from game-balance.json). Default 180s. */
-const TRANSITION_TIMES: Record<string, number> = {
-  JIB_LJ: 120, LJ_JIB: 120,
-  JIB_SS: 150, SS_JIB: 150,
-  JIB_C0: 180, C0_JIB: 180,
-  C0_SPI: 300, SPI_C0: 300,
-  C0_HG: 240, HG_C0: 240,
-  SPI_HG: 240, HG_SPI: 240,
-  SPI_LG: 180, LG_SPI: 180,
-  HG_LG: 180, LG_HG: 180,
-  SS_C0: 180, C0_SS: 180,
-  LJ_SS: 150, SS_LJ: 150,
-  JIB_SPI: 360, SPI_JIB: 360,
-  LJ_C0: 240, C0_LJ: 240,
-};
-
-function getTransitionDuration(from: SailId, to: SailId): number {
-  return TRANSITION_TIMES[`${from}_${to}`] ?? 180;
-}
 
 export default function SailPanel(): React.ReactElement {
   const sailState = useGameStore((s) => s.sail);
   const { currentSail, sailAuto, transitionStartMs, transitionEndMs } = sailState;
   const { twa, tws, boatClass, bspBaseMultiplier } = useGameStore((s) => s.hud);
+  const programmedSails = useGameStore((s) => s.prog.committed.sailOrders);
   const [candidateSail, setCandidateSail] = useState<SailId | null>(null);
   const [wasAuto, setWasAuto] = useState(false);
   const [polarReady, setPolarReady] = useState(() => !!boatClass && !!getCachedPolar(boatClass));
@@ -62,6 +47,39 @@ export default function SailPanel(): React.ReactElement {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isTransitioning]);
 
+  // Programmed-sail lockout — when a committed AT_TIME manual SAIL order
+  // sits within ±getMaxTransitionSec() of `now`, the UI refuses any sail
+  // change so the user can't fight their own queue. Mirrors the engine's
+  // `suppressAutoSwitch` window in `tick.ts`. AT_WAYPOINT triggers aren't
+  // included — their effective time depends on routing dynamics, not a
+  // wall-clock anchor.
+  const lockoutOrder = (() => {
+    const halfWindowMs = getMaxTransitionSec() * 1000;
+    let best: { time: number; absDelta: number } | null = null;
+    for (const o of programmedSails) {
+      if (o.action.auto) continue;
+      if (o.trigger.type !== 'AT_TIME') continue;
+      const delta = o.trigger.time * 1000 - now;
+      const abs = Math.abs(delta);
+      if (abs > halfWindowMs) continue;
+      if (best === null || abs < best.absDelta) {
+        best = { time: o.trigger.time, absDelta: abs };
+      }
+    }
+    return best;
+  })();
+  const isLockedByProg = lockoutOrder !== null;
+
+  // SailPanel needs a 1Hz tick whenever the lockout window is active — the
+  // user must see the warning persist while `now` slides inside ±X of the
+  // programmed order. The existing transition-only tick stops as soon as the
+  // current transition ends, so a separate effect handles the lockout case.
+  useEffect(() => {
+    if (!isLockedByProg) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isLockedByProg]);
+
   const totalSec = transitionEndMs > transitionStartMs ? (transitionEndMs - transitionStartMs) / 1000 : 0;
   // Clamp to totalSec: when transitionStartMs > now (server clock ahead of client), the raw
   // remaining exceeds the total duration — cap it so the bar stays at 100% until the server's
@@ -71,7 +89,7 @@ export default function SailPanel(): React.ReactElement {
   const progressPct = totalSec > 0 ? Math.min(100, (remainingSec / totalSec) * 100) : 0;
 
   const onSailClick = (id: SailId) => {
-    if (id === currentSail || isTransitioning) return;
+    if (id === currentSail || isTransitioning || isLockedByProg) return;
     if (sailAuto) {
       // In auto mode: switch sail immediately (no confirm step), revert to manual.
       sendOrder({ type: 'MODE', value: { auto: false } });
@@ -120,6 +138,7 @@ export default function SailPanel(): React.ReactElement {
   };
 
   const toggleAuto = () => {
+    if (isLockedByProg) return;
     const next = !sailAuto;
     sendOrder({ type: 'MODE', value: { auto: next } });
     useGameStore.getState().setSailOptimistic('sailAuto', next);
@@ -148,12 +167,30 @@ export default function SailPanel(): React.ReactElement {
 
   return (
     <div>
+      {isLockedByProg && lockoutOrder && (
+        <div className={styles.lockoutBanner} role="status">
+          Vous avez programmé un changement de voile dans quelques minutes.
+          Vous ne pouvez pas changer de voile manuellement sans retirer votre
+          programmation.
+        </div>
+      )}
+
       {/* Mode toggle */}
       <div className={styles.modeToggle}>
-        <button type="button" className={`${styles.modeBtn} ${sailAuto ? styles.modeBtnActive : ''}`} onClick={() => { if (!sailAuto) toggleAuto(); }}>
+        <button
+          type="button"
+          className={`${styles.modeBtn} ${sailAuto ? styles.modeBtnActive : ''}`}
+          onClick={() => { if (!sailAuto) toggleAuto(); }}
+          disabled={isLockedByProg}
+        >
           Auto
         </button>
-        <button type="button" className={`${styles.modeBtn} ${!sailAuto ? styles.modeBtnActive : ''}`} onClick={() => { if (sailAuto) toggleAuto(); }}>
+        <button
+          type="button"
+          className={`${styles.modeBtn} ${!sailAuto ? styles.modeBtnActive : ''}`}
+          onClick={() => { if (sailAuto) toggleAuto(); }}
+          disabled={isLockedByProg}
+        >
           Manuel
         </button>
       </div>
@@ -163,7 +200,7 @@ export default function SailPanel(): React.ReactElement {
         {availableSails.map((s) => {
           const isActive = s.id === currentSail;
           const isCandidate = s.id === candidateSail;
-          const disabled = isTransitioning && !isActive;
+          const disabled = (isTransitioning && !isActive) || (isLockedByProg && !isActive);
           // Apply bspBaseMultiplier (wear + upgrades + swell) so per-sail speed
           // reflects actual boat performance, not raw polar.
           const estimatedBsp = polar

@@ -58,21 +58,29 @@ export interface WindGridHeader {
 }
 
 export interface ProjectionSegment {
-  /** When this order triggers (ms timestamp). For WPT orders chained via
-   *  AT_WAYPOINT, this is the projected origin time (Date.now()) — the
-   *  worker activates them sequentially as previous WPTs are captured. */
+  /** When this order triggers (ms timestamp). For orders chained via
+   *  AT_WAYPOINT, this is initially Number.MAX_SAFE_INTEGER (sentinel: never
+   *  fires by time). The worker rewrites it to currentMs at the moment the
+   *  referenced waypoint is captured. */
   triggerMs: number;
   /** Order type */
   type: 'CAP' | 'TWA' | 'SAIL' | 'MODE' | 'WPT';
   /** New heading for CAP, new TWA for TWA, sail ID for SAIL, auto boolean for
    *  MODE, or { lat, lon, captureRadiusNm } for WPT. */
   value: number | string | boolean | { lat: number; lon: number; captureRadiusNm: number };
-  /** For WPT only: id of the previous WPT in the AT_WAYPOINT chain. The
-   *  worker uses this to activate WPTs sequentially: a WPT becomes the
-   *  active waypoint only after its predecessor is captured. IMMEDIATE-
-   *  triggered WPTs (the first in the chain) leave this undefined. */
+  /** Id of the predecessor WPT in an AT_WAYPOINT trigger chain. The worker
+   *  uses this for two purposes:
+   *    - WPT segments: activates them sequentially as the previous WPT is
+   *      captured (chain ordering). IMMEDIATE-triggered WPTs leave this
+   *      undefined.
+   *    - Non-WPT segments (CAP/TWA/SAIL/MODE) with AT_WAYPOINT triggers
+   *      (e.g. the final cap, or sail-at-WP changes): the segment fires when
+   *      the referenced WPT is captured (its triggerMs is set to currentMs
+   *      at that moment). */
   waypointPredecessorId?: string;
-  /** WPT-only stable id used to resolve waypointPredecessorId. */
+  /** Stable order id. For WPTs, used to resolve waypointPredecessorId
+   *  references. For non-WPT segments, lets us match AT_WAYPOINT-triggered
+   *  segments against the WPT capture event. */
   id?: string;
 }
 

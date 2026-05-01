@@ -6,6 +6,7 @@ import {
   advanceSailState,
   computeOverlapFactor,
   detectManeuver,
+  getMaxTransitionSec,
   maneuverSpeedFactor,
   requestManualSailChange,
   transitionSpeedFactor,
@@ -19,7 +20,7 @@ import type { WeatherProvider } from './weather';
 import { aggregateEffects, type BoatLoadout } from './loadout';
 import { computeBsp } from './speed-model';
 import { haversineNM } from '@nemo/polar-lib/browser';
-import { WPT_DEFAULT_CAPTURE_NM } from './geo';
+import { WPT_DEFAULT_CAPTURE_NM, pointToSegmentClosestNM } from './geo';
 
 export interface CoastlineProbe {
   isLoaded(): boolean;
@@ -121,6 +122,25 @@ export function runTick(
       }
     }
   }
+  // Auto-switch lockout: when a programmed manual SAIL order sits within
+  // ±maxTransitionSec of `tickStartMs`, the engine refuses to trigger a new
+  // auto-mode sail change. Reasons:
+  //  - Future side: an auto-switch firing in the run-up to the manual order
+  //    would still be in transition when the order's effectiveTs lands,
+  //    silently dropping the player's queued change.
+  //  - Past side: even after the manual order's transition ends, the player
+  //    expects to stay on that sail for the full window — no immediate
+  //    auto-correction back to the optimal sail.
+  // The window's half-width is the catalog max transition time; loadout
+  // multipliers shorten transitions but never lengthen them, so this is the
+  // safe upper bound. Transitions already in flight finish regardless — only
+  // the *triggering* of new auto switches is gated.
+  const sailLockoutWindowMs = getMaxTransitionSec() * 1000;
+  const suppressAutoSwitch = runtime.orderHistory.some((env) => {
+    if (env.order.type !== 'SAIL') return false;
+    if (env.order.completed) return false;
+    return Math.abs(env.effectiveTs - tickStartMs) <= sailLockoutWindowMs;
+  });
   const newSailState = advanceSailState(
     sailState,
     deps.polar,
@@ -130,6 +150,7 @@ export function runTick(
     tickStartMs,
     aggEffects,
     autoEnableTs ?? Date.now(),
+    suppressAutoSwitch,
   );
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
@@ -301,15 +322,20 @@ export function runTick(
 
   // --- WPT capture detection ---
   // A WPT order stays active across many ticks (it persists until the boat
-  // reaches its capture radius — default 0.5 NM). On each tick we check if
-  // any active WPT order whose effectiveTs has elapsed should be marked
-  // completed based on the current/end position.
-  // Default capture radius mirrors the legacy queue-based engine
-  // (apps/game-engine/src/engine/orders.ts WPT_REACHED_NM = 0.5).
-  // Use the segments list to test capture at any boundary (start, segment ends),
-  // so a fast boat that crosses the capture radius mid-tick is detected.
-  const wptCheckPositions: Position[] = [runtime.segmentState.position];
-  for (const seg of segments) wptCheckPositions.push(seg.endPosition);
+  // reaches its capture radius — default 0.001 NM ≈ 1.85m for tactical
+  // precision matching Virtual Regatta meter-level passage detection).
+  //
+  // We use a mathematically exact line-distance check: for each segment
+  // (start → end), compute the perpendicular distance from the WP to the
+  // segment line. If the perpendicular falls inside the segment AND the
+  // distance is within captureRadiusNm, the boat crossed the WP's capture
+  // circle during this segment.
+  //
+  // Combined with endpoint checks (segment start + each segment end), this
+  // covers all points on the segment path where the boat could be within
+  // the radius. O(1) per segment-check, no sampling artifacts.
+  const segmentBoundaries: Position[] = [runtime.segmentState.position];
+  for (const seg of segments) segmentBoundaries.push(seg.endPosition);
 
   // Only the chain-active WPT may be captured this tick. A WPT whose
   // AT_WAYPOINT predecessor is not yet completed is dormant — its
@@ -331,12 +357,34 @@ export function runTick(
         ? radiusRaw
         : WPT_DEFAULT_CAPTURE_NM;
     const wpt: Position = { lat, lon };
-    for (const pos of wptCheckPositions) {
+
+    // Check 1: any segment boundary within radius? (Catches the "boat is
+    // already inside the radius at segment start" case and the typical
+    // "boat ends a segment inside the radius" case.)
+    let captured = false;
+    for (const pos of segmentBoundaries) {
       if (haversineNM(pos, wpt) < captureRadiusNm) {
-        completedWptIds.add(env.order.id);
+        captured = true;
         break;
       }
     }
+
+    // Check 2: any segment line passes within radius (perpendicular falls
+    // inside segment)? Catches mid-segment passages where both endpoints
+    // are outside the radius but the path crosses the capture circle.
+    if (!captured) {
+      let prev: Position = runtime.segmentState.position;
+      for (const seg of segments) {
+        const dist = pointToSegmentClosestNM(wpt, prev, seg.endPosition);
+        if (dist < captureRadiusNm) {
+          captured = true;
+          break;
+        }
+        prev = seg.endPosition;
+      }
+    }
+
+    if (captured) completedWptIds.add(env.order.id);
   }
 
   // Purge orders that fell within this tick's window (already processed).
