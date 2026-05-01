@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Eyebrow, Flag, Pagination } from '@/components/ui';
 import { profileHref } from '@/lib/routes';
-import { ME_CONTEXT, getRanking, type BoatClass, type SkipperRanking } from './data';
+import { ME_CONTEXT, getRanking, type BoatClass, type RankingConfig, type SkipperRanking } from './data';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 10;
@@ -29,6 +29,11 @@ const SCOPE_OPTIONS: { value: ScopeFilter; label: string }[] = [
   { value: 'DPT', label: 'Département' },
   { value: 'REGION', label: 'Région' },
   { value: 'COUNTRY', label: 'Pays' },
+];
+
+const CONFIG_OPTIONS: { value: RankingConfig; label: string }[] = [
+  { value: 'all', label: 'Toutes' },
+  { value: 'series', label: 'Série' },
 ];
 
 function formatRank(n: number): { main: string; suffix: string } {
@@ -64,6 +69,7 @@ export default function RankingView({
 }: RankingViewProps): React.ReactElement {
   const [classFilter, setClassFilter] = useState<ClassFilter>('ALL');
   const [scope, setScope] = useState<ScopeFilter>('GENERAL');
+  const [config, setConfig] = useState<RankingConfig>('all');
 
   const scopeOptions = useMemo(
     () => (isVisitor ? SCOPE_OPTIONS.filter((s) => s.value === 'GENERAL') : SCOPE_OPTIONS),
@@ -75,7 +81,7 @@ export default function RankingView({
   // (1er, 2e, …). On applique ensuite le filtre Périmètre et on **re-rang**
   // dans le sous-classement (1er entre amis, 1er du département, …).
   const rows = useMemo(() => {
-    const base = getRanking(classFilter);
+    const base = getRanking(classFilter, config);
     const filtered = base.filter((r) => {
       switch (scope) {
         case 'GENERAL': return true;
@@ -88,11 +94,11 @@ export default function RankingView({
       }
     });
     return filtered.map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [classFilter, scope]);
+  }, [classFilter, scope, config]);
 
   // Pagination de la table — reset à la page 1 si le filtre change
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [classFilter, scope]);
+  useEffect(() => { setPage(1); }, [classFilter, scope, config]);
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const visibleRows = useMemo(
     () => rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -113,9 +119,19 @@ export default function RankingView({
         </div>
         <div>
           <p className={styles.heroMeta}>
-            Rang cumulé sur l'ensemble des courses de la saison, toutes classes
-            confondues. <strong>{totalSkippers.toLocaleString('fr-FR')} skippers</strong> actifs
-            sur le circuit.
+            {config === 'series' ? (
+              <>
+                Classement <strong>Série</strong> — uniquement les performances réalisées
+                avec un bateau strictement au défaut. <strong>{rows.length.toLocaleString('fr-FR')} skippers</strong> éligibles
+                sur le sous-classement courant.
+              </>
+            ) : (
+              <>
+                Rang cumulé sur l'ensemble des courses de la saison, toutes classes
+                confondues. <strong>{totalSkippers.toLocaleString('fr-FR')} skippers</strong> actifs
+                sur le circuit.
+              </>
+            )}
           </p>
           {me && (
             <div className={styles.me}>
@@ -181,6 +197,19 @@ export default function RankingView({
               onClick={() => setScope(s.value)}
             >
               {s.label}
+            </button>
+          ))}
+        </div>
+        <div className={styles.filterGroup}>
+          <p className={styles.filterLabel}>Configuration</p>
+          {CONFIG_OPTIONS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              className={`${styles.filterTab} ${c.value === config ? styles.filterTabActive : ''}`}
+              onClick={() => setConfig(c.value)}
+            >
+              {c.label}
             </button>
           ))}
         </div>
