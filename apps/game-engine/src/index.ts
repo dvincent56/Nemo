@@ -167,9 +167,10 @@ async function main() {
   const tick = new TickManager(redis);
   registerRuntimeRoutes(app, tick);
   registerTrackRoutes(app, tick);
-  if (process.env['NEMO_DEV_ROUTES'] !== '0') {
+  // Dev routes are OFF by default. Local dev sets NEMO_DEV_ROUTES=1 in .env.
+  if (process.env['NEMO_DEV_ROUTES'] === '1') {
     registerDevRoutes(app, tick, createDemoRuntime);
-    log.info('dev routes enabled — POST /api/v1/dev/reset-demo available');
+    log.warn('dev routes ENABLED — POST /api/v1/dev/reset-demo available (local dev only)');
   }
 
   const port = Number(process.env['PORT'] ?? 3001);
