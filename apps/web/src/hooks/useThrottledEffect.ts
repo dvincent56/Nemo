@@ -25,7 +25,12 @@ export function useThrottledEffect(
   const lastFiredAtRef = useRef(0);
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  // Keep latest fn in a ref without putting it in the throttle effect's deps.
+  // Declared BEFORE the throttle effect so commit order guarantees fnRef is
+  // up to date when the throttle reads it.
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   useEffect(() => {
     const fire = (): void => {

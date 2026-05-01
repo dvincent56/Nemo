@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Politique d'utilisation des cookies et traceurs sur Nemo.",
 };
 
-const LAST_UPDATED = '16 avril 2026';
+const LAST_UPDATED = '1er mai 2026';
 
 const SECTIONS: LegalSection[] = [
   {
@@ -48,32 +48,20 @@ const SECTIONS: LegalSection[] = [
             <tr>
               <td><code>nemo_access_token</code></td>
               <td>Jeton d'authentification de session (obligatoire pour jouer)</td>
-              <td>30 jours, renouvelé à chaque visite</td>
-              <td>Nécessaire</td>
-            </tr>
-            <tr>
-              <td><code>nemo_csrf</code></td>
-              <td>Protection contre les attaques CSRF lors des actions sensibles</td>
-              <td>Session</td>
-              <td>Nécessaire</td>
-            </tr>
-            <tr>
-              <td><code>nemo_prefs</code></td>
-              <td>Mémorisation de tes préférences d'affichage (unités, langue)</td>
-              <td>12 mois</td>
-              <td>Fonctionnel</td>
-            </tr>
-            <tr>
-              <td><code>__cf_bm</code></td>
-              <td>Cloudflare — détection de bots et protection anti-DDoS</td>
-              <td>30 minutes</td>
+              <td>1 heure, renouvelé à chaque connexion</td>
               <td>Nécessaire</td>
             </tr>
           </tbody>
         </table>
         <p>
-          Ces cookies sont strictement nécessaires ou fonctionnels. Conformément à la législation
-          française, ils ne requièrent pas de consentement préalable.
+          Ce cookie est strictement nécessaire au fonctionnement du service. Conformément à la
+          législation française, il ne requiert pas de consentement préalable.
+        </p>
+        <p>
+          Cette liste sera mise à jour au fur et à mesure de l'arrivée des fonctionnalités (jeton
+          anti-CSRF pour les actions sensibles, mémorisation des préférences d'affichage, protection
+          anti-bots Cloudflare). Toute évolution sera annoncée selon la procédure décrite à
+          l'article 05.
         </p>
       </>
     ),
@@ -149,8 +137,8 @@ export default function CookiesPage(): React.ReactElement {
         title="Politique cookies"
         intro={
           <>
-            Uniquement ceux qu'il faut pour te connecter et retenir tes préférences. Pas de tracking
-            publicitaire, pas de pixel caché, pas de régie tierce.
+            Uniquement ceux qu'il faut pour te connecter. Pas de tracking publicitaire, pas de pixel
+            caché, pas de régie tierce.
           </>
         }
         lastUpdated={LAST_UPDATED}

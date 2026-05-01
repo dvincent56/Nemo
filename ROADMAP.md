@@ -238,6 +238,19 @@ Gardée par middleware `role === 'super_admin'`, regroupe les manettes ops :
 - [ ] Alerte Slack/email si un backup automatique échoue (CloudWatch event sur RDS)
 - [ ] Rétention long terme : export mensuel d'un snapshot vers S3 Glacier (conservation 1 an minimum, conformité RGPD article 32)
 
+### Audit pages légales (**bloquant avant ouverture publique**)
+> Les pages publiques (`cookies`, `privacy`, `cgu`, `legal`) ont été rédigées en Phase 3 sur la base
+> de l'état projeté à la mise en prod. Elles doivent être re-vérifiées contre la réalité avant
+> d'ouvrir au public, sinon elles annoncent des traitements/cookies non encore actifs (faux) ou
+> omettent ceux qui le sont (sanction CNIL possible).
+
+- [ ] `cookies/page.tsx` : aligner sur les cookies réellement posés (`nemo_access_token` toujours présent ; ajouter `nemo_csrf` si CSRF middleware Phase 4 livré, `nemo_prefs` si feature préférences livrée, `__cf_bm` si Cloudflare est devant le domaine prod)
+- [ ] `privacy/page.tsx` : vérifier sous-traitants RGPD réels (Stripe, Cognito, AWS région retenue, SES, éventuels analytics) et durées de conservation effectives
+- [ ] `cgu/page.tsx` : aligner sur Stripe (modèle d'abonnement final), Cognito prod, conditions de remboursement, hébergeur réel
+- [ ] `legal/page.tsx` : éditeur, hébergeur, contact, numéro RCS/SIRET si la micro-entreprise est créée
+- [ ] Mettre à jour la date `LAST_UPDATED` sur les 4 pages
+- [ ] Ajouter le bandeau de consentement explicite si un cookie analytique soumis à consentement est introduit (cf. article 05 cookies)
+
 ### Premier déploiement AWS
 - [ ] ECS Fargate : game-engine + ws-gateway
 - [ ] RDS PostgreSQL prod (`db.t3.small`)
