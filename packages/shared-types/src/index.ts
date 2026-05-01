@@ -192,4 +192,4 @@ export {
   OrderTriggerZ,
   OrderZ,
   OrderEnvelopeInputZ,
-} from './orders.zod.js';
+} from './orders.zod';
