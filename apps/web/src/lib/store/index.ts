@@ -20,6 +20,15 @@ import { createRouterSlice } from './routerSlice';
 import { createTrackSlice } from './trackSlice';
 import { createProjectionSnapshotSlice } from './projectionSnapshotSlice';
 import { mergeField } from './pending';
+import { INITIAL_PANEL } from './panelSlice';
+import { INITIAL_PROG } from './progSlice';
+import { INITIAL_ROUTER } from './routerSlice';
+import { INITIAL_HUD } from './hudSlice';
+import { INITIAL_SAIL } from './sailSlice';
+import { INITIAL_TRACK } from './trackSlice';
+import { INITIAL_PREVIEW } from './previewSlice';
+import { INITIAL_LAYERS } from './layersSlice';
+import { INITIAL_CONNECTION } from './connectionSlice';
 
 export type { GameStore, HudState, SailSliceState, MapState, SelectionState } from './types';
 export type { TimelineState, LayersState, PanelState, WeatherState, MapAppearanceState } from './types';
@@ -349,6 +358,49 @@ export function sendOrderReplaceQueue(orders: ReplaceQueueOrderInput[]): boolean
 
 export function isLiveMode(): boolean {
   return WS_LIVE;
+}
+
+/**
+ * Close the active race WebSocket without retry. Marking `closed = true`
+ * before calling ws.close() short-circuits the exponential reconnect in
+ * `onclose`, so leaving the play screen actually stops the stream.
+ */
+export function disconnectRace(): void {
+  if (!activeConnection) return;
+  activeConnection.close();
+  activeConnection = null;
+}
+
+/**
+ * Reset every play-screen-scoped slice to its initial state.
+ *
+ * Preserved on purpose:
+ * - `weather` (decoded GFS grid is expensive to refetch — re-entry is
+ *   instant and the next server tick refreshes the values)
+ * - `mapAppearance`, `timeline`, `map` (user UI preferences)
+ *
+ * Reset to defaults (per product decision):
+ * - `layers` toggles — each play session starts with the default visibility
+ *
+ * Call from PlayClient unmount alongside `disconnectRace()`.
+ */
+export function resetPlayScreen(): void {
+  useGameStore.setState({
+    panel: INITIAL_PANEL,
+    prog: INITIAL_PROG,
+    router: INITIAL_ROUTER,
+    selection: { selectedBoatIds: new Set() },
+    hud: INITIAL_HUD,
+    sail: INITIAL_SAIL,
+    track: INITIAL_TRACK,
+    preview: INITIAL_PREVIEW,
+    layers: INITIAL_LAYERS,
+    connection: INITIAL_CONNECTION,
+    zones: [],
+    boats: new Map(),
+    lastTickUnix: null,
+    projectionSnapshot: null,
+  });
 }
 
 // ---------------------------------------------------------------------------

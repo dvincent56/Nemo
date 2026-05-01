@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RaceSummary } from '@/lib/api';
 import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
-import { connectRace, sendOrderReplaceQueue, useGameStore } from '@/lib/store';
+import {
+  connectRace, disconnectRace, resetPlayScreen,
+  sendOrderReplaceQueue, useGameStore,
+} from '@/lib/store';
 import {
   ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
   type SessionContext,
@@ -166,7 +169,15 @@ function useBoatInit(raceId: string): void {
       }
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // Leaving the play screen: stop streaming and wipe transient slices
+      // so re-entry shows a clean slate (no stale open panel, no in-flight
+      // prog draft, no orphan optimistic patches). Weather grid + UI prefs
+      // are preserved on purpose — see resetPlayScreen() for details.
+      disconnectRace();
+      resetPlayScreen();
+    };
   }, [raceId]);
 }
 
