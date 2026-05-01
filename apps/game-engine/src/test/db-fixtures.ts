@@ -65,7 +65,13 @@ export async function createTestCampaign(db: DbClient, opts: TestCampaignOpts): 
   return row!.id;
 }
 
-/** Cleanup all rows tied to the given player ids, in dependency order. */
+/**
+ * Cleanup all rows tied to the given player ids, in dependency order.
+ *
+ * Note: deleting `campaigns` cascades to `campaign_claims` (FK on campaign_id),
+ * which cleans up any claims by non-test players against test-admin-owned
+ * campaigns. We rely on this cascade rather than tracking those claims explicitly.
+ */
 export async function cleanupTestPlayers(db: DbClient, playerIds: string[]): Promise<void> {
   if (playerIds.length === 0) return;
   await db.delete(notifications).where(inArray(notifications.playerId, playerIds));

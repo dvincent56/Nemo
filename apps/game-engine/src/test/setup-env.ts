@@ -12,4 +12,5 @@
  */
 if (!process.env['DATABASE_URL']) {
   process.env['DATABASE_URL'] = 'postgresql://nemo:nemo@localhost:5432/nemo';
+  console.warn('[test-env] DATABASE_URL not set, falling back to localhost dev DB');
 }
