@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import { parseCorsAllowlist } from './lib/cors-allowlist.js';
 import pino from 'pino';
 import type { Boat } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance';
@@ -89,10 +92,23 @@ async function main() {
   log.info({ version: GameBalance.version }, 'game-balance loaded');
   validateCatalogCoverage();
 
+  const allowlist = parseCorsAllowlist(process.env['WEB_ORIGIN'] ?? 'http://localhost:3000');
+  log.info({ origins: allowlist }, 'CORS allowlist resolved');
+
   const app = Fastify({ logger: false });
+  await app.register(helmet, { contentSecurityPolicy: false }); // API: no CSP, but X-Frame-Options/HSTS/etc.
+  await app.register(rateLimit, {
+    max: 200,
+    timeWindow: '1 minute',
+    // Per-IP by default. Authenticated users get a higher quota at route level if needed.
+  });
   await app.register(cookie);
   await app.register(cors, {
-    origin: process.env['WEB_ORIGIN'] ?? 'http://localhost:3000',
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // same-origin / curl
+      if (allowlist.includes(origin)) return cb(null, true);
+      cb(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
   });
 
