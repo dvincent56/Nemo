@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore, commitDraft, firstEffectiveHeading } from '@/lib/store';
 import type { ProgMode } from '@/lib/prog/types';
-import { defaultCapAnchor, defaultSailAnchor, floorForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
+import { defaultCapAnchor, defaultSailAnchor, floorForNow, ceilingForNow, isObsoleteAtTime } from '@/lib/prog/anchors';
 import { predictAfterHdg } from '@/lib/optimistic/predictAfterHdg';
 import { getCachedPolar } from '@/lib/polar';
 import { earliestSailSlot } from '@/lib/prog/transitionLock';
 import ProgQueueView from './prog/ProgQueueView';
 import ProgFooter from './prog/ProgFooter';
 import ProgBanner from './prog/ProgBanner';
+import ProgToast from './prog/ProgToast';
 import CapEditor from './prog/CapEditor';
 import SailEditor from './prog/SailEditor';
 import WpEditor from './prog/WpEditor';
@@ -55,6 +56,8 @@ export default function ProgPanel(): ReactElement {
   const setEditing = useGameStore((s) => s.setEditingOrder);
   const pendingNewWpId = useGameStore((s) => s.prog.pendingNewWpId);
   const setPendingNewWpId = useGameStore((s) => s.setPendingNewWpId);
+  const notice = useGameStore((s) => s.prog.notice);
+  const setProgNotice = useGameStore((s) => s.setProgNotice);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [deleteDialog, setDeleteDialog] = useState<{ kind: 'cap' | 'wp' | 'finalCap' | 'sail'; id: string } | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
@@ -65,6 +68,15 @@ export default function ProgPanel(): ReactElement {
     const id = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Auto-dismiss the desync notice after ~5s. Re-keys on `notice.id` so a
+  // back-to-back trigger restarts the timer instead of being swallowed by a
+  // stale cleanup.
+  useEffect(() => {
+    if (!notice) return;
+    const id = setTimeout(() => setProgNotice(null), 5000);
+    return () => clearTimeout(id);
+  }, [notice, setProgNotice]);
 
   const isDirty = useMemo(() => !deepEqDraft(draft, committed), [draft, committed]);
 
@@ -150,6 +162,7 @@ export default function ProgPanel(): ReactElement {
           defaultHeading={hudHdg}
           defaultTime={defaultCapAnchor(draft, nowSec)}
           minValueSec={floorForNow(nowSec)}
+          maxValueSec={ceilingForNow(nowSec)}
           nowSec={nowSec}
           index={index}
           onCancel={() => setEditing(null)}
@@ -212,6 +225,7 @@ export default function ProgPanel(): ReactElement {
           availableWps={availableWps}
           defaultTime={defaultSailAnchor(draft, nowSec)}
           minValueSec={floorForNow(nowSec)}
+          maxValueSec={ceilingForNow(nowSec)}
           nowSec={nowSec}
           priorIsAuto={priorIsAuto}
           minTimeFromTransition={sailTransitionFloor}
@@ -322,6 +336,12 @@ export default function ProgPanel(): ReactElement {
   // Idle / Dirty queue view
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {notice && (
+        <ProgToast
+          message={notice.message}
+          onDismiss={() => setProgNotice(null)}
+        />
+      )}
       {bannerDismissedAtCount !== obsoleteCount && obsoleteCount > 0 && (
         <ProgBanner
           obsoleteCount={obsoleteCount}

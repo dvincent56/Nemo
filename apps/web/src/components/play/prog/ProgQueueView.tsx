@@ -1,7 +1,7 @@
 'use client';
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
-import { Anchor, MapPin, Wind, Pencil, Trash2, Plus } from 'lucide-react';
+import { Anchor, MapPin, Wind, Pencil, Trash2, Plus, Info } from 'lucide-react';
 import type { ProgDraft, ProgMode } from '@/lib/prog/types';
 import { isObsoleteAtTime } from '@/lib/prog/anchors';
 import styles from './ProgQueueView.module.css';
@@ -286,6 +286,17 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
           <Trash2 size={11} strokeWidth={2} /> Tout effacer
         </button>
       )}
+
+      {/* Multi-tab note — last confirmation always wins; surface it so a
+       *  player editing the same race in two tabs/devices doesn't expect
+       *  a merge. */}
+      <div className={styles.multiTabNote}>
+        <Info size={11} strokeWidth={2} />
+        <span>
+          La dernière confirmation prime. Évitez de programmer depuis plusieurs
+          onglets simultanément.
+        </span>
+      </div>
     </div>
   );
 }

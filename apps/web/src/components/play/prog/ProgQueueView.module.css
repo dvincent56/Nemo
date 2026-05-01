@@ -265,3 +265,24 @@
 .clearAll:hover {
   color: #d97b5a;
 }
+
+.multiTabNote {
+  margin-top: 16px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(245, 240, 232, 0.10);
+  border-radius: 4px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(245, 240, 232, 0.50);
+}
+
+.multiTabNote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: rgba(245, 240, 232, 0.42);
+}

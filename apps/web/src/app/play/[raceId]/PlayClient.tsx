@@ -648,7 +648,45 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
       }
 
       if (captured.size > 0) {
+        // Desync guard: if the user is currently editing an order whose
+        // referenced WP was just captured, the editor is about to operate on
+        // stale state (the WP — and any sail order or finalCap pinned to it
+        // — disappears from the draft on the next set call). Close the
+        // editor first and surface a one-shot notice so the player notices.
+        const editing = state.prog.editingOrder;
+        let editorAffected = false;
+        if (editing) {
+          if (editing.kind === 'wp' && captured.has(editing.id)) {
+            editorAffected = true;
+          } else if (editing.kind === 'sail') {
+            const sailOrder = state.prog.draft.sailOrders.find(
+              (s) => s.id === editing.id,
+            );
+            if (
+              sailOrder
+              && sailOrder.trigger.type === 'AT_WAYPOINT'
+              && captured.has(sailOrder.trigger.waypointOrderId)
+            ) {
+              editorAffected = true;
+            }
+          } else if (editing.kind === 'finalCap') {
+            const fc = state.prog.draft.finalCap;
+            if (fc && captured.has(fc.trigger.waypointOrderId)) {
+              editorAffected = true;
+            }
+          }
+        }
+
         state.removeCapturedWps([...captured]);
+
+        if (editorAffected) {
+          state.setEditingOrder(null);
+          state.setProgNotice({
+            id: `desync-${Date.now()}`,
+            message:
+              'Un waypoint a été atteint pendant votre édition — éditeur fermé.',
+          });
+        }
       }
     };
 

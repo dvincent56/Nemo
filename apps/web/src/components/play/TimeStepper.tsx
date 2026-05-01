@@ -21,6 +21,10 @@ export interface TimeStepperProps {
   value: number;
   onChange: (nextSec: number) => void;
   minValue: number;
+  /** Optional ceiling — typically `nowSec + J5_HORIZON_SEC` because the
+   *  projection has no GFS coverage past J+5. When `value >= maxValue`
+   *  the `+` button locks and a "Plafond" warning is displayed. */
+  maxValue?: number;
   nowSec: number;
   className?: string;
 }
@@ -48,6 +52,7 @@ export default function TimeStepper({
   value,
   onChange,
   minValue,
+  maxValue,
   nowSec,
   className,
 }: TimeStepperProps): ReactElement {
@@ -77,16 +82,21 @@ export default function TimeStepper({
           return;
         }
       } else {
-        next = candidate;
+        next = maxValue !== undefined ? Math.min(candidate, maxValue) : candidate;
+        if (next === valueRef.current) {
+          stop();
+          return;
+        }
       }
       onChange(next);
       pulse += 1;
       timerRef.current = setTimeout(tick, delayMs);
     };
     tick();
-  }, [minValue, onChange, stop]);
+  }, [minValue, maxValue, onChange, stop]);
 
   const blockMinus = value <= minValue;
+  const blockPlus = maxValue !== undefined && value >= maxValue;
 
   // setPointerCapture may throw in JSDOM — wrap in try/catch defensively.
   const safeCapture = (target: HTMLElement, pointerId: number) => {
@@ -120,8 +130,10 @@ export default function TimeStepper({
       <button
         type="button"
         className={styles.btn}
+        disabled={blockPlus}
         aria-label="Avancer"
         onPointerDown={(e) => {
+          if (blockPlus) return;
           safeCapture(e.currentTarget, e.pointerId);
           startLoop(1);
         }}
@@ -135,6 +147,11 @@ export default function TimeStepper({
       {blockMinus && (
         <div className={styles.floorWarning}>
           ⛔ Délai mini : now + 5min
+        </div>
+      )}
+      {!blockMinus && blockPlus && (
+        <div className={styles.floorWarning}>
+          ⛔ Plafond : J+5 (limite météo)
         </div>
       )}
     </div>

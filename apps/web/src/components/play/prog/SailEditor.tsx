@@ -19,6 +19,8 @@ export interface SailEditorProps {
   defaultTime: number;
   /** Floor for the TimeStepper minValue */
   minValueSec: number;
+  /** Ceiling for the TimeStepper maxValue (now+J+5). Optional. */
+  maxValueSec?: number;
   nowSec: number;
   /** When true, the boat is already in sail-auto by the time this order
    *  would fire — so emitting another auto-sail order is a no-op. The
@@ -42,7 +44,7 @@ function makeId(): string {
 }
 
 export default function SailEditor({
-  initialOrder, draftMode, availableWps, defaultTime, minValueSec, nowSec, priorIsAuto, minTimeFromTransition, onCancel, onSave,
+  initialOrder, draftMode, availableWps, defaultTime, minValueSec, maxValueSec, nowSec, priorIsAuto, minTimeFromTransition, onCancel, onSave,
 }: SailEditorProps): ReactElement {
   const isNew = initialOrder === null;
   // If the boat is already in auto at this order's trigger time, emitting
@@ -196,6 +198,7 @@ export default function SailEditor({
               value={time}
               onChange={(t) => setTime(t)}
               minValue={effectiveMinValueSec}
+              {...(maxValueSec !== undefined ? { maxValue: maxValueSec } : {})}
               nowSec={nowSec}
             />
             {isBlockedByTransition && (

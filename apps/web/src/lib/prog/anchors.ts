@@ -7,6 +7,22 @@ export const FLOOR_OFFSET_SEC = 5 * 60;
 export const DEFAULT_OFFSET_SEC = 10 * 60;
 
 /**
+ * Programming horizon — players cannot schedule orders past now + J+5.
+ * The projection has no GFS coverage past day 5 (cf. PlayClient's
+ * `forecastEndMs` which already caps at 5 days for the timeline), so any
+ * AT_TIME order past this window would land on a guessed wind.
+ */
+export const J5_HORIZON_SEC = 5 * 24 * 3600;
+
+/**
+ * Ceiling for the TimeStepper maxValue prop — the absolute latest time an
+ * order can trigger.
+ */
+export function ceilingForNow(nowSec: number): number {
+  return nowSec + J5_HORIZON_SEC;
+}
+
+/**
  * Default trigger time for a NEW cap order. Always returns
  * `reference + 10min`, where reference is the latest cap order's time
  * if any, else `nowSec`.
@@ -15,9 +31,12 @@ export const DEFAULT_OFFSET_SEC = 10 * 60;
  * (Time logic — Heure par défaut section).
  */
 export function defaultCapAnchor(draft: ProgDraft, nowSec: number): number {
-  if (draft.capOrders.length === 0) return nowSec + DEFAULT_OFFSET_SEC;
+  const ceiling = ceilingForNow(nowSec);
+  if (draft.capOrders.length === 0) {
+    return Math.min(nowSec + DEFAULT_OFFSET_SEC, ceiling);
+  }
   const latest = draft.capOrders.reduce((max, o) => Math.max(max, o.trigger.time), 0);
-  return latest + DEFAULT_OFFSET_SEC;
+  return Math.min(latest + DEFAULT_OFFSET_SEC, ceiling);
 }
 
 /**
@@ -27,14 +46,15 @@ export function defaultCapAnchor(draft: ProgDraft, nowSec: number): number {
  * sail order's time if any, else `nowSec`.
  */
 export function defaultSailAnchor(draft: ProgDraft, nowSec: number): number {
+  const ceiling = ceilingForNow(nowSec);
   let latest = 0;
   for (const o of draft.sailOrders) {
     if (o.trigger.type === 'AT_TIME' && o.trigger.time > latest) {
       latest = o.trigger.time;
     }
   }
-  if (latest === 0) return nowSec + DEFAULT_OFFSET_SEC;
-  return latest + DEFAULT_OFFSET_SEC;
+  if (latest === 0) return Math.min(nowSec + DEFAULT_OFFSET_SEC, ceiling);
+  return Math.min(latest + DEFAULT_OFFSET_SEC, ceiling);
 }
 
 /**

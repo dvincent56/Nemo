@@ -19,6 +19,9 @@ export interface CapEditorProps {
   defaultTime: number;
   /** Floor for the TimeStepper minValue (now+5min) */
   minValueSec: number;
+  /** Ceiling for the TimeStepper maxValue (now+J+5). Optional — when omitted
+   *  the stepper has no upper bound. */
+  maxValueSec?: number;
   /** Reference time for the relative offset display */
   nowSec: number;
   /** Index in the queue (1-based for display) — null when creating */
@@ -37,6 +40,7 @@ export default function CapEditor({
   defaultHeading,
   defaultTime,
   minValueSec,
+  maxValueSec,
   nowSec,
   index,
   onCancel,
@@ -124,6 +128,7 @@ export default function CapEditor({
             value={time}
             onChange={(t) => setTime(t)}
             minValue={minValueSec}
+            {...(maxValueSec !== undefined ? { maxValue: maxValueSec } : {})}
             nowSec={nowSec}
           />
         </div>
