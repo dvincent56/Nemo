@@ -35,6 +35,23 @@
   pointer-events: none;
 }
 
+.modeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lockoutBanner {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(217, 123, 90, 0.10);
+  border: 1px solid #d97b5a;
+  border-radius: 4px;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #f5a482;
+}
+
 /* ── Sail list ── */
 .sailList {
   display: flex;

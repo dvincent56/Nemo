@@ -6,6 +6,7 @@ import {
   advanceSailState,
   computeOverlapFactor,
   detectManeuver,
+  getMaxTransitionSec,
   maneuverSpeedFactor,
   requestManualSailChange,
   transitionSpeedFactor,
@@ -121,6 +122,25 @@ export function runTick(
       }
     }
   }
+  // Auto-switch lockout: when a programmed manual SAIL order sits within
+  // ±maxTransitionSec of `tickStartMs`, the engine refuses to trigger a new
+  // auto-mode sail change. Reasons:
+  //  - Future side: an auto-switch firing in the run-up to the manual order
+  //    would still be in transition when the order's effectiveTs lands,
+  //    silently dropping the player's queued change.
+  //  - Past side: even after the manual order's transition ends, the player
+  //    expects to stay on that sail for the full window — no immediate
+  //    auto-correction back to the optimal sail.
+  // The window's half-width is the catalog max transition time; loadout
+  // multipliers shorten transitions but never lengthen them, so this is the
+  // safe upper bound. Transitions already in flight finish regardless — only
+  // the *triggering* of new auto switches is gated.
+  const sailLockoutWindowMs = getMaxTransitionSec() * 1000;
+  const suppressAutoSwitch = runtime.orderHistory.some((env) => {
+    if (env.order.type !== 'SAIL') return false;
+    if (env.order.completed) return false;
+    return Math.abs(env.effectiveTs - tickStartMs) <= sailLockoutWindowMs;
+  });
   const newSailState = advanceSailState(
     sailState,
     deps.polar,
@@ -130,6 +150,7 @@ export function runTick(
     tickStartMs,
     aggEffects,
     autoEnableTs ?? Date.now(),
+    suppressAutoSwitch,
   );
   // --- Manœuvre (détection sur franchissement de bord) ---
   let maneuver: ManeuverPenaltyState | null = runtime.maneuver;
