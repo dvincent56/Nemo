@@ -1,7 +1,8 @@
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import pino from 'pino';
 import type { DbClient } from '../db/client.js';
-import { campaigns, campaignClaims, notifications, players } from '../db/schema.js';
+import { campaigns, campaignClaims, notifications, players, playerUpgrades } from '../db/schema.js';
+import { isCareer } from './campaigns.helpers.js';
 
 const log = pino({ name: 'campaigns.service' });
 
@@ -81,4 +82,101 @@ function isUniqueViolation(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false;
   const code = (err as { code?: string }).code;
   return code === '23505'; // PostgreSQL unique_violation
+}
+
+export type ClaimStatus =
+  | 'granted'
+  | 'already_claimed'
+  | 'forbidden'
+  | 'expired'
+  | 'cancelled'
+  | 'not_found'
+  | 'invalid_audience';
+
+export interface ClaimResult {
+  status: ClaimStatus;
+  campaignId: string;
+}
+
+export interface ClaimInput {
+  campaignId: string;
+  playerId: string;
+}
+
+/**
+ * Cases 1 + 2 — explicit claim of a SUBSCRIBERS campaign.
+ *
+ * Validates eligibility live (audience, expires_at, cancelled_at) on each
+ * call — the UI cannot be trusted. Side effects (credits / upgrade insert)
+ * run in the same transaction as the claim row insert.
+ *
+ * Idempotent: a duplicate claim returns 'already_claimed' (HTTP 200 at the
+ * route level) instead of a UniqueViolation error, so retries are safe.
+ *
+ * Note on transaction semantics under postgres-js: a duplicate-key error
+ * inside the transaction body is re-thrown by the wrapper before commit,
+ * so we detect it in the OUTER catch (same pattern as grantTrialIfEligible).
+ */
+export async function claimCampaign(db: DbClient, input: ClaimInput): Promise<ClaimResult> {
+  const camp = (await db.select().from(campaigns).where(eq(campaigns.id, input.campaignId)))[0];
+  if (!camp) return { status: 'not_found', campaignId: input.campaignId };
+  if (camp.cancelledAt) return { status: 'cancelled', campaignId: input.campaignId };
+  if (camp.expiresAt.getTime() <= Date.now()) return { status: 'expired', campaignId: input.campaignId };
+  if (camp.audience === 'NEW_SIGNUPS') {
+    // NEW_SIGNUPS is auto-granted at signup, never claimed
+    return { status: 'invalid_audience', campaignId: input.campaignId };
+  }
+
+  const player = (await db.select().from(players).where(eq(players.id, input.playerId)))[0];
+  if (!player) return { status: 'not_found', campaignId: input.campaignId };
+  if (camp.audience === 'SUBSCRIBERS' && !isCareer({ tier: player.tier, trialUntil: player.trialUntil })) {
+    return { status: 'forbidden', campaignId: input.campaignId };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(campaignClaims).values({
+        campaignId: camp.id,
+        playerId: input.playerId,
+      });
+
+      switch (camp.type) {
+        case 'CREDITS':
+          // Non-null assert safe: campaigns_payload_chk enforces creditsAmount IS NOT NULL
+          // for type=CREDITS, and the row was just loaded from DB so it satisfies the constraint.
+          await tx.update(players).set({
+            credits: sql`${players.credits} + ${camp.creditsAmount!}`,
+          }).where(eq(players.id, input.playerId));
+          break;
+        case 'UPGRADE':
+          // Non-null assert safe: campaigns_payload_chk enforces upgradeCatalogId IS NOT NULL
+          // for type=UPGRADE.
+          await tx.insert(playerUpgrades).values({
+            playerId: input.playerId,
+            upgradeCatalogId: camp.upgradeCatalogId!,
+            acquisitionSource: 'GIFT',
+            paidCredits: 0,
+          });
+          break;
+        case 'TRIAL':
+          // Should be unreachable thanks to the audience CHECK, but guard anyway
+          throw new Error('claimCampaign called with TRIAL — should be auto-granted');
+      }
+
+      await tx.update(notifications).set({ readAt: new Date() }).where(
+        and(
+          eq(notifications.playerId, input.playerId),
+          eq(notifications.type, 'GIFT_AVAILABLE'),
+          sql`${notifications.payload}->>'campaign_id' = ${camp.id}`,
+        ),
+      );
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { status: 'already_claimed', campaignId: camp.id };
+    }
+    throw err;
+  }
+
+  return { status: 'granted', campaignId: camp.id };
 }

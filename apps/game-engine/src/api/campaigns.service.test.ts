@@ -1,6 +1,6 @@
 import { describe, it, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { players, campaignClaims, notifications } from '../db/schema.js';
 import {
@@ -133,5 +133,152 @@ describe('grantTrialIfEligible', () => {
 
     const player = (await db.select().from(players).where(eq(players.id, playerId)))[0]!;
     assert.equal(player.trialUntil, null);
+  });
+});
+
+import { playerUpgrades } from '../db/schema.js';
+import { claimCampaign, type ClaimResult } from './campaigns.service.js';
+
+describe('claimCampaign', () => {
+  const createdIds: string[] = [];
+  // afterEach + after: per-test cleanup avoids leakage between tests since
+  // claimCampaign / eligibility queries are global. Same pattern as the
+  // grantTrialIfEligible suite earlier in this file.
+  afterEach(async () => {
+    await cleanupTestPlayers(getDb()!, createdIds);
+    createdIds.length = 0;
+  });
+  after(async () => { await cleanupTestPlayers(getDb()!, createdIds); });
+
+  async function setup() {
+    const db = getDb()!;
+    const adminId = await createTestPlayer(db, { isAdmin: true });
+    const subscriberId = await createTestPlayer(db, { tier: 'CAREER', credits: 1000 });
+    const freeId = await createTestPlayer(db, { tier: 'FREE', credits: 1000 });
+    createdIds.push(adminId, subscriberId, freeId);
+    return { db, adminId, subscriberId, freeId };
+  }
+
+  it('CREDITS happy path — credits added, claim row created', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+
+    const result: ClaimResult = await claimCampaign(db, { campaignId, playerId: subscriberId });
+
+    assert.equal(result.status, 'granted');
+    const player = (await db.select().from(players).where(eq(players.id, subscriberId)))[0]!;
+    assert.equal(player.credits, 1500);
+    const claims = await db.select().from(campaignClaims)
+      .where(and(eq(campaignClaims.campaignId, campaignId), eq(campaignClaims.playerId, subscriberId)));
+    assert.equal(claims.length, 1);
+  });
+
+  it('UPGRADE happy path — upgrade inserted with source=GIFT', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'UPGRADE', upgradeCatalogId: 'foils-class40-c', createdByAdminId: adminId,
+    });
+
+    const result = await claimCampaign(db, { campaignId, playerId: subscriberId });
+
+    assert.equal(result.status, 'granted');
+    const upgrades = await db.select().from(playerUpgrades).where(eq(playerUpgrades.playerId, subscriberId));
+    assert.equal(upgrades.length, 1);
+    assert.equal(upgrades[0]!.upgradeCatalogId, 'foils-class40-c');
+    assert.equal(upgrades[0]!.acquisitionSource, 'GIFT');
+  });
+
+  it('idempotent — second claim returns "already_claimed" without side effect', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+
+    const r1 = await claimCampaign(db, { campaignId, playerId: subscriberId });
+    const r2 = await claimCampaign(db, { campaignId, playerId: subscriberId });
+
+    assert.equal(r1.status, 'granted');
+    assert.equal(r2.status, 'already_claimed');
+    const player = (await db.select().from(players).where(eq(players.id, subscriberId)))[0]!;
+    assert.equal(player.credits, 1500, 'credits incremented exactly once');
+  });
+
+  it('rejects FREE player on SUBSCRIBERS audience', async () => {
+    const { db, adminId, freeId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+
+    const result = await claimCampaign(db, { campaignId, playerId: freeId });
+    assert.equal(result.status, 'forbidden');
+    const player = (await db.select().from(players).where(eq(players.id, freeId)))[0]!;
+    assert.equal(player.credits, 1000, 'credits unchanged');
+  });
+
+  it('accepts FREE player with active trial on SUBSCRIBERS audience', async () => {
+    const { db, adminId } = await setup();
+    const trialId = await createTestPlayer(db, {
+      tier: 'FREE',
+      trialUntil: new Date(Date.now() + 24 * 3600 * 1000),
+      credits: 0,
+    });
+    createdIds.push(trialId);
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+
+    const result = await claimCampaign(db, { campaignId, playerId: trialId });
+    assert.equal(result.status, 'granted');
+  });
+
+  it('rejects expired campaign', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+      expiresAt: new Date(Date.now() - 1000),
+    });
+
+    const result = await claimCampaign(db, { campaignId, playerId: subscriberId });
+    assert.equal(result.status, 'expired');
+  });
+
+  it('rejects cancelled campaign', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId, cancelled: true,
+    });
+
+    const result = await claimCampaign(db, { campaignId, playerId: subscriberId });
+    assert.equal(result.status, 'cancelled');
+  });
+
+  it('returns "not_found" for unknown campaign id', async () => {
+    const { db, subscriberId } = await setup();
+    const result = await claimCampaign(db, {
+      campaignId: '00000000-0000-0000-0000-000000000000',
+      playerId: subscriberId,
+    });
+    assert.equal(result.status, 'not_found');
+  });
+
+  it('marks the matching GIFT_AVAILABLE notification as read', async () => {
+    const { db, adminId, subscriberId } = await setup();
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+    // Pre-seed a GIFT_AVAILABLE notif for this player + campaign
+    await db.insert(notifications).values({
+      playerId: subscriberId,
+      type: 'GIFT_AVAILABLE',
+      payload: { campaign_id: campaignId, message_title: 'x', message_body: 'y' },
+    });
+
+    await claimCampaign(db, { campaignId, playerId: subscriberId });
+
+    const notifs = await db.select().from(notifications).where(eq(notifications.playerId, subscriberId));
+    assert.equal(notifs.length, 1);
+    assert.notEqual(notifs[0]!.readAt, null, 'notif should be marked read');
   });
 });
