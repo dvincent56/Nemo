@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cookie from '@fastify/cookie';
-import { eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { getDb } from '../db/client.js';
 import { campaigns, adminActions } from '../db/schema.js';
 import { createTestPlayer, cleanupTestPlayers } from '../test/db-fixtures.js';
@@ -23,12 +23,14 @@ describe('admin campaigns endpoints', () => {
   let app: FastifyInstance;
   let adminToken: string;
   let nonAdminToken: string;
+  let testAdminId: string;
 
   before(async () => {
     const db = getDb()!;
     const adminId = await createTestPlayer(db, { isAdmin: true });
     const userId = await createTestPlayer(db, { isAdmin: false });
     createdIds.push(adminId, userId);
+    testAdminId = adminId;
     const adminSub = (await db.query.players.findFirst({ where: (p, { eq }) => eq(p.id, adminId) }))!.cognitoSub;
     const userSub = (await db.query.players.findFirst({ where: (p, { eq }) => eq(p.id, userId) }))!.cognitoSub;
     adminToken = tokenFor(adminSub);
@@ -90,9 +92,9 @@ describe('admin campaigns endpoints', () => {
 
   it('GET /admin/campaigns/:id — returns campaign + claim stats', async () => {
     const db = getDb()!;
-    const adminId = (await db.select().from(adminActions).limit(1))[0]?.adminId;
+    const adminId = (await db.select().from(adminActions).where(eq(adminActions.adminId, testAdminId)).limit(1))[0]?.adminId;
     assert.ok(adminId, 'sanity check — should have at least one admin action');
-    const camp = (await db.select().from(campaigns).limit(1))[0]!;
+    const camp = (await db.select().from(campaigns).where(eq(campaigns.createdByAdminId, testAdminId)).limit(1))[0]!;
     const res = await app.inject({
       method: 'GET', url: `/api/v1/admin/campaigns/${camp.id}`,
       headers: { authorization: `Bearer ${adminToken}` },
@@ -105,7 +107,7 @@ describe('admin campaigns endpoints', () => {
 
   it('POST /admin/campaigns/:id/cancel — sets cancelled_at + logs admin action', async () => {
     const db = getDb()!;
-    const camp = (await db.select().from(campaigns).limit(1))[0]!;
+    const camp = (await db.select().from(campaigns).where(eq(campaigns.createdByAdminId, testAdminId)).limit(1))[0]!;
     const res = await app.inject({
       method: 'POST', url: `/api/v1/admin/campaigns/${camp.id}/cancel`,
       headers: { authorization: `Bearer ${adminToken}` },
@@ -120,7 +122,7 @@ describe('admin campaigns endpoints', () => {
 
   it('POST /admin/campaigns/:id/cancel — second cancel is idempotent', async () => {
     const db = getDb()!;
-    const camp = (await db.select().from(campaigns).where(isNotNull(campaigns.cancelledAt)).limit(1))[0]!;
+    const camp = (await db.select().from(campaigns).where(and(eq(campaigns.createdByAdminId, testAdminId), isNotNull(campaigns.cancelledAt))).limit(1))[0]!;
     const res = await app.inject({
       method: 'POST', url: `/api/v1/admin/campaigns/${camp.id}/cancel`,
       headers: { authorization: `Bearer ${adminToken}` },
