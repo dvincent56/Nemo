@@ -188,8 +188,8 @@ export async function claimCampaign(db: DbClient, input: ClaimInput): Promise<Cl
  *
  * Returns the number of notifications inserted (for stats / logging).
  *
- * Caller MUST execute this in the same transaction as the campaign creation
- * to avoid the half-state where the campaign exists but no one is notified.
+ * Caller MUST execute this in the same transaction as the campaign creation,
+ * exactly once per campaign id, to avoid duplicate GIFT_AVAILABLE notifications.
  *
  * Note: writers MUST use the campaign UUID as a string in payload.campaign_id —
  * the matching read in claimCampaign uses jsonb `->>'campaign_id'` which
@@ -210,6 +210,10 @@ export async function pushGiftAvailableSnapshot(db: DbClient, campaignId: string
   );
   if (eligible.length === 0) return 0;
 
+  // TODO(scaling): chunk into batches of ~5k once subscriber count > 20k to
+  // stay below PostgreSQL's 65,535 bound-parameter limit per statement
+  // (3 columns/row × ~21,800 rows = ceiling). Failure mode is a hard runtime
+  // error from the wire protocol, not a gradual slowdown.
   await db.insert(notifications).values(eligible.map((p) => ({
     playerId: p.id,
     type: 'GIFT_AVAILABLE' as const,
