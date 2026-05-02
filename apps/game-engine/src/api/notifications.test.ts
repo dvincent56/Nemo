@@ -100,4 +100,38 @@ describe('notifications endpoints', () => {
     assert.equal(res.statusCode, 404);
     await app.close();
   });
+
+  it('GET /notifications — orders unread first, then by createdAt DESC', async () => {
+    const { db, playerId, sub } = await setup();
+    // Insert in mixed order. created_at is auto-set; we'll seed read_at on some.
+    const old = new Date(Date.now() - 60_000);
+    await db.insert(notifications).values([
+      { playerId, type: 'GIFT_AVAILABLE', payload: { tag: 'old-read' },   readAt: old, createdAt: old },
+      { playerId, type: 'GIFT_AVAILABLE', payload: { tag: 'recent-read' }, readAt: new Date() },
+      { playerId, type: 'GIFT_AVAILABLE', payload: { tag: 'old-unread' }, createdAt: old },
+      { playerId, type: 'GIFT_AVAILABLE', payload: { tag: 'recent-unread' } },
+    ]);
+
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET', url: '/api/v1/notifications',
+      headers: { authorization: `Bearer ${tokenFor(sub)}` },
+    });
+    const body = JSON.parse(res.body);
+    const tags = body.notifications.map((n: { payload: { tag: string } }) => n.payload.tag);
+    // Expect: unread first (in createdAt DESC), then read (in createdAt DESC)
+    assert.deepEqual(tags, ['recent-unread', 'old-unread', 'recent-read', 'old-read']);
+    await app.close();
+  });
+
+  it('GET /notifications — rejects non-numeric limit with 400', async () => {
+    const { sub } = await setup();
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET', url: '/api/v1/notifications?limit=abc',
+      headers: { authorization: `Bearer ${tokenFor(sub)}` },
+    });
+    assert.equal(res.statusCode, 400);
+    await app.close();
+  });
 });

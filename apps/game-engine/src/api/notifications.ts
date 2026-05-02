@@ -7,13 +7,24 @@ import { notifications, players } from '../db/schema.js';
 export function registerNotificationRoutes(app: FastifyInstance): void {
   const guards = { preHandler: [enforceAuth] };
 
-  app.get<{ Querystring: { limit?: string } }>('/api/v1/notifications', guards, async (req, reply) => {
+  app.get<{ Querystring: { limit?: number } }>('/api/v1/notifications', {
+    ...guards,
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (req, reply) => {
     const db = getDb()!;
     const player = (await db.select({ id: players.id }).from(players)
       .where(eq(players.cognitoSub, req.auth!.sub)))[0];
     if (!player) { reply.code(404); return { error: 'player not found' }; }
 
-    const limit = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 200);
+    const limit = req.query.limit ?? 50;
     // Unread first (read_at IS NULL), then by created_at DESC
     const rows = await db.select().from(notifications)
       .where(eq(notifications.playerId, player.id))
