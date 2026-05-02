@@ -42,3 +42,6 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: i18n check
+        run: pnpm --filter @nemo/web i18n:check

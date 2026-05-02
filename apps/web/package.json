@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "i18n:check": "tsx scripts/check-translations.ts"
   },
   "dependencies": {
     "@etalab/decoupage-administratif": "^6.0.0",
