@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import pino from 'pino';
 import type { DbClient } from '../db/client.js';
 import { campaigns, campaignClaims, notifications, players, playerUpgrades } from '../db/schema.js';
@@ -179,4 +179,45 @@ export async function claimCampaign(db: DbClient, input: ClaimInput): Promise<Cl
   }
 
   return { status: 'granted', campaignId: camp.id };
+}
+
+/**
+ * Snapshot push of GIFT_AVAILABLE notifications to all current "subscribers"
+ * (CAREER + active trial) at the moment of campaign creation. Future
+ * subscribers (post-creation) discover the campaign via /campaigns/eligible.
+ *
+ * Returns the number of notifications inserted (for stats / logging).
+ *
+ * Caller MUST execute this in the same transaction as the campaign creation
+ * to avoid the half-state where the campaign exists but no one is notified.
+ *
+ * Note: writers MUST use the campaign UUID as a string in payload.campaign_id —
+ * the matching read in claimCampaign uses jsonb `->>'campaign_id'` which
+ * returns text, so a numeric value would silently fail to match.
+ */
+export async function pushGiftAvailableSnapshot(db: DbClient, campaignId: string): Promise<number> {
+  const camp = (await db.select().from(campaigns).where(eq(campaigns.id, campaignId)))[0];
+  if (!camp) throw new Error(`campaign ${campaignId} not found`);
+  if (camp.audience !== 'SUBSCRIBERS') {
+    throw new Error(`pushGiftAvailableSnapshot called on non-SUBSCRIBERS campaign ${campaignId}`);
+  }
+
+  const eligible = await db.select({ id: players.id }).from(players).where(
+    or(
+      eq(players.tier, 'CAREER'),
+      and(isNotNull(players.trialUntil), gt(players.trialUntil, new Date())),
+    ),
+  );
+  if (eligible.length === 0) return 0;
+
+  await db.insert(notifications).values(eligible.map((p) => ({
+    playerId: p.id,
+    type: 'GIFT_AVAILABLE' as const,
+    payload: {
+      campaign_id: camp.id,
+      message_title: camp.messageTitle,
+      message_body: camp.messageBody,
+    },
+  })));
+  return eligible.length;
 }

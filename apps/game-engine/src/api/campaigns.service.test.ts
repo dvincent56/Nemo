@@ -282,3 +282,42 @@ describe('claimCampaign', () => {
     assert.notEqual(notifs[0]!.readAt, null, 'notif should be marked read');
   });
 });
+
+import { pushGiftAvailableSnapshot } from './campaigns.service.js';
+
+describe('pushGiftAvailableSnapshot', () => {
+  const createdIds: string[] = [];
+  afterEach(async () => {
+    await cleanupTestPlayers(getDb()!, createdIds);
+    createdIds.length = 0;
+  });
+  after(async () => { await cleanupTestPlayers(getDb()!, createdIds); });
+
+  it('inserts a notification for every current CAREER player and every active trial', async () => {
+    const db = getDb()!;
+    const adminId = await createTestPlayer(db, { isAdmin: true });
+    const careerId = await createTestPlayer(db, { tier: 'CAREER' });
+    const trialId = await createTestPlayer(db, {
+      tier: 'FREE',
+      trialUntil: new Date(Date.now() + 24 * 3600 * 1000),
+    });
+    const freeId = await createTestPlayer(db, { tier: 'FREE' });
+    createdIds.push(adminId, careerId, trialId, freeId);
+
+    const campaignId = await createTestCampaign(db, {
+      type: 'CREDITS', creditsAmount: 500, createdByAdminId: adminId,
+    });
+
+    const count = await pushGiftAvailableSnapshot(db, campaignId);
+    assert.equal(count >= 2, true, 'at least careerId and trialId received a notif');
+
+    const careerNotifs = await db.select().from(notifications).where(eq(notifications.playerId, careerId));
+    const trialNotifs = await db.select().from(notifications).where(eq(notifications.playerId, trialId));
+    const freeNotifs = await db.select().from(notifications).where(eq(notifications.playerId, freeId));
+
+    assert.equal(careerNotifs.length, 1);
+    assert.equal(careerNotifs[0]!.type, 'GIFT_AVAILABLE');
+    assert.equal(trialNotifs.length, 1, 'active trial = subscriber for snapshot purposes');
+    assert.equal(freeNotifs.length, 0, 'FREE without trial does not receive snapshot');
+  });
+});
