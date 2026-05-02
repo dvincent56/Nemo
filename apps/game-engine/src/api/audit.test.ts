@@ -102,4 +102,36 @@ describe('GET /admin/audit-log', () => {
     assert.equal(res.statusCode, 403);
     await app.close();
   });
+
+  it('returns 400 for non-UUID adminId filter', async () => {
+    const db = getDb()!;
+    const adminId = await createTestPlayer(db, { isAdmin: true });
+    createdIds.push(adminId);
+    const sub = (await db.query.players.findFirst({ where: (p, { eq }) => eq(p.id, adminId) }))!.cognitoSub;
+
+    const app = await buildAuditApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/audit-log?adminId=not-a-uuid',
+      headers: { authorization: `Bearer dev.${sub}.x` },
+    });
+    assert.equal(res.statusCode, 400);
+    await app.close();
+  });
+
+  it('returns 400 for non-numeric limit', async () => {
+    const db = getDb()!;
+    const adminId = await createTestPlayer(db, { isAdmin: true });
+    createdIds.push(adminId);
+    const sub = (await db.query.players.findFirst({ where: (p, { eq }) => eq(p.id, adminId) }))!.cognitoSub;
+
+    const app = await buildAuditApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/audit-log?limit=abc',
+      headers: { authorization: `Bearer dev.${sub}.x` },
+    });
+    assert.equal(res.statusCode, 400);
+    await app.close();
+  });
 });
