@@ -147,7 +147,7 @@ export default function MarinaClient(): React.ReactElement {
       {loadError && (
         <div className={styles.errorBanner}>
           <strong>Impossible de charger ta flotte.</strong> {loadError}.
-          Vérifie que tu es connecté (page <a href="/login">/login</a>) et que le game-engine tourne.
+          Vérifie que tu es connecté (page <Link href="/login">/login</Link>) et que le game-engine tourne.
         </div>
       )}
 

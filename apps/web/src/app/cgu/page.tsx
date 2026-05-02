@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalLayout, type LegalSection } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
 
@@ -24,8 +25,8 @@ const SECTIONS: LegalSection[] = [
           associée.
         </p>
         <p>
-          Le service est édité par la société éditrice identifiée dans les <a href="/legal">mentions
-          légales</a>. L'utilisation du service implique l'acceptation pleine et entière des présentes CGU.
+          Le service est édité par la société éditrice identifiée dans les <Link href="/legal">mentions
+          légales</Link>. L'utilisation du service implique l'acceptation pleine et entière des présentes CGU.
         </p>
       </>
     ),

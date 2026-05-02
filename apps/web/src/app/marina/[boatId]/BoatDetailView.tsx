@@ -70,7 +70,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
     return (
       <div className={styles.loading}>
         Impossible de charger ce bateau : {loadError}.<br />
-        Vérifie que tu es connecté (<a href="/login">/login</a>) et que le game-engine tourne.
+        Vérifie que tu es connecté (<Link href="/login">/login</Link>) et que le game-engine tourne.
       </div>
     );
   }
