@@ -22,6 +22,13 @@
       "when": 1777131229813,
       "tag": "0002_cloudy_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777637126008,
+      "tag": "0003_admin_promo_campaigns",
+      "breakpoints": true
     }
   ]
 }

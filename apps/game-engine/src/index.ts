@@ -14,6 +14,10 @@ import { registerRaceRoutes, seedRacesIfEmpty } from './api/races.js';
 import { registerAuthRoutes } from './api/auth.js';
 import { loadAuthConfig, assertAuthConfig } from './auth/config.js';
 import { registerMarinaRoutes } from './api/marina.js';
+import { registerCampaignAdminRoutes } from './api/campaigns.admin.js';
+import { registerCampaignPlayerRoutes } from './api/campaigns.player.js';
+import { registerNotificationRoutes } from './api/notifications.js';
+import { registerAuditRoutes } from './api/audit.js';
 import { getDb } from './db/client.js';
 import { seedDevPlayer } from './db/seed-dev.js';
 import { connectRedis } from './infra/redis.js';
@@ -121,6 +125,25 @@ async function main() {
   registerAuthRoutes(app);
   registerRaceRoutes(app);
   registerMarinaRoutes(app);
+
+  // Player-facing campaign + notification endpoints — 5 req/min per IP.
+  // Spec calls for 5 req/min on /api/v1/campaigns/:id/claim per player; we
+  // apply it at the scope level (per-IP) for now. Per-player keying is a
+  // follow-up that needs a custom keyGenerator reading req.auth?.sub after
+  // the auth chain runs.
+  app.register(async (scope) => {
+    await scope.register(rateLimit, { max: 5, timeWindow: '1 minute' });
+    registerCampaignPlayerRoutes(scope);
+    registerNotificationRoutes(scope);
+  });
+
+  // Admin-facing endpoints — 30 req/min per IP.
+  app.register(async (scope) => {
+    await scope.register(rateLimit, { max: 30, timeWindow: '1 minute' });
+    registerCampaignAdminRoutes(scope);
+    registerAuditRoutes(scope);
+  });
+
   await seedRacesIfEmpty();
 
   // Dev-only: seed a local player with boats and starter inventory so the
