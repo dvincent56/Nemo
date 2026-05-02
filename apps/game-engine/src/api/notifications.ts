@@ -39,9 +39,9 @@ export function registerNotificationRoutes(app: FastifyInstance): void {
       .where(eq(players.cognitoSub, req.auth!.sub)))[0];
     if (!player) { reply.code(404); return { error: 'player not found' }; }
 
-    const [{ unread }] = await db.select({ unread: count() }).from(notifications)
+    const [aggRow] = await db.select({ unread: count() }).from(notifications)
       .where(and(eq(notifications.playerId, player.id), isNull(notifications.readAt)));
-    return { unread: Number(unread) };
+    return { unread: Number(aggRow?.unread ?? 0) };
   });
 
   app.post<{ Params: { id: string } }>('/api/v1/notifications/:id/read', guards, async (req, reply) => {

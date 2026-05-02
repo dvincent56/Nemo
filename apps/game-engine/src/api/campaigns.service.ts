@@ -43,6 +43,7 @@ export async function grantTrialIfEligible(db: DbClient, newPlayerId: string): P
       log.warn({ campaignId: c.id }, 'grantTrialIfEligible: TRIAL campaign with null trial_days, skipping');
       continue;
     }
+    const trialDays = c.trialDays; // narrowed to number after the guard above
     try {
       await db.transaction(async (tx) => {
         await tx.insert(campaignClaims).values({ campaignId: c.id, playerId: newPlayerId });
@@ -52,7 +53,7 @@ export async function grantTrialIfEligible(db: DbClient, newPlayerId: string): P
         // grants for the same player resolve to the maximum end date safely
         // under PostgreSQL's default READ COMMITTED isolation.
         await tx.update(players).set({
-          trialUntil: sql`greatest(coalesce(${players.trialUntil}, now()), now() + (${c.trialDays} || ' days')::interval)`,
+          trialUntil: sql`greatest(coalesce(${players.trialUntil}, now()), now() + (${trialDays} || ' days')::interval)`,
         }).where(eq(players.id, newPlayerId));
 
         await tx.insert(notifications).values({
@@ -60,8 +61,8 @@ export async function grantTrialIfEligible(db: DbClient, newPlayerId: string): P
           type: 'TRIAL_GRANTED',
           payload: {
             campaign_id: c.id,
-            trial_days: c.trialDays,
-            expires_at: new Date(Date.now() + (c.trialDays * 24 * 3600 * 1000)).toISOString(),
+            trial_days: trialDays,
+            expires_at: new Date(Date.now() + (trialDays * 24 * 3600 * 1000)).toISOString(),
             message_title: c.messageTitle,
             message_body: c.messageBody,
           },

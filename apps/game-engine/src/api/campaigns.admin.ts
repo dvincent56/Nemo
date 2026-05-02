@@ -104,9 +104,9 @@ export function registerCampaignAdminRoutes(app: FastifyInstance): void {
     const db = getDb()!;
     const row = (await db.select().from(campaigns).where(eq(campaigns.id, req.params.id)))[0];
     if (!row) { reply.code(404); return { error: 'not found' }; }
-    const [{ totalClaims }] = await db.select({ totalClaims: count() }).from(campaignClaims)
+    const [aggRow] = await db.select({ totalClaims: count() }).from(campaignClaims)
       .where(eq(campaignClaims.campaignId, row.id));
-    return { ...row, stats: { totalClaims: Number(totalClaims) } };
+    return { ...row, stats: { totalClaims: Number(aggRow?.totalClaims ?? 0) } };
   });
 
   app.post<{ Params: { id: string } }>('/api/v1/admin/campaigns/:id/cancel', guards, async (req, reply) => {
