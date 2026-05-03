@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { RaceSummary } from '@/lib/api';
 import { fetchMyBoat, fetchRaceZones, API_BASE } from '@/lib/api';
 import {
@@ -89,13 +90,18 @@ function bearingDeg(
   return ((theta * RAD_TO_DEG_PC) + 360) % 360;
 }
 
+function MapSkeleton(): React.ReactElement {
+  const t = useTranslations('play.loading');
+  return (
+    <div className={styles.mapSkeleton}>
+      <span className={styles.skeletonLabel}>{t('map')}</span>
+    </div>
+  );
+}
+
 const MapCanvas = dynamic(() => import('@/components/play/MapCanvas'), {
   ssr: false,
-  loading: () => (
-    <div className={styles.mapSkeleton}>
-      <span className={styles.skeletonLabel}>Chargement de la carte nautique…</span>
-    </div>
-  ),
+  loading: () => <MapSkeleton />,
 });
 
 /**
@@ -182,6 +188,7 @@ function useBoatInit(raceId: string): void {
 }
 
 export default function PlayClient({ race }: { race: RaceSummary }): React.ReactElement {
+  const t = useTranslations('play');
   const [session, setSession] = useState<SessionContext>(ANONYMOUS);
   const [isRegistered, setIsRegistered] = useState(false);
   const [gbReady, setGbReady] = useState(() => GameBalance.isLoaded);
@@ -710,13 +717,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     return (
       <div className={styles.blockedShell}>
         <div className={styles.blockedCard}>
-          <p className={styles.blockedEyebrow}>Accès refusé</p>
+          <p className={styles.blockedEyebrow}>{t('blocked.eyebrow')}</p>
           <h1 className={styles.blockedTitle}>
-            {access.reason === 'draft' && 'Cette course n\'est pas encore publiée.'}
-            {access.reason === 'archived' && 'Cette course a été archivée.'}
-            {access.reason === 'admin-only' && 'Page réservée aux administrateurs.'}
+            {access.reason === 'draft' && t('blocked.draft')}
+            {access.reason === 'archived' && t('blocked.archived')}
+            {access.reason === 'admin-only' && t('blocked.adminOnly')}
           </h1>
-          <Link href="/races" className={styles.blockedBack}>← Retour aux courses</Link>
+          <Link href="/races" className={styles.blockedBack}>{t('blocked.back')}</Link>
         </div>
       </div>
     );
@@ -733,7 +740,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
   if (!gbReady) {
     return (
       <div className={styles.mapSkeleton}>
-        <span className={styles.skeletonLabel}>Chargement des paramètres de jeu…</span>
+        <span className={styles.skeletonLabel}>{t('loading.balance')}</span>
       </div>
     );
   }
@@ -756,13 +763,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
         {routerPhase === 'placing' && (
           <>
-            <div className={styles.placingIndicator}>CLIQUEZ POUR PLACER L&apos;ARRIVÉE</div>
+            <div className={styles.placingIndicator}>{t('router.placing')}</div>
             <button
               type="button"
               className={styles.placingCancelFab}
               onClick={() => useGameStore.getState().exitPlacingMode()}
             >
-              ✕ Annuler
+              {t('router.cancel')}
             </button>
           </>
         )}
@@ -788,13 +795,13 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
 
         {banner && access.kind === 'spectate' && (
           <div className={styles.spectateBanner} role="status">
-            <span className={styles.spectateTag}>Spectateur</span>
+            <span className={styles.spectateTag}>{t('spectate.tag')}</span>
             <span className={styles.spectateText}>{banner}</span>
             {access.reason === 'visitor' && (
-              <Link href="/login" className={styles.spectateCta}>Se connecter →</Link>
+              <Link href="/login" className={styles.spectateCta}>{t('spectate.ctaLogin')}</Link>
             )}
             {access.reason === 'not-registered' && (
-              <Link href="/races" className={styles.spectateCta}>S'inscrire →</Link>
+              <Link href="/races" className={styles.spectateCta}>{t('spectate.ctaSignup')}</Link>
             )}
           </div>
         )}
@@ -806,7 +813,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         </div>
 
         {/* Ranking tab (left edge — desktop) */}
-        <Tooltip text="Classement" shortcut="C" position="bottom" className={styles.rankingTabWrap ?? ''}>
+        <Tooltip text={t('actions.ranking')} shortcut={t('actions.rankingShortcut')} position="bottom" className={styles.rankingTabWrap ?? ''}>
           <button
             className={styles.rankingTab}
             onClick={() => handlePanelToggle('ranking')}
@@ -815,7 +822,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <span className={styles.rankingTabArrow}>
               {activePanel === 'ranking' ? '◀' : '▶'}
             </span>
-            <span className={styles.rankingTabLabel}>CLASSEMENT</span>
+            <span className={styles.rankingTabLabel}>{t('actions.rankingLong')}</span>
             <span className={styles.rankingTabRank}>{rank}</span>
           </button>
         </Tooltip>
@@ -825,26 +832,26 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
           className={styles.rankingFab}
           onClick={() => handlePanelToggle('ranking')}
           type="button"
-          aria-label="Classement"
+          aria-label={t('actions.ranking')}
         >
           <Trophy size={14} strokeWidth={2.5} />
           <span className={styles.rankingFabRank}>{rank}</span>
         </button>
 
         {/* Slide-out panels */}
-        <SlidePanel side="left" width={320} title="Classement" isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
+        <SlidePanel side="left" width={320} title={t('panels.ranking')} isOpen={activePanel === 'ranking'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
           <RankingPanel />
         </SlidePanel>
 
         {canInteract && (
           <>
-            <SlidePanel side="right" width={420} title="Voiles" isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
+            <SlidePanel side="right" width={420} title={t('panels.sails')} isOpen={activePanel === 'sails'} onClose={() => useGameStore.getState().closePanel()} mode={panelMode}>
               <SailPanel />
             </SlidePanel>
             <SlidePanel
               side="right"
               width={420}
-              title="Programmation"
+              title={t('panels.programming')}
               isOpen={activePanel === 'programming'}
               onClose={() => {
                 // Closing the prog panel without confirming = discard the
@@ -865,7 +872,7 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
             <SlidePanel
               side="right"
               width={420}
-              title="Routeur"
+              title={t('panels.router')}
               isOpen={activePanel === 'router'}
               onClose={() => useGameStore.getState().closeRouter()}
               mode={panelMode}
@@ -888,44 +895,44 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
         {canInteract && (
           <div className={styles.rightStack}>
             <div className={styles.actionButtons}>
-              <Tooltip text="Recentrer sur le bateau" shortcut="Espace" position="bottom">
+              <Tooltip text={t('actions.centerTooltip')} shortcut={t('actions.centerShortcut')} position="bottom">
                 <button
                   className={styles.actionBtn}
                   onClick={() => useGameStore.getState().setFollowBoat(true)}
                   type="button"
                 >
                   <LocateFixed size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Centrer</span>
+                  <span>{t('actions.centerLabel')}</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Gérer les voiles" shortcut="V" position="bottom">
+              <Tooltip text={t('actions.sailsTooltip')} shortcut={t('actions.sailsShortcut')} position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'sails' ? styles.actionBtnActive : ''}`}
                   onClick={() => handlePanelToggle('sails')}
                   type="button"
                 >
                   <Sailboat size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Voiles</span>
+                  <span>{t('actions.sailsLabel')}</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Programmer les ordres" shortcut="P" position="bottom">
+              <Tooltip text={t('actions.progTooltip')} shortcut={t('actions.progShortcut')} position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'programming' ? styles.actionBtnActive : ''}`}
                   onClick={() => handlePanelToggle('programming')}
                   type="button"
                 >
                   <Route size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Prog.</span>
+                  <span>{t('actions.progLabel')}</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Routeur" shortcut="R" position="bottom">
+              <Tooltip text={t('actions.routerTooltip')} shortcut={t('actions.routerShortcut')} position="bottom">
                 <button
                   className={`${styles.actionBtn} ${activePanel === 'router' ? styles.actionBtnActive : ''}`}
                   onClick={() => handlePanelToggle('router')}
                   type="button"
                 >
                   <MapPinned size={18} strokeWidth={2} className={styles.actionBtnIcon} />
-                  <span>Route</span>
+                  <span>{t('actions.routerLabel')}</span>
                 </button>
               </Tooltip>
             </div>

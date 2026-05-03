@@ -64,6 +64,8 @@ const config = [
       'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/page.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/CustomizeLoader.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/CustomizeView.tsx',
+      'src/app/\\[locale\\]/play/\\[raceId\\]/page.tsx',
+      'src/app/\\[locale\\]/play/\\[raceId\\]/PlayClient.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.

@@ -369,6 +369,51 @@
       }
     }
   },
+  "play": {
+    "loading": {
+      "map": "Chargement de la carte nautique…",
+      "balance": "Chargement des paramètres de jeu…"
+    },
+    "blocked": {
+      "eyebrow": "Accès refusé",
+      "draft": "Cette course n'est pas encore publiée.",
+      "archived": "Cette course a été archivée.",
+      "adminOnly": "Page réservée aux administrateurs.",
+      "back": "← Retour aux courses"
+    },
+    "router": {
+      "placing": "CLIQUEZ POUR PLACER L'ARRIVÉE",
+      "cancel": "✕ Annuler"
+    },
+    "spectate": {
+      "tag": "Spectateur",
+      "ctaLogin": "Se connecter →",
+      "ctaSignup": "S'inscrire →"
+    },
+    "actions": {
+      "ranking": "Classement",
+      "rankingShortcut": "C",
+      "rankingLong": "CLASSEMENT",
+      "centerTooltip": "Recentrer sur le bateau",
+      "centerShortcut": "Espace",
+      "centerLabel": "Centrer",
+      "sailsTooltip": "Gérer les voiles",
+      "sailsShortcut": "V",
+      "sailsLabel": "Voiles",
+      "progTooltip": "Programmer les ordres",
+      "progShortcut": "P",
+      "progLabel": "Prog.",
+      "routerTooltip": "Routeur",
+      "routerShortcut": "R",
+      "routerLabel": "Route"
+    },
+    "panels": {
+      "ranking": "Classement",
+      "sails": "Voiles",
+      "programming": "Programmation",
+      "router": "Routeur"
+    }
+  },
   "marinaCustomize": {
     "loader": {
       "loading": "Chargement…",
