@@ -576,6 +576,48 @@
         "aria": "position dans le temps de course"
       }
     },
+    "progQueue": {
+      "tabs": {
+        "cap": "Cap",
+        "wp": "Waypoints"
+      },
+      "cap": {
+        "title": "CAP PROGRAMMÉ",
+        "count": "{n, plural, one {# ORDRE} other {# ORDRES}}",
+        "empty": "AUCUN ORDRE PROGRAMMÉ",
+        "addBtn": "Ajouter un cap",
+        "actionLabel": "Cap →",
+        "twaSuffix": " · TWA",
+        "obsoleteSuffix": " · OBSOLÈTE"
+      },
+      "wp": {
+        "title": "WAYPOINTS",
+        "count": "{n, plural, one {# POINT} other {# POINTS}}",
+        "empty": "AUCUN WAYPOINT PROGRAMMÉ",
+        "atDeparture": "AU DÉPART",
+        "afterWp": "APRÈS WP {n}",
+        "wpLabel": "WP {n}",
+        "addBtn": "Ajouter un WP",
+        "addFinalCap": "Cap final",
+        "afterWpFinal": "APRÈS WP {n} (FINAL)",
+        "finalActionLabel": "Cap final →"
+      },
+      "sail": {
+        "title": "VOILES",
+        "count": "{n, plural, one {# ORDRE} other {# ORDRES}}",
+        "empty": "AUCUN CHANGEMENT DE VOILE PROGRAMMÉ",
+        "atWp": "AU WP {n}",
+        "actionAuto": "AUTO",
+        "actionLabel": "Voile →",
+        "addBtn": "Ajouter un changement de voile"
+      },
+      "actions": {
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "clearAll": "Tout effacer",
+      "multiTabNote": "La dernière confirmation prime. Évitez de programmer depuis plusieurs onglets simultanément."
+    },
     "progPanel": {
       "noWp": "Aucun WP disponible.",
       "close": "Fermer",

@@ -2,6 +2,7 @@
 import type { ReactElement } from 'react';
 import { useMemo } from 'react';
 import { Anchor, MapPin, Wind, Pencil, Trash2, Plus, Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { ProgDraft, ProgMode } from '@/lib/prog/types';
 import { isObsoleteAtTime } from '@/lib/prog/anchors';
 import styles from './ProgQueueView.module.css';
@@ -40,6 +41,7 @@ function formatRelative(sec: number, nowSec: number): string {
 }
 
 export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
+  const t = useTranslations('play.progQueue');
   const { draft, nowSec } = props;
 
   const sortedCaps = useMemo(
@@ -49,13 +51,11 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
 
   const sortedSails = useMemo(() => {
     return [...draft.sailOrders].sort((a, b) => {
-      // AT_TIME first sorted by time, then AT_WAYPOINT (in WP chain order)
       if (a.trigger.type === 'AT_TIME' && b.trigger.type === 'AT_TIME') {
         return a.trigger.time - b.trigger.time;
       }
       if (a.trigger.type === 'AT_TIME') return -1;
       if (b.trigger.type === 'AT_TIME') return 1;
-      // Both AT_WAYPOINT — order by their referenced WP's index in wpOrders
       const ai = draft.wpOrders.findIndex((w) => w.id === (a.trigger as { waypointOrderId: string }).waypointOrderId);
       const bi = draft.wpOrders.findIndex((w) => w.id === (b.trigger as { waypointOrderId: string }).waypointOrderId);
       return ai - bi;
@@ -74,7 +74,7 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
           onClick={() => props.onSwitchMode('cap')}
           aria-pressed={draft.mode === 'cap'}
         >
-          <Anchor size={14} strokeWidth={2} /> Cap
+          <Anchor size={14} strokeWidth={2} /> {t('tabs.cap')}
         </button>
         <button
           type="button"
@@ -82,7 +82,7 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
           onClick={() => props.onSwitchMode('wp')}
           aria-pressed={draft.mode === 'wp'}
         >
-          <MapPin size={14} strokeWidth={2} /> Waypoints
+          <MapPin size={14} strokeWidth={2} /> {t('tabs.wp')}
         </button>
       </div>
 
@@ -90,11 +90,11 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
       {draft.mode === 'cap' && (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
-            <span>CAP PROGRAMMÉ</span>
-            <small>{sortedCaps.length} ORDRE{sortedCaps.length === 1 ? '' : 'S'}</small>
+            <span>{t('cap.title')}</span>
+            <small>{t('cap.count', { n: sortedCaps.length })}</small>
           </div>
           {sortedCaps.length === 0 ? (
-            <div className={styles.empty}>AUCUN ORDRE PROGRAMMÉ</div>
+            <div className={styles.empty}>{t('cap.empty')}</div>
           ) : (
             <div className={styles.orderList}>
               {sortedCaps.map((o, idx) => {
@@ -112,17 +112,17 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
                     <div className={styles.orderMeta}>
                       <div className={styles.orderWhen}>
                         {formatAbsolute(o.trigger.time)} · {formatRelative(o.trigger.time, nowSec)}
-                        {obsolete && ' · OBSOLÈTE'}
+                        {obsolete && t('cap.obsoleteSuffix')}
                       </div>
                       <div className={styles.orderWhat}>
-                        Cap → <b>{String(o.heading).padStart(3, '0')}°</b>{o.twaLock ? ' · TWA' : ''}
+                        {t('cap.actionLabel')} <b>{String(o.heading).padStart(3, '0')}°</b>{o.twaLock ? t('cap.twaSuffix') : ''}
                       </div>
                     </div>
                     <div className={styles.orderActions}>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); props.onEditCap(o.id); }}
-                        aria-label="Modifier"
+                        aria-label={t('actions.edit')}
                       >
                         <Pencil size={11} strokeWidth={2} />
                       </button>
@@ -130,7 +130,7 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
                         type="button"
                         className={styles.delBtn}
                         onClick={(e) => { e.stopPropagation(); props.onAskDelete('cap', o.id); }}
-                        aria-label="Supprimer"
+                        aria-label={t('actions.delete')}
                       >
                         <Trash2 size={11} strokeWidth={2} />
                       </button>
@@ -141,7 +141,7 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
             </div>
           )}
           <button type="button" className={styles.addBtn} onClick={props.onAddCap}>
-            <Plus size={14} strokeWidth={2} /> Ajouter un cap
+            <Plus size={14} strokeWidth={2} /> {t('cap.addBtn')}
           </button>
         </div>
       )}
@@ -150,18 +150,18 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
       {draft.mode === 'wp' && (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>
-            <span>WAYPOINTS</span>
-            <small>{draft.wpOrders.length} POINT{draft.wpOrders.length === 1 ? '' : 'S'}</small>
+            <span>{t('wp.title')}</span>
+            <small>{t('wp.count', { n: draft.wpOrders.length })}</small>
           </div>
           {draft.wpOrders.length === 0 ? (
-            <div className={styles.empty}>AUCUN WAYPOINT PROGRAMMÉ</div>
+            <div className={styles.empty}>{t('wp.empty')}</div>
           ) : (
             <div className={styles.orderList}>
               {draft.wpOrders.map((o, idx) => {
                 const trig = o.trigger;
                 const triggerLabel = trig.type === 'IMMEDIATE'
-                  ? 'AU DÉPART'
-                  : `APRÈS WP ${draft.wpOrders.findIndex((w) => w.id === trig.waypointOrderId) + 1}`;
+                  ? t('wp.atDeparture')
+                  : t('wp.afterWp', { n: draft.wpOrders.findIndex((w) => w.id === trig.waypointOrderId) + 1 });
                 return (
                   <div
                     key={o.id}
@@ -175,14 +175,14 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
                     <div className={styles.orderMeta}>
                       <div className={styles.orderWhen}>{triggerLabel}</div>
                       <div className={styles.orderWhat}>
-                        <b>WP {idx + 1}</b> · {o.lat.toFixed(2)}°, {o.lon.toFixed(2)}°
+                        <b>{t('wp.wpLabel', { n: idx + 1 })}</b> · {o.lat.toFixed(2)}°, {o.lon.toFixed(2)}°
                       </div>
                     </div>
                     <div className={styles.orderActions}>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditWp(o.id); }} aria-label="Modifier">
+                      <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditWp(o.id); }} aria-label={t('actions.edit')}>
                         <Pencil size={11} strokeWidth={2} />
                       </button>
-                      <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('wp', o.id); }} aria-label="Supprimer">
+                      <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('wp', o.id); }} aria-label={t('actions.delete')}>
                         <Trash2 size={11} strokeWidth={2} />
                       </button>
                     </div>
@@ -200,17 +200,17 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
                   <span className={styles.orderIco}><Anchor size={14} strokeWidth={2} /></span>
                   <div className={styles.orderMeta}>
                     <div className={styles.orderWhen}>
-                      APRÈS WP {draft.wpOrders.findIndex((w) => w.id === draft.finalCap!.trigger.waypointOrderId) + 1} (FINAL)
+                      {t('wp.afterWpFinal', { n: draft.wpOrders.findIndex((w) => w.id === draft.finalCap!.trigger.waypointOrderId) + 1 })}
                     </div>
                     <div className={styles.orderWhat}>
-                      Cap final → <b>{String(draft.finalCap.heading).padStart(3, '0')}°</b>{draft.finalCap.twaLock ? ' · TWA' : ''}
+                      {t('wp.finalActionLabel')} <b>{String(draft.finalCap.heading).padStart(3, '0')}°</b>{draft.finalCap.twaLock ? t('cap.twaSuffix') : ''}
                     </div>
                   </div>
                   <div className={styles.orderActions}>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditFinalCap(); }} aria-label="Modifier">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditFinalCap(); }} aria-label={t('actions.edit')}>
                       <Pencil size={11} strokeWidth={2} />
                     </button>
-                    <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('finalCap', draft.finalCap!.id); }} aria-label="Supprimer">
+                    <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('finalCap', draft.finalCap!.id); }} aria-label={t('actions.delete')}>
                       <Trash2 size={11} strokeWidth={2} />
                     </button>
                   </div>
@@ -220,11 +220,11 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
           )}
           <div className={styles.addRow}>
             <button type="button" className={styles.addBtn} onClick={props.onAddWp}>
-              <Plus size={14} strokeWidth={2} /> Ajouter un WP
+              <Plus size={14} strokeWidth={2} /> {t('wp.addBtn')}
             </button>
             {draft.wpOrders.length >= 1 && !draft.finalCap && (
               <button type="button" className={styles.addBtn} onClick={props.onAddFinalCap}>
-                <Plus size={14} strokeWidth={2} /> Cap final
+                <Plus size={14} strokeWidth={2} /> {t('wp.addFinalCap')}
               </button>
             )}
           </div>
@@ -234,20 +234,22 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
       {/* Sail orders section (always visible) */}
       <div className={styles.section}>
         <div className={styles.sectionTitle}>
-          <span>VOILES</span>
-          <small>{sortedSails.length} ORDRE{sortedSails.length === 1 ? '' : 'S'}</small>
+          <span>{t('sail.title')}</span>
+          <small>{t('sail.count', { n: sortedSails.length })}</small>
         </div>
         {sortedSails.length === 0 ? (
-          <div className={styles.empty}>AUCUN CHANGEMENT DE VOILE PROGRAMMÉ</div>
+          <div className={styles.empty}>{t('sail.empty')}</div>
         ) : (
           <div className={styles.orderList}>
             {sortedSails.map((o) => {
               const trig = o.trigger;
               const obsolete = trig.type === 'AT_TIME' && isObsoleteAtTime(trig, nowSec);
               const whenLabel = trig.type === 'AT_TIME'
-                ? `${formatAbsolute(trig.time)} · ${formatRelative(trig.time, nowSec)}${obsolete ? ' · OBSOLÈTE' : ''}`
-                : `AU WP ${draft.wpOrders.findIndex((w) => w.id === trig.waypointOrderId) + 1}`;
-              const actionLabel = o.action.auto ? <>Voile → <b>AUTO</b></> : <>Voile → <b>{o.action.sail}</b></>;
+                ? `${formatAbsolute(trig.time)} · ${formatRelative(trig.time, nowSec)}${obsolete ? t('cap.obsoleteSuffix') : ''}`
+                : t('sail.atWp', { n: draft.wpOrders.findIndex((w) => w.id === trig.waypointOrderId) + 1 });
+              const actionLabel = o.action.auto
+                ? <>{t('sail.actionLabel')} <b>{t('sail.actionAuto')}</b></>
+                : <>{t('sail.actionLabel')} <b>{o.action.sail}</b></>;
               return (
                 <div
                   key={o.id}
@@ -263,10 +265,10 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
                     <div className={styles.orderWhat}>{actionLabel}</div>
                   </div>
                   <div className={styles.orderActions}>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditSail(o.id); }} aria-label="Modifier">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); props.onEditSail(o.id); }} aria-label={t('actions.edit')}>
                       <Pencil size={11} strokeWidth={2} />
                     </button>
-                    <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('sail', o.id); }} aria-label="Supprimer">
+                    <button type="button" className={styles.delBtn} onClick={(e) => { e.stopPropagation(); props.onAskDelete('sail', o.id); }} aria-label={t('actions.delete')}>
                       <Trash2 size={11} strokeWidth={2} />
                     </button>
                   </div>
@@ -276,26 +278,21 @@ export default function ProgQueueView(props: ProgQueueViewProps): ReactElement {
           </div>
         )}
         <button type="button" className={styles.addBtn} onClick={props.onAddSail}>
-          <Plus size={14} strokeWidth={2} /> Ajouter un changement de voile
+          <Plus size={14} strokeWidth={2} /> {t('sail.addBtn')}
         </button>
       </div>
 
-      {/* Clear all (only visible if there's at least one order) */}
+      {/* Clear all */}
       {totalOrders > 0 && (
         <button type="button" className={styles.clearAll} onClick={props.onAskClearAll}>
-          <Trash2 size={11} strokeWidth={2} /> Tout effacer
+          <Trash2 size={11} strokeWidth={2} /> {t('clearAll')}
         </button>
       )}
 
-      {/* Multi-tab note — last confirmation always wins; surface it so a
-       *  player editing the same race in two tabs/devices doesn't expect
-       *  a merge. */}
+      {/* Multi-tab note */}
       <div className={styles.multiTabNote}>
         <Info size={11} strokeWidth={2} />
-        <span>
-          La dernière confirmation prime. Évitez de programmer depuis plusieurs
-          onglets simultanément.
-        </span>
+        <span>{t('multiTabNote')}</span>
       </div>
     </div>
   );
