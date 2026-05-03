@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import styles from './ConfirmDialog.module.css';
 
 export interface ConfirmDialogProps {
@@ -20,11 +21,13 @@ export interface ConfirmDialogProps {
  * Clicking the backdrop cancels, Escape cancels (native dialog behavior).
  */
 export function ConfirmDialog({
-  open, title, body, confirmLabel, cancelLabel = 'Annuler',
+  open, title, body, confirmLabel, cancelLabel,
   tone = 'primary', disabled = false,
   onConfirm, onCancel,
 }: ConfirmDialogProps): React.ReactElement {
+  const t = useTranslations('common.actions');
   const ref = useRef<HTMLDialogElement>(null);
+  const cancel = cancelLabel ?? t('cancel');
 
   useEffect(() => {
     if (open) ref.current?.showModal();
@@ -41,7 +44,7 @@ export function ConfirmDialog({
       <h2 className={styles.title}>{title}</h2>
       {body && <div className={styles.body}>{body}</div>}
       <div className={styles.actions}>
-        <button type="button" className={styles.btnCancel} onClick={onCancel}>{cancelLabel}</button>
+        <button type="button" className={styles.btnCancel} onClick={onCancel}>{cancel}</button>
         <button
           type="button"
           className={tone === 'danger' ? styles.btnDanger : styles.btnConfirm}

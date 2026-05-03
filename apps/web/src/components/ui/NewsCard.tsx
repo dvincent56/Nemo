@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   CATEGORY_LABEL,
   formatNewsDate,
@@ -25,6 +26,7 @@ export interface NewsCardProps {
  * Source de vérité unique pour le visuel — toute évolution se fait ici.
  */
 export function NewsCard({ news }: NewsCardProps): React.ReactElement {
+  const t = useTranslations('common.actions');
   return (
     <Link
       href={`/news/${news.slug}` as LinkHref}
@@ -49,7 +51,7 @@ export function NewsCard({ news }: NewsCardProps): React.ReactElement {
         </div>
         <h3 className={styles.title}>{news.title}</h3>
         <p className={styles.excerpt}>{news.excerpt}</p>
-        <span className={styles.read}>Lire →</span>
+        <span className={styles.read}>{t('read')}</span>
       </div>
     </Link>
   );

@@ -2,7 +2,52 @@
   "common": {
     "actions": {
       "save": "Enregistrer",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "signin": "Se connecter",
+      "signout": "Se déconnecter",
+      "read": "Lire →"
+    },
+    "nav": {
+      "courses": "Courses",
+      "marina": "Marina",
+      "ranking": "Classement",
+      "profile": "Profil",
+      "careerMode": "Mode carrière",
+      "spectatorMode": "Mode spectateur"
+    },
+    "legal": {
+      "cgu": "CGU",
+      "privacy": "Confidentialité",
+      "mentions": "Mentions légales",
+      "cookies": "Cookies",
+      "lastUpdated": "Dernière mise à jour · {date}",
+      "version": "Version 1.0"
+    },
+    "footer": {
+      "product": "Produit",
+      "legal": "Légal",
+      "contact": "Contact",
+      "copy": "© 2026 Nemo · Hébergé en Europe"
+    },
+    "drawer": {
+      "season": "Saison 2026"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "page": "Page {n}"
+    },
+    "aria": {
+      "brandNemo": "Nemo",
+      "primaryNav": "Principal",
+      "openMenu": "Ouvrir le menu",
+      "mobileMenu": "Menu mobile",
+      "closeMenu": "Fermer le menu",
+      "language": "Langue",
+      "languageSelector": "Sélection de langue",
+      "sections": "Sections",
+      "prevPage": "Page précédente",
+      "nextPage": "Page suivante"
     },
     "meta": {
       "title": "Nemo — Jeu de voile offshore",

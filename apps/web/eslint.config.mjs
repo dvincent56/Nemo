@@ -29,20 +29,33 @@ const config = [
     },
   },
   // i18n : interdit les strings littérales dans les fichiers déjà migrés
-  // sur next-intl. Au fur et à mesure des Plans 3-6, on ajoute les fichiers
-  // / dossiers migrés à cette liste de globs. PR 2 ne couvre que le shell
-  // (layout) — les routes elles-mêmes contiennent encore des strings FR
-  // en dur, leur migration vient en Plans 3-6.
+  // sur next-intl. Au fur et à mesure des Plans 4-6, on ajoute les fichiers
+  // / dossiers migrés à cette liste de globs. Plan 3 a couvert tout le
+  // shell (root layout + components/ui + i18n config + HomeHeroTopbar) ;
+  // les pages/* et /play restent encore avec des strings FR en dur, leur
+  // migration vient en Plans 4-6.
   {
     files: [
       'src/app/\\[locale\\]/layout.tsx',
+      'src/app/\\[locale\\]/HomeHeroTopbar.tsx',
+      'src/components/ui/**/*.{tsx,ts}',
+      'src/i18n/**/*.{tsx,ts}',
     ],
     rules: {
       'react/jsx-no-literals': ['error', {
         noStrings: true,
         ignoreProps: true,
         noAttributeStrings: false,
-        allowedStrings: ['—', '·', '•', '/', ':', '|', '×', '→', '↑', '↓', '+', '-'],
+        allowedStrings: [
+          // Typographic separators
+          '—', '·', '•', '/', ':', '|', '×', '+', '-',
+          // Arrows / ellipsis (used in pagination, callouts)
+          '→', '←', '↑', '↓', '…',
+          // Brand assets — "NEMO" is split as NE<span>M</span>O for design
+          'NE', 'M', 'O',
+          // Stable contact email (not translatable)
+          'hello@nemo.sail',
+        ],
       }],
     },
   },

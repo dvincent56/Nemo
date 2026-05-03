@@ -1,8 +1,8 @@
 'use client';
 
 import { useTransition } from 'react';
-import { useLocale } from 'next-intl';
-import { usePathname, useRouter } from '@/i18n/routing';
+import { useLocale, useTranslations } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import styles from './LanguageSelector.module.css';
 
@@ -19,6 +19,7 @@ export function LanguageSelector(): React.ReactElement {
   const currentLocale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('common.aria');
   const [isPending, startTransition] = useTransition();
 
   function switchTo(target: Locale): void {
@@ -35,7 +36,7 @@ export function LanguageSelector(): React.ReactElement {
   }
 
   return (
-    <nav className={styles.selector} aria-label="Sélection de langue">
+    <nav className={styles.selector} aria-label={t('languageSelector')}>
       {LOCALES.map((l) => {
         const isActive = l.code === currentLocale;
         return (

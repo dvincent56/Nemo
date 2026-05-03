@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import styles from './Drawer.module.css';
+import { LanguageSelector } from './LanguageSelector';
 
 export interface DrawerLink {
   href: string;
@@ -11,19 +13,13 @@ export interface DrawerLink {
   active?: boolean;
 }
 
-export interface DrawerLang {
-  code: string;
-  label: string;
-  active?: boolean;
-}
-
 export interface DrawerProps {
   open: boolean;
   onClose: () => void;
   links: DrawerLink[];
-  /** Sélecteur de langue rendu sous les liens (mobile uniquement —
+  /** Affiche le LanguageSelector sous les liens (mobile uniquement —
    *  le top-bar mobile masque l'inline lang switcher). */
-  langs?: DrawerLang[];
+  showLang?: boolean;
   /** Bouton d'action rendu en bas du drawer (ex. "Se déconnecter"). */
   bottomAction?: { label: string; onClick: () => void };
   /** Variante visuelle. `hero` = fond navy + texte ivoire pour s'accorder
@@ -32,8 +28,10 @@ export interface DrawerProps {
 }
 
 export function Drawer({
-  open, onClose, links, langs, bottomAction, variant = 'default',
+  open, onClose, links, showLang, bottomAction, variant = 'default',
 }: DrawerProps): React.ReactElement {
+  const t = useTranslations('common');
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -58,13 +56,13 @@ export function Drawer({
   return (
     <nav
       className={drawerCls}
-      aria-label="Menu mobile"
+      aria-label={t('aria.mobileMenu')}
       aria-hidden={!open}
     >
       <button
         type="button"
         className={styles.close}
-        aria-label="Fermer le menu"
+        aria-label={t('aria.closeMenu')}
         onClick={onClose}
       >
         <span aria-hidden>×</span>
@@ -80,17 +78,9 @@ export function Drawer({
           <span className={styles.num}>{l.num}</span>
         </Link>
       ))}
-      {langs && langs.length > 0 && (
-        <div className={styles.langs} role="navigation" aria-label="Langue">
-          {langs.map((l) => (
-            <a
-              key={l.code}
-              href="#"
-              className={`${styles.lang} ${l.active ? styles.langActive : ''}`}
-            >
-              {l.label}
-            </a>
-          ))}
+      {showLang && (
+        <div className={styles.langs}>
+          <LanguageSelector />
         </div>
       )}
       {bottomAction && (
@@ -106,7 +96,7 @@ export function Drawer({
         </button>
       )}
       <div className={styles.foot}>
-        <span>Saison 2026</span>
+        <span>{t('drawer.season')}</span>
       </div>
     </nav>
   );

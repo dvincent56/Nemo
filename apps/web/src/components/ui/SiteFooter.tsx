@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { LanguageSelector } from './LanguageSelector';
 import styles from './SiteFooter.module.css';
 
@@ -9,31 +10,31 @@ interface FooterLink {
   href: Href;
 }
 
-const PRODUIT_LINKS: FooterLink[] = [
-  { label: 'Courses', href: '/races' },
-  { label: 'Classement', href: '/ranking' },
-  { label: 'Marina', href: '/marina' },
-  { label: 'Mode carrière', href: '/subscribe' as Href },
-  { label: 'Mode spectateur', href: '/races' },
-];
+export async function SiteFooter(): Promise<React.ReactElement> {
+  const t = await getTranslations('common');
 
-// Casts en Href nécessaires tant que Next.js n'a pas régénéré `.next/types`
-// après ajout des 4 routes. Disparaîtront au prochain `pnpm dev`.
-const LEGAL_LINKS: FooterLink[] = [
-  { label: 'CGU', href: '/cgu' as Href },
-  { label: 'Confidentialité', href: '/privacy' as Href },
-  { label: 'Mentions légales', href: '/legal' as Href },
-  { label: 'Cookies', href: '/cookies' as Href },
-];
+  const produitLinks: FooterLink[] = [
+    { label: t('nav.courses'), href: '/races' },
+    { label: t('nav.ranking'), href: '/ranking' },
+    { label: t('nav.marina'), href: '/marina' },
+    { label: t('nav.careerMode'), href: '/subscribe' as Href },
+    { label: t('nav.spectatorMode'), href: '/races' },
+  ];
 
-export function SiteFooter(): React.ReactElement {
+  const legalLinks: FooterLink[] = [
+    { label: t('legal.cgu'), href: '/cgu' as Href },
+    { label: t('legal.privacy'), href: '/privacy' as Href },
+    { label: t('legal.mentions'), href: '/legal' as Href },
+    { label: t('legal.cookies'), href: '/cookies' as Href },
+  ];
+
   return (
     <footer className={styles.foot}>
       <div className={styles.inner}>
         <div className={styles.col}>
-          <h5>Produit</h5>
+          <h5>{t('footer.product')}</h5>
           <ul>
-            {PRODUIT_LINKS.map((l) => (
+            {produitLinks.map((l) => (
               <li key={l.label}>
                 <Link href={l.href}>{l.label}</Link>
               </li>
@@ -41,9 +42,9 @@ export function SiteFooter(): React.ReactElement {
           </ul>
         </div>
         <div className={styles.col}>
-          <h5>Légal</h5>
+          <h5>{t('footer.legal')}</h5>
           <ul>
-            {LEGAL_LINKS.map((l) => (
+            {legalLinks.map((l) => (
               <li key={l.label}>
                 <Link href={l.href}>{l.label}</Link>
               </li>
@@ -51,7 +52,7 @@ export function SiteFooter(): React.ReactElement {
           </ul>
         </div>
         <div className={styles.col}>
-          <h5>Contact</h5>
+          <h5>{t('footer.contact')}</h5>
           <ul>
             <li>
               <a href="mailto:hello@nemo.sail">hello@nemo.sail</a>
@@ -60,11 +61,11 @@ export function SiteFooter(): React.ReactElement {
         </div>
       </div>
       <div className={styles.bottom}>
-        <Link href="/" className={styles.brand} aria-label="Nemo">
+        <Link href="/" className={styles.brand} aria-label={t('aria.brandNemo')}>
           NE<span>M</span>O
         </Link>
         <LanguageSelector />
-        <p className={styles.copy}>© 2026 Nemo · Hébergé en Europe</p>
+        <p className={styles.copy}>{t('footer.copy')}</p>
       </div>
     </footer>
   );

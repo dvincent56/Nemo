@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { API_BASE } from '@/lib/api';
 import { Drawer, type DrawerLink, LanguageSelector } from '@/components/ui';
 import styles from './page.module.css';
@@ -12,34 +13,26 @@ interface HeroNavLink {
   label: string;
 }
 
-const PLAYER_LINKS: HeroNavLink[] = [
-  { href: '/races', label: 'Courses' },
-  { href: '/marina', label: 'Marina' },
-  { href: '/ranking', label: 'Classement' },
-  { href: '/profile', label: 'Profil' },
-];
-
-const VISITOR_LINKS: HeroNavLink[] = [
-  { href: '/races', label: 'Courses' },
-  { href: '/ranking', label: 'Classement' },
-];
-
-const LANGS = [
-  { code: 'fr', label: 'FR' },
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'de', label: 'DE' },
-];
-
 export interface HomeHeroTopbarProps {
   isVisitor: boolean;
 }
 
 export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactElement {
   const pathname = usePathname();
+  const t = useTranslations('common');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const navLinks = isVisitor ? VISITOR_LINKS : PLAYER_LINKS;
+  const playerLinks: HeroNavLink[] = [
+    { href: '/races', label: t('nav.courses') },
+    { href: '/marina', label: t('nav.marina') },
+    { href: '/ranking', label: t('nav.ranking') },
+    { href: '/profile', label: t('nav.profile') },
+  ];
+  const visitorLinks: HeroNavLink[] = [
+    { href: '/races', label: t('nav.courses') },
+    { href: '/ranking', label: t('nav.ranking') },
+  ];
+  const navLinks = isVisitor ? visitorLinks : playerLinks;
 
   const handleLogout = async (): Promise<void> => {
     try {
@@ -62,26 +55,20 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
   if (isVisitor) {
     drawerLinks.push({
       href: '/login',
-      label: 'Se connecter',
+      label: t('actions.signin'),
       num: String(drawerLinks.length + 1).padStart(2, '0'),
       active: pathname === '/login',
     });
   }
 
-  const drawerLangs = LANGS.map((l) => ({
-    code: l.code,
-    label: l.label,
-    active: l.code === 'fr',
-  }));
-
   return (
     <>
       <header className={styles.heroTopbar}>
-        <Link href="/" className={styles.brand} aria-label="Nemo">
+        <Link href="/" className={styles.brand} aria-label={t('aria.brandNemo')}>
           NE<span>M</span>O
         </Link>
 
-        <nav aria-label="Principal">
+        <nav aria-label={t('aria.primaryNav')}>
           {navLinks.map((l) => (
             <Link
               key={l.href}
@@ -94,7 +81,7 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
 
         {isVisitor ? (
           <Link href="/login" className={styles.heroLoginBtn}>
-            Se connecter
+            {t('actions.signin')}
           </Link>
         ) : (
           <button
@@ -102,7 +89,7 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
             className={styles.heroLogoutBtn}
             onClick={handleLogout}
           >
-            Se déconnecter
+            {t('actions.signout')}
           </button>
         )}
 
@@ -113,7 +100,7 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
         <button
           type="button"
           className={`${styles.heroBurger} ${drawerOpen ? styles.heroBurgerOpen : ''}`}
-          aria-label="Ouvrir le menu"
+          aria-label={t('aria.openMenu')}
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen((v) => !v)}
         >
@@ -125,10 +112,10 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         links={drawerLinks}
-        langs={drawerLangs}
+        showLang
         variant="hero"
         {...(!isVisitor
-          ? { bottomAction: { label: 'Se déconnecter', onClick: handleLogout } }
+          ? { bottomAction: { label: t('actions.signout'), onClick: handleLogout } }
           : {})}
       />
     </>

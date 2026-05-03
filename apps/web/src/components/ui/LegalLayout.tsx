@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { Eyebrow } from './Eyebrow';
 import styles from './LegalLayout.module.css';
 
@@ -34,6 +35,7 @@ export interface LegalLayoutProps {
 export function LegalLayout({
   eyebrow, trailing, title, intro, lastUpdated, sections,
 }: LegalLayoutProps): React.ReactElement {
+  const t = useTranslations('common');
   const [active, setActive] = useState<string>(sections[0]?.id ?? '');
 
   useEffect(() => {
@@ -103,13 +105,13 @@ export function LegalLayout({
         <h1 className={styles.title}>{title}</h1>
         {intro && <p className={styles.intro}>{intro}</p>}
         <p className={styles.meta}>
-          <span>Dernière mise à jour · {lastUpdated}</span>
-          <span>Version 1.0</span>
+          <span>{t('legal.lastUpdated', { date: lastUpdated })}</span>
+          <span>{t('legal.version')}</span>
         </p>
       </header>
 
       <div className={styles.layout}>
-        <nav className={styles.sidenav} aria-label="Sections">
+        <nav className={styles.sidenav} aria-label={t('aria.sections')}>
           {sections.map((s) => (
             <a
               key={s.id}

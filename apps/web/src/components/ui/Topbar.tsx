@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { API_BASE } from '@/lib/api';
 import styles from './Topbar.module.css';
 import { Button } from './Button';
@@ -22,36 +23,23 @@ export interface TopbarProps {
   isVisitor?: boolean;
 }
 
-const PLAYER_LINKS: TopbarLink[] = [
-  { href: '/races', label: 'Courses' },
-  { href: '/marina', label: 'Marina' },
-  { href: '/ranking', label: 'Classement' },
-  { href: '/profile', label: 'Profil' },
-];
-
-const VISITOR_LINKS: TopbarLink[] = [
-  { href: '/races', label: 'Courses' },
-  { href: '/ranking', label: 'Classement' },
-];
-
-// Le sélecteur de langue inline (legacy) renvoyait vers /{locale}{pathname}
-// sans stripper le préfixe locale courant — bug concat /en/fr/profile.
-// Remplacé par <LanguageSelector /> qui utilise les helpers next-intl.
-// Le drawer mobile reste sur le tableau LANGS local pour son propre rendu
-// stub jusqu'à sa migration en Plan 3.
-const LANGS = [
-  { code: 'fr', label: 'FR' },
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'de', label: 'DE' },
-];
-
 export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProps): React.ReactElement {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations('common');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const navLinks = links ?? (isVisitor ? VISITOR_LINKS : PLAYER_LINKS);
+  const playerLinks: TopbarLink[] = [
+    { href: '/races', label: t('nav.courses') },
+    { href: '/marina', label: t('nav.marina') },
+    { href: '/ranking', label: t('nav.ranking') },
+    { href: '/profile', label: t('nav.profile') },
+  ];
+  const visitorLinks: TopbarLink[] = [
+    { href: '/races', label: t('nav.courses') },
+    { href: '/ranking', label: t('nav.ranking') },
+  ];
+  const navLinks = links ?? (isVisitor ? visitorLinks : playerLinks);
 
   const handleLogout = async (): Promise<void> => {
     try {
@@ -74,7 +62,7 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
   if (isVisitor) {
     drawerLinks.push({
       href: '/login',
-      label: 'Se connecter',
+      label: t('actions.signin'),
       num: String(drawerLinks.length + 1).padStart(2, '0'),
       active: pathname === '/login',
     });
@@ -83,11 +71,11 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
   return (
     <>
       <header className={styles.topbar}>
-        <Link href="/" className={styles.brand} aria-label="Nemo">
+        <Link href="/" className={styles.brand} aria-label={t('aria.brandNemo')}>
           NE<span>M</span>O
         </Link>
 
-        <nav className={styles.nav} aria-label="Principal">
+        <nav className={styles.nav} aria-label={t('aria.primaryNav')}>
           {navLinks.map((l) => (
             <Link
               key={l.href}
@@ -103,7 +91,7 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
               className={styles.loginCta}
               onClick={() => router.push('/login')}
             >
-              Se connecter
+              {t('actions.signin')}
             </Button>
           ) : (
             <button
@@ -111,7 +99,7 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
               className={styles.logoutBtn}
               onClick={handleLogout}
             >
-              Se déconnecter
+              {t('actions.signout')}
             </button>
           )}
         </nav>
@@ -125,7 +113,7 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
         <button
           type="button"
           className={`${styles.burger} ${drawerOpen ? styles.open : ''}`}
-          aria-label="Ouvrir le menu"
+          aria-label={t('aria.openMenu')}
           aria-expanded={drawerOpen}
           onClick={() => setDrawerOpen((v) => !v)}
         >
@@ -137,11 +125,9 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         links={drawerLinks}
-        {...(showLang
-          ? { langs: LANGS.map((l) => ({ ...l, active: l.code === 'fr' })) }
-          : {})}
+        showLang={showLang}
         {...(!isVisitor
-          ? { bottomAction: { label: 'Se déconnecter', onClick: handleLogout } }
+          ? { bottomAction: { label: t('actions.signout'), onClick: handleLogout } }
           : {})}
       />
     </>

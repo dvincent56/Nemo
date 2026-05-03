@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import styles from './Pagination.module.css';
 
 export interface PaginationProps {
@@ -38,10 +39,12 @@ export function Pagination({
   pageSize,
   onChange,
   showMeta = true,
-  label = 'Pagination',
+  label,
 }: PaginationProps): React.ReactElement | null {
+  const t = useTranslations('common');
   if (totalPages <= 1) return null;
   const buttons = buildPages(page, totalPages);
+  const navLabel = label ?? t('pagination.label');
 
   const metaText = (() => {
     if (!showMeta || !totalItems || !pageSize) return null;
@@ -51,14 +54,14 @@ export function Pagination({
   })();
 
   return (
-    <nav className={styles.pagination} aria-label={label}>
+    <nav className={styles.pagination} aria-label={navLabel}>
       {metaText && <span className={styles.meta}>{metaText}</span>}
       <button
         type="button"
         className={styles.btn}
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        aria-label="Page précédente"
+        aria-label={t('aria.prevPage')}
       >←</button>
       {buttons.map((b, i) => (
         b === 'sep'
@@ -70,7 +73,7 @@ export function Pagination({
               className={`${styles.btn} ${b === page ? styles.active : ''}`}
               onClick={() => onChange(b)}
               aria-current={b === page ? 'page' : undefined}
-              aria-label={`Page ${b}`}
+              aria-label={t('pagination.page', { n: b })}
             >{b}</button>
           )
       ))}
@@ -79,7 +82,7 @@ export function Pagination({
         className={styles.btn}
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
-        aria-label="Page suivante"
+        aria-label={t('aria.nextPage')}
       >→</button>
     </nav>
   );
