@@ -184,7 +184,7 @@ export default function LoginPage(): React.ReactElement {
             </div>
 
             <p className={styles.legal}>
-              {tForm('legalPre')}<a href="#">{tForm('legalCgu')}</a>{tForm('legalAnd')}<a href="#">{tForm('legalPrivacy')}</a>{tForm('legalPost')}
+              {tForm('legalPre')}<Link href={'/cgu' as Route}>{tForm('legalCgu')}</Link>{tForm('legalAnd')}<Link href={'/privacy' as Route}>{tForm('legalPrivacy')}</Link>{tForm('legalPost')}
             </p>
           </div>
         </section>
