@@ -1045,6 +1045,56 @@
     }
   },
   "marina": {
+    "effects": {
+      "ariaBars": "Perfil de efecto",
+      "ariaText": "Efectos principales",
+      "alwaysActive": "Siempre activo:",
+      "criterion": {
+        "upwind": "Ceñida",
+        "downwind": "Empopada",
+        "lightWind": "Viento ligero",
+        "mediumWind": "Viento medio",
+        "heavyWind": "Viento fuerte",
+        "maneuverDur": "Tiempo maniobras",
+        "maneuverSpeed": "Velocidad maniobras",
+        "hullWear": "Solidez casco",
+        "rigWear": "Solidez aparejo",
+        "sailWear": "Solidez velas",
+        "elecWear": "Solidez electrónica"
+      },
+      "detail": {
+        "speed": {
+          "upwind": "velocidad en ceñida",
+          "downwind": "velocidad en empopada",
+          "lightWind": "velocidad con viento ligero",
+          "mediumWind": "velocidad con viento medio",
+          "heavyWind": "velocidad con viento fuerte"
+        },
+        "maneuverDur": {
+          "tack": "tiempo virada",
+          "gybe": "tiempo trasluchada",
+          "sailChange": "tiempo cambio de vela"
+        },
+        "maneuverSpeed": {
+          "tack": "velocidad en virada",
+          "gybe": "velocidad en trasluchada",
+          "sailChange": "velocidad en cambio de vela"
+        },
+        "wear": {
+          "hull": "desgaste casco",
+          "rig": "desgaste aparejo",
+          "sail": "desgaste velas",
+          "elec": "desgaste electrónica"
+        }
+      },
+      "note": {
+        "activeBetween": "Activo entre {min} y {max} nudos de viento",
+        "activeAbove": "Activo por encima de {min} nudos de viento",
+        "activeBelow": "Activo por debajo de {max} nudos de viento",
+        "groundingMul": "Reduce la penalización por encalladura (×{mul})",
+        "polarTargets": "Asistencia polar ±{deg}°"
+      }
+    },
     "eyebrowSeason": "Temporada 2026",
     "eyebrowTrailing": "Tu carrera",
     "title": "Marina",

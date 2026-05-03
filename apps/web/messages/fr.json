@@ -1045,6 +1045,56 @@
     }
   },
   "marina": {
+    "effects": {
+      "ariaBars": "Profil d'effet",
+      "ariaText": "Effets principaux",
+      "alwaysActive": "Toujours actif :",
+      "criterion": {
+        "upwind": "Près",
+        "downwind": "Portant",
+        "lightWind": "Vent léger",
+        "mediumWind": "Vent moyen",
+        "heavyWind": "Gros temps",
+        "maneuverDur": "Temps manœuvres",
+        "maneuverSpeed": "Vitesse manœuvres",
+        "hullWear": "Solidité coque",
+        "rigWear": "Solidité gréement",
+        "sailWear": "Solidité voiles",
+        "elecWear": "Solidité électro"
+      },
+      "detail": {
+        "speed": {
+          "upwind": "vitesse au près",
+          "downwind": "vitesse au portant",
+          "lightWind": "vitesse par vent léger",
+          "mediumWind": "vitesse par vent moyen",
+          "heavyWind": "vitesse par grand vent"
+        },
+        "maneuverDur": {
+          "tack": "temps virement",
+          "gybe": "temps empannage",
+          "sailChange": "temps changement de voile"
+        },
+        "maneuverSpeed": {
+          "tack": "vitesse pendant virement",
+          "gybe": "vitesse pendant empannage",
+          "sailChange": "vitesse pendant changement de voile"
+        },
+        "wear": {
+          "hull": "usure coque",
+          "rig": "usure gréement",
+          "sail": "usure voiles",
+          "elec": "usure électro"
+        }
+      },
+      "note": {
+        "activeBetween": "Actif entre {min} et {max} nœuds de vent",
+        "activeAbove": "Actif au-dessus de {min} nœuds de vent",
+        "activeBelow": "Actif en dessous de {max} nœuds de vent",
+        "groundingMul": "Réduit la pénalité d'échouage (×{mul})",
+        "polarTargets": "Assistance polaire ±{deg}°"
+      }
+    },
     "eyebrowSeason": "Saison 2026",
     "eyebrowTrailing": "Ta carrière",
     "title": "Marina",

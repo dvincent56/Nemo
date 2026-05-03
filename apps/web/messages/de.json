@@ -1045,6 +1045,56 @@
     }
   },
   "marina": {
+    "effects": {
+      "ariaBars": "Effekt-Profil",
+      "ariaText": "Hauptwirkungen",
+      "alwaysActive": "Immer aktiv:",
+      "criterion": {
+        "upwind": "Am Wind",
+        "downwind": "Vor dem Wind",
+        "lightWind": "Leichter Wind",
+        "mediumWind": "Mittlerer Wind",
+        "heavyWind": "Starker Wind",
+        "maneuverDur": "Manöverzeit",
+        "maneuverSpeed": "Manövergeschwindigkeit",
+        "hullWear": "Rumpffestigkeit",
+        "rigWear": "Riggfestigkeit",
+        "sailWear": "Segelfestigkeit",
+        "elecWear": "Elektronikfestigkeit"
+      },
+      "detail": {
+        "speed": {
+          "upwind": "Geschwindigkeit am Wind",
+          "downwind": "Geschwindigkeit vor dem Wind",
+          "lightWind": "Geschwindigkeit bei leichtem Wind",
+          "mediumWind": "Geschwindigkeit bei mittlerem Wind",
+          "heavyWind": "Geschwindigkeit bei starkem Wind"
+        },
+        "maneuverDur": {
+          "tack": "Wendezeit",
+          "gybe": "Halsezeit",
+          "sailChange": "Segelwechselzeit"
+        },
+        "maneuverSpeed": {
+          "tack": "Geschwindigkeit beim Wenden",
+          "gybe": "Geschwindigkeit beim Halsen",
+          "sailChange": "Geschwindigkeit beim Segelwechsel"
+        },
+        "wear": {
+          "hull": "Rumpfverschleiß",
+          "rig": "Riggverschleiß",
+          "sail": "Segelverschleiß",
+          "elec": "Elektronikverschleiß"
+        }
+      },
+      "note": {
+        "activeBetween": "Aktiv zwischen {min} und {max} Knoten Wind",
+        "activeAbove": "Aktiv über {min} Knoten Wind",
+        "activeBelow": "Aktiv unter {max} Knoten Wind",
+        "groundingMul": "Reduziert die Auflauf-Strafe (×{mul})",
+        "polarTargets": "Polar-Assistenz ±{deg}°"
+      }
+    },
     "eyebrowSeason": "Saison 2026",
     "eyebrowTrailing": "Deine Karriere",
     "title": "Marina",

@@ -54,6 +54,7 @@ const config = [
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotCard.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SellModal.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotDrawer.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/EffectsSummary.tsx',
       'src/app/\\[locale\\]/marina/inventory/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/races/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/ranking/**/*.{tsx,ts}',

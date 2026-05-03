@@ -1045,6 +1045,56 @@
     }
   },
   "marina": {
+    "effects": {
+      "ariaBars": "Effect profile",
+      "ariaText": "Main effects",
+      "alwaysActive": "Always active:",
+      "criterion": {
+        "upwind": "Upwind",
+        "downwind": "Downwind",
+        "lightWind": "Light wind",
+        "mediumWind": "Medium wind",
+        "heavyWind": "Heavy weather",
+        "maneuverDur": "Maneuver time",
+        "maneuverSpeed": "Maneuver speed",
+        "hullWear": "Hull strength",
+        "rigWear": "Rig strength",
+        "sailWear": "Sails strength",
+        "elecWear": "Electronics strength"
+      },
+      "detail": {
+        "speed": {
+          "upwind": "upwind speed",
+          "downwind": "downwind speed",
+          "lightWind": "light-wind speed",
+          "mediumWind": "medium-wind speed",
+          "heavyWind": "heavy-wind speed"
+        },
+        "maneuverDur": {
+          "tack": "tack time",
+          "gybe": "gybe time",
+          "sailChange": "sail-change time"
+        },
+        "maneuverSpeed": {
+          "tack": "speed during tack",
+          "gybe": "speed during gybe",
+          "sailChange": "speed during sail change"
+        },
+        "wear": {
+          "hull": "hull wear",
+          "rig": "rig wear",
+          "sail": "sail wear",
+          "elec": "electronics wear"
+        }
+      },
+      "note": {
+        "activeBetween": "Active between {min} and {max} knots of wind",
+        "activeAbove": "Active above {min} knots of wind",
+        "activeBelow": "Active below {max} knots of wind",
+        "groundingMul": "Reduces grounding penalty (×{mul})",
+        "polarTargets": "Polar assist ±{deg}°"
+      }
+    },
     "eyebrowSeason": "2026 Season",
     "eyebrowTrailing": "Your career",
     "title": "Marina",
