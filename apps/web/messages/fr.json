@@ -590,8 +590,8 @@
     },
     "timeline": {
       "header": {
-        "live": "LIVE",
-        "now": "NOW",
+        "live": "DIRECT",
+        "now": "MAINTENANT",
         "tPlus": "T+{h}h",
         "tMinus": "T{h}h",
         "jPlus": "J+{d}",
@@ -610,7 +610,7 @@
         "fwd6Aria": "avancer 6 heures",
         "fwd6Title": "Avancer de 6h",
         "liveTitle": "Revenir au présent",
-        "liveLabel": "LIVE"
+        "liveLabel": "DIRECT"
       },
       "track": {
         "aria": "position dans le temps de course"
@@ -730,7 +730,12 @@
     "spectate": {
       "tag": "Spectateur",
       "ctaLogin": "Se connecter →",
-      "ctaSignup": "S'inscrire →"
+      "ctaSignup": "S'inscrire →",
+      "banner": {
+        "visitor": "Vous observez cette course en visiteur. Créez un compte pour participer.",
+        "notRegistered": "Vous observez cette course. Inscrivez-vous pour prendre les commandes.",
+        "finished": "Cette course est terminée. Vous consultez un replay de lecture seule."
+      }
     },
     "actions": {
       "ranking": "Classement",

@@ -81,17 +81,15 @@ export function decideRaceAccess(input: AccessDecisionInput): AccessMode {
 }
 
 /**
- * Décrit le message de bandeau à afficher en mode spectateur.
+ * Renvoie un code i18n pour le bandeau spectateur, ou null si inactif.
+ * Le composant résout via t(`play.spectate.banner.${code}`).
  */
-export function spectateBanner(mode: AccessMode): string | null {
+export function spectateBannerCode(mode: AccessMode): 'visitor' | 'notRegistered' | 'finished' | null {
   if (mode.kind !== 'spectate') return null;
   switch (mode.reason) {
-    case 'visitor':
-      return 'Vous observez cette course en visiteur. Créez un compte pour participer.';
-    case 'not-registered':
-      return 'Vous observez cette course. Inscrivez-vous pour prendre les commandes.';
-    case 'finished':
-      return 'Cette course est terminée. Vous consultez un replay de lecture seule.';
+    case 'visitor':        return 'visitor';
+    case 'not-registered': return 'notRegistered';
+    case 'finished':       return 'finished';
   }
 }
 

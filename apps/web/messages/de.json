@@ -730,7 +730,12 @@
     "spectate": {
       "tag": "Zuschauer",
       "ctaLogin": "Anmelden →",
-      "ctaSignup": "Registrieren →"
+      "ctaSignup": "Registrieren →",
+      "banner": {
+        "visitor": "Du beobachtest dieses Rennen als Besucher. Erstelle ein Konto, um teilzunehmen.",
+        "notRegistered": "Du beobachtest dieses Rennen. Registriere dich, um das Steuer zu übernehmen.",
+        "finished": "Dieses Rennen ist beendet. Du siehst eine schreibgeschützte Wiederholung."
+      }
     },
     "actions": {
       "ranking": "Rangliste",

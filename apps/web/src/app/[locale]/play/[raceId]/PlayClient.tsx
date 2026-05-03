@@ -11,7 +11,7 @@ import {
   sendOrderReplaceQueue, useGameStore,
 } from '@/lib/store';
 import {
-  ANONYMOUS, decideRaceAccess, readClientSession, spectateBanner,
+  ANONYMOUS, decideRaceAccess, readClientSession, spectateBannerCode,
   type SessionContext,
 } from '@/lib/access';
 import { useHotkeys } from '@/lib/useHotkeys';
@@ -213,7 +213,8 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
     () => decideRaceAccess({ race, session, isRegistered }),
     [race, session, isRegistered],
   );
-  const banner = spectateBanner(access);
+  const bannerCode = spectateBannerCode(access);
+  const banner = bannerCode ? t(`spectate.banner.${bannerCode}`) : null;
   const canInteract = access.kind === 'play';
 
   useBoatInit(race.id);
@@ -705,6 +706,53 @@ export default function PlayClient({ race }: { race: RaceSummary }): React.React
               'Un waypoint a été atteint pendant votre édition — éditeur fermé.',
           });
         }
+      }
+    };
+
+    tick(); // initial run
+    const interval = setInterval(tick, 5_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Periodic AT_TIME prune — every 5s, remove cap/sail orders whose
+  // AT_TIME trigger has passed from BOTH committed and draft. The engine
+  // has already fired them; the client mirror would otherwise keep stale
+  // rows in the ProgPanel queue and stale markers on the projection that
+  // visibly track the boat (findProjectionPointAtTime clamps past times to
+  // the first projection sample, ie. the boat's current position).
+  useEffect(() => {
+    const tick = (): void => {
+      const state = useGameStore.getState();
+      const nowSec = Math.floor(Date.now() / 1000);
+
+      // Editor desync: if the user is editing a cap or sail order whose
+      // AT_TIME trigger is about to be pruned, close the editor first and
+      // surface a one-shot notice (mirrors the WP capture flow above).
+      const editing = state.prog.editingOrder;
+      let editorAffected = false;
+      if (editing && editing.id !== 'NEW') {
+        if (editing.kind === 'cap') {
+          const cap = state.prog.draft.capOrders.find((o) => o.id === editing.id);
+          if (cap && cap.trigger.type === 'AT_TIME' && cap.trigger.time < nowSec) {
+            editorAffected = true;
+          }
+        } else if (editing.kind === 'sail') {
+          const sail = state.prog.draft.sailOrders.find((s) => s.id === editing.id);
+          if (sail && sail.trigger.type === 'AT_TIME' && sail.trigger.time < nowSec) {
+            editorAffected = true;
+          }
+        }
+      }
+
+      state.pruneObsoleteAtTimeOrders(nowSec);
+
+      if (editorAffected) {
+        state.setEditingOrder(null);
+        state.setProgNotice({
+          id: `desync-${Date.now()}`,
+          message:
+            'Un ordre programmé a été déclenché pendant votre édition — éditeur fermé.',
+        });
       }
     };
 

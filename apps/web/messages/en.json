@@ -730,7 +730,12 @@
     "spectate": {
       "tag": "Spectator",
       "ctaLogin": "Sign in →",
-      "ctaSignup": "Sign up →"
+      "ctaSignup": "Sign up →",
+      "banner": {
+        "visitor": "You're watching this race as a visitor. Create an account to participate.",
+        "notRegistered": "You're watching this race. Sign up to take the helm.",
+        "finished": "This race is finished. You're watching a read-only replay."
+      }
     },
     "actions": {
       "ranking": "Ranking",

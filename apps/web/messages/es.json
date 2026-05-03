@@ -730,7 +730,12 @@
     "spectate": {
       "tag": "Espectador",
       "ctaLogin": "Iniciar sesión →",
-      "ctaSignup": "Registrarse →"
+      "ctaSignup": "Registrarse →",
+      "banner": {
+        "visitor": "Estás observando esta regata como visitante. Crea una cuenta para participar.",
+        "notRegistered": "Estás observando esta regata. Regístrate para tomar el mando.",
+        "finished": "Esta regata ha terminado. Estás viendo un replay de solo lectura."
+      }
     },
     "actions": {
       "ranking": "Clasificación",
