@@ -9,7 +9,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import Tooltip from '@/components/ui/Tooltip';
 import { EffectsSummary } from './EffectsSummary';
-import { useUpgradeLabel } from '@/lib/upgrade-i18n';
+import { useUpgradeLabel, useUpgradeProfile } from '@/lib/upgrade-i18n';
 import styles from './SlotDrawer.module.css';
 
 type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
@@ -79,6 +79,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
   const tSlot = useTranslations('marina.slots');
   const tTier = useTranslations('marina.tiers');
   const upgradeLabel = useUpgradeLabel();
+  const upgradeProfile = useUpgradeProfile();
   const buildUnlockRows = useUnlockRowsBuilder();
 
   const [tab, setTab] = useState<'install' | 'buy'>('install');
@@ -283,7 +284,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
                         <p className={styles.itemName}>{upgradeLabel(item)}</p>
-                        <p className={styles.itemDesc}>{item.profile}</p>
+                        <p className={styles.itemDesc}>{upgradeProfile(item.profile)}</p>
                         <span className={styles.itemTier}>{tTier(item.tier)}</span>
                         {isInstalledOnThisBoat && (
                           <span className={styles.badgeInstalled}>{t('badgeInstalledHere')}</span>

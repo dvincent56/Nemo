@@ -2,7 +2,7 @@ import { useTranslations } from 'next-intl';
 import { type UpgradeSlot, type InstalledUpgrade } from '../data';
 import type { SlotAvailability } from '@/lib/marina-api';
 import Tooltip from '@/components/ui/Tooltip';
-import { useUpgradeLabel } from '@/lib/upgrade-i18n';
+import { useUpgradeLabel, useUpgradeProfile } from '@/lib/upgrade-i18n';
 import styles from './SlotCard.module.css';
 
 interface SlotCardProps {
@@ -18,6 +18,7 @@ export function SlotCard({ slot, availability, installed, locked, onChangeSlot }
   const tTier = useTranslations('marina.tiers');
   const tCard = useTranslations('marina.slotCard');
   const upgradeLabel = useUpgradeLabel();
+  const upgradeProfile = useUpgradeProfile();
 
   if (availability === 'absent') return null;
 
@@ -26,7 +27,7 @@ export function SlotCard({ slot, availability, installed, locked, onChangeSlot }
     ? upgradeLabel({ id: installed.catalogId, name: installed.name })
     : tTier('SERIE');
   const itemTier = installed?.tier ?? 'SERIE';
-  const itemProfile = installed?.profile ?? '';
+  const itemProfile = installed ? upgradeProfile(installed.profile) : '';
   const cardCls = `${styles.card} ${isMonotype ? styles.cardMonotype : ''} ${locked ? styles.cardLocked : ''}`;
 
   return (

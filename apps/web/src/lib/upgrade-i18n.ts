@@ -32,3 +32,23 @@ export function useUpgradeLabel(): (item: NamedUpgrade) => string {
     }
   };
 }
+
+/**
+ * Hook React : renvoie une fonction `(profile) => string traduit`.
+ * Le `profile` est une phrase courte FR du game-balance ("rendement gros
+ * temps", "régate ultime", etc.) qui sert de tagline d'upgrade. Indexé
+ * par la string FR brute pour conserver le lien direct entre game-balance
+ * et messages — si la string change côté JSON, on voit immédiatement la
+ * désync via le fallback.
+ */
+export function useUpgradeProfile(): (profile: string) => string {
+  const t = useTranslations('marina.upgradeProfiles');
+  return (profile) => {
+    if (!profile) return profile;
+    try {
+      return t(profile);
+    } catch {
+      return profile;
+    }
+  };
+}
