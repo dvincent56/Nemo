@@ -2,24 +2,17 @@
 
 import { useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import type { RaceSummary } from '@/lib/api';
 import { Card, Chip } from '@/components/ui';
 import { courseLengthNM, formatDistance, type DistanceUnit } from '@/lib/geo';
-import { CLASS_LABEL, BOAT_CLASS_ORDER } from '@/lib/boat-classes';
+import { BOAT_CLASS_ORDER } from '@/lib/boat-classes';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
 import styles from './page.module.css';
 
 const CLASSES: Array<RaceSummary['boatClass'] | 'ALL'> = ['ALL', ...BOAT_CLASS_ORDER];
 
 const STATUSES: Array<RaceSummary['status'] | 'ALL'> = ['ALL', 'LIVE', 'PUBLISHED', 'FINISHED'];
-
-const STATUS_LABEL: Record<RaceSummary['status'], string> = {
-  DRAFT: 'Brouillon',
-  PUBLISHED: 'Ouverte',
-  BRIEFING: 'Ouverte',
-  LIVE: 'En cours',
-  FINISHED: 'Terminée',
-  ARCHIVED: 'Archivée',
-};
 
 type ChipStatus = 'live' | 'open' | 'gold';
 function statusVariant(s: RaceSummary['status']): ChipStatus {
@@ -79,12 +72,12 @@ export default function RaceList({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const t = useTranslations('races');
+  const tStatus = useTranslations('races.status');
+  const boatLabel = useBoatLabel();
 
-  // Source de vérité : URL (?class=...&status=...). Permet les liens profonds
-  // depuis /marina (« Voir les courses Ultim » → /races?class=ULTIM).
   const classFilter = readParam(searchParams.get('class'), CLASS_VALUES);
   const rawStatus = readParam(searchParams.get('status'), STATUS_VALUES);
-  // BRIEFING et PUBLISHED sont affichés comme une seule catégorie "Ouverte".
   const statusFilter = rawStatus === 'BRIEFING' ? 'PUBLISHED' : rawStatus;
 
   const setClassFilter = useCallback((next: string): void => {
@@ -115,7 +108,7 @@ export default function RaceList({
     <>
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Classe</p>
+          <p className={styles.filterLabel}>{t('filters.classLabel')}</p>
           {CLASSES.map((c) => (
             <button
               key={c}
@@ -123,12 +116,12 @@ export default function RaceList({
               className={`${styles.filterTab} ${c === classFilter ? styles.filterTabActive : ''}`}
               onClick={() => setClassFilter(c)}
             >
-              {c === 'ALL' ? 'Toutes' : CLASS_LABEL[c]}
+              {c === 'ALL' ? t('filters.classAll') : boatLabel(c)}
             </button>
           ))}
         </div>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Statut</p>
+          <p className={styles.filterLabel}>{t('filters.statusLabel')}</p>
           {STATUSES.map((s) => (
             <button
               key={s}
@@ -136,7 +129,7 @@ export default function RaceList({
               className={`${styles.filterTab} ${s === statusFilter ? styles.filterTabActive : ''}`}
               onClick={() => setStatusFilter(s)}
             >
-              {s === 'ALL' ? 'Tous' : STATUS_LABEL[s as RaceSummary['status']]}
+              {s === 'ALL' ? t('filters.statusAll') : tStatus(s as RaceSummary['status'])}
             </button>
           ))}
         </div>
@@ -144,7 +137,7 @@ export default function RaceList({
 
       <div className={styles.grid}>
         {visible.length === 0 ? (
-          <p className={styles.empty}>Aucune course ne correspond — retire un filtre.</p>
+          <p className={styles.empty}>{t('empty')}</p>
         ) : visible.map((r) => {
           const pts: [number, number][] = [r.course.start, ...r.course.waypoints, r.course.finish];
           const path = minify(pts);
@@ -155,12 +148,12 @@ export default function RaceList({
                 <div>
                   <h3 className={styles.cardTitle}>{r.name}</h3>
                   <p className={styles.cardMeta}>
-                    <span>{CLASS_LABEL[r.boatClass]}</span>
+                    <span>{boatLabel(r.boatClass)}</span>
                     <span className={styles.cardMetaSep} />
                     <span>{formatStart(r.startsAt)}</span>
                   </p>
                 </div>
-                <Chip variant={statusVariant(r.status)}>{STATUS_LABEL[r.status]}</Chip>
+                <Chip variant={statusVariant(r.status)}>{tStatus(r.status)}</Chip>
               </header>
 
               <div className={styles.mini}>
@@ -186,19 +179,19 @@ export default function RaceList({
 
               <div className={styles.stats}>
                 <div>
-                  <p className={styles.statLabel}>Inscrits</p>
+                  <p className={styles.statLabel}>{t('card.registered')}</p>
                   <p className={styles.statValue}>
                     {r.participants.toLocaleString('fr-FR')}
                   </p>
                 </div>
                 <div>
-                  <p className={styles.statLabel}>Distance</p>
+                  <p className={styles.statLabel}>{t('card.distance')}</p>
                   <p className={styles.statValue}>
                     {distance.value}<span className={styles.statValueSmall}> {distance.unit}</span>
                   </p>
                 </div>
                 <div>
-                  <p className={styles.statLabel}>Dotation</p>
+                  <p className={styles.statLabel}>{t('card.reward')}</p>
                   <p className={`${styles.statValue} ${styles.statValueGold}`}>
                     {r.rewardMaxCredits.toLocaleString('fr-FR')}
                   </p>

@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { fetchRaces } from '@/lib/api';
 import { Eyebrow } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
@@ -7,6 +8,7 @@ import styles from './page.module.css';
 export const dynamic = 'force-dynamic';
 
 export default async function RacesPage(): Promise<React.ReactElement> {
+  const t = await getTranslations('races');
   const races = await fetchRaces().catch(() => []);
   const liveCount = races.filter((r) => r.status === 'LIVE').length;
   const openCount = races.filter((r) => r.status === 'PUBLISHED' || r.status === 'BRIEFING').length;
@@ -16,13 +18,13 @@ export default async function RacesPage(): Promise<React.ReactElement> {
     <SiteShell>
       <header className={styles.masthead}>
         <div className={styles.mastheadMain}>
-          <Eyebrow trailing="Saison 2026 · Circuit offshore">01 · Courses disponibles</Eyebrow>
-          <h1 className={styles.title}>Courses</h1>
+          <Eyebrow trailing={t('eyebrowSeason')}>{t('eyebrowNum')}</Eyebrow>
+          <h1 className={styles.title}>{t('title')}</h1>
         </div>
         <aside className={styles.counters}>
-          <Counter label="En cours" value={String(liveCount).padStart(2, '0')} tone="live" />
-          <Counter label="Ouvertes" value={String(openCount).padStart(2, '0')} />
-          <Counter label="Terminées" value={String(finishedCount).padStart(2, '0')} tone="gold" />
+          <Counter label={t('counters.live')} value={String(liveCount).padStart(2, '0')} tone="live" />
+          <Counter label={t('counters.open')} value={String(openCount).padStart(2, '0')} />
+          <Counter label={t('counters.finished')} value={String(finishedCount).padStart(2, '0')} tone="gold" />
         </aside>
       </header>
       <RaceList races={races} />

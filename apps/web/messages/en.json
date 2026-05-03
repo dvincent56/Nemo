@@ -129,6 +129,36 @@
       "legalPost": ". Les données de compte sont hébergées en Europe."
     }
   },
+  "races": {
+    "eyebrowSeason": "Saison 2026 · Circuit offshore",
+    "eyebrowNum": "01 · Courses disponibles",
+    "title": "Courses",
+    "counters": {
+      "live": "En cours",
+      "open": "Ouvertes",
+      "finished": "Terminées"
+    },
+    "filters": {
+      "classLabel": "Classe",
+      "classAll": "Toutes",
+      "statusLabel": "Statut",
+      "statusAll": "Tous"
+    },
+    "status": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Ouverte",
+      "BRIEFING": "Ouverte",
+      "LIVE": "En cours",
+      "FINISHED": "Terminée",
+      "ARCHIVED": "Archivée"
+    },
+    "empty": "Aucune course ne correspond — retire un filtre.",
+    "card": {
+      "registered": "Inscrits",
+      "distance": "Distance",
+      "reward": "Dotation"
+    }
+  },
   "marina": {
     "eyebrowSeason": "Saison 2026",
     "eyebrowTrailing": "Ta carrière",
