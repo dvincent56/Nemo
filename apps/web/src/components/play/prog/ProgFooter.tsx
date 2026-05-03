@@ -1,6 +1,7 @@
 'use client';
 import type { ReactElement } from 'react';
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import styles from './ProgFooter.module.css';
 
 export interface ProgFooterProps {
@@ -11,6 +12,7 @@ export interface ProgFooterProps {
 }
 
 export default function ProgFooter({ isDirty, obsoleteCount, onCancelAll, onConfirm }: ProgFooterProps): ReactElement {
+  const t = useTranslations('play.progFooter');
   return (
     <footer className={`${styles.footer} ${isDirty ? styles.dirty : ''}`}>
       <div className={styles.status}>
@@ -18,14 +20,14 @@ export default function ProgFooter({ isDirty, obsoleteCount, onCancelAll, onConf
           <>
             <span className={styles.dot} />
             <span>
-              Modifications non enregistrées
-              {obsoleteCount > 0 ? ` · ${obsoleteCount} obsolète(s)` : ''}
+              {t('dirtyMain')}
+              {obsoleteCount > 0 ? t('dirtyExtra', { n: obsoleteCount }) : ''}
             </span>
           </>
         ) : (
           <>
             <Check size={14} strokeWidth={2.5} />
-            <span>Programmation à jour</span>
+            <span>{t('clean')}</span>
           </>
         )}
       </div>
@@ -36,7 +38,7 @@ export default function ProgFooter({ isDirty, obsoleteCount, onCancelAll, onConf
           onClick={onCancelAll}
           disabled={!isDirty}
         >
-          Annuler
+          {t('cancel')}
         </button>
         <button
           type="button"
@@ -45,7 +47,7 @@ export default function ProgFooter({ isDirty, obsoleteCount, onCancelAll, onConf
           disabled={!isDirty}
         >
           <Check size={14} strokeWidth={2.5} />
-          &nbsp;CONFIRMER
+          &nbsp;{t('confirm')}
         </button>
       </div>
     </footer>

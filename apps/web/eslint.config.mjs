@@ -79,6 +79,12 @@ const config = [
       'src/components/play/RouterPanel.tsx',
       'src/components/play/RouterControls.tsx',
       'src/components/play/ProgPanel.tsx',
+      'src/components/play/prog/ProgBanner.tsx',
+      'src/components/play/prog/ProgToast.tsx',
+      'src/components/play/prog/ProgFooter.tsx',
+      'src/components/play/timeline/TimelineHeader.tsx',
+      'src/components/play/timeline/TimelineControls.tsx',
+      'src/components/play/timeline/TimelineTrack.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.
@@ -107,6 +113,7 @@ const config = [
           'BSP', 'TWS', 'TWD', 'TWA', 'HDG', 'VMG', 'DTF', 'Factor',
           'Pos', 'DTU', 'SWH', 'Dir', 'kn', 'm ·', 'nds', 's', '−',
           '📍', 'nm', 'h', 'm',
+          '−6h', '+6h', '❚❚', '▶',
         ],
       }],
     },

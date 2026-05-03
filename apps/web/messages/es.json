@@ -533,6 +533,49 @@
       "coastDetection": "Détection des côtes",
       "cone": "Cône"
     },
+    "progBanner": {
+      "title": "{n, plural, one {# ORDRE OBSOLÈTE} other {# ORDRES OBSOLÈTES}}",
+      "desc": "{n, plural, one {Heure passée sous le seuil de <bold>maintenant + 5min</bold>. Sera retiré à la confirmation.} other {Heure passée sous le seuil de <bold>maintenant + 5min</bold>. Seront retirés à la confirmation.}}",
+      "ariaClose": "Fermer l'alerte"
+    },
+    "progToast": {
+      "ariaClose": "Fermer"
+    },
+    "progFooter": {
+      "dirtyMain": "Modifications non enregistrées",
+      "dirtyExtra": " · {n} obsolète(s)",
+      "clean": "Programmation à jour",
+      "cancel": "Annuler",
+      "confirm": "CONFIRMER"
+    },
+    "timeline": {
+      "header": {
+        "live": "LIVE",
+        "now": "NOW",
+        "tPlus": "T+{h}h",
+        "tMinus": "T{h}h",
+        "jPlus": "J+{d}",
+        "jMinus": "J{d}",
+        "months": "jan,fév,mar,avr,mai,jun,jul,aoû,sep,oct,nov,déc"
+      },
+      "controls": {
+        "back6Aria": "reculer 6 heures",
+        "back6Title": "Reculer de 6h",
+        "playAria": "lecture",
+        "pauseAria": "pause",
+        "playTitle": "Lecture",
+        "pauseTitle": "Pause",
+        "speedGroupAria": "Vitesse de lecture",
+        "speedTitle": "Vitesse ×{s}",
+        "fwd6Aria": "avancer 6 heures",
+        "fwd6Title": "Avancer de 6h",
+        "liveTitle": "Revenir au présent",
+        "liveLabel": "LIVE"
+      },
+      "track": {
+        "aria": "position dans le temps de course"
+      }
+    },
     "progPanel": {
       "noWp": "Aucun WP disponible.",
       "close": "Fermer",

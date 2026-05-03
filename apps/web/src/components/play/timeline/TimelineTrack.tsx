@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import { selectTimelineBounds, type RaceStatus } from '@/lib/store/timeline-selectors';
 import { buildTicks, type Tick } from './ticks';
@@ -10,6 +11,7 @@ import styles from './TimelineTrack.module.css';
 const HOUR = 3_600_000;
 
 export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React.ReactElement {
+  const t = useTranslations('play.timeline.track');
   const trackRef = useRef<HTMLDivElement | null>(null);
   const currentTime = useGameStore((s) => s.timeline.currentTime);
   const raceStartMs = useGameStore((s) => s.timeline.raceStartMs);
@@ -102,7 +104,7 @@ export function TimelineTrack({ raceStatus }: { raceStatus: RaceStatus }): React
         aria-valuemin={bounds.minMs}
         aria-valuemax={bounds.maxMs}
         aria-valuenow={currentTime.getTime()}
-        aria-label="position dans le temps de course"
+        aria-label={t('aria')}
         tabIndex={0}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

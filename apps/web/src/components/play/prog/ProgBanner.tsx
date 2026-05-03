@@ -1,6 +1,7 @@
 'use client';
 import type { ReactElement } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import styles from './ProgBanner.module.css';
 
 export interface ProgBannerProps {
@@ -9,6 +10,7 @@ export interface ProgBannerProps {
 }
 
 export default function ProgBanner({ obsoleteCount, onDismiss }: ProgBannerProps): ReactElement | null {
+  const t = useTranslations('play.progBanner');
   if (obsoleteCount <= 0) return null;
   return (
     <div className={styles.banner}>
@@ -17,13 +19,16 @@ export default function ProgBanner({ obsoleteCount, onDismiss }: ProgBannerProps
       </span>
       <div className={styles.body}>
         <div className={styles.title}>
-          {obsoleteCount} ORDRE{obsoleteCount > 1 ? 'S' : ''} OBSOLÈTE{obsoleteCount > 1 ? 'S' : ''}
+          {t('title', { n: obsoleteCount })}
         </div>
         <div className={styles.desc}>
-          Heure passée sous le seuil de <b>maintenant + 5min</b>. {obsoleteCount > 1 ? 'Seront' : 'Sera'} retiré{obsoleteCount > 1 ? 's' : ''} à la confirmation.
+          {t.rich('desc', {
+            n: obsoleteCount,
+            bold: (chunks) => <b>{chunks}</b>,
+          })}
         </div>
       </div>
-      <button type="button" className={styles.close} onClick={onDismiss} aria-label="Fermer l'alerte">
+      <button type="button" className={styles.close} onClick={onDismiss} aria-label={t('ariaClose')}>
         <X size={11} strokeWidth={2} />
       </button>
     </div>

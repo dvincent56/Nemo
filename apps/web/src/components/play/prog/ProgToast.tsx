@@ -1,6 +1,7 @@
 'use client';
 import type { ReactElement } from 'react';
 import { Info, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import styles from './ProgToast.module.css';
 
 export interface ProgToastProps {
@@ -15,6 +16,7 @@ export interface ProgToastProps {
  * Auto-dismiss is handled by the consumer (ProgPanel).
  */
 export default function ProgToast({ message, onDismiss }: ProgToastProps): ReactElement {
+  const t = useTranslations('play.progToast');
   return (
     <div className={styles.toast} role="status">
       <span className={styles.icon}>
@@ -25,7 +27,7 @@ export default function ProgToast({ message, onDismiss }: ProgToastProps): React
         type="button"
         className={styles.close}
         onClick={onDismiss}
-        aria-label="Fermer"
+        aria-label={t('ariaClose')}
       >
         <X size={11} strokeWidth={2} />
       </button>
