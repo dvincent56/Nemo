@@ -87,6 +87,14 @@ apps/web/public/sw.js
 apps/web/public/workbox-*.js
 apps/web/public/worker-*.js
 
+# ─── Données engine régénérées par predev/prebuild ───────────
+# Source unique :
+#   - packages/game-balance/game-balance.json
+#   - packages/polar-lib/polars/*.json
+# Régénérées par scripts/sync-engine-data.mjs.
+apps/web/public/data/game-balance.json
+apps/web/public/data/polars/
+
 # ─── Drizzle ─────────────────────────────────────────────────
 apps/game-engine/drizzle/meta/_journal.json.bak
 

@@ -9,8 +9,8 @@ When tasked with one of the following, read the matching runbook BEFORE planning
 ## Architecture pointers
 
 - `BoatClass` is the single source of truth for boat class enumeration; it is derived from the `BOAT_CLASSES` tuple in `packages/shared-types/src/index.ts`. The Zod enum `BoatClassZ` (in `@nemo/game-balance`) is `z.enum(BOAT_CLASSES)` — they cannot diverge.
-- Game balance is loaded from `packages/game-balance/game-balance.json` (engine source of truth) and a duplicate at `apps/web/public/data/game-balance.json` (web-served). Both must stay in sync.
-- Polar JSON files exist in two locations: `apps/web/public/data/polars/` (browser-fetched) and `packages/polar-lib/polars/` (engine filesystem-read). Both must stay in sync.
+- Game balance source unique : `packages/game-balance/game-balance.json`. La copie sous `apps/web/public/data/game-balance.json` est **gitignored et auto-synced** par `scripts/sync-engine-data.mjs` (lancé via `predev`/`prebuild`/`pretest` dans `apps/web`). N'édite jamais la copie web — elle est régénérée.
+- Polar JSON files source unique : `packages/polar-lib/polars/`. La copie sous `apps/web/public/data/polars/` est **gitignored et auto-synced** par le même script. Génère ou édite uniquement dans `packages/polar-lib/polars/`.
 - `MARINA_BOAT_CLASSES` in `apps/web/src/lib/boat-classes.ts` is a manually maintained array (not typed). When adding a boat class, update it if the class has at least one non-`"absent"` upgrade slot.
 
 ## Conventions

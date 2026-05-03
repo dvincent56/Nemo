@@ -103,17 +103,37 @@ for SAIL in LJ SS C0 SPI HG LG; do
 done
 ```
 
-### Step 4.3 — Copy to polar-lib
+### Step 4.3 — Run convert directly into polar-lib (single source)
+
+The web copy under `apps/web/public/data/polars/` is **gitignored and
+auto-synced** by `scripts/sync-engine-data.mjs` at every `predev` /
+`prebuild`. Generate the polar JSON directly into the canonical location :
 
 ```bash
-cp apps/web/public/data/polars/<class>.json packages/polar-lib/polars/<class>.json
+node scripts/convert-polar-csv.mjs \
+  <csv-folder>/jib.csv \
+  packages/polar-lib/polars/<class>.json \
+  --boat <CLASS> --sail JIB
+
+for SAIL in LJ SS C0 SPI HG LG; do
+  node scripts/convert-polar-csv.mjs \
+    <csv-folder>/${SAIL,,}.csv \
+    packages/polar-lib/polars/<class>.json \
+    --boat <CLASS> --sail $SAIL \
+    --merge packages/polar-lib/polars/<class>.json
+done
 ```
 
-### Step 4.4 — Spot-check
+> **Si tu as déjà généré dans `apps/web/public/data/polars/<class>.json`** :
+> déplace simplement le fichier vers `packages/polar-lib/polars/`. La copie
+> sous `apps/web/public/data/` sera regénérée au prochain `pnpm dev`.
+
+### Step 4.4 — Sync + spot-check
 
 ```bash
+pnpm --filter @nemo/web sync-engine-data    # régénère apps/web/public/data/
 node -e "
-const p = require('./apps/web/public/data/polars/<class>.json');
+const p = require('./packages/polar-lib/polars/<class>.json');
 console.log({ sails: Object.keys(p.speeds), sample: p.speeds.JIB[40][12] });
 "
 ```
@@ -160,12 +180,10 @@ Add to `BOAT_CLASS_FILES` (typed `Record<BoatClass, string>`):
 
 ## 6. game-balance.json Edits
 
-**Both copies must be updated:**
-- `packages/game-balance/game-balance.json` (engine source of truth)
-- `apps/web/public/data/game-balance.json` (web-served copy)
-
-> **Warning:** The two files have a pre-existing divergence on the `swell` block.
-> Do NOT attempt to sync that block. Only add the new `<CLASS>` keys listed below.
+**Source unique :** `packages/game-balance/game-balance.json`. La copie
+sous `apps/web/public/data/game-balance.json` est **gitignored et
+auto-synced** par `scripts/sync-engine-data.mjs` au `predev` / `prebuild`.
+N'édite jamais la copie sous `apps/web/public/data/` — elle est régénérée.
 
 ### Step 6.1 — `rewards.distanceRates`
 

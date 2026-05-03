@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "sync-game-balance": "node ../../scripts/sync-game-balance.mjs",
-    "predev": "pnpm sync-game-balance",
-    "prebuild": "pnpm sync-game-balance",
+    "sync-engine-data": "node ../../scripts/sync-engine-data.mjs",
+    "predev": "pnpm sync-engine-data",
+    "prebuild": "pnpm sync-engine-data",
+    "pretest": "pnpm sync-engine-data",
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
     "dev:fresh": "rm -rf .next && next dev --webpack",
