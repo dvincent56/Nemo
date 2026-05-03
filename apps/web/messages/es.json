@@ -1,483 +1,483 @@
 {
   "common": {
     "actions": {
-      "save": "Enregistrer",
-      "cancel": "Annuler",
-      "close": "Fermer",
-      "signin": "Se connecter",
-      "signout": "Se déconnecter",
-      "signup": "Créer un compte",
-      "read": "Lire →",
-      "follow": "Suivre →"
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "signin": "Iniciar sesión",
+      "signout": "Cerrar sesión",
+      "signup": "Crear cuenta",
+      "read": "Leer →",
+      "follow": "Seguir →"
     },
     "nav": {
-      "courses": "Courses",
+      "courses": "Carreras",
       "marina": "Marina",
-      "ranking": "Classement",
-      "profile": "Profil",
-      "careerMode": "Mode carrière",
-      "spectatorMode": "Mode spectateur"
+      "ranking": "Clasificación",
+      "profile": "Perfil",
+      "careerMode": "Modo carrera",
+      "spectatorMode": "Modo espectador"
     },
     "legal": {
       "cgu": "CGU",
-      "privacy": "Confidentialité",
-      "mentions": "Mentions légales",
+      "privacy": "Privacidad",
+      "mentions": "Aviso legal",
       "cookies": "Cookies",
-      "lastUpdated": "Dernière mise à jour · {date}",
-      "version": "Version 1.0"
+      "lastUpdated": "Última actualización · {date}",
+      "version": "Versión 1.0"
     },
     "footer": {
-      "product": "Produit",
-      "legal": "Légal",
-      "contact": "Contact",
-      "copy": "© 2026 Nemo · Hébergé en Europe"
+      "product": "Producto",
+      "legal": "Legal",
+      "contact": "Contacto",
+      "copy": "© 2026 Nemo · Alojado en Europa"
     },
     "drawer": {
-      "season": "Saison 2026"
+      "season": "Temporada 2026"
     },
     "pagination": {
-      "label": "Pagination",
-      "page": "Page {n}"
+      "label": "Paginación",
+      "page": "Página {n}"
     },
     "aria": {
       "brandNemo": "Nemo",
       "primaryNav": "Principal",
-      "openMenu": "Ouvrir le menu",
-      "mobileMenu": "Menu mobile",
-      "closeMenu": "Fermer le menu",
-      "language": "Langue",
-      "languageSelector": "Sélection de langue",
-      "sections": "Sections",
-      "prevPage": "Page précédente",
-      "nextPage": "Page suivante"
+      "openMenu": "Abrir el menú",
+      "mobileMenu": "Menú móvil",
+      "closeMenu": "Cerrar el menú",
+      "language": "Idioma",
+      "languageSelector": "Selector de idioma",
+      "sections": "Secciones",
+      "prevPage": "Página anterior",
+      "nextPage": "Página siguiente"
     },
     "units": {
       "credits": "cr",
       "points": "pts",
-      "skippers": "skippers"
+      "skippers": "patrones"
     },
     "boats": {
       "figaro3": "Figaro III",
       "class40": "Class40",
       "imoca60": "IMOCA 60",
       "ultim": "Ultim",
-      "cruiserRacer": "Croisière-Régate",
+      "cruiserRacer": "Crucero-Regata",
       "miniSix50": "Mini 6.50",
       "oceanFifty": "Ocean Fifty"
     },
     "meta": {
-      "title": "Nemo — Jeu de voile offshore",
+      "title": "Nemo — Juego de vela offshore",
       "shortName": "Nemo",
-      "description": "Jeu de voile offshore en ligne. Polaires réelles, météo NOAA, zéro pay-to-win.",
+      "description": "Juego de vela offshore en línea. Polares reales, meteorología NOAA, cero pay-to-win.",
       "applicationName": "Nemo"
     }
   },
   "login": {
     "aria": {
-      "brandHome": "Nemo — Accueil"
+      "brandHome": "Nemo — Inicio"
     },
-    "eyebrowSeason": "Saison 2026",
-    "eyebrowAccess": "01 · Accès skipper",
+    "eyebrowSeason": "Temporada 2026",
+    "eyebrowAccess": "01 · Acceso patrón",
     "headline": {
-      "line1": "Bienvenue",
-      "line2Pre": "à ",
-      "line2Em": "bord",
+      "line1": "Bienvenido",
+      "line2Pre": "a ",
+      "line2Em": "bordo",
       "line2Post": "."
     },
-    "lede": "<strong>Nemo</strong> est un circuit de course offshore en ligne. Polaires réelles, météo réelle, et un bateau qui te suit de course en course, façonné par tes victoires.",
+    "lede": "<strong>Nemo</strong> es un circuito de regata offshore en línea. Polares reales, meteorología real y un barco que te acompaña de regata en regata, forjado por tus victorias.",
     "manifesto": {
       "1": {
-        "title": "Polaires réelles",
-        "body": " Les mêmes fichiers pour tous les joueurs, du Figaro III à l'Ultim."
+        "title": "Polares reales",
+        "body": " Los mismos archivos para todos los jugadores, del Figaro III al Ultim."
       },
       "2": {
-        "title": "Météo NOAA GFS",
-        "body": " Mise à jour toutes les 6 h, identique côté moteur et routeur."
+        "title": "Meteo NOAA GFS",
+        "body": " Actualizada cada 6 h, idéntica en el motor y en el router."
       },
       "3": {
-        "title": "Ton bateau, ta carrière",
-        "body": " Tu gardes ton bateau d'une course à l'autre. Chaque podium rapporte des crédits qui financent tes upgrades : voiles, foils, électronique."
+        "title": "Tu barco, tu carrera",
+        "body": " Conservas tu barco de una regata a otra. Cada podio aporta créditos para financiar tus mejoras: velas, foils, electrónica."
       },
       "4": {
-        "title": "Prépare ta course",
-        "body": " Avant chaque départ, tu arbitres : jeu de voiles, configuration de foils, ravitaillement. Tes choix décident du résultat."
+        "title": "Prepara tu regata",
+        "body": " Antes de cada salida decides: juego de velas, configuración de foils, avituallamiento. Tus elecciones marcan el resultado."
       }
     },
-    "colophon": "Une carrière de skipper, mille à mille.",
+    "colophon": "Una carrera de patrón, milla a milla.",
     "form": {
-      "title": "Connexion",
-      "sub": "Connectez-vous avec votre email et votre mot de passe.",
+      "title": "Conexión",
+      "sub": "Inicia sesión con tu correo electrónico y tu contraseña.",
       "emailLabel": "Email",
       "emailPlaceholder": "skipper@nemo.sail",
-      "passwordLabel": "Mot de passe",
-      "forgotPassword": "Mot de passe oublié ?",
-      "submitIdle": "Larguer les amarres",
-      "submitLoading": "Connexion",
-      "noAccountQuestion": "Pas encore de compte ?",
-      "signupLink": "Créer un compte",
-      "dividerDev": "dev · accès local",
-      "devButton": "Connexion dev (joueur seed)",
-      "dividerOauth": "ou · OAuth Phase 4",
-      "oauthGoogle": "Continuer avec Google",
-      "oauthApple": "Continuer avec Apple",
-      "phase4Tag": "Phase 4",
-      "phase5Tag": "Phase 5",
-      "legalPre": "En continuant, vous acceptez nos ",
-      "legalCgu": "Conditions d'utilisation",
-      "legalAnd": " et notre ",
-      "legalPrivacy": "Politique de confidentialité",
-      "legalPost": ". Les données de compte sont hébergées en Europe."
+      "passwordLabel": "Contraseña",
+      "forgotPassword": "¿Has olvidado tu contraseña?",
+      "submitIdle": "Soltar amarras",
+      "submitLoading": "Conectando",
+      "noAccountQuestion": "¿Aún no tienes cuenta?",
+      "signupLink": "Crear cuenta",
+      "dividerDev": "dev · acceso local",
+      "devButton": "Conexión dev (jugador seed)",
+      "dividerOauth": "o · OAuth Fase 4",
+      "oauthGoogle": "Continuar con Google",
+      "oauthApple": "Continuar con Apple",
+      "phase4Tag": "Fase 4",
+      "phase5Tag": "Fase 5",
+      "legalPre": "Al continuar, aceptas nuestras ",
+      "legalCgu": "Condiciones de uso",
+      "legalAnd": " y nuestra ",
+      "legalPrivacy": "Política de privacidad",
+      "legalPost": ". Los datos de la cuenta se alojan en Europa."
     }
   },
   "profile": {
-    "eyebrow": "Saison 2026 · Ta page",
-    "memberSince": "Inscrit depuis",
-    "teamLabel": "Équipe",
-    "favoriteBoat": "Bateau favori",
+    "eyebrow": "Temporada 2026 · Tu página",
+    "memberSince": "Miembro desde",
+    "teamLabel": "Equipo",
+    "favoriteBoat": "Barco favorito",
     "actions": {
-      "editProfile": "Modifier le profil",
-      "friendsAndTeam": "Amis & équipe"
+      "editProfile": "Editar perfil",
+      "friendsAndTeam": "Amigos & equipo"
     },
-    "ariaStats": "Statistiques",
+    "ariaStats": "Estadísticas",
     "stats": {
-      "races": "Courses",
-      "racesSub": "{finishes} finishes · {retired} abandons",
-      "podiums": "Podiums",
-      "podiumsSub": "{wins} victoires · {second} places d'honneur",
-      "distance": "Distance parcourue",
-      "distanceSub": "Tous bateaux confondus",
-      "seaHours": "Heures en mer",
-      "seaHoursSub": "{days} jours de navigation",
-      "bestRank": "Meilleur classement",
+      "races": "Regatas",
+      "racesSub": "{finishes} terminadas · {retired} abandonadas",
+      "podiums": "Podios",
+      "podiumsSub": "{wins} victorias · {second} segundos puestos",
+      "distance": "Distancia recorrida",
+      "distanceSub": "Todos los barcos",
+      "seaHours": "Horas en el mar",
+      "seaHoursSub": "{days} días navegando",
+      "bestRank": "Mejor puesto",
       "bestRankSub": "{race} · {season}"
     },
     "palmares": {
-      "aria": "Palmarès",
-      "eyebrow": "Faits d'armes",
-      "title": "Palmarès",
-      "link": "Voir tout l'historique →"
+      "aria": "Palmarés",
+      "eyebrow": "Hitos",
+      "title": "Palmarés",
+      "link": "Ver historial completo →"
     },
     "fleet": {
-      "aria": "Flotte",
-      "eyebrow": "Écurie",
-      "title": "Flotte",
-      "link": "Aller à la marina →",
+      "aria": "Flota",
+      "eyebrow": "Cuadra",
+      "title": "Flota",
+      "link": "Ir a la marina →",
       "tile": {
-        "races": "{n} courses",
-        "best": "meilleur"
+        "races": "{n} regatas",
+        "best": "mejor"
       }
     },
     "activity": {
-      "aria": "Activité récente",
-      "eyebrow": "Dernières sorties",
-      "title": "Activité récente",
-      "link": "Tout l'historique →"
+      "aria": "Actividad reciente",
+      "eyebrow": "Últimas salidas",
+      "title": "Actividad reciente",
+      "link": "Historial completo →"
     },
     "public": {
-      "eyebrow": "Skipper · Saison 2026",
-      "noTagline": "Ce skipper n'a pas encore de devise publique.",
+      "eyebrow": "Patrón · Temporada 2026",
+      "noTagline": "Este patrón aún no tiene un lema público.",
       "actions": {
-        "addFriend": "Ajouter en ami",
-        "invitationSent": "Invitation envoyée · Annuler",
-        "removeFriend": "Retirer des amis",
-        "viewMyFriends": "Voir mes amis",
-        "goToProfile": "Aller à mon profil"
+        "addFriend": "Añadir amigo",
+        "invitationSent": "Invitación enviada · Cancelar",
+        "removeFriend": "Eliminar amigo",
+        "viewMyFriends": "Ver mis amigos",
+        "goToProfile": "Ir a mi perfil"
       },
       "stats": {
-        "seasonRank": "Rang saison",
-        "seasonRankSub": "Classement toutes classes",
-        "races": "Courses",
-        "racesSub": "Toutes classes confondues",
-        "podiums": "Podiums",
-        "podiumsSub": "Top 3 cumulé",
-        "seasonPoints": "Points saison",
-        "seasonPointsSub": "Score composite"
+        "seasonRank": "Puesto temporada",
+        "seasonRankSub": "Clasificación todas las clases",
+        "races": "Regatas",
+        "racesSub": "Todas las clases",
+        "podiums": "Podios",
+        "podiumsSub": "Top 3 acumulado",
+        "seasonPoints": "Puntos temporada",
+        "seasonPointsSub": "Puntuación compuesta"
       },
       "classRanking": {
-        "aria": "Classement par classe",
-        "eyebrow": "Performance par classe",
-        "title": "Palmarès par flotte",
-        "link": "Voir le classement complet →",
-        "empty": "Ce skipper n'a encore disputé aucune course classée.",
-        "points": "Points",
-        "races": "Courses",
-        "podiums": "Podiums"
+        "aria": "Clasificación por clase",
+        "eyebrow": "Rendimiento por clase",
+        "title": "Palmarés por flota",
+        "link": "Ver clasificación completa →",
+        "empty": "Este patrón aún no ha disputado ninguna regata clasificada.",
+        "points": "Puntos",
+        "races": "Regatas",
+        "podiums": "Podios"
       }
     },
     "social": {
       "title": "Social",
-      "sub": "Suis d'autres skippers, rejoins une équipe, gère tes invitations.",
+      "sub": "Sigue a otros patrones, únete a un equipo, gestiona tus invitaciones.",
       "search": {
-        "placeholder": "Rechercher un skipper…",
-        "aria": "Rechercher un skipper",
-        "loading": "Recherche…",
-        "empty": "Aucun skipper trouvé",
+        "placeholder": "Buscar un patrón…",
+        "aria": "Buscar un patrón",
+        "loading": "Buscando…",
+        "empty": "No se encontró ningún patrón",
         "actions": {
-          "alreadyFriend": "Déjà ami",
-          "sent": "Envoyée",
+          "alreadyFriend": "Ya es amigo",
+          "sent": "Enviada",
           "pending": "…",
-          "add": "Ajouter"
+          "add": "Añadir"
         }
       },
       "person": {
-        "rank": "Rang {n}",
-        "me": "Moi",
-        "profileAria": "Profil de {name}"
+        "rank": "Puesto {n}",
+        "me": "Yo",
+        "profileAria": "Perfil de {name}"
       },
       "friends": {
-        "eyebrow": "Skippers que tu suis",
-        "title": "Amis",
-        "paginationAria": "Pagination amis"
+        "eyebrow": "Patrones que sigues",
+        "title": "Amigos",
+        "paginationAria": "Paginación amigos"
       },
       "team": {
-        "eyebrow": "Écurie",
-        "title": "Mon équipe",
-        "viewPage": "Voir la page équipe →",
-        "captainLabel": "Capitaine",
-        "foundedIn": "Fondée en",
+        "eyebrow": "Cuadra",
+        "title": "Mi equipo",
+        "viewPage": "Ver página del equipo →",
+        "captainLabel": "Capitán",
+        "foundedIn": "Fundado en",
         "base": "Base",
-        "members": "membres",
-        "ranking": "Classement",
-        "racesRun": "Courses courues",
-        "podiums": "Podiums",
-        "paginationAria": "Pagination membres équipe"
+        "members": "miembros",
+        "ranking": "Clasificación",
+        "racesRun": "Regatas disputadas",
+        "podiums": "Podios",
+        "paginationAria": "Paginación miembros del equipo"
       },
       "invitations": {
-        "eyebrow": "En attente",
-        "title": "Invitations",
-        "tabReceived": "Reçues",
-        "tabSent": "Envoyées",
-        "empty": "Aucune invitation en attente",
+        "eyebrow": "Pendientes",
+        "title": "Invitaciones",
+        "tabReceived": "Recibidas",
+        "tabSent": "Enviadas",
+        "empty": "No hay invitaciones pendientes",
         "card": {
-          "cancel": "Annuler l'invitation",
-          "accept": "Accepter",
-          "refuse": "Refuser"
+          "cancel": "Cancelar invitación",
+          "accept": "Aceptar",
+          "refuse": "Rechazar"
         }
       }
     },
     "settings": {
-      "title": "Paramètres",
-      "sub": "Gère ton identité publique, ton compte, tes préférences de jeu et les notifications.",
-      "ariaSections": "Sections",
+      "title": "Ajustes",
+      "sub": "Gestiona tu identidad pública, tu cuenta, tus preferencias de juego y las notificaciones.",
+      "ariaSections": "Secciones",
       "sections": {
-        "identite": "Identité publique",
-        "compte": "Compte",
-        "preferences": "Préférences",
-        "notifications": "Notifications",
-        "danger": "Zone sensible"
+        "identite": "Identidad pública",
+        "compte": "Cuenta",
+        "preferences": "Preferencias",
+        "notifications": "Notificaciones",
+        "danger": "Zona sensible"
       },
       "savedFlash": {
-        "saved": "✓ Enregistré",
-        "updated": "✓ Mis à jour"
+        "saved": "✓ Guardado",
+        "updated": "✓ Actualizado"
       },
       "buttons": {
-        "save": "Enregistrer",
-        "saving": "Enregistrement…",
-        "update": "Mettre à jour",
-        "updating": "Mise à jour…"
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "update": "Actualizar",
+        "updating": "Actualizando…"
       },
       "identity": {
-        "title": "Identité publique",
-        "aside": "Ces informations sont visibles par les autres skippers dans le classement, l'historique des courses et sur ta page profil.",
-        "pseudoLabel": "Pseudo",
-        "pseudoHint": "Entre 3 et 24 caractères. Lettres, chiffres, tirets et underscores.",
-        "countryLabel": "Pays",
-        "loading": "Chargement…",
-        "subdivisionLabelFR": "Département",
-        "subdivisionLabelOther": "Région / État",
-        "noSubdivision": "Aucune subdivision disponible",
-        "cityLabel": "Ville",
-        "noCity": "Aucune commune trouvée",
-        "cityHintFR": "{n} communes INSEE — tri par population",
-        "cityHintOther": "Source : subdivisions ISO 3166-2",
-        "teamLabel": "Équipe",
-        "manageInSocial": "Gérer dans Social →",
-        "teamHint": "La création, l'invitation et la gestion d'équipe se font sur la page Social.",
-        "taglineLabel": "Devise sur ton profil (optionnel)",
-        "taglinePlaceholder": "Une phrase d'accroche visible sur ta page profil.",
-        "taglineHint": "120 caractères max. Laisse vide pour masquer la section sur ton profil."
+        "title": "Identidad pública",
+        "aside": "Esta información es visible para los demás patrones en la clasificación, el historial de regatas y tu página de perfil.",
+        "pseudoLabel": "Apodo",
+        "pseudoHint": "Entre 3 y 24 caracteres. Letras, cifras, guiones y guiones bajos.",
+        "countryLabel": "País",
+        "loading": "Cargando…",
+        "subdivisionLabelFR": "Departamento",
+        "subdivisionLabelOther": "Región / Estado",
+        "noSubdivision": "Ninguna subdivisión disponible",
+        "cityLabel": "Ciudad",
+        "noCity": "Ningún municipio encontrado",
+        "cityHintFR": "{n} municipios INSEE — ordenados por población",
+        "cityHintOther": "Fuente: subdivisiones ISO 3166-2",
+        "teamLabel": "Equipo",
+        "manageInSocial": "Gestionar en Social →",
+        "teamHint": "La creación, invitación y gestión de equipo se hace en la página Social.",
+        "taglineLabel": "Lema en tu perfil (opcional)",
+        "taglinePlaceholder": "Una frase visible en tu página de perfil.",
+        "taglineHint": "Máximo 120 caracteres. Déjalo vacío para ocultar la sección."
       },
       "account": {
-        "title": "Compte",
-        "aside": "Adresse email utilisée pour la connexion et mot de passe.",
-        "emailLabel": "Adresse email",
-        "emailPlaceholder": "votre@email.fr",
-        "emailHint": "Un lien de confirmation est envoyé à chaque changement.",
-        "passwordOldLabel": "Mot de passe actuel",
-        "passwordNewLabel": "Nouveau mot de passe",
+        "title": "Cuenta",
+        "aside": "Correo utilizado para iniciar sesión y contraseña.",
+        "emailLabel": "Correo electrónico",
+        "emailPlaceholder": "tu@email.es",
+        "emailHint": "Se envía un enlace de confirmación en cada cambio.",
+        "passwordOldLabel": "Contraseña actual",
+        "passwordNewLabel": "Nueva contraseña",
         "passwordPlaceholder": "••••••••"
       },
       "preferences": {
-        "title": "Préférences de jeu",
-        "aside": "Unités, format d'affichage et langue de l'interface.",
-        "speedTitle": "Unité de vitesse",
-        "speedDesc": "Utilisée sur le HUD, la boussole et les polaires.",
-        "speedAria": "Unité de vitesse",
-        "speedKts": "Nœuds",
+        "title": "Preferencias de juego",
+        "aside": "Unidades, formato de visualización e idioma de la interfaz.",
+        "speedTitle": "Unidad de velocidad",
+        "speedDesc": "Usada en el HUD, la brújula y las polares.",
+        "speedAria": "Unidad de velocidad",
+        "speedKts": "Nudos",
         "speedKmh": "km/h",
         "speedMph": "mph",
-        "distanceTitle": "Unité de distance",
-        "distanceDesc": "Utilisée pour DTF, tracés, statistiques.",
-        "distanceAria": "Unité de distance",
+        "distanceTitle": "Unidad de distancia",
+        "distanceDesc": "Usada para DTF, trayectorias, estadísticas.",
+        "distanceAria": "Unidad de distancia",
         "distanceNM": "NM",
         "distanceKm": "km",
         "distanceMi": "mi",
-        "timeTitle": "Format d'heure",
-        "timeDesc": "Utilisé partout sur l'interface.",
-        "timeAria": "Format d'heure",
+        "timeTitle": "Formato de hora",
+        "timeDesc": "Usado en toda la interfaz.",
+        "timeAria": "Formato de hora",
         "time24": "24 h",
         "time12": "12 h (am/pm)",
-        "languageTitle": "Langue de l'interface",
-        "languageDesc": "Texte du menu, des pages et des notifications.",
-        "languageAria": "Langue",
+        "languageTitle": "Idioma de la interfaz",
+        "languageDesc": "Texto del menú, las páginas y las notificaciones.",
+        "languageAria": "Idioma",
         "languageFR": "FR",
         "languageEN": "EN",
         "languageES": "ES",
         "languageDE": "DE"
       },
       "notifications": {
-        "title": "Notifications",
-        "aside": "Canal email. Les notifications in-app sont toujours actives pendant une course.",
-        "startTitle": "Départ imminent (H−1 h)",
-        "startDesc": "Rappel une heure avant le départ d'une course à laquelle tu es inscrit.",
-        "startAria": "Départ imminent",
-        "gateTitle": "Passage de porte / waypoint",
-        "gateDesc": "Email à chaque franchissement d'une porte obligatoire.",
-        "gateAria": "Passage de porte",
-        "podiumTitle": "Podium amis / équipe",
-        "podiumDesc": "Un skipper que tu suis termine dans le top 3 d'une course.",
-        "podiumAria": "Podium amis",
-        "newRacesTitle": "Nouvelles courses ouvertes",
-        "newRacesDesc": "Annonce des nouvelles dates de course dans les classes que tu possèdes.",
-        "newRacesAria": "Nouvelles courses",
-        "weeklyTitle": "Résumé hebdomadaire",
-        "weeklyDesc": "Email chaque lundi avec tes résultats et l'actualité du circuit.",
-        "weeklyAria": "Résumé hebdomadaire"
+        "title": "Notificaciones",
+        "aside": "Canal email. Las notificaciones in-app permanecen activas durante una regata.",
+        "startTitle": "Salida inminente (T−1 h)",
+        "startDesc": "Recordatorio una hora antes de la salida de una regata en la que estás inscrito.",
+        "startAria": "Salida inminente",
+        "gateTitle": "Paso de puerta / waypoint",
+        "gateDesc": "Email cada vez que cruzas una puerta obligatoria.",
+        "gateAria": "Paso de puerta",
+        "podiumTitle": "Podio amigos / equipo",
+        "podiumDesc": "Un patrón al que sigues termina en el top 3 de una regata.",
+        "podiumAria": "Podio amigos",
+        "newRacesTitle": "Nuevas regatas abiertas",
+        "newRacesDesc": "Anuncio de nuevas fechas de regata en las clases que tienes.",
+        "newRacesAria": "Nuevas regatas",
+        "weeklyTitle": "Resumen semanal",
+        "weeklyDesc": "Email cada lunes con tus resultados y la actualidad del circuito.",
+        "weeklyAria": "Resumen semanal"
       },
       "danger": {
-        "title": "Zone sensible",
-        "aside": "Actions irréversibles. Lis bien avant d'agir.",
-        "logoutAllTitle": "Se déconnecter de tous les appareils",
-        "logoutAllDesc": "Termine toutes les sessions actives (web, mobile). Tu devras te reconnecter partout.",
-        "logoutAllButton": "Déconnecter tout",
-        "exportTitle": "Exporter mes données",
-        "exportDesc": "Archive ZIP avec ton historique de courses, ta flotte et tes paramètres. RGPD.",
-        "exportButton": "Demander l'export",
-        "deleteTitle": "Supprimer mon compte",
-        "deleteDesc": "Suppression définitive de ton skipper, ta flotte et ton historique. Aucun retour possible.",
-        "deleteButton": "Supprimer mon compte"
+        "title": "Zona sensible",
+        "aside": "Acciones irreversibles. Lee bien antes de actuar.",
+        "logoutAllTitle": "Cerrar sesión en todos los dispositivos",
+        "logoutAllDesc": "Termina todas las sesiones activas (web, móvil). Tendrás que volver a iniciar sesión en todas partes.",
+        "logoutAllButton": "Cerrar sesión en todos",
+        "exportTitle": "Exportar mis datos",
+        "exportDesc": "Archivo ZIP con tu historial de regatas, tu flota y tus ajustes. RGPD.",
+        "exportButton": "Solicitar exportación",
+        "deleteTitle": "Eliminar mi cuenta",
+        "deleteDesc": "Eliminación definitiva de tu patrón, flota e historial. Sin marcha atrás.",
+        "deleteButton": "Eliminar mi cuenta"
       }
     }
   },
   "notFound": {
-    "metaTitle": "Hors carte — Nemo",
-    "metaDescription": "Cette page n'apparaît sur aucune de nos cartes.",
-    "brandAria": "Nemo — accueil",
-    "hereLabel": "ICI",
-    "kicker": "404 — Hors carte",
-    "title1": "Vous êtes perdu",
-    "title2": "en mer ?",
-    "ledeLine1": "Cette page n'apparaît sur aucune de nos cartes.",
-    "ledeLine2": "Aucune côte connue à cette position.",
-    "cta": "Retour au port",
+    "metaTitle": "Fuera de carta — Nemo",
+    "metaDescription": "Esta página no aparece en ninguna de nuestras cartas.",
+    "brandAria": "Nemo — inicio",
+    "hereLabel": "AQUÍ",
+    "kicker": "404 — Fuera de carta",
+    "title1": "¿Estás perdido",
+    "title2": "en el mar?",
+    "ledeLine1": "Esta página no aparece en ninguna de nuestras cartas.",
+    "ledeLine2": "Ninguna costa conocida en esta posición.",
+    "cta": "Volver al puerto",
     "hudPosLabel": "POS ·",
-    "hudPosUnknown": "UNKNOWN"
+    "hudPosUnknown": "DESCONOCIDO"
   },
   "play": {
     "loading": {
-      "map": "Chargement de la carte nautique…",
-      "balance": "Chargement des paramètres de jeu…"
+      "map": "Cargando carta náutica…",
+      "balance": "Cargando parámetros del juego…"
     },
     "hud": {
-      "ariaToolbar": "Tableau de bord course",
-      "ariaRank": "Rang actuel",
-      "rankLabel": "Rang",
+      "ariaToolbar": "Tablero de regata",
+      "ariaRank": "Puesto actual",
+      "rankLabel": "Puesto",
       "tooltips": {
-        "bspBase": "Vitesse réelle du bateau — pénalités de manœuvre incluses",
-        "bspWithPenalty": "Vitesse réelle du bateau · {penalty}",
-        "tws": "Vitesse réelle du vent",
-        "twd": "Direction du vent (d'où il vient)",
-        "twa": "Angle du vent / bateau",
-        "hdg": "Cap du bateau",
-        "vmg": "Vitesse vers le waypoint",
-        "dtf": "Distance restante",
-        "factor": "Zone de recouvrement — en voile auto uniquement, garde la voile active quand une autre serait marginalement plus rapide (≤ +1.4%) et lui applique la BSP de l'optimale pour éviter les allers-retours.",
-        "quit": "Quitter et revenir aux courses"
+        "bspBase": "Velocidad real del barco — incluyendo penalizaciones de maniobra",
+        "bspWithPenalty": "Velocidad real del barco · {penalty}",
+        "tws": "Velocidad real del viento",
+        "twd": "Dirección del viento (de dónde viene)",
+        "twa": "Ángulo del viento / barco",
+        "hdg": "Rumbo del barco",
+        "vmg": "Velocidad hacia el waypoint",
+        "dtf": "Distancia restante",
+        "factor": "Zona de solapamiento — solo en vela auto, mantiene la vela activa cuando otra sería marginalmente más rápida (≤ +1.4%) y aplica el BSP óptimo para evitar idas y vueltas.",
+        "quit": "Salir y volver a las regatas"
       },
       "penalty": {
-        "gybe": "Empannage en cours — vitesse réduite",
-        "tack": "Virement en cours — vitesse réduite",
-        "sail": "Changement de voile en cours — vitesse réduite",
-        "zone": "Zone de ralentissement −{pct}%"
+        "gybe": "Trasluchada en curso — velocidad reducida",
+        "tack": "Virada en curso — velocidad reducida",
+        "sail": "Cambio de vela en curso — velocidad reducida",
+        "zone": "Zona de ralentización −{pct}%"
       },
       "wear": {
-        "ariaLabel": "Usure du bateau",
-        "label": "⚓ Usure",
-        "explain": "Un bateau usé navigue plus lentement. Évitez les conditions extrêmes pour préserver vos performances.",
-        "penaltyLabel": "Pénalité de vitesse :",
+        "ariaLabel": "Desgaste del barco",
+        "label": "⚓ Desgaste",
+        "explain": "Un barco desgastado navega más despacio. Evita las condiciones extremas para preservar tu rendimiento.",
+        "penaltyLabel": "Penalización de velocidad:",
         "parts": {
-          "hull": "Coque",
-          "rig": "Gréement",
-          "sails": "Voiles",
-          "electronics": "Électronique"
+          "hull": "Casco",
+          "rig": "Aparejo",
+          "sails": "Velas",
+          "electronics": "Electrónica"
         }
       },
-      "quit": "← Quitter"
+      "quit": "← Salir"
     },
     "compassReadouts": {
-      "speed": "Vitesse",
-      "heading": "Cap",
+      "speed": "Velocidad",
+      "heading": "Rumbo",
       "twa": "TWA"
     },
     "slidePanel": {
-      "resize": "Redimensionner panneau",
-      "close": "Fermer"
+      "resize": "Redimensionar panel",
+      "close": "Cerrar"
     },
     "zoom": {
-      "ariaGroup": "Zoom carte",
+      "ariaGroup": "Zoom mapa",
       "tooltipPlus": "Zoom +",
       "tooltipMinus": "Zoom −",
-      "ariaPlus": "Zoomer",
-      "ariaMinus": "Dézoomer"
+      "ariaPlus": "Acercar",
+      "ariaMinus": "Alejar"
     },
     "timeStepper": {
-      "back1h": "Reculer d'une heure",
-      "back1m": "Reculer d'une minute",
-      "fwd1m": "Avancer d'une minute",
-      "fwd1h": "Avancer d'une heure",
+      "back1h": "Retroceder una hora",
+      "back1m": "Retroceder un minuto",
+      "fwd1m": "Avanzar un minuto",
+      "fwd1h": "Avanzar una hora",
       "unitH": "1h",
       "unitM": "1m",
-      "floorMin": "⛔ Délai mini : now + 5min",
-      "floorMax": "⛔ Plafond : J+5 (limite météo)"
+      "floorMin": "⛔ Demora mínima: now + 5min",
+      "floorMax": "⛔ Tope: D+5 (límite meteo)"
     },
     "compass": {
       "tooltips": {
-        "lockedOn": "TWA verrouillé — le cap suit le vent",
-        "lockedOff": "Verrouiller le TWA",
+        "lockedOn": "TWA bloqueado — el rumbo sigue al viento",
+        "lockedOff": "Bloquear TWA",
         "lockedShortcut": "T",
-        "apply": "Valider l'ordre (cap ou TWA lock)",
-        "applyShortcut": "Entrée",
-        "cancel": "Annuler le changement en cours",
-        "cancelShortcut": "Échap"
+        "apply": "Aplicar orden (rumbo o bloqueo TWA)",
+        "applyShortcut": "Intro",
+        "cancel": "Cancelar el cambio en curso",
+        "cancelShortcut": "Esc"
       },
       "actions": {
-        "validate": "Valider",
-        "cancelAria": "Annuler"
+        "validate": "Aplicar",
+        "cancelAria": "Cancelar"
       },
       "hints": {
-        "gybe": "Empannage — vitesse −{pct}% (~{dur}s)",
-        "tack": "Virement — vitesse −{pct}% (~{dur}s)",
-        "sail": "Voile auto : {from} → {to} (−{pct}% ~{dur}s)"
+        "gybe": "Trasluchada — velocidad −{pct}% (~{dur}s)",
+        "tack": "Virada — velocidad −{pct}% (~{dur}s)",
+        "sail": "Vela auto: {from} → {to} (−{pct}% ~{dur}s)"
       }
     },
     "coords": {
-      "ariaPosition": "Position"
+      "ariaPosition": "Posición"
     },
     "windLegend": {
-      "ariaWind": "Échelle vent",
-      "ariaSwell": "Échelle houle",
-      "labelWind": "Vent",
-      "labelSwell": "Houle",
+      "ariaWind": "Escala viento",
+      "ariaSwell": "Escala mar de fondo",
+      "labelWind": "Viento",
+      "labelSwell": "Mar de fondo",
       "ticksWind": "0 · 40 nds",
       "ticksSwell": "0 · 6 m"
     },
@@ -489,939 +489,939 @@
       "tws": "TWS"
     },
     "ranking": {
-      "searchPlaceholder": "Rechercher un joueur…",
-      "filterLabel": "Filtre",
+      "searchPlaceholder": "Buscar un jugador…",
+      "filterLabel": "Filtro",
       "filters": {
-        "general": "Général · {n} skippers",
-        "friends": "Mes amis",
-        "team": "Mon équipe",
-        "city": "Ma ville",
-        "country": "Mon pays",
+        "general": "General · {n} patrones",
+        "friends": "Mis amigos",
+        "team": "Mi equipo",
+        "city": "Mi ciudad",
+        "country": "Mi país",
         "separator": "──────",
-        "series": "Série · {n} skippers"
+        "series": "Serie · {n} patrones"
       }
     },
     "layers": {
-      "title": "Couches",
-      "gfsPrefix": "GFS :",
-      "gfsUpdating": "Mise à jour en cours…",
-      "gfsWaiting": "Prochaine maj : en attente NOAA",
-      "gfsNext": "Prochaine maj : {countdown}",
-      "imminent": "imminent",
+      "title": "Capas",
+      "gfsPrefix": "GFS:",
+      "gfsUpdating": "Actualizando…",
+      "gfsWaiting": "Próxima act.: esperando NOAA",
+      "gfsNext": "Próxima act.: {countdown}",
+      "imminent": "inminente",
       "names": {
-        "wind": "Vent",
-        "swell": "Houle",
-        "coastline": "Trait de côte",
-        "opponents": "Adversaires",
-        "zones": "Zones"
+        "wind": "Viento",
+        "swell": "Mar de fondo",
+        "coastline": "Línea de costa",
+        "opponents": "Adversarios",
+        "zones": "Zonas"
       }
     },
     "mapAppearance": {
-      "ariaLabel": "Apparence de la carte",
-      "title": "Apparence",
-      "ariaClose": "Fermer",
-      "section": "Océan",
-      "close": "Fermer"
+      "ariaLabel": "Apariencia del mapa",
+      "title": "Apariencia",
+      "ariaClose": "Cerrar",
+      "section": "Océano",
+      "close": "Cerrar"
     },
     "sailPanel": {
-      "lockoutBanner": "Vous avez programmé un changement de voile dans quelques minutes. Vous ne pouvez pas changer de voile manuellement sans retirer votre programmation.",
+      "lockoutBanner": "Tienes programado un cambio de vela en unos minutos. No puedes cambiar de vela manualmente sin retirar tu programación.",
       "modeAuto": "Auto",
-      "modeManual": "Manuel",
-      "transitionInProgress": "Manœuvre en cours · {sec}s",
-      "cancel": "Annuler",
-      "confirm": "Confirmer"
+      "modeManual": "Manual",
+      "transitionInProgress": "Maniobra en curso · {sec}s",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
     },
     "confirmReplaceProg": {
-      "title": "Remplacer la programmation",
-      "bodyMain": "Vous avez {n, plural, one {<bold>#</bold> ordre} other {<bold>#</bold> ordres}} en attente. Appliquer la route va remplacer tous les ordres futurs et activer la voile automatique.",
-      "bodyKeep": "Les ordres déjà déclenchés sont conservés.",
-      "cancel": "Annuler",
-      "confirm": "Remplacer"
+      "title": "Reemplazar programación",
+      "bodyMain": "Tienes {n, plural, one {<bold>#</bold> orden pendiente} other {<bold>#</bold> órdenes pendientes}}. Aplicar la ruta sustituirá todas las órdenes futuras y activará la vela automática.",
+      "bodyKeep": "Las órdenes ya disparadas se conservan.",
+      "cancel": "Cancelar",
+      "confirm": "Reemplazar"
     },
     "routerPanel": {
-      "departureLabel": "Point de départ",
-      "boatPosition": "Position bateau",
-      "arrivalLabel": "Point d'arrivée",
-      "placingHint": "Cliquez (ou tapez) sur la carte",
-      "placingHint2": "pour placer l'arrivée",
-      "cancelPlacing": "Annuler",
-      "destTitle": "Arrivée",
-      "edit": "Modifier",
-      "definePlace": "Définir l'arrivée",
-      "calculating": "Calcul en cours…",
-      "calcSub": "Fermer le panneau pour annuler",
-      "routeBtn": "Router",
-      "hintNoDest": "Définir l'arrivée pour calculer",
-      "hintNoGrid": "Météo en chargement…",
+      "departureLabel": "Punto de partida",
+      "boatPosition": "Posición barco",
+      "arrivalLabel": "Punto de llegada",
+      "placingHint": "Haz clic (o toca) en el mapa",
+      "placingHint2": "para situar la llegada",
+      "cancelPlacing": "Cancelar",
+      "destTitle": "Llegada",
+      "edit": "Editar",
+      "definePlace": "Definir la llegada",
+      "calculating": "Calculando…",
+      "calcSub": "Cierra el panel para cancelar",
+      "routeBtn": "Calcular ruta",
+      "hintNoDest": "Define la llegada para calcular",
+      "hintNoGrid": "Meteo cargando…",
       "results": {
-        "head": "✓ Route calculée",
-        "distance": "Distance",
+        "head": "✓ Ruta calculada",
+        "distance": "Distancia",
         "eta": "ETA",
-        "compute": "Calcul",
-        "maneuvers": "Manœuvres",
-        "warning": "⚠ Route incomplète : météo limitée à J+7",
-        "applyWaypoints": "→ Points de contrôle",
-        "applyCap": "→ Programmation de cap"
+        "compute": "Cálculo",
+        "maneuvers": "Maniobras",
+        "warning": "⚠ Ruta incompleta: meteo limitada a D+7",
+        "applyWaypoints": "→ Puntos de control",
+        "applyCap": "→ Programación de rumbo"
       }
     },
     "routerControls": {
-      "configLabel": "Configuration",
-      "presetAria": "Préréglage du routeur",
+      "configLabel": "Configuración",
+      "presetAria": "Preajuste del router",
       "presetFast": "Fast",
-      "presetBalanced": "Équilibré",
+      "presetBalanced": "Equilibrado",
       "presetHires": "Hi-Res",
-      "coastDetection": "Détection des côtes",
-      "cone": "Cône"
+      "coastDetection": "Detección de costas",
+      "cone": "Cono"
     },
     "progBanner": {
-      "title": "{n, plural, one {# ORDRE OBSOLÈTE} other {# ORDRES OBSOLÈTES}}",
-      "desc": "{n, plural, one {Heure de déclenchement déjà passée. Sera retiré automatiquement.} other {Heure de déclenchement déjà passée. Seront retirés automatiquement.}}",
-      "ariaClose": "Fermer l'alerte"
+      "title": "{n, plural, one {# ORDEN OBSOLETA} other {# ÓRDENES OBSOLETAS}}",
+      "desc": "{n, plural, one {Hora de disparo ya pasada. Será retirada automáticamente.} other {Hora de disparo ya pasada. Serán retiradas automáticamente.}}",
+      "ariaClose": "Cerrar la alerta"
     },
     "progToast": {
-      "ariaClose": "Fermer"
+      "ariaClose": "Cerrar"
     },
     "progFooter": {
-      "dirtyMain": "Modifications non enregistrées",
-      "dirtyExtra": " · {n} obsolète(s)",
-      "clean": "Programmation à jour",
-      "cancel": "Annuler",
-      "confirm": "CONFIRMER"
+      "dirtyMain": "Cambios sin guardar",
+      "dirtyExtra": " · {n} obsoleta(s)",
+      "clean": "Programación al día",
+      "cancel": "Cancelar",
+      "confirm": "CONFIRMAR"
     },
     "timeline": {
       "header": {
-        "live": "LIVE",
-        "now": "NOW",
+        "live": "EN VIVO",
+        "now": "AHORA",
         "tPlus": "T+{h}h",
         "tMinus": "T{h}h",
-        "jPlus": "J+{d}",
-        "jMinus": "J{d}",
-        "months": "jan,fév,mar,avr,mai,jun,jul,aoû,sep,oct,nov,déc"
+        "jPlus": "D+{d}",
+        "jMinus": "D{d}",
+        "months": "ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic"
       },
       "controls": {
-        "back6Aria": "reculer 6 heures",
-        "back6Title": "Reculer de 6h",
-        "playAria": "lecture",
-        "pauseAria": "pause",
-        "playTitle": "Lecture",
-        "pauseTitle": "Pause",
-        "speedGroupAria": "Vitesse de lecture",
-        "speedTitle": "Vitesse ×{s}",
-        "fwd6Aria": "avancer 6 heures",
-        "fwd6Title": "Avancer de 6h",
-        "liveTitle": "Revenir au présent",
-        "liveLabel": "LIVE"
+        "back6Aria": "retroceder 6 horas",
+        "back6Title": "Retroceder 6h",
+        "playAria": "reproducir",
+        "pauseAria": "pausa",
+        "playTitle": "Reproducir",
+        "pauseTitle": "Pausa",
+        "speedGroupAria": "Velocidad de reproducción",
+        "speedTitle": "Velocidad ×{s}",
+        "fwd6Aria": "avanzar 6 horas",
+        "fwd6Title": "Avanzar 6h",
+        "liveTitle": "Volver al presente",
+        "liveLabel": "EN VIVO"
       },
       "track": {
-        "aria": "position dans le temps de course"
+        "aria": "posición en el tiempo de regata"
       }
     },
     "progQueue": {
       "tabs": {
-        "cap": "Cap",
+        "cap": "Rumbo",
         "wp": "Waypoints"
       },
       "cap": {
-        "title": "CAP PROGRAMMÉ",
-        "count": "{n, plural, one {# ORDRE} other {# ORDRES}}",
-        "empty": "AUCUN ORDRE PROGRAMMÉ",
-        "addBtn": "Ajouter un cap",
-        "actionLabel": "Cap →",
+        "title": "RUMBO PROGRAMADO",
+        "count": "{n, plural, one {# ORDEN} other {# ÓRDENES}}",
+        "empty": "NINGUNA ORDEN PROGRAMADA",
+        "addBtn": "Añadir un rumbo",
+        "actionLabel": "Rumbo →",
         "twaSuffix": " · TWA",
-        "obsoleteSuffix": " · OBSOLÈTE"
+        "obsoleteSuffix": " · OBSOLETA"
       },
       "wp": {
         "title": "WAYPOINTS",
-        "count": "{n, plural, one {# POINT} other {# POINTS}}",
-        "empty": "AUCUN WAYPOINT PROGRAMMÉ",
-        "atDeparture": "AU DÉPART",
-        "afterWp": "APRÈS WP {n}",
+        "count": "{n, plural, one {# PUNTO} other {# PUNTOS}}",
+        "empty": "NINGÚN WAYPOINT PROGRAMADO",
+        "atDeparture": "EN LA SALIDA",
+        "afterWp": "DESPUÉS DEL WP {n}",
         "wpLabel": "WP {n}",
-        "addBtn": "Ajouter un WP",
-        "addFinalCap": "Cap final",
-        "afterWpFinal": "APRÈS WP {n} (FINAL)",
-        "finalActionLabel": "Cap final →"
+        "addBtn": "Añadir un WP",
+        "addFinalCap": "Rumbo final",
+        "afterWpFinal": "DESPUÉS DEL WP {n} (FINAL)",
+        "finalActionLabel": "Rumbo final →"
       },
       "sail": {
-        "title": "VOILES",
-        "count": "{n, plural, one {# ORDRE} other {# ORDRES}}",
-        "empty": "AUCUN CHANGEMENT DE VOILE PROGRAMMÉ",
-        "atWp": "AU WP {n}",
+        "title": "VELAS",
+        "count": "{n, plural, one {# ORDEN} other {# ÓRDENES}}",
+        "empty": "NINGÚN CAMBIO DE VELA PROGRAMADO",
+        "atWp": "EN EL WP {n}",
         "actionAuto": "AUTO",
-        "actionLabel": "Voile →",
-        "addBtn": "Ajouter un changement de voile"
+        "actionLabel": "Vela →",
+        "addBtn": "Añadir un cambio de vela"
       },
       "actions": {
-        "edit": "Modifier",
-        "delete": "Supprimer"
+        "edit": "Editar",
+        "delete": "Eliminar"
       },
-      "clearAll": "Tout effacer",
-      "multiTabNote": "La dernière confirmation prime. Évitez de programmer depuis plusieurs onglets simultanément."
+      "clearAll": "Borrar todo",
+      "multiTabNote": "La última confirmación prevalece. Evita programar desde varias pestañas a la vez."
     },
     "progEditor": {
-      "back": "Annuler",
+      "back": "Cancelar",
       "ok": "OK",
       "common": {
-        "twaLockTitle": "Verrouiller TWA",
-        "twaLockSub": "Cap relatif au vent · suit les bascules"
+        "twaLockTitle": "Bloquear TWA",
+        "twaLockSub": "Rumbo relativo al viento · sigue las roladas"
       },
       "cap": {
-        "titleNew": "NOUVEL ORDRE CAP",
-        "titleEditNoIndex": "MODIFIER CAP",
-        "titleEdit": "MODIFIER CAP · N°{n}",
-        "executionTime": "HEURE D'EXÉCUTION"
+        "titleNew": "NUEVA ORDEN DE RUMBO",
+        "titleEditNoIndex": "EDITAR RUMBO",
+        "titleEdit": "EDITAR RUMBO · N°{n}",
+        "executionTime": "HORA DE EJECUCIÓN"
       },
       "wp": {
-        "titleNew": "NOUVEAU WAYPOINT",
-        "titleEdit": "MODIFIER WP {n}",
-        "position": "POSITION",
-        "pickStart": "Cliquer sur la carte pour positionner",
-        "pickInProgress": "Cliquer sur la carte…",
-        "minDistance": "Distance min. requise du bateau : {n} NM (rayon de sécurité).",
-        "dragHint": "Glissez le marker sur la carte pour déplacer."
+        "titleNew": "NUEVO WAYPOINT",
+        "titleEdit": "EDITAR WP {n}",
+        "position": "POSICIÓN",
+        "pickStart": "Haz clic en el mapa para situarlo",
+        "pickInProgress": "Haz clic en el mapa…",
+        "minDistance": "Distancia mín. del barco: {n} NM (radio de seguridad).",
+        "dragHint": "Arrastra el marcador en el mapa para moverlo."
       },
       "finalCap": {
-        "titleNew": "NOUVEAU CAP FINAL",
-        "titleEdit": "MODIFIER CAP FINAL",
-        "trigger": "DÉCLENCHEUR",
-        "afterWpFinal": "APRÈS WP {n} (FINAL)"
+        "titleNew": "NUEVO RUMBO FINAL",
+        "titleEdit": "EDITAR RUMBO FINAL",
+        "trigger": "DISPARADOR",
+        "afterWpFinal": "DESPUÉS DEL WP {n} (FINAL)"
       },
       "sail": {
-        "titleNew": "NOUVEL ORDRE VOILE",
-        "titleEdit": "MODIFIER VOILE",
-        "mode": "MODE",
+        "titleNew": "NUEVA ORDEN DE VELA",
+        "titleEdit": "EDITAR VELA",
+        "mode": "MODO",
         "auto": "AUTO",
-        "manual": "MANUEL",
-        "alreadyAuto": "Le bateau est déjà en voile auto à cette heure",
-        "warnAutoNoOp": "⚠ Le bateau est déjà en voile auto à cette heure. L'ordre serait sans effet.",
-        "sailToHoist": "VOILE À HISSER",
-        "trigger": "DÉCLENCHEUR",
-        "atTime": "À UNE HEURE",
-        "atWaypoint": "À UN WAYPOINT",
-        "warnTransition": "⚠ Une transition voile précédente n'est pas terminée à cette heure.",
+        "manual": "MANUAL",
+        "alreadyAuto": "El barco ya está en vela auto a esta hora",
+        "warnAutoNoOp": "⚠ El barco ya está en vela auto a esta hora. La orden no tendría efecto.",
+        "sailToHoist": "VELA A IZAR",
+        "trigger": "DISPARADOR",
+        "atTime": "A UNA HORA",
+        "atWaypoint": "EN UN WAYPOINT",
+        "warnTransition": "⚠ Una transición de vela anterior no ha terminado a esta hora.",
         "wpLabel": "WAYPOINT",
-        "noWpAvail": "AUCUN WAYPOINT DISPONIBLE — TOUS DÉJÀ RÉFÉRENCÉS",
+        "noWpAvail": "NINGÚN WAYPOINT DISPONIBLE — TODOS YA REFERENCIADOS",
         "wpItem": "WP {n}"
       }
     },
     "progPanel": {
-      "noWp": "Aucun WP disponible.",
-      "close": "Fermer",
+      "noWp": "Ningún WP disponible.",
+      "close": "Cerrar",
       "editorPlaceholder": "Editor placeholder — kind={kind}",
-      "deleteTitle": "Supprimer cet ordre ?",
-      "deleteWpRef": "Ce WP est référencé par un ordre voile. Les deux seront supprimés.",
-      "deleteIrreversible": "Cette action est irréversible.",
-      "delete": "Supprimer",
-      "clearAllTitle": "Tout effacer ?",
-      "clearAllBody": "Cela vide la programmation en cours d'édition. Vous pouvez annuler avec « Annuler ».",
-      "clearAll": "Tout effacer"
+      "deleteTitle": "¿Eliminar esta orden?",
+      "deleteWpRef": "Este WP está referenciado por una orden de vela. Ambos serán eliminados.",
+      "deleteIrreversible": "Esta acción es irreversible.",
+      "delete": "Eliminar",
+      "clearAllTitle": "¿Borrar todo?",
+      "clearAllBody": "Esto vacía la programación en edición. Puedes deshacer con «Cancelar».",
+      "clearAll": "Borrar todo"
     },
     "blocked": {
-      "eyebrow": "Accès refusé",
-      "draft": "Cette course n'est pas encore publiée.",
-      "archived": "Cette course a été archivée.",
-      "adminOnly": "Page réservée aux administrateurs.",
-      "back": "← Retour aux courses"
+      "eyebrow": "Acceso denegado",
+      "draft": "Esta regata aún no está publicada.",
+      "archived": "Esta regata ha sido archivada.",
+      "adminOnly": "Página reservada a los administradores.",
+      "back": "← Volver a las regatas"
     },
     "router": {
-      "placing": "CLIQUEZ POUR PLACER L'ARRIVÉE",
-      "cancel": "✕ Annuler"
+      "placing": "HAZ CLIC PARA SITUAR LA LLEGADA",
+      "cancel": "✕ Cancelar"
     },
     "spectate": {
-      "tag": "Spectateur",
-      "ctaLogin": "Se connecter →",
-      "ctaSignup": "S'inscrire →"
+      "tag": "Espectador",
+      "ctaLogin": "Iniciar sesión →",
+      "ctaSignup": "Registrarse →"
     },
     "actions": {
-      "ranking": "Classement",
+      "ranking": "Clasificación",
       "rankingShortcut": "C",
-      "rankingLong": "CLASSEMENT",
-      "centerTooltip": "Recentrer sur le bateau",
-      "centerShortcut": "Espace",
-      "centerLabel": "Centrer",
-      "sailsTooltip": "Gérer les voiles",
+      "rankingLong": "CLASIFICACIÓN",
+      "centerTooltip": "Centrar en el barco",
+      "centerShortcut": "Espacio",
+      "centerLabel": "Centrar",
+      "sailsTooltip": "Gestionar las velas",
       "sailsShortcut": "V",
-      "sailsLabel": "Voiles",
-      "progTooltip": "Programmer les ordres",
+      "sailsLabel": "Velas",
+      "progTooltip": "Programar las órdenes",
       "progShortcut": "P",
       "progLabel": "Prog.",
-      "routerTooltip": "Routeur",
+      "routerTooltip": "Router",
       "routerShortcut": "R",
-      "routerLabel": "Route"
+      "routerLabel": "Ruta"
     },
     "panels": {
-      "ranking": "Classement",
-      "sails": "Voiles",
-      "programming": "Programmation",
-      "router": "Routeur"
+      "ranking": "Clasificación",
+      "sails": "Velas",
+      "programming": "Programación",
+      "router": "Router"
     }
   },
   "marinaCustomize": {
     "loader": {
-      "loading": "Chargement…",
-      "errorPrefix": "Impossible de charger ce bateau :",
-      "errorUnknown": "Erreur inconnue"
+      "loading": "Cargando…",
+      "errorPrefix": "No se puede cargar este barco:",
+      "errorUnknown": "Error desconocido"
     },
     "breadcrumb": {
-      "aria": "Fil d'ariane",
+      "aria": "Migas de pan",
       "marina": "← Marina",
-      "tail": "Personnaliser"
+      "tail": "Personalizar"
     },
     "preview": {
-      "eyebrow": "Aperçu",
-      "aria": "Aperçu du bateau personnalisé",
-      "noName": "Sans nom",
-      "metaSavedDirty": "Aperçu non sauvegardé",
-      "metaSavedClean": "Configuration enregistrée",
-      "svgAria": "Aperçu IMOCA — {name}"
+      "eyebrow": "Vista previa",
+      "aria": "Vista previa del barco personalizado",
+      "noName": "Sin nombre",
+      "metaSavedDirty": "Vista previa no guardada",
+      "metaSavedClean": "Configuración guardada",
+      "svgAria": "Vista previa IMOCA — {name}"
     },
     "actions": {
-      "saved": "✓ Enregistré",
-      "dirty": "Modifications en cours",
-      "clean": "Aucune modification",
-      "reset": "Réinitialiser",
-      "cancel": "Annuler",
-      "save": "Enregistrer"
+      "saved": "✓ Guardado",
+      "dirty": "Cambios pendientes",
+      "clean": "Sin cambios",
+      "reset": "Restablecer",
+      "cancel": "Cancelar",
+      "save": "Guardar"
     },
     "controls": {
-      "aria": "Personnalisation"
+      "aria": "Personalización"
     },
     "identity": {
-      "num": "01 · Identité",
-      "title": "Nom",
-      "boatNameLabel": "Nom du bateau",
-      "boatNameHint": "20 caractères max. Visible sur le pont, le palmarès et le classement."
+      "num": "01 · Identidad",
+      "title": "Nombre",
+      "boatNameLabel": "Nombre del barco",
+      "boatNameHint": "Máximo 20 caracteres. Visible en la cubierta, el palmarés y la clasificación."
     },
     "zones": {
-      "hull": "Coque",
-      "cabin": "Cabine",
-      "mast": "Mât & gréement",
-      "appendages": "Foils & quille",
-      "appendagesAside": "Couleur appliquée à toutes les pièces immergées.",
-      "mainsail": "Grande voile",
-      "jib": "Foc / Génois"
+      "hull": "Casco",
+      "cabin": "Cabina",
+      "mast": "Mástil & jarcia",
+      "appendages": "Foils & quilla",
+      "appendagesAside": "Color aplicado a todas las piezas sumergidas.",
+      "mainsail": "Mayor",
+      "jib": "Foque / Génova"
     },
     "modes": {
-      "solid": "Uni",
-      "gradient": "Dégradé"
+      "solid": "Liso",
+      "gradient": "Degradado"
     },
     "gradient": {
-      "color1": "Couleur 1",
-      "color2": "Couleur 2",
-      "angle": "Angle",
-      "angleAria": "Angle du dégradé",
-      "paletteAria": "Palette couleur 1"
+      "color1": "Color 1",
+      "color2": "Color 2",
+      "angle": "Ángulo",
+      "angleAria": "Ángulo del degradado",
+      "paletteAria": "Paleta color 1"
     },
     "patterns": {
-      "title": "Motif",
-      "colorTitle": "Couleur du motif",
+      "title": "Motivo",
+      "colorTitle": "Color del motivo",
       "labels": {
-        "none": "Aucun",
-        "stripes": "Lignes",
-        "dots": "Ronds",
-        "honeycomb": "Nid d'ab."
+        "none": "Ninguno",
+        "stripes": "Líneas",
+        "dots": "Puntos",
+        "honeycomb": "Panal"
       },
-      "tileAria": "Motif {label}"
+      "tileAria": "Motivo {label}"
     },
     "hex": {
-      "paletteAria": "Palette de couleurs",
-      "swatchAria": "Couleur {hex}",
-      "nativeAria": "Sélecteur de couleur"
+      "paletteAria": "Paleta de colores",
+      "swatchAria": "Color {hex}",
+      "nativeAria": "Selector de color"
     },
     "markings": {
-      "num": "08 · Marquages",
-      "title": "Textes & marquages",
-      "aside": "Numéros, sponsors fictifs, devises.",
+      "num": "08 · Marcas",
+      "title": "Textos & marcas",
+      "aside": "Números, patrocinadores ficticios, lemas.",
       "mainsail": {
-        "title": "Grande voile",
-        "numberLabel": "Numéro de voile",
-        "numberHint": "6 caractères max. Visible à grande distance — privilégier numéro ou sigle.",
-        "colorLabel": "Couleur",
-        "sizeLabel": "Taille",
-        "sizeS": "Petite",
+        "title": "Mayor",
+        "numberLabel": "Número de vela",
+        "numberHint": "Máx. 6 caracteres. Visible a gran distancia — preferir número o sigla.",
+        "colorLabel": "Color",
+        "sizeLabel": "Tamaño",
+        "sizeS": "Pequeño",
         "sizeM": "Grande",
-        "sizeL": "Très grande",
-        "countryLabel": "Code pays"
+        "sizeL": "Muy grande",
+        "countryLabel": "Código país"
       },
       "jib": {
-        "title": "Foc / Génois",
-        "textLabel": "Texte (sponsor / devise)",
-        "textHint": "12 caractères max. Optionnel — laissez vide pour une voile neutre.",
-        "colorLabel": "Couleur"
+        "title": "Foque / Génova",
+        "textLabel": "Texto (patrocinador / lema)",
+        "textHint": "Máx. 12 caracteres. Opcional — déjalo vacío para una vela neutra.",
+        "colorLabel": "Color"
       },
       "hull": {
-        "title": "Coque",
-        "textLabel": "Texte (sponsor / devise)",
-        "textHint": "20 caractères max. Le nom du bateau est utilisé par défaut.",
-        "colorLabel": "Couleur",
-        "positionLabel": "Position",
-        "positionCenter": "Centrée",
-        "positionFore": "Avant",
-        "positionAft": "Arrière",
-        "numberLabel": "Numéro tribord"
+        "title": "Casco",
+        "textLabel": "Texto (patrocinador / lema)",
+        "textHint": "Máx. 20 caracteres. Por defecto se usa el nombre del barco.",
+        "colorLabel": "Color",
+        "positionLabel": "Posición",
+        "positionCenter": "Centrado",
+        "positionFore": "Proa",
+        "positionAft": "Popa",
+        "numberLabel": "Número estribor"
       }
     },
     "sectionNum": "{num} · {label}"
   },
   "team": {
     "hero": {
-      "eyebrow": "Circuit Nemo",
-      "trailing": "Équipe · {year}",
-      "metaPre": "Basée à",
-      "metaSkippers": "{n, plural, one {# skipper} other {# skippers}}",
+      "eyebrow": "Circuito Nemo",
+      "trailing": "Equipo · {year}",
+      "metaPre": "Con base en",
+      "metaSkippers": "{n, plural, one {# patrón} other {# patrones}}",
       "stats": {
-        "teamRank": "Rang équipe",
-        "teamRankSub": "Classement inter-équipes",
-        "bestMember": "Meilleur membre",
-        "bestMemberSub": "Rang saison toutes classes",
-        "podiums": "Podiums cumulés",
-        "podiumsSub": "Tous membres confondus",
-        "races": "Courses saison",
-        "racesSub": "Agrégé"
+        "teamRank": "Puesto equipo",
+        "teamRankSub": "Clasificación interequipos",
+        "bestMember": "Mejor miembro",
+        "bestMemberSub": "Puesto temporada todas las clases",
+        "podiums": "Podios acumulados",
+        "podiumsSub": "Todos los miembros",
+        "races": "Regatas temporada",
+        "racesSub": "Agregado"
       }
     },
     "roster": {
-      "aria": "Roster",
-      "eyebrow": "Roster",
-      "title": "Skippers",
-      "linkRanking": "Classement des équipes →",
-      "paginationAria": "Pagination membres de l'équipe"
+      "aria": "Plantilla",
+      "eyebrow": "Plantilla",
+      "title": "Patrones",
+      "linkRanking": "Clasificación de equipos →",
+      "paginationAria": "Paginación miembros del equipo"
     },
     "member": {
-      "rankLabel": "Rang saison",
-      "points": "Points",
-      "races": "Courses",
-      "podiums": "Podiums",
+      "rankLabel": "Puesto temporada",
+      "points": "Puntos",
+      "races": "Regatas",
+      "podiums": "Podios",
       "roles": {
-        "CAPTAIN": "Capitaine",
-        "MODERATOR": "Modérateur",
-        "MEMBER": "Membre"
+        "CAPTAIN": "Capitán",
+        "MODERATOR": "Moderador",
+        "MEMBER": "Miembro"
       }
     }
   },
   "ranking": {
-    "eyebrowSeason": "Saison 2026",
-    "eyebrowTrailing": "Circuit Nemo",
-    "title": "Classement",
+    "eyebrowSeason": "Temporada 2026",
+    "eyebrowTrailing": "Circuito Nemo",
+    "title": "Clasificación",
     "lede": {
-      "seriesPre": "Classement ",
-      "seriesEm": "Série",
-      "seriesMid": " — uniquement les performances réalisées avec un bateau strictement au défaut. ",
-      "seriesCount": "{n} skippers",
-      "seriesEnd": " éligibles sur le sous-classement courant.",
-      "allPre": "Rang cumulé sur l'ensemble des courses de la saison, toutes classes confondues. ",
-      "allCount": "{n} skippers",
-      "allEnd": " actifs sur le circuit."
+      "seriesPre": "Clasificación ",
+      "seriesEm": "Serie",
+      "seriesMid": " — solo los rendimientos logrados con un barco estrictamente de serie. ",
+      "seriesCount": "{n} patrones",
+      "seriesEnd": " elegibles en la subclasificación actual.",
+      "allPre": "Puesto acumulado en todas las regatas de la temporada, todas las clases. ",
+      "allCount": "{n} patrones",
+      "allEnd": " activos en el circuito."
     },
     "me": {
-      "label": "Ta position",
-      "stats": "{points} pts · {races} courses · {podiums} podiums"
+      "label": "Tu posición",
+      "stats": "{points} pts · {races} regatas · {podiums} podios"
     },
-    "ariaPodium": "Podium saison",
+    "ariaPodium": "Podio temporada",
     "viewSwitch": {
-      "season": "Saison",
-      "races": "Par course",
-      "teams": "Équipes"
+      "season": "Temporada",
+      "races": "Por regata",
+      "teams": "Equipos"
     },
     "filters": {
-      "classLabel": "Classe",
-      "classAll": "Toutes",
-      "scopeLabel": "Périmètre",
+      "classLabel": "Clase",
+      "classAll": "Todas",
+      "scopeLabel": "Ámbito",
       "scope": {
-        "general": "Général",
-        "friends": "Amis",
-        "team": "Équipe",
-        "city": "Ville",
-        "dpt": "Département",
-        "region": "Région",
-        "country": "Pays"
+        "general": "General",
+        "friends": "Amigos",
+        "team": "Equipo",
+        "city": "Ciudad",
+        "dpt": "Departamento",
+        "region": "Región",
+        "country": "País"
       },
-      "configLabel": "Configuration",
+      "configLabel": "Configuración",
       "config": {
-        "all": "Toutes",
-        "series": "Série"
+        "all": "Todas",
+        "series": "Serie"
       }
     },
     "table": {
-      "rank": "Rang",
-      "skipper": "Skipper",
-      "points": "Points",
-      "races": "Courses",
-      "podiums": "Podiums",
-      "favoriteBoat": "Bateau favori",
-      "trend": "Tendance"
+      "rank": "Puesto",
+      "skipper": "Patrón",
+      "points": "Puntos",
+      "races": "Regatas",
+      "podiums": "Podios",
+      "favoriteBoat": "Barco favorito",
+      "trend": "Tendencia"
     },
-    "meBadge": "Moi",
-    "paginationLabel": "Pagination classement saison",
+    "meBadge": "Yo",
+    "paginationLabel": "Paginación clasificación temporada",
     "races": {
-      "eyebrowTrailing": "Classement par course",
+      "eyebrowTrailing": "Clasificación por regata",
       "liveSection": {
-        "eyebrow": "Mises à jour en temps réel",
-        "title": "En cours"
+        "eyebrow": "Actualizaciones en tiempo real",
+        "title": "En curso"
       },
       "pastSection": {
         "eyebrow": "Replays disponibles",
-        "title": "Terminées"
+        "title": "Terminadas"
       },
       "tier": {
-        "career": "Carrière",
+        "career": "Carrera",
         "free": "Libre"
       },
-      "skippers": "Skippers",
-      "chipLive": "En direct",
-      "chipFinished": "Terminée",
-      "empty": "Aucune course consultable pour le moment."
+      "skippers": "Patrones",
+      "chipLive": "En vivo",
+      "chipFinished": "Terminada",
+      "empty": "Ninguna regata consultable por el momento."
     },
     "race": {
-      "pickerLabel": "Course sélectionnée",
-      "skippers": "{n} skippers",
-      "chipLive": "En cours",
-      "changeRace": "Changer de course →",
+      "pickerLabel": "Regata seleccionada",
+      "skippers": "{n} patrones",
+      "chipLive": "En curso",
+      "changeRace": "Cambiar de regata →",
       "meStats": "DTF {dtf} NM · BSP {bsp} nds",
-      "ariaPodium": "Podium course",
-      "podiumDtfUnit": "NM restants",
+      "ariaPodium": "Podio regata",
+      "podiumDtfUnit": "NM restantes",
       "table": {
-        "rank": "Rang",
-        "skipper": "Skipper",
+        "rank": "Puesto",
+        "skipper": "Patrón",
         "dtf": "DTF",
         "bsp": "BSP",
-        "gapToLeader": "Écart leader",
-        "boat": "Bateau",
-        "trend": "Tendance"
+        "gapToLeader": "Distancia al líder",
+        "boat": "Barco",
+        "trend": "Tendencia"
       },
       "knotUnit": "nds",
       "nmUnit": "NM",
       "noGap": "—",
-      "paginationLabel": "Pagination classement course"
+      "paginationLabel": "Paginación clasificación regata"
     },
     "teams": {
-      "lede": "Rang cumulé des écuries, agrégé sur les résultats de tous leurs membres toutes classes confondues. ",
-      "ledeCount": "{n} équipes",
-      "ledeEnd": " actives sur le circuit.",
-      "myTeamLabel": "Ton équipe",
-      "myTeamStats": "{points} pts · {members} membres · {podiums} podiums",
-      "ariaPodium": "Podium équipes",
+      "lede": "Puesto acumulado de las cuadras, agregado sobre los resultados de todos sus miembros y todas las clases. ",
+      "ledeCount": "{n} equipos",
+      "ledeEnd": " activos en el circuito.",
+      "myTeamLabel": "Tu equipo",
+      "myTeamStats": "{points} pts · {members} miembros · {podiums} podios",
+      "ariaPodium": "Podio equipos",
       "table": {
-        "rank": "Rang",
-        "team": "Équipe",
-        "captain": "Capitaine",
-        "members": "Membres",
-        "points": "Points",
-        "podiums": "Podiums",
-        "trend": "Tendance"
+        "rank": "Puesto",
+        "team": "Equipo",
+        "captain": "Capitán",
+        "members": "Miembros",
+        "points": "Puntos",
+        "podiums": "Podios",
+        "trend": "Tendencia"
       },
-      "captainLabel": "Capitaine",
-      "myBadge": "Mon équipe"
+      "captainLabel": "Capitán",
+      "myBadge": "Mi equipo"
     }
   },
   "races": {
-    "eyebrowSeason": "Saison 2026 · Circuit offshore",
-    "eyebrowNum": "01 · Courses disponibles",
-    "title": "Courses",
+    "eyebrowSeason": "Temporada 2026 · Circuito offshore",
+    "eyebrowNum": "01 · Regatas disponibles",
+    "title": "Regatas",
     "counters": {
-      "live": "En cours",
-      "open": "Ouvertes",
-      "finished": "Terminées"
+      "live": "En curso",
+      "open": "Abiertas",
+      "finished": "Terminadas"
     },
     "filters": {
-      "classLabel": "Classe",
-      "classAll": "Toutes",
-      "statusLabel": "Statut",
-      "statusAll": "Tous"
+      "classLabel": "Clase",
+      "classAll": "Todas",
+      "statusLabel": "Estado",
+      "statusAll": "Todos"
     },
     "status": {
-      "DRAFT": "Brouillon",
-      "PUBLISHED": "Ouverte",
-      "BRIEFING": "Ouverte",
-      "LIVE": "En cours",
-      "FINISHED": "Terminée",
-      "ARCHIVED": "Archivée"
+      "DRAFT": "Borrador",
+      "PUBLISHED": "Abierta",
+      "BRIEFING": "Abierta",
+      "LIVE": "En curso",
+      "FINISHED": "Terminada",
+      "ARCHIVED": "Archivada"
     },
-    "empty": "Aucune course ne correspond — retire un filtre.",
+    "empty": "Ninguna regata coincide — quita un filtro.",
     "card": {
-      "registered": "Inscrits",
-      "distance": "Distance",
-      "reward": "Dotation"
+      "registered": "Inscritos",
+      "distance": "Distancia",
+      "reward": "Recompensa"
     }
   },
   "marina": {
-    "eyebrowSeason": "Saison 2026",
-    "eyebrowTrailing": "Ta carrière",
+    "eyebrowSeason": "Temporada 2026",
+    "eyebrowTrailing": "Tu carrera",
     "title": "Marina",
-    "heroLede": "Ta flotte personnelle. Chaque bateau te suit de course en course, gagne en performance avec tes <strong>upgrades</strong> et porte tes couleurs.",
+    "heroLede": "Tu flota personal. Cada barco te acompaña de regata en regata, gana rendimiento con tus <strong>mejoras</strong> y lleva tus colores.",
     "counters": {
-      "boats": "Bateaux",
-      "credits": "Crédits",
+      "boats": "Barcos",
+      "credits": "Créditos",
       "creditsUnit": "cr."
     },
-    "inventoryLink": "Inventaire upgrades →",
-    "errorBannerTitle": "Impossible de charger ta flotte.",
-    "errorBannerHelp": "Vérifie que tu es connecté (page",
-    "errorBannerHelpEnd": ") et que le game-engine tourne.",
-    "emptyBanner": "Aucun bateau pour l'instant. Inscris-toi à une course pour recevoir ta première coque.",
-    "ariaFleet": "Flotte du skipper",
-    "classCount": "{n}/{max} coques",
-    "classLocked": "Verrouillée",
-    "lockedTextPre": "Inscris-toi à une course ",
-    "lockedTextPost": " pour recevoir ta coque vierge.",
-    "lockedCta": "Voir les courses {label} →",
+    "inventoryLink": "Inventario de mejoras →",
+    "errorBannerTitle": "No se puede cargar tu flota.",
+    "errorBannerHelp": "Verifica que estás conectado (página",
+    "errorBannerHelpEnd": ") y que el game-engine está en marcha.",
+    "emptyBanner": "Aún no tienes ningún barco. Inscríbete en una regata para recibir tu primer casco.",
+    "ariaFleet": "Flota del patrón",
+    "classCount": "{n}/{max} cascos",
+    "classLocked": "Bloqueada",
+    "lockedTextPre": "Inscríbete en una regata ",
+    "lockedTextPost": " para recibir tu casco virgen.",
+    "lockedCta": "Ver las regatas {label} →",
     "boatCard": {
-      "stateInRace": "En course · {raceId}",
-      "stateIdle": "Au port",
-      "races": "Courses",
-      "podiums": "Podiums",
-      "condition": "Condition",
-      "cta": "Détail bateau"
+      "stateInRace": "En regata · {raceId}",
+      "stateIdle": "En puerto",
+      "races": "Regatas",
+      "podiums": "Podios",
+      "condition": "Condición",
+      "cta": "Detalle del barco"
     },
-    "newBoatLabel": "Nouveau {label}",
-    "errorUnknown": "Erreur inconnue",
+    "newBoatLabel": "Nuevo {label}",
+    "errorUnknown": "Error desconocido",
     "slots": {
-      "HULL": "Coque",
-      "MAST": "Mât",
-      "SAILS": "Voiles",
+      "HULL": "Casco",
+      "MAST": "Mástil",
+      "SAILS": "Velas",
       "FOILS": "Foils",
-      "KEEL": "Quille",
-      "ELECTRONICS": "Électronique",
-      "REINFORCEMENT": "Renfort"
+      "KEEL": "Quilla",
+      "ELECTRONICS": "Electrónica",
+      "REINFORCEMENT": "Refuerzo"
     },
     "tiers": {
-      "SERIE": "Série",
-      "BRONZE": "Bronze",
-      "SILVER": "Silver",
-      "GOLD": "Gold",
+      "SERIE": "Serie",
+      "BRONZE": "Bronce",
+      "SILVER": "Plata",
+      "GOLD": "Oro",
       "PROTO": "Proto"
     },
     "slotCard": {
-      "monotype": "Réglementation classe",
-      "lockedTooltip": "Modification impossible pendant la course",
-      "change": "Changer →"
+      "monotype": "Reglamento de clase",
+      "lockedTooltip": "Modificación imposible durante la regata",
+      "change": "Cambiar →"
     },
     "boatDetail": {
-      "ariaCrumbs": "Fil d'ariane",
+      "ariaCrumbs": "Migas de pan",
       "crumbBack": "← Marina",
-      "loadingError": "Impossible de charger ce bateau : {error}.",
-      "loadingErrorHelp": "Vérifie que tu es connecté (",
-      "loadingErrorHelpEnd": ") et que le game-engine tourne.",
-      "loadingState": "Chargement…",
-      "stateInRace": "En course · {raceId}",
-      "stateIdle": "Au port",
+      "loadingError": "No se puede cargar este barco: {error}.",
+      "loadingErrorHelp": "Verifica que estás conectado (",
+      "loadingErrorHelpEnd": ") y que el game-engine está en marcha.",
+      "loadingState": "Cargando…",
+      "stateInRace": "En regata · {raceId}",
+      "stateIdle": "En puerto",
       "actions": {
-        "lockedTooltip": "Impossible pendant la course",
-        "customize": "Personnaliser →",
-        "sellTooltip": "Vendre ce bateau",
-        "sell": "Vendre"
+        "lockedTooltip": "Imposible durante la regata",
+        "customize": "Personalizar →",
+        "sellTooltip": "Vender este barco",
+        "sell": "Vender"
       },
       "stats": {
-        "races": "Courses",
-        "podiums": "Podiums",
-        "avgCondition": "Condition moyenne",
-        "avgConditionDetail": "C:{hull} G:{rig} V:{sails} E:{elec}",
-        "upgradesInstalled": "Upgrades installés"
+        "races": "Regatas",
+        "podiums": "Podios",
+        "avgCondition": "Condición media",
+        "avgConditionDetail": "C:{hull} J:{rig} V:{sails} E:{elec}",
+        "upgradesInstalled": "Mejoras instaladas"
       },
       "perfSection": {
-        "eyebrow": "Profil",
-        "title": "Performance vs série",
-        "aside": "Cumul des effets des upgrades installés comparé à un bateau série."
+        "eyebrow": "Perfil",
+        "title": "Rendimiento vs serie",
+        "aside": "Suma de los efectos de las mejoras instaladas comparado con un barco de serie."
       },
       "autoRepair": {
-        "aria": "Réparation automatique",
-        "text": "Votre bateau est <strong>automatiquement remis en état</strong> au départ de chaque course. L'usure accumulée en mer est effacée à l'arrivée — concentrez-vous sur votre stratégie, pas sur la maintenance."
+        "aria": "Reparación automática",
+        "text": "Tu barco se <strong>repara automáticamente</strong> al inicio de cada regata. El desgaste acumulado en el mar se borra a la llegada — concéntrate en tu estrategia, no en el mantenimiento."
       },
       "equipmentSection": {
-        "eyebrow": "Performance",
-        "title": "Équipement",
-        "asideLocked": "Sept emplacements à configurer. Modifications bloquées pendant la course.",
-        "asideOpen": "Sept emplacements à configurer. Clique « Changer » pour modifier un slot."
+        "eyebrow": "Rendimiento",
+        "title": "Equipamiento",
+        "asideLocked": "Siete slots por configurar. Modificaciones bloqueadas durante la regata.",
+        "asideOpen": "Siete slots por configurar. Haz clic en «Cambiar» para modificar un slot."
       },
       "historySection": {
-        "eyebrow": "Palmarès",
-        "title": "Historique",
-        "asideCount": "{n, plural, one {# course bouclée} other {# courses bouclées}} avec ce bateau.",
-        "asideEmpty": "Aucune course disputée avec ce bateau.",
-        "emptyPre": "Inscris-toi à une course ",
-        "emptyPost": " pour démarrer son historique.",
+        "eyebrow": "Palmarés",
+        "title": "Historial",
+        "asideCount": "{n, plural, one {# regata terminada} other {# regatas terminadas}} con este barco.",
+        "asideEmpty": "Ninguna regata disputada con este barco.",
+        "emptyPre": "Inscríbete en una regata ",
+        "emptyPost": " para iniciar su historial.",
         "creditsGain": "+ {amount} cr.",
         "creditsNone": "—",
-        "paginationLabel": "Pagination historique du bateau"
+        "paginationLabel": "Paginación historial del barco"
       }
     },
     "inventory": {
-      "ariaCrumbs": "Fil d'ariane",
+      "ariaCrumbs": "Migas de pan",
       "crumbBack": "← Marina",
-      "crumbCurrent": "Inventaire",
-      "eyebrow": "Upgrades",
-      "eyebrowTrailing": "Ta carrière",
-      "title": "Inventaire",
-      "heroLede": "Tes upgrades en stock. Les items non installés peuvent être revendus contre des crédits. Les items installés doivent être retirés d'un bateau avant d'être revendus.",
+      "crumbCurrent": "Inventario",
+      "eyebrow": "Mejoras",
+      "eyebrowTrailing": "Tu carrera",
+      "title": "Inventario",
+      "heroLede": "Tus mejoras en stock. Los items no instalados pueden revenderse por créditos. Los items instalados deben retirarse de un barco antes de revenderse.",
       "counters": {
         "available": "Disponibles",
-        "installed": "Installés",
-        "credits": "Crédits"
+        "installed": "Instaladas",
+        "credits": "Créditos"
       },
-      "errorBanner": "Impossible de charger l'inventaire.",
+      "errorBanner": "No se puede cargar el inventario.",
       "available": {
         "title": "Disponibles",
-        "aside": "Revends un item pour récupérer 70% du prix payé. Achats administrateur non remboursés.",
-        "empty": "Aucun upgrade disponible en stock.",
+        "aside": "Revende un item para recuperar el 70% del precio pagado. Las compras admin no se reembolsan.",
+        "empty": "Ninguna mejora disponible en stock.",
         "metaSep": " · ",
-        "acquiredOn": "Acquis le {date}",
-        "sell": "Vendre",
-        "giftTag": "Cadeau"
+        "acquiredOn": "Adquirido el {date}",
+        "sell": "Vender",
+        "giftTag": "Regalo"
       },
       "installed": {
-        "title": "Installés",
-        "aside": "Items actuellement montés sur tes bateaux. Retire-les depuis la marina pour les revendre.",
-        "empty": "Aucun upgrade installé sur tes bateaux.",
-        "onBoat": " · Sur ",
-        "tag": "Équipé"
+        "title": "Instaladas",
+        "aside": "Items actualmente montados en tus barcos. Retíralos desde la marina para revenderlos.",
+        "empty": "Ninguna mejora instalada en tus barcos.",
+        "onBoat": " · En ",
+        "tag": "Equipado"
       },
       "confirmSell": {
-        "title": "Vendre cet upgrade ?",
-        "bodyMid": " — tu récupères ",
-        "bodyEnd": " du prix payé. Action irréversible.",
+        "title": "¿Vender esta mejora?",
+        "bodyMid": " — recuperas ",
+        "bodyEnd": " del precio pagado. Acción irreversible.",
         "bodyEm": "70%"
       },
       "noSlot": "—"
     },
     "slotDrawer": {
-      "title": "Changer — {slot}",
-      "ariaClose": "Fermer",
-      "tabInstall": "Installer ({n})",
-      "tabBuy": "Acheter",
-      "creditsAvailable": "Crédits disponibles",
+      "title": "Cambiar — {slot}",
+      "ariaClose": "Cerrar",
+      "tabInstall": "Instalar ({n})",
+      "tabBuy": "Comprar",
+      "creditsAvailable": "Créditos disponibles",
       "creditsValue": "{amount} cr.",
-      "loading": "Chargement…",
-      "emptyInstall": "Aucun item compatible en inventaire.",
-      "emptyBuy": "Aucun item disponible à l'achat.",
-      "badgeInstalledHere": "Installé sur ce bateau",
-      "badgeInstalledElsewhere": "Installé sur un autre bateau",
-      "badgeOwned": "{n, plural, one {# en inventaire} other {# en inventaire}}",
-      "ariaUnlock": "Critères de déblocage",
-      "unlockHeader": "Nécessite :",
+      "loading": "Cargando…",
+      "emptyInstall": "Ningún item compatible en el inventario.",
+      "emptyBuy": "Ningún item disponible para comprar.",
+      "badgeInstalledHere": "Instalado en este barco",
+      "badgeInstalledElsewhere": "Instalado en otro barco",
+      "badgeOwned": "{n, plural, one {# en inventario} other {# en inventario}}",
+      "ariaUnlock": "Criterios de desbloqueo",
+      "unlockHeader": "Requiere:",
       "unlock": {
-        "racesFinished": "{n} courses finies",
+        "racesFinished": "{n} regatas terminadas",
         "top10": "{n} top 10",
-        "avgRankPctMax": "Classement moyen ≤ {pct}%",
-        "currentStreak": "Série en cours ≥ {n}"
+        "avgRankPctMax": "Puesto medio ≤ {pct}%",
+        "currentStreak": "Racha en curso ≥ {n}"
       },
       "actions": {
-        "uninstall": "Retirer",
+        "uninstall": "Retirar",
         "unavailable": "Indisponible",
-        "install": "Installer",
-        "buyStock": "Acheter (stock)",
-        "buyAndInstall": "Acheter et installer"
+        "install": "Instalar",
+        "buyStock": "Comprar (stock)",
+        "buyAndInstall": "Comprar e instalar"
       },
       "tooltips": {
-        "noCredits": "Crédits insuffisants",
-        "addToInventory": "Ajouter une copie à ton inventaire"
+        "noCredits": "Créditos insuficientes",
+        "addToInventory": "Añadir una copia a tu inventario"
       },
-      "locked": "Verrouillé",
+      "locked": "Bloqueado",
       "confirm": {
-        "titleBuyInstall": "Acheter et installer ?",
-        "titleBuyStock": "Acheter et ajouter à l'inventaire ?",
-        "bodyMid": " pour ",
-        "bodyEndInstall": " — l'item sera installé immédiatement sur ce bateau.",
-        "bodyEndStock": " — l'item partira dans ton inventaire.",
-        "confirmInstall": "Acheter et installer",
-        "confirmStock": "Acheter"
+        "titleBuyInstall": "¿Comprar e instalar?",
+        "titleBuyStock": "¿Comprar y añadir al inventario?",
+        "bodyMid": " por ",
+        "bodyEndInstall": " — el item se instalará inmediatamente en este barco.",
+        "bodyEndStock": " — el item irá a tu inventario.",
+        "confirmInstall": "Comprar e instalar",
+        "confirmStock": "Comprar"
       }
     },
     "sellModal": {
-      "title": "Vendre {name} ?",
-      "warning": "Cette action est irréversible.",
-      "palmaresTitle": "Palmarès du bateau",
-      "races": "{n} courses",
-      "wins": "{n, plural, one {# victoire} other {# victoires}}",
-      "podiums": "{n, plural, one {# podium} other {# podiums}}",
+      "title": "¿Vender {name}?",
+      "warning": "Esta acción es irreversible.",
+      "palmaresTitle": "Palmarés del barco",
+      "races": "{n} regatas",
+      "wins": "{n, plural, one {# victoria} other {# victorias}}",
+      "podiums": "{n, plural, one {# podio} other {# podios}}",
       "top10": "{n} top 10",
-      "creditsTitle": "Crédits estimés",
+      "creditsTitle": "Créditos estimados",
       "creditsValue": "≥ {amount} cr.",
       "creditsZero": "0 cr.",
-      "creditsZeroNote": "Aucun palmarès — pas de gain.",
-      "upgradesTitle": "Upgrades retournés en inventaire ({n})",
-      "sellButton": "Vendre",
-      "sellButtonGain": "Vendre (+{amount} cr.)"
+      "creditsZeroNote": "Sin palmarés — sin ganancia.",
+      "upgradesTitle": "Mejoras devueltas al inventario ({n})",
+      "sellButton": "Vender",
+      "sellButtonGain": "Vender (+{amount} cr.)"
     }
   },
   "pageLegal": {
     "meta": {
-      "title": "Mentions légales · Nemo",
-      "description": "Éditeur, hébergeur et informations légales du service Nemo."
+      "title": "Aviso legal · Nemo",
+      "description": "Editor, alojamiento e información legal del servicio Nemo."
     },
-    "eyebrow": "Informations légales",
+    "eyebrow": "Información legal",
     "trailing": "LCEN · art. 6-III",
-    "title": "Mentions légales",
-    "intro": "Qui édite ce service, qui l'héberge, qui contacter. Rien de caché, tout dans la même page — conformément à la loi française pour la confiance dans l'économie numérique.",
-    "lastUpdated": "16 avril 2026",
+    "title": "Aviso legal",
+    "intro": "Quién edita este servicio, quién lo aloja, a quién contactar. Nada oculto, todo en la misma página — conforme a la ley francesa de confianza en la economía digital.",
+    "lastUpdated": "16 de abril de 2026",
     "sections": {
-      "editeur": "Éditeur",
-      "directeur": "Directeur de la publication",
-      "hebergeur": "Hébergeur",
-      "ip": "Propriété intellectuelle",
-      "marques": "Marques",
-      "responsabilite": "Limitation de responsabilité",
-      "contact": "Contact et signalement"
+      "editeur": "Editor",
+      "directeur": "Director de publicación",
+      "hebergeur": "Alojamiento",
+      "ip": "Propiedad intelectual",
+      "marques": "Marcas",
+      "responsabilite": "Limitación de responsabilidad",
+      "contact": "Contacto y notificación"
     }
   },
   "pageCgu": {
     "meta": {
       "title": "CGU · Nemo",
-      "description": "Conditions générales d'utilisation du circuit Nemo."
+      "description": "Condiciones generales de uso del circuito Nemo."
     },
-    "eyebrow": "Cadre contractuel",
+    "eyebrow": "Marco contractual",
     "trailing": "CGU",
-    "title": "Conditions générales d'utilisation",
-    "intro": "Les règles du jeu, de l'inscription à la résiliation. Écrites pour être lisibles, pas pour se planquer derrière du jargon juridique.",
-    "lastUpdated": "16 avril 2026",
+    "title": "Condiciones generales de uso",
+    "intro": "Las reglas del juego, desde el registro hasta la baja. Escritas para ser legibles, no para esconderse tras jerga jurídica.",
+    "lastUpdated": "16 de abril de 2026",
     "sections": {
-      "objet": "Objet",
-      "acceptation": "Acceptation et modification",
-      "compte": "Compte joueur",
-      "regles": "Règles de jeu et fair-play",
-      "abonnement": "Abonnement Mode Carrière",
-      "ip": "Propriété intellectuelle",
-      "responsabilite": "Responsabilité",
-      "resiliation": "Résiliation",
-      "loi": "Loi applicable et juridiction"
+      "objet": "Objeto",
+      "acceptation": "Aceptación y modificación",
+      "compte": "Cuenta de jugador",
+      "regles": "Reglas de juego y fair-play",
+      "abonnement": "Suscripción Modo Carrera",
+      "ip": "Propiedad intelectual",
+      "responsabilite": "Responsabilidad",
+      "resiliation": "Baja",
+      "loi": "Ley aplicable y jurisdicción"
     }
   },
   "pagePrivacy": {
     "meta": {
-      "title": "Confidentialité · Nemo",
-      "description": "Politique de confidentialité et traitement des données personnelles de Nemo."
+      "title": "Privacidad · Nemo",
+      "description": "Política de privacidad y tratamiento de datos personales de Nemo."
     },
-    "eyebrow": "RGPD · Loi informatique et libertés",
-    "trailing": "Confidentialité",
-    "title": "Politique de confidentialité",
-    "intro": "Ce qu'on collecte, pourquoi, combien de temps on le garde, et comment tu peux tout récupérer ou tout effacer. Ton email ne sera jamais revendu.",
-    "lastUpdated": "16 avril 2026",
+    "eyebrow": "RGPD · Ley de protección de datos",
+    "trailing": "Privacidad",
+    "title": "Política de privacidad",
+    "intro": "Lo que recogemos, por qué, cuánto tiempo lo conservamos y cómo puedes recuperar o borrar todo. Tu correo nunca se venderá.",
+    "lastUpdated": "16 de abril de 2026",
     "sections": {
-      "responsable": "Responsable du traitement",
-      "donnees": "Données collectées",
-      "finalites": "Finalités et bases légales",
-      "destinataires": "Destinataires et sous-traitants",
-      "droits": "Tes droits",
-      "securite": "Sécurité",
-      "mineurs": "Mineurs"
+      "responsable": "Responsable del tratamiento",
+      "donnees": "Datos recogidos",
+      "finalites": "Finalidades y bases legales",
+      "destinataires": "Destinatarios y subcontratistas",
+      "droits": "Tus derechos",
+      "securite": "Seguridad",
+      "mineurs": "Menores"
     }
   },
   "pageCookies": {
     "meta": {
       "title": "Cookies · Nemo",
-      "description": "Politique d'utilisation des cookies et traceurs sur Nemo."
+      "description": "Política de uso de cookies y rastreadores en Nemo."
     },
-    "eyebrow": "Traceurs et consentement",
+    "eyebrow": "Rastreadores y consentimiento",
     "trailing": "Cookies",
-    "title": "Politique cookies",
-    "intro": "Uniquement ceux qu'il faut pour te connecter. Pas de tracking publicitaire, pas de pixel caché, pas de régie tierce.",
-    "lastUpdated": "1er mai 2026",
+    "title": "Política de cookies",
+    "intro": "Solo las necesarias para iniciar sesión. Sin tracking publicitario, sin píxel oculto, sin agencia tercera.",
+    "lastUpdated": "1 de mayo de 2026",
     "sections": {
-      "definition": "Qu'est-ce qu'un cookie",
-      "liste": "Cookies utilisés",
-      "pas-de-tracking": "Ce que nous ne faisons PAS",
-      "gestion": "Gérer tes cookies",
-      "evolution": "Évolution de cette politique"
+      "definition": "Qué es una cookie",
+      "liste": "Cookies utilizadas",
+      "pas-de-tracking": "Lo que NO hacemos",
+      "gestion": "Gestionar tus cookies",
+      "evolution": "Evolución de esta política"
     }
   },
   "news": {
-    "indexEyebrowNum": "01 · Actualités",
-    "indexEyebrowTrailing": "Saison 2026 · Circuit Nemo",
-    "indexTitle": "Journal de bord",
-    "indexLede": "Annonces de courses, ajustements de balance, interviews de skippers, nouveautés du jeu. Mis à jour par la rédaction Nemo.",
-    "indexAriaList": "Liste des actualités",
-    "indexEmpty": "Aucune actualité pour le moment.",
+    "indexEyebrowNum": "01 · Actualidad",
+    "indexEyebrowTrailing": "Temporada 2026 · Circuito Nemo",
+    "indexTitle": "Cuaderno de bitácora",
+    "indexLede": "Anuncios de regatas, ajustes de balance, entrevistas de patrones, novedades del juego. Mantenido por la redacción Nemo.",
+    "indexAriaList": "Lista de noticias",
+    "indexEmpty": "Ninguna noticia por el momento.",
     "article": {
-      "ariaCrumbs": "Fil d'ariane",
-      "crumbHome": "Accueil",
-      "crumbJournal": "Journal de bord",
-      "readingTime": "Lecture {min} min",
-      "publishedOnPre": "Publié le ",
-      "back": "Retour au journal de bord",
-      "relatedEyebrow": "Dans le journal",
-      "relatedTitle": "Lire aussi.",
-      "relatedAllLink": "Toutes les actualités",
+      "ariaCrumbs": "Migas de pan",
+      "crumbHome": "Inicio",
+      "crumbJournal": "Cuaderno de bitácora",
+      "readingTime": "Lectura {min} min",
+      "publishedOnPre": "Publicado el ",
+      "back": "Volver al cuaderno de bitácora",
+      "relatedEyebrow": "En el cuaderno",
+      "relatedTitle": "Lee también.",
+      "relatedAllLink": "Todas las noticias",
       "attributionPrefix": "— "
     }
   },
   "home": {
     "hero": {
-      "eyebrow": "Saison 2026 · Circuit Nemo",
+      "eyebrow": "Temporada 2026 · Circuito Nemo",
       "title": {
-        "line1": "Un bateau.",
-        "line2Pre": "Ta ",
-        "line2Em": "carrière",
+        "line1": "Un barco.",
+        "line2Pre": "Tu ",
+        "line2Em": "carrera",
         "line2Post": ".",
-        "line3": "Mille à mille."
+        "line3": "Milla a milla."
       },
-      "lede": "<strong>Nemo</strong> est un circuit de course offshore en ligne. Polaires réelles fournies par les constructeurs, météo <strong>GFS</strong> mise à jour toutes les 6 h, et un bateau qui te suit de course en course, façonné par tes victoires.",
-      "ctaPrimaryVisitor": "Créer un compte",
-      "ctaPrimaryPlayer": "Reprendre ma carrière",
-      "ctaSecondaryVisitor": "Voir les courses en direct",
-      "ctaSecondaryPlayer": "Voir les courses",
+      "lede": "<strong>Nemo</strong> es un circuito de regata offshore en línea. Polares reales aportadas por los astilleros, meteo <strong>GFS</strong> actualizada cada 6 h, y un barco que te acompaña de regata en regata, forjado por tus victorias.",
+      "ctaPrimaryVisitor": "Crear cuenta",
+      "ctaPrimaryPlayer": "Reanudar mi carrera",
+      "ctaSecondaryVisitor": "Ver las regatas en directo",
+      "ctaSecondaryPlayer": "Ver las regatas",
       "stats": {
-        "liveRaces": "courses en direct",
-        "racersOnWater": "skippers en mer",
-        "totalRegistered": "skippers inscrits"
+        "liveRaces": "regatas en directo",
+        "racersOnWater": "patrones en el mar",
+        "totalRegistered": "patrones inscritos"
       }
     },
     "pillars": {
-      "eyebrow": "02 · L'essentiel",
-      "title": "Voici Nemo.",
-      "lede": "Trois piliers qui font de Nemo un circuit de skipper : simulation fidèle, données partagées par tous, progression qui se gagne course après course.",
+      "eyebrow": "02 · Lo esencial",
+      "title": "Aquí está Nemo.",
+      "lede": "Tres pilares que hacen de Nemo un circuito de patrón: simulación fiel, datos compartidos para todos, progresión que se gana regata tras regata.",
       "polars": {
-        "num": "01 · Polaires",
-        "title": "Polaires réelles",
-        "body": "Les <strong>mêmes fichiers</strong> pour tous les joueurs, du Figaro III à l'Ultim. Fournis par les constructeurs, jamais modifiés. Ton bateau se comporte exactement comme dans la vraie vie."
+        "num": "01 · Polares",
+        "title": "Polares reales",
+        "body": "Los <strong>mismos archivos</strong> para todos los jugadores, del Figaro III al Ultim. Aportadas por los astilleros, nunca modificadas. Tu barco se comporta exactamente como en la vida real."
       },
       "weather": {
-        "num": "02 · Météo",
-        "title": "Météo réelle",
-        "body": "Les données <strong>GFS</strong> mises à jour toutes les 6 h, identiques côté moteur de jeu et côté routeurs tiers. Tes décisions tactiques se prennent sur les mêmes fichiers que ceux d'un skipper en vraie course."
+        "num": "02 · Meteo",
+        "title": "Meteo real",
+        "body": "Los datos <strong>GFS</strong> actualizados cada 6 h, idénticos en el motor de juego y en los routers de terceros. Tus decisiones tácticas se toman sobre los mismos archivos que un patrón en regata real."
       },
       "career": {
-        "num": "03 · Carrière",
-        "title": "Ton bateau, ta carrière",
-        "body": "Une <strong>seule coque</strong> qui te suit de course en course. Tes podiums financent tes upgrades — voiles, foils, électronique. Ta progression est la seule monnaie qui compte."
+        "num": "03 · Carrera",
+        "title": "Tu barco, tu carrera",
+        "body": "Un <strong>solo casco</strong> que te acompaña de regata en regata. Tus podios financian tus mejoras — velas, foils, electrónica. Tu progresión es la única moneda que cuenta."
       }
     },
     "liveRaces": {
-      "eyebrow": "03 · En direct",
-      "title": "Ça se joue maintenant.",
-      "link": "Voir toutes les courses",
-      "empty": "Aucune course en direct pour le moment — jette un œil aux courses ouvertes.",
-      "chipLive": "En direct",
-      "rewardLabel": "Dotation"
+      "eyebrow": "03 · En directo",
+      "title": "Se juega ahora.",
+      "link": "Ver todas las regatas",
+      "empty": "Ninguna regata en directo por el momento — echa un vistazo a las regatas abiertas.",
+      "chipLive": "En directo",
+      "rewardLabel": "Recompensa"
     },
     "career": {
-      "eyebrow": "04 · Carrière skipper",
-      "titleLine1": "Une seule ",
-      "titleEm": "coque",
+      "eyebrow": "04 · Carrera de patrón",
+      "titleLine1": "Un solo ",
+      "titleEm": "casco",
       "titleLine1End": ".",
-      "titleLine2": "Mille milles.",
-      "body1": "Le <strong>mode Carrière</strong>, c'est la version longue de Nemo. Tu démarres avec un bateau récent mais vierge d'équipement — Figaro, Class40, IMOCA ou Ultim selon la course qui te lance. Chaque épreuve que tu finis laisse une trace : un podium, des crédits, une upgrade.",
-      "emphasis": "Ton bateau vieillit avec toi, prend des couleurs, gagne en performance.",
-      "body2": "Les crédits se gagnent en course et financent tes upgrades — voiles, foils, électronique. Le <strong>mode Carrière</strong> te donne accès à la persistance de ton bateau, à ta progression sur la saison, et au palmarès officiel du circuit.",
-      "cta": "Rejoindre le circuit",
-      "marinaPreviewEyebrow": "Aperçu Marina",
-      "marinaPreviewTitle": "Ta flotte — Saison 2026",
-      "ultimToUnlock": "Ultim · à débloquer",
-      "creditsLabel": "Crédits",
-      "podiumsLabel": "Podiums",
-      "upgradesLabel": "Upgrades",
+      "titleLine2": "Mil millas.",
+      "body1": "El <strong>Modo Carrera</strong> es la versión larga de Nemo. Empiezas con un barco reciente pero virgen de equipamiento — Figaro, Class40, IMOCA o Ultim según la regata que te lance. Cada prueba que terminas deja huella: un podio, créditos, una mejora.",
+      "emphasis": "Tu barco envejece contigo, gana colores, gana rendimiento.",
+      "body2": "Los créditos se ganan en regata y financian tus mejoras — velas, foils, electrónica. El <strong>Modo Carrera</strong> te da acceso a la persistencia de tu barco, a tu progresión durante la temporada y al palmarés oficial del circuito.",
+      "cta": "Unirse al circuito",
+      "marinaPreviewEyebrow": "Vista previa Marina",
+      "marinaPreviewTitle": "Tu flota — Temporada 2026",
+      "ultimToUnlock": "Ultim · por desbloquear",
+      "creditsLabel": "Créditos",
+      "podiumsLabel": "Podios",
+      "upgradesLabel": "Mejoras",
       "creditsUnit": "cr",
-      "podiumsUnit": "saison",
+      "podiumsUnit": "temporada",
       "upgradesUnit": "/18"
     },
     "newsGrid": {
-      "eyebrow": "05 · Actualités · Saison 2026",
-      "title": "Journal de bord.",
-      "link": "Toutes les actualités"
+      "eyebrow": "05 · Actualidad · Temporada 2026",
+      "title": "Cuaderno de bitácora.",
+      "link": "Toda la actualidad"
     },
     "podium": {
-      "eyebrow": "06 · Circuit Nemo",
-      "title": "Ils sont en tête.",
-      "link": "Classement complet",
-      "flagAria": "Drapeau {country}"
+      "eyebrow": "06 · Circuito Nemo",
+      "title": "Van en cabeza.",
+      "link": "Clasificación completa",
+      "flagAria": "Bandera de {country}"
     },
     "svg": {
       "compass": {
@@ -1435,9 +1435,9 @@
         "hLabel": "H"
       },
       "pillarCareer": {
-        "blank": "VIERGE",
-        "custom": "CUSTOMISÉ",
-        "palmares": "PALMARÈS"
+        "blank": "VIRGEN",
+        "custom": "PERSONALIZADO",
+        "palmares": "PALMARÉS"
       }
     }
   }
