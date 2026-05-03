@@ -270,6 +270,39 @@ export function createProgSlice(set: SetFn) {
       })),
 
     /**
+     * Remove AT_TIME cap and sail orders whose trigger time is strictly in
+     * the past from BOTH committed and draft. The engine has already fired
+     * them (or is firing them this tick); pruning the client mirror keeps
+     * the panel queue and projection markers from showing already-executed
+     * orders. Imminent (now <= trigger.time) orders are preserved so the
+     * engine still receives them on the next replaceQueue.
+     *
+     * Returns the previous state when nothing changes — referential identity
+     * matters for downstream subscribers (projection recompute).
+     */
+    pruneObsoleteAtTimeOrders: (nowSec: number) => set((s) => {
+      function prune(d: ProgDraft): ProgDraft {
+        const capOrders = d.capOrders.filter(
+          (o) => !(o.trigger.type === 'AT_TIME' && o.trigger.time < nowSec),
+        );
+        const sailOrders = d.sailOrders.filter(
+          (o) => !(o.trigger.type === 'AT_TIME' && o.trigger.time < nowSec),
+        );
+        if (
+          capOrders.length === d.capOrders.length
+          && sailOrders.length === d.sailOrders.length
+        ) {
+          return d;
+        }
+        return { ...d, capOrders, sailOrders };
+      }
+      const committed = prune(s.prog.committed);
+      const draft = prune(s.prog.draft);
+      if (committed === s.prog.committed && draft === s.prog.draft) return s;
+      return { prog: { ...s.prog, committed, draft } };
+    }),
+
+    /**
      * Remove WPs that have been captured by the boat from BOTH committed and
      * draft. Cascades: drops sail orders + finalCap referencing removed WPs.
      *

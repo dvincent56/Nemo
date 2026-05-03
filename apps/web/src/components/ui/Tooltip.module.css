@@ -5,6 +5,12 @@
 
 .tip {
   background: #1a2840;
+  /* Tooltip background matches the page text color (var(--t1) = #1a2840), so
+   * any descendant that doesn't set its own color would render dark-on-dark
+   * and be invisible. Set the inherited color to ivory here so rich content
+   * (`content` prop) gets a legible default — `.text` (plain tooltips) keeps
+   * its own explicit color for parity. */
+  color: #f5f0e8;
   border: 1px solid rgba(245, 240, 232, 0.20);
   border-radius: 4px;
   padding: 6px 10px;

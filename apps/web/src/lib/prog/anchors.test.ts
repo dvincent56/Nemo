@@ -74,15 +74,20 @@ describe('defaultSailAnchor', () => {
 });
 
 describe('isObsoleteAtTime', () => {
-  it('returns true when AT_TIME.time < now + 5min', () => {
-    expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW + 60 }, NOW)).toBe(true);
+  it('returns true when AT_TIME.time is strictly in the past', () => {
+    expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW - 1 }, NOW)).toBe(true);
   });
 
-  it('returns false when AT_TIME.time === now + 5min (boundary)', () => {
+  it('returns false when AT_TIME.time === now (boundary, not yet fired)', () => {
+    expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW }, NOW)).toBe(false);
+  });
+
+  it('returns false when AT_TIME.time is imminent (within 5min ahead)', () => {
+    expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW + 60 }, NOW)).toBe(false);
     expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW + FLOOR_OFFSET_SEC }, NOW)).toBe(false);
   });
 
-  it('returns false when AT_TIME.time > now + 5min', () => {
+  it('returns false when AT_TIME.time > now', () => {
     expect(isObsoleteAtTime({ type: 'AT_TIME', time: NOW + FLOOR_OFFSET_SEC + 1 }, NOW)).toBe(false);
   });
 

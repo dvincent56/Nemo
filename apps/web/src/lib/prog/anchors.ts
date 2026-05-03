@@ -58,8 +58,14 @@ export function defaultSailAnchor(draft: ProgDraft, nowSec: number): number {
 }
 
 /**
- * True when an AT_TIME trigger is below the floor (now + 5min).
+ * True when an AT_TIME trigger is in the past (already fired by the engine).
  * AT_WAYPOINT and IMMEDIATE triggers are never obsolete by this definition.
+ *
+ * The 5-min floor (`FLOOR_OFFSET_SEC`) only applies to *creating* new orders
+ * (cf. `floorForNow`). Existing orders within now..now+5min are imminent but
+ * still going to fire normally — they are NOT obsolete. Past orders are
+ * pruned automatically by PlayClient's prog tick so they don't linger in
+ * the queue/projection.
  */
 export function isObsoleteAtTime(
   trigger:
@@ -69,7 +75,7 @@ export function isObsoleteAtTime(
   nowSec: number,
 ): boolean {
   if (trigger.type !== 'AT_TIME') return false;
-  return trigger.time < nowSec + FLOOR_OFFSET_SEC;
+  return trigger.time < nowSec;
 }
 
 /**

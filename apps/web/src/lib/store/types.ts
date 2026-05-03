@@ -341,6 +341,7 @@ export interface GameStore extends RouterActions {
   setProgNotice: (notice: import('@/lib/prog/types').ProgNotice | null) => void;
   setEditorPreview: (preview: import('@/lib/prog/types').ProgEditorPreview | null) => void;
   removeCapturedWps: (removedIds: string[]) => void;
+  pruneObsoleteAtTimeOrders: (nowSec: number) => void;
   applyMessages: (msgs: Record<string, unknown>[]) => void;
   setPreview: (patch: Partial<import('./previewSlice').PreviewState>) => void;
   resetPreview: () => void;
