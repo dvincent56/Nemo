@@ -20,7 +20,7 @@ export default function ProgBanner({ obsoleteCount, onDismiss }: ProgBannerProps
           {obsoleteCount} ORDRE{obsoleteCount > 1 ? 'S' : ''} OBSOLÈTE{obsoleteCount > 1 ? 'S' : ''}
         </div>
         <div className={styles.desc}>
-          Heure passée sous le seuil de <b>now + 5min</b>. Sera{obsoleteCount > 1 ? 'nt' : ''} retiré{obsoleteCount > 1 ? 's' : ''} à la confirmation.
+          Heure passée sous le seuil de <b>maintenant + 5min</b>. {obsoleteCount > 1 ? 'Seront' : 'Sera'} retiré{obsoleteCount > 1 ? 's' : ''} à la confirmation.
         </div>
       </div>
       <button type="button" className={styles.close} onClick={onDismiss} aria-label="Fermer l'alerte">

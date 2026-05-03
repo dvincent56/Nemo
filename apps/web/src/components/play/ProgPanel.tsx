@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useTranslations } from 'next-intl';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore, commitDraft, firstEffectiveHeading } from '@/lib/store';
 import type { ProgMode } from '@/lib/prog/types';
@@ -19,6 +20,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deepEqDraft } from '@/lib/prog/equality';
 
 export default function ProgPanel(): ReactElement {
+  const t = useTranslations('play.progPanel');
   const draft = useGameStore((s) => s.prog.draft);
   const committed = useGameStore((s) => s.prog.committed);
   const resetDraft = useGameStore((s) => s.resetDraft);
@@ -290,8 +292,8 @@ export default function ProgPanel(): ReactElement {
         // by wpOrders.length >= 1.
         return (
           <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
-            Aucun WP disponible.{' '}
-            <button type="button" onClick={() => setEditing(null)}>Fermer</button>
+            {t('noWp')}{' '}
+            <button type="button" onClick={() => setEditing(null)}>{t('close')}</button>
           </div>
         );
       }
@@ -314,14 +316,14 @@ export default function ProgPanel(): ReactElement {
     // Defensive fallback for unknown editor kinds
     return (
       <div style={{ padding: 16, color: 'rgba(245,240,232,0.72)' }}>
-        Editor placeholder — kind={(editing as { kind: string }).kind}
+        {t('editorPlaceholder', { kind: (editing as { kind: string }).kind })}
         {' '}
         <button
           type="button"
           style={{ marginLeft: 8, padding: '4px 8px' }}
           onClick={() => setEditing(null)}
         >
-          Fermer
+          {t('close')}
         </button>
       </div>
     );
@@ -379,13 +381,13 @@ export default function ProgPanel(): ReactElement {
 
       <ConfirmDialog
         open={deleteDialog !== null}
-        title="Supprimer cet ordre ?"
+        title={t('deleteTitle')}
         body={
           deleteDialog?.kind === 'wp' && wpHasSailOrder(deleteDialog.id)
-            ? 'Ce WP est référencé par un ordre voile. Les deux seront supprimés.'
-            : 'Cette action est irréversible.'
+            ? t('deleteWpRef')
+            : t('deleteIrreversible')
         }
-        confirmLabel="Supprimer"
+        confirmLabel={t('delete')}
         tone="danger"
         onConfirm={() => {
           if (!deleteDialog) return;
@@ -401,9 +403,9 @@ export default function ProgPanel(): ReactElement {
 
       <ConfirmDialog
         open={clearAllOpen}
-        title="Tout effacer ?"
-        body="Cela vide la programmation en cours d'édition. Vous pouvez annuler avec « Annuler »."
-        confirmLabel="Tout effacer"
+        title={t('clearAllTitle')}
+        body={t('clearAllBody')}
+        confirmLabel={t('clearAll')}
         tone="danger"
         onConfirm={() => {
           clearAllOrders();

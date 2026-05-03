@@ -74,6 +74,11 @@ const config = [
       'src/components/play/RankingPanel.tsx',
       'src/components/play/LayersWidget.tsx',
       'src/components/play/MapAppearanceModal.tsx',
+      'src/components/play/SailPanel.tsx',
+      'src/components/play/ConfirmReplaceProgModal.tsx',
+      'src/components/play/RouterPanel.tsx',
+      'src/components/play/RouterControls.tsx',
+      'src/components/play/ProgPanel.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.

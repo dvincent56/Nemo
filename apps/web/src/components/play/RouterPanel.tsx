@@ -1,4 +1,5 @@
 'use client';
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import RouterControls from './RouterControls';
 import { formatDMS } from './formatDMS';
@@ -10,6 +11,7 @@ export default function RouterPanel({
 }: {
   onApply: (mode: 'WAYPOINTS' | 'CAP') => void;
 }): React.ReactElement {
+  const t = useTranslations('play.routerPanel');
   const phase = useGameStore((s) => s.router.phase);
   const dest = useGameStore((s) => s.router.destination);
   const route = useGameStore((s) => s.router.computedRoute);
@@ -28,11 +30,11 @@ export default function RouterPanel({
     <div className={`${styles.panel} ${phase === 'placing' ? styles.panelPlacing : ''}`}>
       {/* DEPART (auto = boat position) */}
       <section className={styles.section}>
-        <div className={styles.fieldLabel}>Point de départ</div>
+        <div className={styles.fieldLabel}>{t('departureLabel')}</div>
         <div className={styles.card}>
           <Anchor size={18} strokeWidth={2} className={styles.cardIcon} />
           <div className={styles.cardMain}>
-            <div className={styles.cardTitle}>Position bateau</div>
+            <div className={styles.cardTitle}>{t('boatPosition')}</div>
             <div className={styles.cardMeta}>
               {typeof lat === 'number' ? formatDMS(lat, true) : '—'} ·{' '}
               {typeof lon === 'number' ? formatDMS(lon, false) : '—'}
@@ -43,33 +45,33 @@ export default function RouterPanel({
 
       {/* ARRIVAL */}
       <section className={styles.section}>
-        <div className={styles.fieldLabel}>Point d&apos;arrivée</div>
+        <div className={styles.fieldLabel}>{t('arrivalLabel')}</div>
         {phase === 'placing' ? (
           <div className={styles.placingHint}>
             <div className={styles.placingIcon}>📍</div>
             <div className={styles.placingMsg}>
-              Cliquez (ou tapez) sur la carte<br />pour placer l&apos;arrivée
+              {t('placingHint')}<br />{t('placingHint2')}
             </div>
             <button type="button" className={styles.cancelBtn} onClick={exitPlacing}>
-              Annuler
+              {t('cancelPlacing')}
             </button>
           </div>
         ) : dest ? (
           <div className={styles.card}>
             <span className={styles.cardIcon}>📍</span>
             <div className={styles.cardMain}>
-              <div className={styles.cardTitle}>Arrivée</div>
+              <div className={styles.cardTitle}>{t('destTitle')}</div>
               <div className={styles.cardMeta}>
                 {formatDMS(dest.lat, true)} · {formatDMS(dest.lon, false)}
               </div>
             </div>
             <button type="button" className={styles.cardAside} onClick={enterPlacing}>
-              Modifier
+              {t('edit')}
             </button>
           </div>
         ) : (
           <button type="button" className={styles.placeBtn} onClick={enterPlacing}>
-            <span className={styles.placeBtnPlus}>+</span> Définir l&apos;arrivée
+            <span className={styles.placeBtnPlus}>+</span> {t('definePlace')}
           </button>
         )}
       </section>
@@ -80,8 +82,8 @@ export default function RouterPanel({
       {phase === 'calculating' && (
         <section className={styles.calculating}>
           <div className={styles.spinner} />
-          <div className={styles.calcLabel}>Calcul en cours…</div>
-          <div className={styles.calcSub}>Fermer le panneau pour annuler</div>
+          <div className={styles.calcLabel}>{t('calculating')}</div>
+          <div className={styles.calcSub}>{t('calcSub')}</div>
         </section>
       )}
 
@@ -105,10 +107,11 @@ function RouteButton({
   isGridLoaded: boolean;
   hasDest: boolean;
 }): React.ReactElement {
+  const t = useTranslations('play.routerPanel');
   const hint = !hasDest
-    ? 'Définir l’arrivée pour calculer'
+    ? t('hintNoDest')
     : !isGridLoaded
-    ? 'Météo en chargement…'
+    ? t('hintNoGrid')
     : null;
   return (
     <button
@@ -117,7 +120,7 @@ function RouteButton({
       disabled={!canRoute}
       onClick={() => window.dispatchEvent(new CustomEvent('nemo:router:route'))}
     >
-      Router
+      {t('routeBtn')}
       {hint && <span className={styles.routeBtnSub}>{hint}</span>}
     </button>
   );
@@ -130,6 +133,7 @@ function ResultsBlock({
   plan: import('@nemo/routing').RoutePlan;
   onApply: (mode: 'WAYPOINTS' | 'CAP') => void;
 }): React.ReactElement {
+  const t = useTranslations('play.routerPanel.results');
   const totalNm = plan.totalDistanceNm.toFixed(0);
   // `plan.eta` is an absolute timestamp in ms (arrivalPoint.timeMs).
   // The duration is eta − polyline[0].timeMs (start), in ms. If the route
@@ -140,16 +144,16 @@ function ResultsBlock({
   const etaM = durationSec !== null ? Math.floor((durationSec % 3600) / 60) : 0;
   return (
     <section className={styles.results}>
-      <div className={styles.resultsHead}>✓ Route calculée</div>
+      <div className={styles.resultsHead}>{t('head')}</div>
       <div className={styles.resultsGrid}>
         <div>
-          <span className={styles.metricLabel}>Distance</span>
+          <span className={styles.metricLabel}>{t('distance')}</span>
           <span className={styles.metricValue}>
             {totalNm}<span className={styles.metricUnit}>nm</span>
           </span>
         </div>
         <div>
-          <span className={styles.metricLabel}>ETA</span>
+          <span className={styles.metricLabel}>{t('eta')}</span>
           <span className={styles.metricValue}>
             {durationSec !== null ? (
               <>
@@ -161,24 +165,24 @@ function ResultsBlock({
           </span>
         </div>
         <div>
-          <span className={styles.metricLabel}>Calcul</span>
+          <span className={styles.metricLabel}>{t('compute')}</span>
           <span className={styles.metricValue}>
             {(plan.computeTimeMs / 1000).toFixed(1)}<span className={styles.metricUnit}>s</span>
           </span>
         </div>
         <div>
-          <span className={styles.metricLabel}>Manœuvres</span>
+          <span className={styles.metricLabel}>{t('maneuvers')}</span>
           <span className={styles.metricValue}>{plan.capSchedule.length}</span>
         </div>
       </div>
       {!plan.reachedGoal && (
-        <div className={styles.warning}>⚠ Route incomplète : météo limitée à J+7</div>
+        <div className={styles.warning}>{t('warning')}</div>
       )}
       <button type="button" className={styles.applyPrimary} onClick={() => onApply('WAYPOINTS')}>
-        → Points de contrôle
+        {t('applyWaypoints')}
       </button>
       <button type="button" className={styles.applySecondary} onClick={() => onApply('CAP')}>
-        → Programmation de cap
+        {t('applyCap')}
       </button>
     </section>
   );

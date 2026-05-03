@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { Polar, SailId } from '@nemo/shared-types';
 import { sendOrder, useGameStore } from '@/lib/store';
 import { loadPolar, getCachedPolar, getPolarSpeed } from '@/lib/polar';
@@ -13,6 +14,7 @@ import {
 import styles from './SailPanel.module.css';
 
 export default function SailPanel(): React.ReactElement {
+  const t = useTranslations('play.sailPanel');
   const sailState = useGameStore((s) => s.sail);
   const { currentSail, sailAuto, transitionStartMs, transitionEndMs } = sailState;
   const { twa, tws, boatClass, bspBaseMultiplier } = useGameStore((s) => s.hud);
@@ -169,9 +171,7 @@ export default function SailPanel(): React.ReactElement {
     <div>
       {isLockedByProg && lockoutOrder && (
         <div className={styles.lockoutBanner} role="status">
-          Vous avez programmé un changement de voile dans quelques minutes.
-          Vous ne pouvez pas changer de voile manuellement sans retirer votre
-          programmation.
+          {t('lockoutBanner')}
         </div>
       )}
 
@@ -183,7 +183,7 @@ export default function SailPanel(): React.ReactElement {
           onClick={() => { if (!sailAuto) toggleAuto(); }}
           disabled={isLockedByProg}
         >
-          Auto
+          {t('modeAuto')}
         </button>
         <button
           type="button"
@@ -191,7 +191,7 @@ export default function SailPanel(): React.ReactElement {
           onClick={() => { if (sailAuto) toggleAuto(); }}
           disabled={isLockedByProg}
         >
-          Manuel
+          {t('modeManual')}
         </button>
       </div>
 
@@ -228,7 +228,7 @@ export default function SailPanel(): React.ReactElement {
                 {/* Transition progress bar — only on active sail during penalty */}
                 {isActive && isTransitioning && (
                   <div className={styles.transitionWrap}>
-                    <span className={styles.transitionLabel}>Manœuvre en cours · {remainingSec}s</span>
+                    <span className={styles.transitionLabel}>{t('transitionInProgress', { sec: remainingSec })}</span>
                     <div className={styles.transitionBar}>
                       <div
                         className={styles.transitionBarFill}
@@ -250,8 +250,8 @@ export default function SailPanel(): React.ReactElement {
           <span className={styles.confirmText}>
             {currentSail} → <strong>{candidateSail}</strong>
           </span>
-          <button type="button" className={styles.confirmCancel} onClick={cancelSail}>Annuler</button>
-          <button type="button" className={styles.confirmOk} onClick={confirmSail}>Confirmer</button>
+          <button type="button" className={styles.confirmCancel} onClick={cancelSail}>{t('cancel')}</button>
+          <button type="button" className={styles.confirmOk} onClick={confirmSail}>{t('confirm')}</button>
         </div>
       )}
     </div>
