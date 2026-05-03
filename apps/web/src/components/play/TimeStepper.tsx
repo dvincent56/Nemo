@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, type ReactElement } from 'react';
 import { Minus, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { holdAccelerationCurve } from './TimeStepper.curve';
 import styles from './TimeStepper.module.css';
 
@@ -66,6 +67,7 @@ export default function TimeStepper({
   nowSec,
   className,
 }: TimeStepperProps): ReactElement {
+  const t = useTranslations('play.timeStepper');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const valueRef = useRef(value);
   useEffect(() => { valueRef.current = value; }, [value]);
@@ -131,7 +133,7 @@ export default function TimeStepper({
         type="button"
         className={styles.btnHour}
         disabled={blockMinus}
-        aria-label="Reculer d'une heure"
+        aria-label={t('back1h')}
         onPointerDown={(e) => {
           if (blockMinus) return;
           safeCapture(e.currentTarget, e.pointerId);
@@ -142,14 +144,14 @@ export default function TimeStepper({
         onPointerCancel={stop}
       >
         <Minus size={22} strokeWidth={2.5} />
-        <span className={styles.btnUnit}>1h</span>
+        <span className={styles.btnUnit}>{t('unitH')}</span>
       </button>
 
       <button
         type="button"
         className={styles.btnMin}
         disabled={blockMinus}
-        aria-label="Reculer d'une minute"
+        aria-label={t('back1m')}
         onPointerDown={(e) => {
           if (blockMinus) return;
           safeCapture(e.currentTarget, e.pointerId);
@@ -160,7 +162,7 @@ export default function TimeStepper({
         onPointerCancel={stop}
       >
         <Minus size={16} strokeWidth={2.5} />
-        <span className={styles.btnUnit}>1m</span>
+        <span className={styles.btnUnit}>{t('unitM')}</span>
       </button>
 
       <div className={styles.display}>
@@ -172,7 +174,7 @@ export default function TimeStepper({
         type="button"
         className={styles.btnMin}
         disabled={blockPlus}
-        aria-label="Avancer d'une minute"
+        aria-label={t('fwd1m')}
         onPointerDown={(e) => {
           if (blockPlus) return;
           safeCapture(e.currentTarget, e.pointerId);
@@ -183,14 +185,14 @@ export default function TimeStepper({
         onPointerCancel={stop}
       >
         <Plus size={16} strokeWidth={2.5} />
-        <span className={styles.btnUnit}>1m</span>
+        <span className={styles.btnUnit}>{t('unitM')}</span>
       </button>
 
       <button
         type="button"
         className={styles.btnHour}
         disabled={blockPlus}
-        aria-label="Avancer d'une heure"
+        aria-label={t('fwd1h')}
         onPointerDown={(e) => {
           if (blockPlus) return;
           safeCapture(e.currentTarget, e.pointerId);
@@ -201,17 +203,17 @@ export default function TimeStepper({
         onPointerCancel={stop}
       >
         <Plus size={22} strokeWidth={2.5} />
-        <span className={styles.btnUnit}>1h</span>
+        <span className={styles.btnUnit}>{t('unitH')}</span>
       </button>
 
       {blockMinus && (
         <div className={styles.floorWarning}>
-          ⛔ Délai mini : now + 5min
+          {t('floorMin')}
         </div>
       )}
       {!blockMinus && blockPlus && (
         <div className={styles.floorWarning}>
-          ⛔ Plafond : J+5 (limite météo)
+          {t('floorMax')}
         </div>
       )}
     </div>

@@ -415,6 +415,23 @@
       "heading": "Cap",
       "twa": "TWA"
     },
+    "zoom": {
+      "ariaGroup": "Zoom carte",
+      "tooltipPlus": "Zoom +",
+      "tooltipMinus": "Zoom −",
+      "ariaPlus": "Zoomer",
+      "ariaMinus": "Dézoomer"
+    },
+    "timeStepper": {
+      "back1h": "Reculer d'une heure",
+      "back1m": "Reculer d'une minute",
+      "fwd1m": "Avancer d'une minute",
+      "fwd1h": "Avancer d'une heure",
+      "unitH": "1h",
+      "unitM": "1m",
+      "floorMin": "⛔ Délai mini : now + 5min",
+      "floorMax": "⛔ Plafond : J+5 (limite météo)"
+    },
     "compass": {
       "tooltips": {
         "lockedOn": "TWA verrouillé — le cap suit le vent",

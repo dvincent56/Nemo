@@ -89,6 +89,8 @@ const config = [
       'src/components/play/prog/SailEditor.tsx',
       'src/components/play/compass/CompassReadouts.tsx',
       'src/components/play/compass/CompassLockToggle.tsx',
+      'src/components/play/TimeStepper.tsx',
+      'src/components/play/ZoomCompact.tsx',
       'src/components/play/timeline/TimelineHeader.tsx',
       'src/components/play/timeline/TimelineControls.tsx',
       'src/components/play/timeline/TimelineTrack.tsx',
