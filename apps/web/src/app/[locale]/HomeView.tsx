@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Flag, NewsCard } from '@/components/ui';
 import type { RaceSummary } from '@/lib/api';
-import type { NewsItem } from './home-data';
+import type { NewsItem } from '@/lib/home-data';
 import type { SkipperRanking } from './ranking/data';
 import { CLASS_LABEL } from '@/lib/boat-classes';
 import { HomeHeroTopbar } from './HomeHeroTopbar';

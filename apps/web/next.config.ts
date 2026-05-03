@@ -9,7 +9,12 @@ const config: NextConfig = {
   reactCompiler: true,
   compress: true,
   transpilePackages: ['@nemo/shared-types', '@nemo/game-balance', '@nemo/game-engine-core', '@nemo/routing'],
-  typedRoutes: true,
+  // typedRoutes désactivé en PR 2 i18n : tous les `<Link href="/...">`
+  // existants pointent vers des paths non-localisés (/marina, /races) qui
+  // n'existent plus dans le graphe de routes (tout est sous /[locale]/...).
+  // Re-activation prévue en Plans 3-6 après migration des Link vers le
+  // helper localisé next-intl (createNavigation dans @/i18n/routing).
+  typedRoutes: false,
   // Pin the workspace root so Turbopack doesn't walk up and pick a sibling
   // worktree's pnpm-workspace.yaml — keeps dev builds correct when running
   // from .worktrees/*. cwd is apps/web when invoked via pnpm --filter.

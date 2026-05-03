@@ -28,15 +28,20 @@ const config = [
       '@typescript-eslint/no-require-imports': 'warn',
     },
   },
-  // i18n PR 1 : interdit les strings littérales sous [locale]/**.
-  // Le glob s'élargira aux composants et au reste de l'app dans les PR suivantes.
+  // i18n : interdit les strings littérales dans les fichiers déjà migrés
+  // sur next-intl. Au fur et à mesure des Plans 3-6, on ajoute les fichiers
+  // / dossiers migrés à cette liste de globs. PR 2 ne couvre que le shell
+  // (layout) — les routes elles-mêmes contiennent encore des strings FR
+  // en dur, leur migration vient en Plans 3-6.
   {
-    files: ['src/app/\\[locale\\]/**/*.{tsx,ts}'],
+    files: [
+      'src/app/\\[locale\\]/layout.tsx',
+    ],
     rules: {
       'react/jsx-no-literals': ['error', {
         noStrings: true,
-        ignoreProps: false,
-        noAttributeStrings: true,
+        ignoreProps: true,
+        noAttributeStrings: false,
         allowedStrings: ['—', '·', '•', '/', ':', '|', '×', '→', '↑', '↓', '+', '-'],
       }],
     },

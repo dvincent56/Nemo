@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Eyebrow, Flag } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
 import { parseDevToken } from '@/lib/access';
-import { getTeamsRanking, type TeamRankingEntry } from '@/app/team/data';
+import { getTeamsRanking, type TeamRankingEntry } from '@/app/[locale]/team/data';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';

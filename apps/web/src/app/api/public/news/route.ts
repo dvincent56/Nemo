@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { NEWS_SEED } from '@/app/home-data';
+import { NEWS_SEED } from '@/lib/home-data';
 
 /**
  * GET /api/public/news — mock temporaire.

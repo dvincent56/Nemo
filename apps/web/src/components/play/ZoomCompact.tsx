@@ -2,7 +2,7 @@
 import { Plus, Minus } from 'lucide-react';
 import { useGameStore } from '@/lib/store';
 import Tooltip from '@/components/ui/Tooltip';
-import styles from '@/app/play/[raceId]/page.module.css';
+import styles from '@/app/[locale]/play/[raceId]/page.module.css';
 
 export default function ZoomCompact(): React.ReactElement {
   return (

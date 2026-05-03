@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button, Flag } from '@/components/ui';
-import type { PublicProfile } from '@/app/ranking/data';
+import type { PublicProfile } from '@/app/[locale]/ranking/data';
 import { CLASS_LABEL } from '@/lib/boat-classes';
 import baseStyles from '../page.module.css';
 import styles from './page.module.css';

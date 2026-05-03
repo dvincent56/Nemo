@@ -51,6 +51,12 @@ const SECTIONS: LegalSection[] = [
               <td>1 heure, renouvelé à chaque connexion</td>
               <td>Nécessaire</td>
             </tr>
+            <tr>
+              <td><code>NEMO_LOCALE</code></td>
+              <td>Mémorise la langue d'affichage choisie (français, anglais, espagnol, allemand)</td>
+              <td>1 an, renouvelé à chaque changement de langue</td>
+              <td>Fonctionnel</td>
+            </tr>
           </tbody>
         </table>
         <p>

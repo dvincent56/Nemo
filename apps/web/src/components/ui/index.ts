@@ -15,3 +15,4 @@ export { Flag, type FlagProps } from './Flag';
 export { LegalLayout, type LegalLayoutProps, type LegalSection } from './LegalLayout';
 export { NewsCard, type NewsCardProps } from './NewsCard';
 export { BoatSvg, type BoatSvgProps } from './BoatSvg';
+export { LanguageSelector } from './LanguageSelector';

@@ -5,7 +5,7 @@ import {
   CATEGORY_LABEL,
   formatNewsDate,
   type NewsItem,
-} from '@/app/home-data';
+} from '@/lib/home-data';
 import styles from './NewsCard.module.css';
 
 type LinkHref = Parameters<typeof Link>[0]['href'];
