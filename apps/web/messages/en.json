@@ -1265,18 +1265,18 @@
     "body": {
       "editeur": {
         "items": [
-          ["Company name", "<To be completed — company name>"],
-          ["Legal form", "<SAS / SARL / EURL>"],
-          ["Share capital", "<Amount in €>"],
-          ["Registered office", "<Full address>"],
-          ["RCS", "<City> <Number>"],
-          ["SIREN", "<9 digits>"],
-          ["Intra-Community VAT", "FR <Number>"]
+          ["Company name", "‹To be completed — company name›"],
+          ["Legal form", "‹SAS / SARL / EURL›"],
+          ["Share capital", "‹Amount in €›"],
+          ["Registered office", "‹Full address›"],
+          ["RCS", "‹City› ‹Number›"],
+          ["SIREN", "‹9 digits›"],
+          ["Intra-Community VAT", "FR ‹Number›"]
         ],
         "emailLabel": "Email"
       },
       "directeur": {
-        "p1": "<First Last>, as <position — manager, president, CEO>.",
+        "p1": "‹First Last›, as ‹position — manager, president, CEO›.",
         "contactLabel": "Contact:"
       },
       "hebergeur": {

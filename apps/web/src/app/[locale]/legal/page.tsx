@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { LegalLayout, type LegalSection } from '@/components/ui';
@@ -28,15 +29,13 @@ export default async function LegalPage(): Promise<React.ReactElement> {
       body: (
         <dl>
           {editeurItems.map(([term, def]) => (
-            <div key={term}>
+            <Fragment key={term}>
               <dt>{term}</dt>
               <dd>{def}</dd>
-            </div>
+            </Fragment>
           ))}
-          <div>
-            <dt>{tb('editeur.emailLabel')}</dt>
-            <dd><a href="mailto:hello@nemo.sail">hello@nemo.sail</a></dd>
-          </div>
+          <dt>{tb('editeur.emailLabel')}</dt>
+          <dd><a href="mailto:hello@nemo.sail">hello@nemo.sail</a></dd>
         </dl>
       ),
     },
@@ -58,7 +57,7 @@ export default async function LegalPage(): Promise<React.ReactElement> {
       body: (
         <dl>
           {hebergeurItems.map(({ term, lines }) => (
-            <div key={term}>
+            <Fragment key={term}>
               <dt>{term}</dt>
               <dd>
                 {lines.map((line, i) => (
@@ -68,7 +67,7 @@ export default async function LegalPage(): Promise<React.ReactElement> {
                   </span>
                 ))}
               </dd>
-            </div>
+            </Fragment>
           ))}
         </dl>
       ),
@@ -111,10 +110,10 @@ export default async function LegalPage(): Promise<React.ReactElement> {
           <p>{tb('contact.intro')}</p>
           <dl>
             {contactItems.map(([term, email]) => (
-              <div key={term}>
+              <Fragment key={term}>
                 <dt>{term}</dt>
                 <dd><a href={`mailto:${email}`}>{email}</a></dd>
-              </div>
+              </Fragment>
             ))}
           </dl>
         </>

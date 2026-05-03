@@ -1265,18 +1265,18 @@
     "body": {
       "editeur": {
         "items": [
-          ["Dénomination sociale", "<À compléter — nom de la société>"],
-          ["Forme juridique", "<SAS / SARL / EURL>"],
-          ["Capital social", "<Montant en €>"],
-          ["Siège social", "<Adresse complète>"],
-          ["RCS", "<Ville> <Numéro>"],
-          ["SIREN", "<9 chiffres>"],
-          ["TVA intracommunautaire", "FR <Numéro>"]
+          ["Dénomination sociale", "‹À compléter — nom de la société›"],
+          ["Forme juridique", "‹SAS / SARL / EURL›"],
+          ["Capital social", "‹Montant en €›"],
+          ["Siège social", "‹Adresse complète›"],
+          ["RCS", "‹Ville› ‹Numéro›"],
+          ["SIREN", "‹9 chiffres›"],
+          ["TVA intracommunautaire", "FR ‹Numéro›"]
         ],
         "emailLabel": "Email"
       },
       "directeur": {
-        "p1": "<Prénom Nom>, en qualité de <fonction — gérant, président, directeur général>.",
+        "p1": "‹Prénom Nom›, en qualité de ‹fonction — gérant, président, directeur général›.",
         "contactLabel": "Contact :"
       },
       "hebergeur": {

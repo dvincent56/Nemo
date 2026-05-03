@@ -1265,18 +1265,18 @@
     "body": {
       "editeur": {
         "items": [
-          ["Firmenname", "<Zu vervollständigen — Firmenname>"],
-          ["Rechtsform", "<SAS / SARL / EURL>"],
-          ["Stammkapital", "<Betrag in €>"],
-          ["Geschäftssitz", "<Vollständige Adresse>"],
-          ["RCS", "<Stadt> <Nummer>"],
-          ["SIREN", "<9 Ziffern>"],
-          ["USt-IdNr.", "FR <Nummer>"]
+          ["Firmenname", "‹Zu vervollständigen — Firmenname›"],
+          ["Rechtsform", "‹SAS / SARL / EURL›"],
+          ["Stammkapital", "‹Betrag in €›"],
+          ["Geschäftssitz", "‹Vollständige Adresse›"],
+          ["RCS", "‹Stadt› ‹Nummer›"],
+          ["SIREN", "‹9 Ziffern›"],
+          ["USt-IdNr.", "FR ‹Nummer›"]
         ],
         "emailLabel": "E-Mail"
       },
       "directeur": {
-        "p1": "<Vorname Nachname>, in der Funktion als <Funktion — Geschäftsführer, Präsident, CEO>.",
+        "p1": "‹Vorname Nachname›, in der Funktion als ‹Funktion — Geschäftsführer, Präsident, CEO›.",
         "contactLabel": "Kontakt:"
       },
       "hebergeur": {

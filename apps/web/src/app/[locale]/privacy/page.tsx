@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
@@ -50,10 +51,10 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
           <p>{tb('donnees.intro')}</p>
           <dl>
             {donneesItems.map(([term, def]) => (
-              <div key={term}>
+              <Fragment key={term}>
                 <dt>{term}</dt>
                 <dd>{def}</dd>
-              </div>
+              </Fragment>
             ))}
           </dl>
         </>
@@ -89,10 +90,10 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
           <p>{tb.rich('destinataires.intro', richTags)}</p>
           <dl>
             {destinatairesItems.map(([term, def]) => (
-              <div key={term}>
+              <Fragment key={term}>
                 <dt>{term}</dt>
                 <dd>{def}</dd>
-              </div>
+              </Fragment>
             ))}
           </dl>
           <p>{tb('destinataires.outro')}</p>
@@ -108,10 +109,10 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
           <p>{tb('droits.intro')}</p>
           <dl>
             {droitsItems.map(([term, def]) => (
-              <div key={term}>
+              <Fragment key={term}>
                 <dt>{term}</dt>
                 <dd>{def}</dd>
-              </div>
+              </Fragment>
             ))}
           </dl>
           <p>{tb.rich('droits.exercise', richTags)}</p>

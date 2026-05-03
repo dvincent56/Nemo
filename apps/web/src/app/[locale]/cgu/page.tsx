@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
@@ -91,10 +92,10 @@ export default async function CGUPage(): Promise<React.ReactElement> {
           <p>{tb('abonnement.tiersIntro')}</p>
           <dl>
             {abonnementTiers.map(([term, def]) => (
-              <div key={term}>
+              <Fragment key={term}>
                 <dt>{term}</dt>
                 <dd>{def}</dd>
-              </div>
+              </Fragment>
             ))}
           </dl>
           <p>{tb('abonnement.billing')}</p>
