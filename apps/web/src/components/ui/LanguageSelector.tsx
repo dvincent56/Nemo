@@ -1,16 +1,17 @@
 'use client';
 
 import { useTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/routing';
+import type { Locale } from '@/i18n/routing';
 import styles from './LanguageSelector.module.css';
 
-const LOCALES = [
+const LOCALES: ReadonlyArray<{ code: Locale; label: string }> = [
   { code: 'fr', label: 'FR' },
   { code: 'en', label: 'EN' },
   { code: 'es', label: 'ES' },
   { code: 'de', label: 'DE' },
-] as const;
+];
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
@@ -20,21 +21,15 @@ export function LanguageSelector(): React.ReactElement {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  function switchTo(target: string): void {
+  function switchTo(target: Locale): void {
     if (target === currentLocale) return;
 
     document.cookie = `NEMO_LOCALE=${target}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
 
-    const segments = pathname.split('/');
-    if (segments[1] && LOCALES.some((l) => l.code === segments[1])) {
-      segments[1] = target;
-    } else {
-      segments.unshift('', target);
-    }
-    const newPath = segments.join('/') || `/${target}`;
-
     startTransition(() => {
-      router.replace(newPath as Parameters<typeof router.replace>[0]);
+      // pathname est déjà sans préfixe locale (next-intl le strip).
+      // Le helper router.replace ré-injecte la locale cible.
+      router.replace(pathname, { locale: target });
       router.refresh();
     });
   }

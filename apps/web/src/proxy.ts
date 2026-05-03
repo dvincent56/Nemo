@@ -111,8 +111,8 @@ export default function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   matcher: [
-    // Exclut /api, /_next, statiques. Tout le reste passe par le proxy
-    // (chemins racine ET chemins préfixés locale).
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|icons|assets).*)',
+    // Exclut /api, /_next, statiques (icons, images, assets, data).
+    // Tout le reste passe par le proxy (chemins racine ET préfixés locale).
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|icons|assets|images|data|sw.js|wind-debug.html).*)',
   ],
 };
