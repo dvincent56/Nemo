@@ -129,6 +129,82 @@
       "legalPost": ". Les données de compte sont hébergées en Europe."
     }
   },
+  "profile": {
+    "eyebrow": "Saison 2026 · Ta page",
+    "memberSince": "Inscrit depuis",
+    "teamLabel": "Équipe",
+    "favoriteBoat": "Bateau favori",
+    "actions": {
+      "editProfile": "Modifier le profil",
+      "friendsAndTeam": "Amis & équipe"
+    },
+    "ariaStats": "Statistiques",
+    "stats": {
+      "races": "Courses",
+      "racesSub": "{finishes} finishes · {retired} abandons",
+      "podiums": "Podiums",
+      "podiumsSub": "{wins} victoires · {second} places d'honneur",
+      "distance": "Distance parcourue",
+      "distanceSub": "Tous bateaux confondus",
+      "seaHours": "Heures en mer",
+      "seaHoursSub": "{days} jours de navigation",
+      "bestRank": "Meilleur classement",
+      "bestRankSub": "{race} · {season}"
+    },
+    "palmares": {
+      "aria": "Palmarès",
+      "eyebrow": "Faits d'armes",
+      "title": "Palmarès",
+      "link": "Voir tout l'historique →"
+    },
+    "fleet": {
+      "aria": "Flotte",
+      "eyebrow": "Écurie",
+      "title": "Flotte",
+      "link": "Aller à la marina →",
+      "tile": {
+        "races": "{n} courses",
+        "best": "meilleur"
+      }
+    },
+    "activity": {
+      "aria": "Activité récente",
+      "eyebrow": "Dernières sorties",
+      "title": "Activité récente",
+      "link": "Tout l'historique →"
+    },
+    "public": {
+      "eyebrow": "Skipper · Saison 2026",
+      "noTagline": "Ce skipper n'a pas encore de devise publique.",
+      "actions": {
+        "addFriend": "Ajouter en ami",
+        "invitationSent": "Invitation envoyée · Annuler",
+        "removeFriend": "Retirer des amis",
+        "viewMyFriends": "Voir mes amis",
+        "goToProfile": "Aller à mon profil"
+      },
+      "stats": {
+        "seasonRank": "Rang saison",
+        "seasonRankSub": "Classement toutes classes",
+        "races": "Courses",
+        "racesSub": "Toutes classes confondues",
+        "podiums": "Podiums",
+        "podiumsSub": "Top 3 cumulé",
+        "seasonPoints": "Points saison",
+        "seasonPointsSub": "Score composite"
+      },
+      "classRanking": {
+        "aria": "Classement par classe",
+        "eyebrow": "Performance par classe",
+        "title": "Palmarès par flotte",
+        "link": "Voir le classement complet →",
+        "empty": "Ce skipper n'a encore disputé aucune course classée.",
+        "points": "Points",
+        "races": "Courses",
+        "podiums": "Podiums"
+      }
+    }
+  },
   "ranking": {
     "eyebrowSeason": "Saison 2026",
     "eyebrowTrailing": "Circuit Nemo",

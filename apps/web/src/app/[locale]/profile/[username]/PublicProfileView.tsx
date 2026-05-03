@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button, Flag } from '@/components/ui';
 import type { PublicProfile } from '@/app/[locale]/ranking/data';
-import { CLASS_LABEL } from '@/lib/boat-classes';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
 import baseStyles from '../page.module.css';
 import styles from './page.module.css';
 
@@ -21,12 +22,14 @@ export default function PublicProfileView({
   profile: PublicProfile;
   isVisitor: boolean;
 }): React.ReactElement {
+  const t = useTranslations('profile');
+  const tPub = useTranslations('profile.public');
+  const boatLabel = useBoatLabel();
   const [friendStatus, setFriendStatus] = useState<FriendStatus>(
     profile.isFriend ? 'friend' : 'none',
   );
 
   const handleAddFriend = (): void => {
-    // TODO POST /api/v1/invitations (type FRIEND)
     setFriendStatus((prev) => prev === 'none' ? 'pending' : prev);
   };
   const handleCancelInvite = (): void => setFriendStatus('none');
@@ -38,7 +41,7 @@ export default function PublicProfileView({
     <>
       <section className={baseStyles.hero}>
         <div className={baseStyles.heroMain}>
-          <p className={baseStyles.eyebrow}>Skipper · Saison 2026</p>
+          <p className={baseStyles.eyebrow}>{tPub('eyebrow')}</p>
           <h1 className={baseStyles.pseudo}>{profile.username}</h1>
           <div className={baseStyles.origin}>
             <Flag code={profile.country} className={styles.flag} />
@@ -51,13 +54,13 @@ export default function PublicProfileView({
           {profile.tagline ? (
             <blockquote className={baseStyles.tagline}>{profile.tagline}</blockquote>
           ) : (
-            <p className={styles.noTagline}>Ce skipper n'a pas encore de devise publique.</p>
+            <p className={styles.noTagline}>{tPub('noTagline')}</p>
           )}
           <div className={baseStyles.meta}>
-            <span>Inscrit depuis <strong>{profile.memberSince}</strong></span>
+            <span>{t('memberSince')} <strong>{profile.memberSince}</strong></span>
             {profile.team && (
               <span>
-                Équipe{' '}
+                {t('teamLabel')}{' '}
                 <Link
                   href={`/team/${encodeURIComponent(teamSlug(profile.team))}` as Parameters<typeof Link>[0]['href']}
                   className={styles.teamLink}
@@ -66,106 +69,104 @@ export default function PublicProfileView({
                 </Link>
               </span>
             )}
-            <span>Bateau favori <strong>{profile.favoriteBoatName}</strong></span>
+            <span>{t('favoriteBoat')} <strong>{profile.favoriteBoatName}</strong></span>
           </div>
 
           {!isVisitor && !profile.isMe && (
             <div className={baseStyles.actions}>
               {friendStatus === 'none' && (
                 <Button variant="primary" icon onClick={handleAddFriend}>
-                  Ajouter en ami
+                  {tPub('actions.addFriend')}
                 </Button>
               )}
               {friendStatus === 'pending' && (
                 <Button variant="secondary" icon onClick={handleCancelInvite}>
-                  Invitation envoyée · Annuler
+                  {tPub('actions.invitationSent')}
                 </Button>
               )}
               {friendStatus === 'friend' && (
                 <Button variant="secondary" icon onClick={handleRemoveFriend}>
-                  Retirer des amis
+                  {tPub('actions.removeFriend')}
                 </Button>
               )}
               <Link href={'/profile/social' as Parameters<typeof Link>[0]['href']}>
-                <Button variant="secondary" icon>Voir mes amis</Button>
+                <Button variant="secondary" icon>{tPub('actions.viewMyFriends')}</Button>
               </Link>
             </div>
           )}
           {!isVisitor && profile.isMe && (
             <div className={baseStyles.actions}>
               <Link href={'/profile' as Parameters<typeof Link>[0]['href']}>
-                <Button variant="primary" icon>Aller à mon profil</Button>
+                <Button variant="primary" icon>{tPub('actions.goToProfile')}</Button>
               </Link>
             </div>
           )}
         </div>
       </section>
 
-      <section className={baseStyles.statsBand} aria-label="Statistiques">
+      <section className={baseStyles.statsBand} aria-label={t('ariaStats')}>
         <div className={baseStyles.statsGrid}>
           <StatCell
-            label="Rang saison"
+            label={tPub('stats.seasonRank')}
             value={best ? best.main : '—'}
             suffix={best?.suffix}
-            sub="Classement toutes classes"
+            sub={tPub('stats.seasonRankSub')}
             gold
           />
           <StatCell
-            label="Courses"
+            label={tPub('stats.races')}
             value={String(profile.totalRacesFinished).padStart(2, '0')}
-            sub="Toutes classes confondues"
+            sub={tPub('stats.racesSub')}
           />
           <StatCell
-            label="Podiums"
+            label={tPub('stats.podiums')}
             value={String(profile.totalPodiums).padStart(2, '0')}
-            sub="Top 3 cumulé"
+            sub={tPub('stats.podiumsSub')}
             gold
           />
           <StatCell
-            label="Points saison"
+            label={tPub('stats.seasonPoints')}
             value={profile.totalRankingScore.toLocaleString('fr-FR')}
-            sub="Score composite"
+            sub={tPub('stats.seasonPointsSub')}
           />
         </div>
       </section>
 
-      <section className={baseStyles.section} aria-label="Classement par classe">
+      <section className={baseStyles.section} aria-label={tPub('classRanking.aria')}>
         <header className={baseStyles.sectionHead}>
           <div>
-            <p className={baseStyles.sectionEyebrow}>Performance par classe</p>
-            <h2 className={baseStyles.sectionTitle}>Palmarès par flotte</h2>
+            <p className={baseStyles.sectionEyebrow}>{tPub('classRanking.eyebrow')}</p>
+            <h2 className={baseStyles.sectionTitle}>{tPub('classRanking.title')}</h2>
           </div>
           <Link href={'/ranking' as Parameters<typeof Link>[0]['href']} className={baseStyles.sectionLink}>
-            Voir le classement complet →
+            {tPub('classRanking.link')}
           </Link>
         </header>
 
         {profile.classes.length === 0 ? (
-          <p className={styles.emptyClasses}>
-            Ce skipper n'a encore disputé aucune course classée.
-          </p>
+          <p className={styles.emptyClasses}>{tPub('classRanking.empty')}</p>
         ) : (
           <div className={styles.classGrid}>
             {profile.classes.map((c) => {
               const rank = c.rank ? formatRank(c.rank) : null;
               return (
                 <article key={c.boatClass} className={styles.classCard}>
-                  <p className={styles.classLabel}>{CLASS_LABEL[c.boatClass]}</p>
+                  <p className={styles.classLabel}>{boatLabel(c.boatClass)}</p>
                   <p className={styles.classRank}>
                     {rank ? <>{rank.main}<sup>{rank.suffix}</sup></> : '—'}
                   </p>
                   <p className={styles.classBoat}>{c.favoriteBoatName}</p>
                   <dl className={styles.classStats}>
                     <div>
-                      <dt>Points</dt>
+                      <dt>{tPub('classRanking.points')}</dt>
                       <dd>{c.rankingScore.toLocaleString('fr-FR')}</dd>
                     </div>
                     <div>
-                      <dt>Courses</dt>
+                      <dt>{tPub('classRanking.races')}</dt>
                       <dd>{c.racesFinished}</dd>
                     </div>
                     <div>
-                      <dt>Podiums</dt>
+                      <dt>{tPub('classRanking.podiums')}</dt>
                       <dd>{String(c.podiums).padStart(2, '0')}</dd>
                     </div>
                   </dl>
@@ -202,9 +203,7 @@ function StatCell({
   );
 }
 
-/** Dérive un slug URL à partir du nom d'équipe (seed local — côté DB ce sera
- *  `teams.slug` directement). */
 function teamSlug(name: string): string {
-  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
