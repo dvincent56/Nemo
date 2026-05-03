@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button, Flag, Pagination } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import {
@@ -47,6 +48,9 @@ const FRIENDS: Person[] = [
   { pseudo: 'algarve_wind',  city: 'Lagos',       rank: 49, country: 'pt' },
 ];
 
+// Roles dans TEAM_MEMBERS et metas/messages dans INVITATIONS_*  : seed FR
+// pour mockup. Phase 4 : ces strings viendront du backend (déjà localisées
+// côté serveur ou avec une stratégie ad-hoc).
 const TEAM_MEMBERS: Person[] = [
   { pseudo: 'laperouse',  city: 'La Trinité',  rank:  1, country: 'fr', role: 'Capitaine' },
   { pseudo: 'vous',       city: 'La Rochelle', rank: 12, country: 'fr', isMe: true, role: 'Modérateur' },
@@ -90,7 +94,20 @@ const INVITATIONS_SENT: Invitation[] = [
   },
 ];
 
+// Seed équipe pour le hero — sera remplacé par un fetch backend en Phase 4.
+const TEAM_HERO_SEED = {
+  captain: 'laperouse',
+  name: 'La Rochelle Racing',
+  foundedYear: '2024',
+  base: 'La Rochelle',
+  ranking: '03',
+  rankingSuffix: 'e',
+  racesRun: '214',
+  podiums: '34',
+} as const;
+
 function PersonCard({ p, meUsername }: { p: Person; meUsername: string | null }): React.ReactElement {
+  const t = useTranslations('profile.social.person');
   const display = p.isMe && meUsername ? meUsername : p.pseudo;
   const body = (
     <>
@@ -101,11 +118,11 @@ function PersonCard({ p, meUsername }: { p: Person; meUsername: string | null })
           {p.role && <span className={styles.personRole}>· {p.role}</span>}
         </p>
         <p className={styles.personMeta}>
-          {p.city} · Rang {String(p.rank).padStart(2, '0')}
+          {p.city} · {t('rank', { n: String(p.rank).padStart(2, '0') })}
         </p>
       </div>
       {p.isMe
-        ? <span className={styles.personMeBadge}>Moi</span>
+        ? <span className={styles.personMeBadge}>{t('me')}</span>
         : <span className={styles.personIconBtn} aria-hidden>→</span>}
     </>
   );
@@ -118,7 +135,7 @@ function PersonCard({ p, meUsername }: { p: Person; meUsername: string | null })
     <Link
       href={`/profile/${encodeURIComponent(p.pseudo)}` as Parameters<typeof Link>[0]['href']}
       className={styles.person}
-      aria-label={`Profil de ${display}`}
+      aria-label={t('profileAria', { name: display })}
     >
       {body}
     </Link>
@@ -133,6 +150,7 @@ function InvitationCard({
   onRefuse: () => void;
   onCancel: () => void;
 }): React.ReactElement {
+  const t = useTranslations('profile.social.invitations.card');
   return (
     <article className={`${styles.invitation} ${inv.pending ? styles.invitationPending : ''}`}>
       <Flag code={inv.country} className={styles.flag} />
@@ -150,11 +168,11 @@ function InvitationCard({
       </div>
       <div className={styles.invActions}>
         {inv.outgoing ? (
-          <Button variant="danger" onClick={onCancel}>Annuler l'invitation</Button>
+          <Button variant="danger" onClick={onCancel}>{t('cancel')}</Button>
         ) : (
           <>
-            <Button variant="primary" onClick={onAccept}>Accepter</Button>
-            <Button variant="ghost" onClick={onRefuse}>Refuser</Button>
+            <Button variant="primary" onClick={onAccept}>{t('accept')}</Button>
+            <Button variant="ghost" onClick={onRefuse}>{t('refuse')}</Button>
           </>
         )}
       </div>
@@ -168,18 +186,16 @@ function paginate<T>(items: T[], page: number, pageSize: number): T[] {
 }
 
 export default function SocialView(): React.ReactElement {
+  const t = useTranslations('profile.social');
   const [meUsername, setMeUsername] = useState<string | null>(null);
   const [invTab, setInvTab] = useState<'received' | 'sent'>('received');
   const [friendsPage, setFriendsPage] = useState(1);
   const [teamPage, setTeamPage] = useState(1);
 
-  // State local : on stocke les pseudos rejetés/acceptés/annulés pour pouvoir
-  // les retirer de la liste sans re-render des seeds (Phase 4 : RPC backend).
   const [removedReceived, setRemovedReceived] = useState<Set<string>>(new Set());
   const [removedSent, setRemovedSent] = useState<Set<string>>(new Set());
   const [acceptedFriends, setAcceptedFriends] = useState<string[]>([]);
 
-  // ── Recherche BDD (stub /api/v1/players/search) ──
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SkipperSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -193,7 +209,6 @@ export default function SocialView(): React.ReactElement {
     setMeUsername(s.username);
   }, []);
 
-  // Debounce 300ms puis appel async. Annule si la query change entretemps.
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < SEARCH_MIN_LENGTH) {
@@ -203,7 +218,7 @@ export default function SocialView(): React.ReactElement {
     }
     let cancelled = false;
     setSearchLoading(true);
-    const t = setTimeout(async () => {
+    const handle = setTimeout(async () => {
       try {
         const results = await searchPlayers(q, meUsername);
         if (!cancelled) setSearchResults(results);
@@ -211,10 +226,9 @@ export default function SocialView(): React.ReactElement {
         if (!cancelled) setSearchLoading(false);
       }
     }, SEARCH_DEBOUNCE_MS);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => { cancelled = true; clearTimeout(handle); };
   }, [searchQuery, meUsername]);
 
-  // Ferme le dropdown au clic extérieur
   useEffect(() => {
     if (!searchOpen) return;
     const onMouseDown = (e: MouseEvent): void => {
@@ -249,13 +263,12 @@ export default function SocialView(): React.ReactElement {
     setRemovedSent((prev) => new Set(prev).add(inv.pseudo));
   }
 
-  // Liste des amis incluant ceux acceptés depuis les invitations.
   const allFriends = useMemo<Person[]>(() => {
     const accepted: Person[] = acceptedFriends.map((pseudo, i) => ({
       pseudo,
       city: '—',
       rank: 999 + i,
-      country: 'fr', // Phase 4 : récupéré depuis le profil acceptant l'invit.
+      country: 'fr',
     }));
     return [...FRIENDS, ...accepted];
   }, [acceptedFriends]);
@@ -276,18 +289,16 @@ export default function SocialView(): React.ReactElement {
     <>
       <header className={styles.head}>
         <div>
-          <h1 className={styles.title}>Social</h1>
-          <p className={styles.sub}>
-            Suis d'autres skippers, rejoins une équipe, gère tes invitations.
-          </p>
+          <h1 className={styles.title}>{t('title')}</h1>
+          <p className={styles.sub}>{t('sub')}</p>
         </div>
         <div className={styles.search} ref={searchBoxRef}>
           <span className={styles.searchIcon} aria-hidden>⌕</span>
           <input
             type="search"
             className={styles.searchInput}
-            placeholder="Rechercher un skipper…"
-            aria-label="Rechercher un skipper"
+            placeholder={t('search.placeholder')}
+            aria-label={t('search.aria')}
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
             onFocus={() => setSearchOpen(true)}
@@ -295,10 +306,10 @@ export default function SocialView(): React.ReactElement {
           {searchOpen && searchQuery.trim().length >= SEARCH_MIN_LENGTH && (
             <div className={styles.searchDropdown} role="listbox">
               {searchLoading && (
-                <p className={styles.searchStatus}>Recherche…</p>
+                <p className={styles.searchStatus}>{t('search.loading')}</p>
               )}
               {!searchLoading && searchResults.length === 0 && (
-                <p className={styles.searchStatus}>Aucun skipper trouvé</p>
+                <p className={styles.searchStatus}>{t('search.empty')}</p>
               )}
               {!searchLoading && searchResults.map((r) => {
                 const requested = requestedFriends.has(r.username);
@@ -323,7 +334,13 @@ export default function SocialView(): React.ReactElement {
                       disabled={disabled}
                       onClick={() => handleAddFriend(r.username)}
                     >
-                      {r.isFriend ? 'Déjà ami' : requested ? 'Envoyée' : pendingAdd === r.username ? '…' : 'Ajouter'}
+                      {r.isFriend
+                        ? t('search.actions.alreadyFriend')
+                        : requested
+                          ? t('search.actions.sent')
+                          : pendingAdd === r.username
+                            ? t('search.actions.pending')
+                            : t('search.actions.add')}
                     </button>
                   </div>
                 );
@@ -333,13 +350,13 @@ export default function SocialView(): React.ReactElement {
         </div>
       </header>
 
-      {/* ── Amis ── */}
+      {/* Amis */}
       <section className={styles.section}>
         <header className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Skippers que tu suis</p>
+            <p className={styles.sectionEyebrow}>{t('friends.eyebrow')}</p>
             <h2 className={styles.sectionTitle}>
-              Amis <span className={styles.count}>{String(allFriends.length).padStart(2, '0')}</span>
+              {t('friends.title')} <span className={styles.count}>{String(allFriends.length).padStart(2, '0')}</span>
             </h2>
           </div>
         </header>
@@ -354,56 +371,56 @@ export default function SocialView(): React.ReactElement {
           totalItems={allFriends.length}
           pageSize={PAGE_SIZE}
           onChange={setFriendsPage}
-          label="Pagination amis"
+          label={t('friends.paginationAria')}
         />
       </section>
 
-      {/* ── Équipe ── */}
+      {/* Équipe */}
       <section className={styles.section}>
         <header className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Écurie</p>
-            <h2 className={styles.sectionTitle}>Mon équipe</h2>
+            <p className={styles.sectionEyebrow}>{t('team.eyebrow')}</p>
+            <h2 className={styles.sectionTitle}>{t('team.title')}</h2>
           </div>
           <Link
             href={'/team/la-rochelle-racing' as Parameters<typeof Link>[0]['href']}
             className={styles.sectionLink}
-          >Voir la page équipe →</Link>
+          >{t('team.viewPage')}</Link>
         </header>
 
         <div className={styles.teamHero}>
           <div>
             <p className={styles.teamEyebrow}>
-              Capitaine{' '}
+              {t('team.captainLabel')}{' '}
               <Link
-                href={'/profile/laperouse' as Parameters<typeof Link>[0]['href']}
+                href={`/profile/${TEAM_HERO_SEED.captain}` as Parameters<typeof Link>[0]['href']}
                 className={styles.personLink}
-              >laperouse</Link>
+              >{TEAM_HERO_SEED.captain}</Link>
             </p>
             <h3 className={styles.teamName}>
               <Link
                 href={'/team/la-rochelle-racing' as Parameters<typeof Link>[0]['href']}
                 className={styles.teamNameLink}
-              >La Rochelle Racing</Link>
+              >{TEAM_HERO_SEED.name}</Link>
             </h3>
             <p className={styles.teamMeta}>
-              <span>Fondée en <strong>2024</strong></span>
-              <span>Base <strong>La Rochelle</strong></span>
-              <span><strong>{String(TEAM_MEMBERS.length).padStart(2, '0')}</strong> membres</span>
+              <span>{t('team.foundedIn')} <strong>{TEAM_HERO_SEED.foundedYear}</strong></span>
+              <span>{t('team.base')} <strong>{TEAM_HERO_SEED.base}</strong></span>
+              <span><strong>{String(TEAM_MEMBERS.length).padStart(2, '0')}</strong> {t('team.members')}</span>
             </p>
           </div>
           <div className={styles.teamStats}>
             <div className={styles.teamStat}>
-              <p className={styles.teamStatLabel}>Classement</p>
-              <p className={`${styles.teamStatValue} ${styles.teamStatValueGold}`}>03<sup>e</sup></p>
+              <p className={styles.teamStatLabel}>{t('team.ranking')}</p>
+              <p className={`${styles.teamStatValue} ${styles.teamStatValueGold}`}>{TEAM_HERO_SEED.ranking}<sup>{TEAM_HERO_SEED.rankingSuffix}</sup></p>
             </div>
             <div className={styles.teamStat}>
-              <p className={styles.teamStatLabel}>Courses courues</p>
-              <p className={styles.teamStatValue}>214</p>
+              <p className={styles.teamStatLabel}>{t('team.racesRun')}</p>
+              <p className={styles.teamStatValue}>{TEAM_HERO_SEED.racesRun}</p>
             </div>
             <div className={styles.teamStat}>
-              <p className={styles.teamStatLabel}>Podiums</p>
-              <p className={`${styles.teamStatValue} ${styles.teamStatValueGold}`}>34</p>
+              <p className={styles.teamStatLabel}>{t('team.podiums')}</p>
+              <p className={`${styles.teamStatValue} ${styles.teamStatValueGold}`}>{TEAM_HERO_SEED.podiums}</p>
             </div>
           </div>
         </div>
@@ -419,17 +436,17 @@ export default function SocialView(): React.ReactElement {
           totalItems={TEAM_MEMBERS.length}
           pageSize={PAGE_SIZE}
           onChange={setTeamPage}
-          label="Pagination membres équipe"
+          label={t('team.paginationAria')}
         />
       </section>
 
-      {/* ── Invitations ── */}
+      {/* Invitations */}
       <section className={styles.section}>
         <header className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>En attente</p>
+            <p className={styles.sectionEyebrow}>{t('invitations.eyebrow')}</p>
             <h2 className={styles.sectionTitle}>
-              Invitations <span className={styles.count}>
+              {t('invitations.title')} <span className={styles.count}>
                 {String(receivedCount + sentCount).padStart(2, '0')}
               </span>
             </h2>
@@ -442,20 +459,20 @@ export default function SocialView(): React.ReactElement {
             className={`${styles.invTab} ${invTab === 'received' ? styles.invTabActive : ''}`}
             onClick={() => setInvTab('received')}
           >
-            Reçues <span className={styles.invTabCount}>{String(receivedCount).padStart(2, '0')}</span>
+            {t('invitations.tabReceived')} <span className={styles.invTabCount}>{String(receivedCount).padStart(2, '0')}</span>
           </button>
           <button
             type="button"
             className={`${styles.invTab} ${invTab === 'sent' ? styles.invTabActive : ''}`}
             onClick={() => setInvTab('sent')}
           >
-            Envoyées <span className={styles.invTabCount}>{String(sentCount).padStart(2, '0')}</span>
+            {t('invitations.tabSent')} <span className={styles.invTabCount}>{String(sentCount).padStart(2, '0')}</span>
           </button>
         </div>
 
         <div className={styles.invitations}>
           {visibleInvitations.length === 0 && (
-            <p className={styles.invitationsEmpty}>Aucune invitation en attente</p>
+            <p className={styles.invitationsEmpty}>{t('invitations.empty')}</p>
           )}
           {visibleInvitations.map((inv) => (
             <InvitationCard

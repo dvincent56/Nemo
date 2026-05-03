@@ -57,6 +57,8 @@ const config = [
       'src/app/\\[locale\\]/profile/\\[username\\]/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/profile/settings/page.tsx',
       'src/app/\\[locale\\]/profile/settings/SettingsView.tsx',
+      'src/app/\\[locale\\]/profile/social/page.tsx',
+      'src/app/\\[locale\\]/profile/social/SocialView.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.
@@ -80,6 +82,7 @@ const config = [
           '/login',
           '%', '/7', 'NM',
           '01', '02', '03', '04', '05',
+          '⌕', 'e',
         ],
       }],
     },

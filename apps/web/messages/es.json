@@ -204,6 +204,57 @@
         "podiums": "Podiums"
       }
     },
+    "social": {
+      "title": "Social",
+      "sub": "Suis d'autres skippers, rejoins une équipe, gère tes invitations.",
+      "search": {
+        "placeholder": "Rechercher un skipper…",
+        "aria": "Rechercher un skipper",
+        "loading": "Recherche…",
+        "empty": "Aucun skipper trouvé",
+        "actions": {
+          "alreadyFriend": "Déjà ami",
+          "sent": "Envoyée",
+          "pending": "…",
+          "add": "Ajouter"
+        }
+      },
+      "person": {
+        "rank": "Rang {n}",
+        "me": "Moi",
+        "profileAria": "Profil de {name}"
+      },
+      "friends": {
+        "eyebrow": "Skippers que tu suis",
+        "title": "Amis",
+        "paginationAria": "Pagination amis"
+      },
+      "team": {
+        "eyebrow": "Écurie",
+        "title": "Mon équipe",
+        "viewPage": "Voir la page équipe →",
+        "captainLabel": "Capitaine",
+        "foundedIn": "Fondée en",
+        "base": "Base",
+        "members": "membres",
+        "ranking": "Classement",
+        "racesRun": "Courses courues",
+        "podiums": "Podiums",
+        "paginationAria": "Pagination membres équipe"
+      },
+      "invitations": {
+        "eyebrow": "En attente",
+        "title": "Invitations",
+        "tabReceived": "Reçues",
+        "tabSent": "Envoyées",
+        "empty": "Aucune invitation en attente",
+        "card": {
+          "cancel": "Annuler l'invitation",
+          "accept": "Accepter",
+          "refuse": "Refuser"
+        }
+      }
+    },
     "settings": {
       "title": "Paramètres",
       "sub": "Gère ton identité publique, ton compte, tes préférences de jeu et les notifications.",
