@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { NewsCard } from '@/components/ui';
 import {
   CATEGORY_LABEL,
@@ -47,7 +48,7 @@ function parseInline(text: string): React.ReactNode {
   return parts;
 }
 
-function Block({ block }: { block: NewsBlock }): React.ReactElement | null {
+function Block({ block, attributionPrefix }: { block: NewsBlock; attributionPrefix: string }): React.ReactElement | null {
   switch (block.type) {
     case 'paragraph':
       return <p>{parseInline(block.content)}</p>;
@@ -59,7 +60,7 @@ function Block({ block }: { block: NewsBlock }): React.ReactElement | null {
       return (
         <blockquote className={styles.pullquote}>
           {parseInline(block.content)}
-          {block.attribution && <footer>— {block.attribution}</footer>}
+          {block.attribution && <footer>{attributionPrefix}{block.attribution}</footer>}
         </blockquote>
       );
     case 'image':
@@ -72,34 +73,37 @@ function Block({ block }: { block: NewsBlock }): React.ReactElement | null {
   }
 }
 
-export default function NewsArticle({
+export default async function NewsArticle({
   news,
   related,
 }: {
   news: NewsItem;
   related: NewsItem[];
-}): React.ReactElement {
+}): Promise<React.ReactElement> {
+  const t = await getTranslations('news.article');
+  const tCommon = await getTranslations('common');
+  const tLogin = await getTranslations('login.aria');
   return (
     <div className={styles.page}>
       {/* ───── Topbar (mode visiteur, sur fond ivory) ───── */}
       <header className={styles.topbar}>
-        <Link href="/" className={styles.brand} aria-label="Nemo — Accueil">
+        <Link href="/" className={styles.brand} aria-label={tLogin('brandHome')}>
           NE<span>M</span>O
         </Link>
-        <nav className={styles.nav} aria-label="Principal">
-          <Link href="/races">Courses</Link>
-          <Link href="/ranking">Classement</Link>
+        <nav className={styles.nav} aria-label={tCommon('aria.primaryNav')}>
+          <Link href="/races">{tCommon('nav.courses')}</Link>
+          <Link href="/ranking">{tCommon('nav.ranking')}</Link>
         </nav>
         <Link href="/login" className={styles.loginCta}>
-          Se connecter
+          {tCommon('actions.signin')}
         </Link>
       </header>
 
       {/* ───── Breadcrumb ───── */}
-      <nav className={styles.crumbs} aria-label="Fil d'ariane">
-        <Link href="/">Accueil</Link>
+      <nav className={styles.crumbs} aria-label={t('ariaCrumbs')}>
+        <Link href="/">{t('crumbHome')}</Link>
         <span className={styles.sep}>/</span>
-        <Link href={'/news' as LinkHref}>Journal de bord</Link>
+        <Link href={'/news' as LinkHref}>{t('crumbJournal')}</Link>
         <span className={styles.sep}>/</span>
         <span className={styles.cur}>{CATEGORY_LABEL[news.category]}</span>
       </nav>
@@ -117,7 +121,7 @@ export default function NewsArticle({
             </span>
             <span className={styles.dotSep} aria-hidden />
             <span className={styles.readingTime}>
-              Lecture {news.readingTimeMin} min
+              {t('readingTime', { min: news.readingTimeMin })}
             </span>
           </div>
           <h1 className={styles.headline}>{news.title}</h1>
@@ -156,7 +160,7 @@ export default function NewsArticle({
       {/* ───── Corps article ───── */}
       <article className={styles.body}>
         {news.body.map((b, i) => (
-          <Block key={i} block={b} />
+          <Block key={i} block={b} attributionPrefix={t('attributionPrefix')} />
         ))}
       </article>
 
@@ -166,13 +170,13 @@ export default function NewsArticle({
           {news.authorRole} <strong>{news.authorName}</strong>
         </p>
         <p>
-          Publié le <strong>{formatNewsDate(news.publishedAt)}</strong>
+          {t('publishedOnPre')}<strong>{formatNewsDate(news.publishedAt)}</strong>
         </p>
       </div>
 
       <div className={styles.backRow}>
         <Link href={'/news' as LinkHref} className={styles.backLink}>
-          <span className={styles.backArrow}>←</span> Retour au journal de bord
+          <span className={styles.backArrow}>←</span> {t('back')}
         </Link>
       </div>
 
@@ -182,14 +186,14 @@ export default function NewsArticle({
           <div className={styles.relatedInner}>
             <header className={styles.relatedHead}>
               <div>
-                <p className={styles.relatedEyebrow}>Dans le journal</p>
-                <h2>Lire aussi.</h2>
+                <p className={styles.relatedEyebrow}>{t('relatedEyebrow')}</p>
+                <h2>{t('relatedTitle')}</h2>
               </div>
               <Link
                 href={'/news' as LinkHref}
                 className={styles.relatedLink}
               >
-                Toutes les actualités <span>→</span>
+                {t('relatedAllLink')} <span>→</span>
               </Link>
             </header>
 

@@ -3,20 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import type { Route } from 'next';
-import { Button, Eyebrow, Field } from '@/components/ui';
+import { Button, Eyebrow, Field, LanguageSelector } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import styles from './page.module.css';
 
-const LANGS = [
-  { code: 'fr', label: 'FR' },
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
-  { code: 'de', label: 'DE' },
-];
-
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('login');
+  const tForm = useTranslations('login.form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,45 +46,40 @@ export default function LoginPage(): React.ReactElement {
     await devLogin(username);
   }
 
+  const manifestoItems = [
+    { n: '01', t: t('manifesto.1.title'), d: t('manifesto.1.body') },
+    { n: '02', t: t('manifesto.2.title'), d: t('manifesto.2.body') },
+    { n: '03', t: t('manifesto.3.title'), d: t('manifesto.3.body') },
+    { n: '04', t: t('manifesto.4.title'), d: t('manifesto.4.body') },
+  ];
+
   return (
     <>
       <header className={styles.topbar}>
-        <Link href="/" className={styles.brand} aria-label="Nemo — Accueil">
+        <Link href="/" className={styles.brand} aria-label={t('aria.brandHome')}>
           NE<span>M</span>O
         </Link>
-        <nav className={styles.lang} aria-label="Langue">
-          {LANGS.map((l) => (
-            <a
-              key={l.code}
-              href="#"
-              className={l.code === 'fr' ? styles.active : ''}
-            >
-              {l.label}
-            </a>
-          ))}
-        </nav>
+        <div className={styles.lang}>
+          <LanguageSelector />
+        </div>
       </header>
 
       <main className={styles.shell}>
         <section className={styles.editorial}>
           <div>
-            <Eyebrow trailing="Saison 2026">01 · Accès skipper</Eyebrow>
+            <Eyebrow trailing={t('eyebrowSeason')}>{t('eyebrowAccess')}</Eyebrow>
             <h1 className={styles.headline}>
-              Bienvenue<br />à <em>bord</em>.
+              {t('headline.line1')}<br />{t('headline.line2Pre')}<em>{t('headline.line2Em')}</em>{t('headline.line2Post')}
             </h1>
             <p className={styles.lede}>
-              <strong>Nemo</strong>{' '}est un circuit de course offshore en ligne.
-              Polaires réelles, météo réelle, et un bateau qui te suit de course en course, façonné par tes victoires.
+              {t.rich('lede', {
+                strong: (chunks) => <strong>{chunks}</strong>,
+              })}
             </p>
           </div>
 
           <div className={styles.manifesto}>
-            {[
-              { n: '01', t: 'Polaires réelles', d: 'Les mêmes fichiers pour tous les joueurs, du Figaro III à l\'Ultim.' },
-              { n: '02', t: 'Météo NOAA GFS', d: 'Mise à jour toutes les 6 h, identique côté moteur et routeur.' },
-              { n: '03', t: 'Ton bateau, ta carrière', d: 'Tu gardes ton bateau d\'une course à l\'autre. Chaque podium rapporte des crédits qui financent tes upgrades\u00a0: voiles, foils, électronique.' },
-              { n: '04', t: 'Prépare ta course', d: 'Avant chaque départ, tu arbitres\u00a0: jeu de voiles, configuration de foils, ravitaillement. Tes choix décident du résultat.' },
-            ].map((m) => (
+            {manifestoItems.map((m) => (
               <div key={m.n} className={styles.manifestoItem}>
                 <span className={styles.manifestoNum}>{m.n}</span>
                 <p className={styles.manifestoBody}>
@@ -99,7 +90,7 @@ export default function LoginPage(): React.ReactElement {
             ))}
           </div>
 
-          <p className={styles.colophon}>Une carrière de skipper, mille à mille.</p>
+          <p className={styles.colophon}>{t('colophon')}</p>
 
           <div className={styles.compassBg} aria-hidden>
             <svg viewBox="0 0 340 340">
@@ -121,26 +112,24 @@ export default function LoginPage(): React.ReactElement {
         <section className={styles.formPane}>
           <div className={styles.formInner}>
             <div className={styles.formHead}>
-              <h2 className={styles.formTitle}>Connexion</h2>
-              <p className={styles.formSub}>
-                Connectez-vous avec votre email et votre mot de passe.
-              </p>
+              <h2 className={styles.formTitle}>{tForm('title')}</h2>
+              <p className={styles.formSub}>{tForm('sub')}</p>
             </div>
 
             {error && <div className={styles.error}>{error}</div>}
 
             <form onSubmit={submit} noValidate className={styles.form}>
               <Field
-                label="Email"
+                label={tForm('emailLabel')}
                 type="email"
                 autoComplete="email"
-                placeholder="skipper@nemo.sail"
+                placeholder={tForm('emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
               <Field
-                label="Mot de passe"
+                label={tForm('passwordLabel')}
                 type="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
@@ -149,22 +138,22 @@ export default function LoginPage(): React.ReactElement {
                 required
                 action={
                   <Link href={'/reset-password' as Route} className={styles.labelAction}>
-                    Mot de passe oublié&nbsp;?
+                    {tForm('forgotPassword')}
                   </Link>
                 }
               />
               <Button type="submit" variant="primary" icon fullWidth disabled={loading}>
-                {loading ? 'Connexion' : 'Larguer les amarres'}
+                {loading ? tForm('submitLoading') : tForm('submitIdle')}
               </Button>
             </form>
 
             <p className={styles.signup}>
-              Pas encore de compte&nbsp;?{' '}
-              <Link href={'/register' as Route} className={styles.signupLink}>Créer un compte</Link>
+              {tForm('noAccountQuestion')}{' '}
+              <Link href={'/register' as Route} className={styles.signupLink}>{tForm('signupLink')}</Link>
             </p>
 
             <div className={styles.divider}>
-              <span className={styles.dividerLabel}>dev · accès local</span>
+              <span className={styles.dividerLabel}>{tForm('dividerDev')}</span>
             </div>
 
             <Button
@@ -174,30 +163,28 @@ export default function LoginPage(): React.ReactElement {
               disabled={loading}
               onClick={() => devLogin('dev')}
             >
-              Connexion dev (joueur seed)
+              {tForm('devButton')}
             </Button>
 
             <div className={styles.divider}>
-              <span className={styles.dividerLabel}>ou · OAuth Phase 4</span>
+              <span className={styles.dividerLabel}>{tForm('dividerOauth')}</span>
             </div>
 
             <div className={styles.oauth}>
               <button type="button" className={styles.oauthBtn} disabled>
                 <span className={styles.oauthIcon}>G</span>
-                <span>Continuer avec Google</span>
-                <span className={styles.oauthTag}>Phase 4</span>
+                <span>{tForm('oauthGoogle')}</span>
+                <span className={styles.oauthTag}>{tForm('phase4Tag')}</span>
               </button>
               <button type="button" className={styles.oauthBtn} disabled>
                 <span className={styles.oauthIcon}>⌘</span>
-                <span>Continuer avec Apple</span>
-                <span className={styles.oauthTag}>Phase 5</span>
+                <span>{tForm('oauthApple')}</span>
+                <span className={styles.oauthTag}>{tForm('phase5Tag')}</span>
               </button>
             </div>
 
             <p className={styles.legal}>
-              En continuant, vous acceptez nos <a href="#">Conditions d'utilisation</a>{' '}
-              et notre <a href="#">Politique de confidentialité</a>. Les données
-              de compte sont hébergées en Europe.
+              {tForm('legalPre')}<a href="#">{tForm('legalCgu')}</a>{tForm('legalAnd')}<a href="#">{tForm('legalPrivacy')}</a>{tForm('legalPost')}
             </p>
           </div>
         </section>

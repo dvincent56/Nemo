@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Flag, NewsCard } from '@/components/ui';
 import type { RaceSummary } from '@/lib/api';
 import type { NewsItem } from '@/lib/home-data';
@@ -33,12 +34,13 @@ function toIsoCountry(code: string): string {
 }
 
 export default function HomeView(props: HomeViewProps): React.ReactElement {
+  const t = useTranslations('home.hero');
   const primary: Cta = props.isVisitor
-    ? { href: '/login', label: 'Créer un compte' }
-    : { href: '/marina', label: 'Reprendre ma carrière' };
+    ? { href: '/login', label: t('ctaPrimaryVisitor') }
+    : { href: '/marina', label: t('ctaPrimaryPlayer') };
   const secondary: Cta = {
     href: '/races',
-    label: props.isVisitor ? 'Voir les courses en direct' : 'Voir les courses',
+    label: props.isVisitor ? t('ctaSecondaryVisitor') : t('ctaSecondaryPlayer'),
   };
 
   return (
@@ -73,6 +75,8 @@ function Hero({
   secondary: Cta;
   stats: HomeViewProps['heroStats'];
 }): React.ReactElement {
+  const t = useTranslations('home.hero');
+  const tSvg = useTranslations('home.svg.compass');
   return (
     <section className={styles.hero}>
       <div className={styles.heroBg}>
@@ -88,17 +92,16 @@ function Hero({
 
       <div className={styles.heroContent}>
         <div className={styles.heroMain}>
-          <p className={styles.eyebrow}>Saison 2026 · Circuit Nemo</p>
+          <p className={styles.eyebrow}>{t('eyebrow')}</p>
           <h1 className={styles.heroTitle}>
-            Un bateau.<br />
-            Ta <em>carrière</em>.<br />
-            Mille à mille.
+            {t('title.line1')}<br />
+            {t('title.line2Pre')}<em>{t('title.line2Em')}</em>{t('title.line2Post')}<br />
+            {t('title.line3')}
           </h1>
           <p className={styles.heroLede}>
-            <strong>Nemo</strong> est un circuit de course offshore en ligne.
-            Polaires réelles fournies par les constructeurs, météo{' '}
-            <strong>GFS</strong> mise à jour toutes les 6 h, et un bateau qui
-            te suit de course en course, façonné par tes victoires.
+            {t.rich('lede', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <div className={styles.heroCtas}>
             <Link
@@ -117,15 +120,15 @@ function Hero({
           <div className={styles.heroStatus}>
             <span>
               <span className={styles.liveDot} aria-hidden />
-              <strong>{stats.liveRaces}</strong>&nbsp;courses en direct
+              <strong>{stats.liveRaces}</strong>&nbsp;{t('stats.liveRaces')}
             </span>
             <span>
               <strong>{stats.racersOnWater.toLocaleString('fr-FR')}</strong>
-              &nbsp;skippers en mer
+              &nbsp;{t('stats.racersOnWater')}
             </span>
             <span>
               <strong>{stats.totalRegistered.toLocaleString('fr-FR')}</strong>
-              &nbsp;skippers inscrits
+              &nbsp;{t('stats.totalRegistered')}
             </span>
           </div>
         </div>
@@ -152,10 +155,10 @@ function Hero({
               fontSize="10"
               textAnchor="middle"
             >
-              <text x="170" y="25">N</text>
-              <text x="325" y="174">E</text>
-              <text x="170" y="327">S</text>
-              <text x="15" y="174">O</text>
+              <text x="170" y="25">{tSvg('n')}</text>
+              <text x="325" y="174">{tSvg('e')}</text>
+              <text x="170" y="327">{tSvg('s')}</text>
+              <text x="15" y="174">{tSvg('o')}</text>
             </g>
           </svg>
           <div className={styles.needle}>
@@ -179,20 +182,18 @@ function Hero({
 // ─────────────────────────────────────────────────────────────
 
 function Pillars(): React.ReactElement {
+  const t = useTranslations('home.pillars');
+  const tSvg = useTranslations('home.svg.pillarMeteo');
   return (
     <section className={styles.block}>
       <header className={styles.sectionHead}>
         <div>
           <p className={`${styles.eyebrow} ${styles.eyebrowOnLight}`}>
-            02 · L'essentiel
+            {t('eyebrow')}
           </p>
-          <h2>Voici Nemo.</h2>
+          <h2>{t('title')}</h2>
         </div>
-        <p className={styles.sectionLede}>
-          Trois piliers qui font de Nemo un circuit de skipper : simulation
-          fidèle, données partagées par tous, progression qui se gagne course
-          après course.
-        </p>
+        <p className={styles.sectionLede}>{t('lede')}</p>
       </header>
 
       <div className={styles.pillars}>
@@ -219,12 +220,12 @@ function Pillars(): React.ReactElement {
               <circle cx="100" cy="75" r="3" fill="#1a2840" />
             </svg>
           </div>
-          <p className={styles.pillarNum}>01 · Polaires</p>
-          <h3>Polaires réelles</h3>
+          <p className={styles.pillarNum}>{t('polars.num')}</p>
+          <h3>{t('polars.title')}</h3>
           <p>
-            Les <strong>mêmes fichiers</strong> pour tous les joueurs, du
-            Figaro III à l'Ultim. Fournis par les constructeurs, jamais
-            modifiés. Ton bateau se comporte exactement comme dans la vraie vie.
+            {t.rich('polars.body', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </article>
 
@@ -252,7 +253,7 @@ function Pillars(): React.ReactElement {
                 fontWeight="700"
                 fill="#1a2840"
               >
-                L
+                {tSvg('lLabel')}
               </text>
               <text
                 x="40"
@@ -262,127 +263,133 @@ function Pillars(): React.ReactElement {
                 fontWeight="700"
                 fill="#1a2840"
               >
-                H
+                {tSvg('hLabel')}
               </text>
             </svg>
           </div>
-          <p className={styles.pillarNum}>02 · Météo</p>
-          <h3>Météo réelle</h3>
+          <p className={styles.pillarNum}>{t('weather.num')}</p>
+          <h3>{t('weather.title')}</h3>
           <p>
-            Les données <strong>GFS</strong> mises à jour toutes les 6 h,
-            identiques côté moteur de jeu et côté routeurs tiers. Tes décisions
-            tactiques se prennent sur les mêmes fichiers que ceux d'un skipper
-            en vraie course.
+            {t.rich('weather.body', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </article>
 
         <article className={styles.pillar}>
           <div className={styles.pillarVisual}>
-            <svg viewBox="0 0 200 150" aria-hidden>
-              <g transform="translate(10, 50)">
-                <path
-                  d="M5,40 L45,40 L40,52 L10,52 Z"
-                  fill="#cbc4b5"
-                  opacity="0.6"
-                />
-                <line
-                  x1="25"
-                  y1="40"
-                  x2="25"
-                  y2="10"
-                  stroke="#8a7f6d"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M26,10 L45,38 L26,34 Z"
-                  fill="#cbc4b5"
-                  stroke="#8a7f6d"
-                  strokeWidth="0.5"
-                  opacity="0.8"
-                />
-                <text
-                  x="25"
-                  y="68"
-                  fontFamily="Space Mono"
-                  fontSize="7"
-                  fill="#8a7f6d"
-                  textAnchor="middle"
-                  letterSpacing="0.1em"
-                >
-                  VIERGE
-                </text>
-              </g>
-              <g transform="translate(75, 50)">
-                <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#1a4d7a" />
-                <line
-                  x1="25"
-                  y1="40"
-                  x2="25"
-                  y2="8"
-                  stroke="#1a2840"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M26,8 L47,38 L26,34 Z"
-                  fill="#f5f0e8"
-                  stroke="#1a2840"
-                  strokeWidth="0.5"
-                />
-                <text
-                  x="25"
-                  y="68"
-                  fontFamily="Space Mono"
-                  fontSize="7"
-                  fill="#1a2840"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  letterSpacing="0.1em"
-                >
-                  CUSTOMISÉ
-                </text>
-              </g>
-              <g transform="translate(140, 50)">
-                <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#9e2a2a" />
-                <line
-                  x1="25"
-                  y1="40"
-                  x2="25"
-                  y2="5"
-                  stroke="#1a2840"
-                  strokeWidth="2.5"
-                />
-                <path
-                  d="M26,5 L49,38 L26,34 Z"
-                  fill="#f5f0e8"
-                  stroke="#1a2840"
-                  strokeWidth="0.5"
-                />
-                <circle cx="40" cy="48" r="5" fill="#c9a227" />
-                <text
-                  x="25"
-                  y="68"
-                  fontFamily="Space Mono"
-                  fontSize="7"
-                  fill="#c9a227"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  letterSpacing="0.1em"
-                >
-                  PALMARÈS
-                </text>
-              </g>
-            </svg>
+            <PillarCareerSvg />
           </div>
-          <p className={styles.pillarNum}>03 · Carrière</p>
-          <h3>Ton bateau, ta carrière</h3>
+          <p className={styles.pillarNum}>{t('career.num')}</p>
+          <h3>{t('career.title')}</h3>
           <p>
-            Une <strong>seule coque</strong> qui te suit de course en course.
-            Tes podiums financent tes upgrades — voiles, foils, électronique.
-            Ta progression est la seule monnaie qui compte.
+            {t.rich('career.body', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </article>
       </div>
     </section>
+  );
+}
+
+function PillarCareerSvg(): React.ReactElement {
+  const tSvg = useTranslations('home.svg.pillarCareer');
+  return (
+    <svg viewBox="0 0 200 150" aria-hidden>
+      <g transform="translate(10, 50)">
+        <path
+          d="M5,40 L45,40 L40,52 L10,52 Z"
+          fill="#cbc4b5"
+          opacity="0.6"
+        />
+        <line
+          x1="25"
+          y1="40"
+          x2="25"
+          y2="10"
+          stroke="#8a7f6d"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M26,10 L45,38 L26,34 Z"
+          fill="#cbc4b5"
+          stroke="#8a7f6d"
+          strokeWidth="0.5"
+          opacity="0.8"
+        />
+        <text
+          x="25"
+          y="68"
+          fontFamily="Space Mono"
+          fontSize="7"
+          fill="#8a7f6d"
+          textAnchor="middle"
+          letterSpacing="0.1em"
+        >
+          {tSvg('blank')}
+        </text>
+      </g>
+      <g transform="translate(75, 50)">
+        <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#1a4d7a" />
+        <line
+          x1="25"
+          y1="40"
+          x2="25"
+          y2="8"
+          stroke="#1a2840"
+          strokeWidth="2"
+        />
+        <path
+          d="M26,8 L47,38 L26,34 Z"
+          fill="#f5f0e8"
+          stroke="#1a2840"
+          strokeWidth="0.5"
+        />
+        <text
+          x="25"
+          y="68"
+          fontFamily="Space Mono"
+          fontSize="7"
+          fill="#1a2840"
+          fontWeight="700"
+          textAnchor="middle"
+          letterSpacing="0.1em"
+        >
+          {tSvg('custom')}
+        </text>
+      </g>
+      <g transform="translate(140, 50)">
+        <path d="M5,40 L45,40 L40,52 L10,52 Z" fill="#9e2a2a" />
+        <line
+          x1="25"
+          y1="40"
+          x2="25"
+          y2="5"
+          stroke="#1a2840"
+          strokeWidth="2.5"
+        />
+        <path
+          d="M26,5 L49,38 L26,34 Z"
+          fill="#f5f0e8"
+          stroke="#1a2840"
+          strokeWidth="0.5"
+        />
+        <circle cx="40" cy="48" r="5" fill="#c9a227" />
+        <text
+          x="25"
+          y="68"
+          fontFamily="Space Mono"
+          fontSize="7"
+          fill="#c9a227"
+          fontWeight="700"
+          textAnchor="middle"
+          letterSpacing="0.1em"
+        >
+          {tSvg('palmares')}
+        </text>
+      </g>
+    </svg>
   );
 }
 
@@ -410,27 +417,27 @@ function minifyRoute(points: [number, number][]): string {
 }
 
 function LiveRaces({ races }: { races: RaceSummary[] }): React.ReactElement {
+  const t = useTranslations('home.liveRaces');
+  const tCommon = useTranslations('common');
+  const tActions = useTranslations('common.actions');
   const visible = races.slice(0, 3);
   return (
     <section className={`${styles.block} ${styles.liveRaces}`}>
       <header className={styles.sectionHead}>
         <div>
           <p className={`${styles.eyebrow} ${styles.eyebrowOnLight}`}>
-            03 · En direct
+            {t('eyebrow')}
           </p>
-          <h2>Ça se joue maintenant.</h2>
+          <h2>{t('title')}</h2>
         </div>
         <Link href="/races" className={styles.sectionLink}>
-          Voir toutes les courses <span>→</span>
+          {t('link')} <span>→</span>
         </Link>
       </header>
 
       <div className={styles.liveGrid}>
         {visible.length === 0 ? (
-          <p className={styles.liveEmpty}>
-            Aucune course en direct pour le moment — jette un œil aux courses
-            ouvertes.
-          </p>
+          <p className={styles.liveEmpty}>{t('empty')}</p>
         ) : (
           visible.map((r) => {
             const pts: [number, number][] = [
@@ -450,12 +457,12 @@ function LiveRaces({ races }: { races: RaceSummary[] }): React.ReactElement {
                     <h3 className={styles.raceCardName}>{r.name}</h3>
                     <p className={styles.raceCardMeta}>
                       {CLASS_LABEL[r.boatClass]} ·{' '}
-                      {r.participants.toLocaleString('fr-FR')} skippers
+                      {r.participants.toLocaleString('fr-FR')} {tCommon('units.skippers')}
                     </p>
                   </div>
                   <span className={`${styles.chip} ${styles.chipLive}`}>
                     <span className={styles.chipDot} />
-                    En direct
+                    {t('chipLive')}
                   </span>
                 </header>
                 <div className={styles.raceCardMap}>
@@ -503,13 +510,13 @@ function LiveRaces({ races }: { races: RaceSummary[] }): React.ReactElement {
                 </div>
                 <div className={styles.raceCardLeader}>
                   <span>
-                    Dotation{' '}
+                    {t('rewardLabel')}{' '}
                     <strong>
                       {r.rewardMaxCredits.toLocaleString('fr-FR')}
                     </strong>
-                    &nbsp;cr
+                    &nbsp;{tCommon('units.credits')}
                   </span>
-                  <span className={styles.nb}>Suivre →</span>
+                  <span className={styles.nb}>{tActions('follow')}</span>
                 </div>
               </Link>
             );
@@ -525,43 +532,39 @@ function LiveRaces({ races }: { races: RaceSummary[] }): React.ReactElement {
 // ─────────────────────────────────────────────────────────────
 
 function CareerBand(): React.ReactElement {
+  const t = useTranslations('home.career');
+  const tBoats = useTranslations('common.boats');
   return (
     <section className={`${styles.blockWide} ${styles.career}`}>
       <div className={`${styles.blockWideInner} ${styles.careerInner}`}>
         <div className={styles.careerText}>
-          <p className={styles.eyebrow}>04 · Carrière skipper</p>
+          <p className={styles.eyebrow}>{t('eyebrow')}</p>
           <h2>
-            Une seule <em>coque</em>.<br />Mille milles.
+            {t('titleLine1')}<em>{t('titleEm')}</em>{t('titleLine1End')}<br />{t('titleLine2')}
           </h2>
           <p>
-            Le <strong>mode Carrière</strong>, c'est la version longue de
-            Nemo. Tu démarres avec un bateau récent mais vierge d'équipement —
-            Figaro, Class40, IMOCA ou Ultim selon la course qui te lance.
-            Chaque épreuve que tu finis laisse une trace : un podium, des
-            crédits, une upgrade.
+            {t.rich('body1', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
-          <div className={styles.careerEmphasis}>
-            Ton bateau vieillit avec toi, prend des couleurs, gagne en
-            performance.
-          </div>
+          <div className={styles.careerEmphasis}>{t('emphasis')}</div>
           <p>
-            Les crédits se gagnent en course et financent tes upgrades —
-            voiles, foils, électronique. Le <strong>mode Carrière</strong> te
-            donne accès à la persistance de ton bateau, à ta progression sur la
-            saison, et au palmarès officiel du circuit.
+            {t.rich('body2', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <Link
             href={'/subscribe' as LinkHref}
             className={`${styles.btn} ${styles.btnGold}`}
             style={{ marginTop: 16 }}
           >
-            Rejoindre le circuit <span className={styles.btnArrow}>→</span>
+            {t('cta')} <span className={styles.btnArrow}>→</span>
           </Link>
         </div>
 
         <div className={styles.careerVisual}>
-          <p className={styles.careerVisualEyebrow}>Aperçu Marina</p>
-          <h4>Ta flotte — Saison 2026</h4>
+          <p className={styles.careerVisualEyebrow}>{t('marinaPreviewEyebrow')}</p>
+          <h4>{t('marinaPreviewTitle')}</h4>
 
           <div className={styles.careerBoats}>
             <div className={styles.careerBoat}>
@@ -584,7 +587,7 @@ function CareerBand(): React.ReactElement {
                   opacity="0.9"
                 />
               </svg>
-              <div className={styles.careerBoatStage}>Figaro III</div>
+              <div className={styles.careerBoatStage}>{tBoats('figaro3')}</div>
             </div>
             <div className={styles.careerBoat}>
               <svg viewBox="0 0 60 60" aria-hidden>
@@ -604,7 +607,7 @@ function CareerBand(): React.ReactElement {
                   strokeWidth="0.5"
                 />
               </svg>
-              <div className={styles.careerBoatStage}>IMOCA 60</div>
+              <div className={styles.careerBoatStage}>{tBoats('imoca60')}</div>
             </div>
             <div className={styles.careerBoat}>
               <svg viewBox="0 0 60 60" aria-hidden>
@@ -634,27 +637,27 @@ function CareerBand(): React.ReactElement {
                   +
                 </text>
               </svg>
-              <div className={styles.careerBoatStage}>Ultim · à débloquer</div>
+              <div className={styles.careerBoatStage}>{t('ultimToUnlock')}</div>
             </div>
           </div>
 
           <div className={styles.careerTimeline}>
             <div className={styles.careerStat}>
-              <p className={styles.careerStatLabel}>Crédits</p>
+              <p className={styles.careerStatLabel}>{t('creditsLabel')}</p>
               <p className={styles.careerStatValue}>
-                4&nbsp;820<small>cr</small>
+                4&nbsp;820<small>{t('creditsUnit')}</small>
               </p>
             </div>
             <div className={styles.careerStat}>
-              <p className={styles.careerStatLabel}>Podiums</p>
+              <p className={styles.careerStatLabel}>{t('podiumsLabel')}</p>
               <p className={styles.careerStatValue}>
-                07<small>saison</small>
+                07<small>{t('podiumsUnit')}</small>
               </p>
             </div>
             <div className={styles.careerStat}>
-              <p className={styles.careerStatLabel}>Upgrades</p>
+              <p className={styles.careerStatLabel}>{t('upgradesLabel')}</p>
               <p className={styles.careerStatValue}>
-                12<small>/18</small>
+                12<small>{t('upgradesUnit')}</small>
               </p>
             </div>
           </div>
@@ -669,17 +672,18 @@ function CareerBand(): React.ReactElement {
 // ─────────────────────────────────────────────────────────────
 
 function NewsGrid({ news }: { news: NewsItem[] }): React.ReactElement {
+  const t = useTranslations('home.newsGrid');
   return (
     <section className={styles.block}>
       <header className={styles.sectionHead}>
         <div>
           <p className={`${styles.eyebrow} ${styles.eyebrowOnLight}`}>
-            05 · Actualités · Saison 2026
+            {t('eyebrow')}
           </p>
-          <h2>Journal de bord.</h2>
+          <h2>{t('title')}</h2>
         </div>
         <Link href={'/news' as LinkHref} className={styles.sectionLink}>
-          Toutes les actualités <span>→</span>
+          {t('link')} <span>→</span>
         </Link>
       </header>
 
@@ -701,6 +705,7 @@ function SeasonPodium({
 }: {
   podium: SkipperRanking[];
 }): React.ReactElement | null {
+  const t = useTranslations('home.podium');
   if (podium.length < 3) return null;
   const p1 = podium[0];
   const p2 = podium[1];
@@ -711,12 +716,12 @@ function SeasonPodium({
       <header className={styles.sectionHead}>
         <div>
           <p className={`${styles.eyebrow} ${styles.eyebrowOnLight}`}>
-            06 · Circuit Nemo
+            {t('eyebrow')}
           </p>
-          <h2>Ils sont en tête.</h2>
+          <h2>{t('title')}</h2>
         </div>
         <Link href="/ranking" className={styles.sectionLink}>
-          Classement complet <span>→</span>
+          {t('link')} <span>→</span>
         </Link>
       </header>
 
@@ -738,6 +743,8 @@ function PodiumCard({
   position: 1 | 2 | 3;
   tone: 'p1' | 'p2' | 'p3';
 }): React.ReactElement {
+  const t = useTranslations('home.podium');
+  const tCommon = useTranslations('common.units');
   const main = String(position).padStart(2, '0');
   const suffix = position === 1 ? 'er' : 'e';
   const toneCls =
@@ -756,7 +763,7 @@ function PodiumCard({
         <Flag
           code={toIsoCountry(skipper.country)}
           style={{ width: 20, height: 14, verticalAlign: 'middle' }}
-          title={`Drapeau ${skipper.country.toUpperCase()}`}
+          title={t('flagAria', { country: skipper.country.toUpperCase() })}
         />
       </div>
       <h3 className={styles.podiumName}>{skipper.username}</h3>
@@ -765,7 +772,7 @@ function PodiumCard({
       </p>
       <p className={styles.podiumPoints}>
         {skipper.rankingScore.toLocaleString('fr-FR')}
-        <small>pts</small>
+        <small>{tCommon('points')}</small>
       </p>
     </article>
   );

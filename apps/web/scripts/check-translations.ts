@@ -89,6 +89,23 @@ function extractFromFile(filePath: string): UsedKey[] {
       }
     }
 
+    // t.rich('key', ...) ou t.raw('key') — méthodes du translator next-intl
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      ts.isIdentifier(node.expression.expression) &&
+      ts.isIdentifier(node.expression.name)
+    ) {
+      const fnName = node.expression.expression.text;
+      const method = node.expression.name.text;
+      if (bindings.has(fnName) && (method === 'rich' || method === 'raw' || method === 'markup')) {
+        const arg = node.arguments[0];
+        if (arg && ts.isStringLiteral(arg)) {
+          used.push({ ns: bindings.get(fnName)!, key: arg.text });
+        }
+      }
+    }
+
     ts.forEachChild(node, visit);
   }
 

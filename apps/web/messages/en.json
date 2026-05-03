@@ -6,7 +6,9 @@
       "close": "Fermer",
       "signin": "Se connecter",
       "signout": "Se déconnecter",
-      "read": "Lire →"
+      "signup": "Créer un compte",
+      "read": "Lire →",
+      "follow": "Suivre →"
     },
     "nav": {
       "courses": "Courses",
@@ -49,11 +51,200 @@
       "prevPage": "Page précédente",
       "nextPage": "Page suivante"
     },
+    "units": {
+      "credits": "cr",
+      "points": "pts",
+      "skippers": "skippers"
+    },
+    "boats": {
+      "figaro3": "Figaro III",
+      "class40": "Class40",
+      "imoca60": "IMOCA 60",
+      "ultim": "Ultim",
+      "cruiserRacer": "Croisière-Régate",
+      "miniSix50": "Mini 6.50",
+      "oceanFifty": "Ocean Fifty"
+    },
     "meta": {
       "title": "Nemo — Jeu de voile offshore",
       "shortName": "Nemo",
       "description": "Jeu de voile offshore en ligne. Polaires réelles, météo NOAA, zéro pay-to-win.",
       "applicationName": "Nemo"
+    }
+  },
+  "login": {
+    "aria": {
+      "brandHome": "Nemo — Accueil"
+    },
+    "eyebrowSeason": "Saison 2026",
+    "eyebrowAccess": "01 · Accès skipper",
+    "headline": {
+      "line1": "Bienvenue",
+      "line2Pre": "à ",
+      "line2Em": "bord",
+      "line2Post": "."
+    },
+    "lede": "<strong>Nemo</strong> est un circuit de course offshore en ligne. Polaires réelles, météo réelle, et un bateau qui te suit de course en course, façonné par tes victoires.",
+    "manifesto": {
+      "1": {
+        "title": "Polaires réelles",
+        "body": " Les mêmes fichiers pour tous les joueurs, du Figaro III à l'Ultim."
+      },
+      "2": {
+        "title": "Météo NOAA GFS",
+        "body": " Mise à jour toutes les 6 h, identique côté moteur et routeur."
+      },
+      "3": {
+        "title": "Ton bateau, ta carrière",
+        "body": " Tu gardes ton bateau d'une course à l'autre. Chaque podium rapporte des crédits qui financent tes upgrades : voiles, foils, électronique."
+      },
+      "4": {
+        "title": "Prépare ta course",
+        "body": " Avant chaque départ, tu arbitres : jeu de voiles, configuration de foils, ravitaillement. Tes choix décident du résultat."
+      }
+    },
+    "colophon": "Une carrière de skipper, mille à mille.",
+    "form": {
+      "title": "Connexion",
+      "sub": "Connectez-vous avec votre email et votre mot de passe.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "skipper@nemo.sail",
+      "passwordLabel": "Mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submitIdle": "Larguer les amarres",
+      "submitLoading": "Connexion",
+      "noAccountQuestion": "Pas encore de compte ?",
+      "signupLink": "Créer un compte",
+      "dividerDev": "dev · accès local",
+      "devButton": "Connexion dev (joueur seed)",
+      "dividerOauth": "ou · OAuth Phase 4",
+      "oauthGoogle": "Continuer avec Google",
+      "oauthApple": "Continuer avec Apple",
+      "phase4Tag": "Phase 4",
+      "phase5Tag": "Phase 5",
+      "legalPre": "En continuant, vous acceptez nos ",
+      "legalCgu": "Conditions d'utilisation",
+      "legalAnd": " et notre ",
+      "legalPrivacy": "Politique de confidentialité",
+      "legalPost": ". Les données de compte sont hébergées en Europe."
+    }
+  },
+  "news": {
+    "indexEyebrowNum": "01 · Actualités",
+    "indexEyebrowTrailing": "Saison 2026 · Circuit Nemo",
+    "indexTitle": "Journal de bord",
+    "indexLede": "Annonces de courses, ajustements de balance, interviews de skippers, nouveautés du jeu. Mis à jour par la rédaction Nemo.",
+    "indexAriaList": "Liste des actualités",
+    "indexEmpty": "Aucune actualité pour le moment.",
+    "article": {
+      "ariaCrumbs": "Fil d'ariane",
+      "crumbHome": "Accueil",
+      "crumbJournal": "Journal de bord",
+      "readingTime": "Lecture {min} min",
+      "publishedOnPre": "Publié le ",
+      "back": "Retour au journal de bord",
+      "relatedEyebrow": "Dans le journal",
+      "relatedTitle": "Lire aussi.",
+      "relatedAllLink": "Toutes les actualités",
+      "attributionPrefix": "— "
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Saison 2026 · Circuit Nemo",
+      "title": {
+        "line1": "Un bateau.",
+        "line2Pre": "Ta ",
+        "line2Em": "carrière",
+        "line2Post": ".",
+        "line3": "Mille à mille."
+      },
+      "lede": "<strong>Nemo</strong> est un circuit de course offshore en ligne. Polaires réelles fournies par les constructeurs, météo <strong>GFS</strong> mise à jour toutes les 6 h, et un bateau qui te suit de course en course, façonné par tes victoires.",
+      "ctaPrimaryVisitor": "Créer un compte",
+      "ctaPrimaryPlayer": "Reprendre ma carrière",
+      "ctaSecondaryVisitor": "Voir les courses en direct",
+      "ctaSecondaryPlayer": "Voir les courses",
+      "stats": {
+        "liveRaces": "courses en direct",
+        "racersOnWater": "skippers en mer",
+        "totalRegistered": "skippers inscrits"
+      }
+    },
+    "pillars": {
+      "eyebrow": "02 · L'essentiel",
+      "title": "Voici Nemo.",
+      "lede": "Trois piliers qui font de Nemo un circuit de skipper : simulation fidèle, données partagées par tous, progression qui se gagne course après course.",
+      "polars": {
+        "num": "01 · Polaires",
+        "title": "Polaires réelles",
+        "body": "Les <strong>mêmes fichiers</strong> pour tous les joueurs, du Figaro III à l'Ultim. Fournis par les constructeurs, jamais modifiés. Ton bateau se comporte exactement comme dans la vraie vie."
+      },
+      "weather": {
+        "num": "02 · Météo",
+        "title": "Météo réelle",
+        "body": "Les données <strong>GFS</strong> mises à jour toutes les 6 h, identiques côté moteur de jeu et côté routeurs tiers. Tes décisions tactiques se prennent sur les mêmes fichiers que ceux d'un skipper en vraie course."
+      },
+      "career": {
+        "num": "03 · Carrière",
+        "title": "Ton bateau, ta carrière",
+        "body": "Une <strong>seule coque</strong> qui te suit de course en course. Tes podiums financent tes upgrades — voiles, foils, électronique. Ta progression est la seule monnaie qui compte."
+      }
+    },
+    "liveRaces": {
+      "eyebrow": "03 · En direct",
+      "title": "Ça se joue maintenant.",
+      "link": "Voir toutes les courses",
+      "empty": "Aucune course en direct pour le moment — jette un œil aux courses ouvertes.",
+      "chipLive": "En direct",
+      "rewardLabel": "Dotation"
+    },
+    "career": {
+      "eyebrow": "04 · Carrière skipper",
+      "titleLine1": "Une seule ",
+      "titleEm": "coque",
+      "titleLine1End": ".",
+      "titleLine2": "Mille milles.",
+      "body1": "Le <strong>mode Carrière</strong>, c'est la version longue de Nemo. Tu démarres avec un bateau récent mais vierge d'équipement — Figaro, Class40, IMOCA ou Ultim selon la course qui te lance. Chaque épreuve que tu finis laisse une trace : un podium, des crédits, une upgrade.",
+      "emphasis": "Ton bateau vieillit avec toi, prend des couleurs, gagne en performance.",
+      "body2": "Les crédits se gagnent en course et financent tes upgrades — voiles, foils, électronique. Le <strong>mode Carrière</strong> te donne accès à la persistance de ton bateau, à ta progression sur la saison, et au palmarès officiel du circuit.",
+      "cta": "Rejoindre le circuit",
+      "marinaPreviewEyebrow": "Aperçu Marina",
+      "marinaPreviewTitle": "Ta flotte — Saison 2026",
+      "ultimToUnlock": "Ultim · à débloquer",
+      "creditsLabel": "Crédits",
+      "podiumsLabel": "Podiums",
+      "upgradesLabel": "Upgrades",
+      "creditsUnit": "cr",
+      "podiumsUnit": "saison",
+      "upgradesUnit": "/18"
+    },
+    "newsGrid": {
+      "eyebrow": "05 · Actualités · Saison 2026",
+      "title": "Journal de bord.",
+      "link": "Toutes les actualités"
+    },
+    "podium": {
+      "eyebrow": "06 · Circuit Nemo",
+      "title": "Ils sont en tête.",
+      "link": "Classement complet",
+      "flagAria": "Drapeau {country}"
+    },
+    "svg": {
+      "compass": {
+        "n": "N",
+        "e": "E",
+        "s": "S",
+        "o": "O"
+      },
+      "pillarMeteo": {
+        "lLabel": "L",
+        "hLabel": "H"
+      },
+      "pillarCareer": {
+        "blank": "VIERGE",
+        "custom": "CUSTOMISÉ",
+        "palmares": "PALMARÈS"
+      }
     }
   }
 }

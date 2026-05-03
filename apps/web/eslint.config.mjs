@@ -37,7 +37,11 @@ const config = [
   {
     files: [
       'src/app/\\[locale\\]/layout.tsx',
+      'src/app/\\[locale\\]/page.tsx',
       'src/app/\\[locale\\]/HomeHeroTopbar.tsx',
+      'src/app/\\[locale\\]/HomeView.tsx',
+      'src/app/\\[locale\\]/login/**/*.{tsx,ts}',
+      'src/app/\\[locale\\]/news/**/*.{tsx,ts}',
       'src/components/ui/**/*.{tsx,ts}',
       'src/i18n/**/*.{tsx,ts}',
     ],
@@ -55,6 +59,10 @@ const config = [
           'NE', 'M', 'O',
           // Stable contact email (not translatable)
           'hello@nemo.sail',
+          // OAuth brand icons (Google "G", Apple "⌘")
+          'G', '⌘',
+          // Mock numbers in CareerBand visual preview (placeholder demo data)
+          '4 820', '07', '12',
         ],
       }],
     },

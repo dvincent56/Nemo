@@ -1,12 +1,14 @@
+import { getTranslations } from 'next-intl/server';
 import { Eyebrow, NewsCard } from '@/components/ui';
 import type { NewsItem } from '@/lib/home-data';
 import styles from './page.module.css';
 
-export default function NewsIndexView({
+export default async function NewsIndexView({
   news,
 }: {
   news: NewsItem[];
-}): React.ReactElement {
+}): Promise<React.ReactElement> {
+  const t = await getTranslations('news');
   const sorted = [...news].sort((a, b) =>
     b.publishedAt.localeCompare(a.publishedAt),
   );
@@ -15,18 +17,15 @@ export default function NewsIndexView({
     <>
       <header className={styles.hero}>
         <div className={styles.heroMain}>
-          <Eyebrow trailing="Saison 2026 · Circuit Nemo">01 · Actualités</Eyebrow>
-          <h1 className={styles.title}>Journal de bord</h1>
+          <Eyebrow trailing={t('indexEyebrowTrailing')}>{t('indexEyebrowNum')}</Eyebrow>
+          <h1 className={styles.title}>{t('indexTitle')}</h1>
         </div>
-        <p className={styles.heroLede}>
-          Annonces de courses, ajustements de balance, interviews de skippers,
-          nouveautés du jeu. Mis à jour par la rédaction Nemo.
-        </p>
+        <p className={styles.heroLede}>{t('indexLede')}</p>
       </header>
 
-      <section className={styles.list} aria-label="Liste des actualités">
+      <section className={styles.list} aria-label={t('indexAriaList')}>
         {sorted.length === 0 ? (
-          <p className={styles.empty}>Aucune actualité pour le moment.</p>
+          <p className={styles.empty}>{t('indexEmpty')}</p>
         ) : (
           <div className={styles.grid}>
             {sorted.map((n) => (
