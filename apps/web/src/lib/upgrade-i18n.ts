@@ -20,6 +20,11 @@ export interface NamedUpgrade {
   name: string;
 }
 
+export interface DescribedUpgrade {
+  id: string;
+  description?: string | null;
+}
+
 /** Hook React : renvoie une fonction `(item) => string traduit`. */
 export function useUpgradeLabel(): (item: NamedUpgrade) => string {
   const t = useTranslations('marina.upgradeNames');
@@ -49,6 +54,25 @@ export function useUpgradeProfile(): (profile: string) => string {
       return t(profile);
     } catch {
       return profile;
+    }
+  };
+}
+
+/**
+ * Hook React : renvoie une fonction `(item) => string traduit` pour la
+ * description longue d'un upgrade. Indexé par id (code stable). Fallback
+ * gracieux sur item.description si la clé manque.
+ *
+ * Pas encore consommé par l'UI à date — pré-traduit pour quand on
+ * affichera le détail complet d'un upgrade.
+ */
+export function useUpgradeDescription(): (item: DescribedUpgrade) => string {
+  const t = useTranslations('marina.upgradeDescriptions');
+  return (item) => {
+    try {
+      return t(item.id);
+    } catch {
+      return item.description ?? '';
     }
   };
 }
