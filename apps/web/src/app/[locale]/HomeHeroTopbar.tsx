@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { API_BASE } from '@/lib/api';
-import { Drawer, type DrawerLink } from '@/components/ui';
+import { Drawer, type DrawerLink, LanguageSelector } from '@/components/ui';
 import styles from './page.module.css';
 
 interface HeroNavLink {
@@ -106,20 +106,8 @@ export function HomeHeroTopbar({ isVisitor }: HomeHeroTopbarProps): React.ReactE
           </button>
         )}
 
-        <div
-          className={styles.heroLang}
-          role="navigation"
-          aria-label="Langue"
-        >
-          {LANGS.map((l) => (
-            <a
-              key={l.code}
-              href="#"
-              className={l.code === 'fr' ? styles.heroLangActive : ''}
-            >
-              {l.label}
-            </a>
-          ))}
+        <div className={styles.heroLang}>
+          <LanguageSelector />
         </div>
 
         <button

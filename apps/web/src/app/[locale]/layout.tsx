@@ -1,38 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk, Bebas_Neue, Space_Mono } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing, type Locale } from '@/i18n/routing';
-import '../globals.css';
-
-// Les variables exposées à CSS portent un suffixe -raw ; globals.css les
-// agrège derrière --font-display / --font-body / --font-mono avec leurs
-// fallbacks locaux. Règle d'usage stricte :
-//   • Bebas Neue   (--font-display) — titres, noms de course, valeurs fortes
-//   • Space Grotesk (--font-body)   — tout le corps de texte UI
-//   • Space Mono   (--font-mono)    — TOUTES les données numériques
-
-const grotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-grotesk-raw',
-  display: 'swap',
-});
-
-const bebas = Bebas_Neue({
-  subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-bebas-raw',
-  display: 'swap',
-});
-
-const mono = Space_Mono({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-mono-raw',
-  display: 'swap',
-});
+import { HtmlLangSync } from './HtmlLangSync';
 
 export async function generateMetadata({
   params,
@@ -61,6 +32,13 @@ export function generateStaticParams(): { locale: Locale }[] {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+/**
+ * Layout du segment [locale] — Next 16 ne tolère pas <html>/<body>
+ * dans deux layouts (root + [locale]/) : le root les possède désormais.
+ * Ici on fournit uniquement le contexte i18n + un alignement client-side
+ * de l'attribut <html lang> via <HtmlLangSync /> (pour que les lecteurs
+ * d'écran et les outils SEO voient la bonne langue après hydratation).
+ */
 export default async function LocaleLayout({
   children,
   params,
@@ -75,15 +53,9 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html
-      lang={locale}
-      className={`${grotesk.variable} ${bebas.variable} ${mono.variable}`}
-    >
-      <body>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <HtmlLangSync locale={locale} />
+      {children}
+    </NextIntlClientProvider>
   );
 }

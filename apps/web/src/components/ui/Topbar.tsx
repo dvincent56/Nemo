@@ -7,6 +7,7 @@ import { API_BASE } from '@/lib/api';
 import styles from './Topbar.module.css';
 import { Button } from './Button';
 import { Drawer, type DrawerLink } from './Drawer';
+import { LanguageSelector } from './LanguageSelector';
 
 export interface TopbarLink {
   href: string;
@@ -33,6 +34,11 @@ const VISITOR_LINKS: TopbarLink[] = [
   { href: '/ranking', label: 'Classement' },
 ];
 
+// Le sélecteur de langue inline (legacy) renvoyait vers /{locale}{pathname}
+// sans stripper le préfixe locale courant — bug concat /en/fr/profile.
+// Remplacé par <LanguageSelector /> qui utilise les helpers next-intl.
+// Le drawer mobile reste sur le tableau LANGS local pour son propre rendu
+// stub jusqu'à sa migration en Plan 3.
 const LANGS = [
   { code: 'fr', label: 'FR' },
   { code: 'en', label: 'EN' },
@@ -111,17 +117,9 @@ export function Topbar({ links, showLang = true, isVisitor = false }: TopbarProp
         </nav>
 
         {showLang && (
-          <nav className={styles.lang} aria-label="Langue">
-            {LANGS.map((l) => (
-              <Link
-                key={l.code}
-                href={`/${l.code}${pathname ?? ''}` as Parameters<typeof Link>[0]['href']}
-                className={l.code === 'fr' ? styles.active : ''}
-              >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+          <div className={styles.lang}>
+            <LanguageSelector />
+          </div>
         )}
 
         <button
