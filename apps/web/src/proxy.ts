@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
-import { routing } from './src/i18n/routing';
+import { routing } from './i18n/routing';
 
 /**
  * Next.js 16.2 auth proxy (replaces legacy middleware.ts).
@@ -73,29 +73,31 @@ function isPublicLocalized(pathname: string): boolean {
 }
 
 export default function proxy(request: NextRequest): NextResponse {
-  // Étape 1 : next-intl handle locale routing (redirect si pas de préfixe,
-  // ou simple set du contexte si déjà préfixé).
-  const intlResponse = intlMiddleware(request);
+  const { pathname } = request.nextUrl;
 
-  // Si next-intl a généré une redirection ou un rewrite, on la retourne tel quel.
-  // C'est le cas pour les chemins sans préfixe locale (/marina → /fr/marina).
-  if (
-    intlResponse.headers.get('location') ||
-    intlResponse.headers.get('x-middleware-rewrite')
-  ) {
+  // Étape 1 : si le path n'a pas de préfixe locale, on délègue ENTIEREMENT
+  // à next-intl middleware qui va rediriger en 307 vers /{locale}/{path}.
+  // (next-intl résout la locale via cookie NEMO_LOCALE → Accept-Language → fallback.)
+  const stripped = stripLocale(pathname);
+  if (!stripped) {
+    return intlMiddleware(request);
+  }
+
+  // Étape 2 : path préfixé. next-intl set le contexte de locale (no-op de routing).
+  const intlResponse = intlMiddleware(request);
+  if (intlResponse.status >= 300 && intlResponse.status < 400) {
+    return intlResponse;
+  }
+  if (intlResponse.headers.get('x-middleware-rewrite')) {
     return intlResponse;
   }
 
-  // Étape 2 : auth check sur le path localisé
-  const { pathname } = request.nextUrl;
+  // Étape 3 : auth check sur le path déjà localisé
   if (isPublicLocalized(pathname)) return intlResponse;
 
   const token = request.cookies.get('nemo_access_token')?.value;
   if (!token) {
-    // Récupérer la locale du chemin courant pour rediriger vers /{locale}/login
-    const stripped = stripLocale(pathname);
-    const locale = stripped?.locale ?? routing.defaultLocale;
-    const loginUrl = new URL(`/${locale}/login`, request.url);
+    const loginUrl = new URL(`/${stripped.locale}/login`, request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
