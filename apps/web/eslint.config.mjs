@@ -28,12 +28,12 @@ const config = [
       '@typescript-eslint/no-require-imports': 'warn',
     },
   },
-  // i18n : interdit les strings littérales dans les fichiers déjà migrés
-  // sur next-intl. Au fur et à mesure des Plans 4-6, on ajoute les fichiers
-  // / dossiers migrés à cette liste de globs. Plan 3 a couvert tout le
-  // shell (root layout + components/ui + i18n config + HomeHeroTopbar) ;
-  // les pages/* et /play restent encore avec des strings FR en dur, leur
-  // migration vient en Plans 4-6.
+  // i18n : interdit les strings litterales dans les fichiers deja migres
+  // sur next-intl. Au fur et a mesure des Plans 5-6, on ajoute les fichiers
+  // / dossiers migres a cette liste de globs.
+  // Pages legales : chrome migre (cf Plan 4b) mais bodies juridiques restent
+  // inline FR -- non-couvertes par la regle. Inclusion de ces globs viendra
+  // avec la "vraie traduction" legale.
   {
     files: [
       'src/app/\\[locale\\]/layout.tsx',
@@ -42,6 +42,12 @@ const config = [
       'src/app/\\[locale\\]/HomeView.tsx',
       'src/app/\\[locale\\]/login/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/news/**/*.{tsx,ts}',
+      'src/app/\\[locale\\]/marina/page.tsx',
+      'src/app/\\[locale\\]/marina/MarinaClient.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/page.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/BoatDetailView.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotCard.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/SellModal.tsx',
       'src/components/ui/**/*.{tsx,ts}',
       'src/i18n/**/*.{tsx,ts}',
     ],
@@ -51,18 +57,14 @@ const config = [
         ignoreProps: true,
         noAttributeStrings: false,
         allowedStrings: [
-          // Typographic separators
-          '—', '·', '•', '/', ':', '|', '×', '+', '-',
-          // Arrows / ellipsis (used in pagination, callouts)
-          '→', '←', '↑', '↓', '…',
-          // Brand assets — "NEMO" is split as NE<span>M</span>O for design
+          '—', '·', '•', '/', ':', '|', '×', '+', '-', '.', '(', ')',
+          '→', '←', '↑', '↓', '…', '▸', '✦',
           'NE', 'M', 'O',
-          // Stable contact email (not translatable)
           'hello@nemo.sail',
-          // OAuth brand icons (Google "G", Apple "⌘")
           'G', '⌘',
-          // Mock numbers in CareerBand visual preview (placeholder demo data)
           '4 820', '07', '12',
+          '/login',
+          '%', '/7', 'NM',
         ],
       }],
     },

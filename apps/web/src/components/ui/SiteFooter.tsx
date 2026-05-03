@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { LanguageSelector } from './LanguageSelector';
 import styles from './SiteFooter.module.css';
 
 type Href = Parameters<typeof Link>[0]['href'];
@@ -64,7 +63,6 @@ export async function SiteFooter(): Promise<React.ReactElement> {
         <Link href="/" className={styles.brand} aria-label={t('aria.brandNemo')}>
           NE<span>M</span>O
         </Link>
-        <LanguageSelector />
         <p className={styles.copy}>{t('footer.copy')}</p>
       </div>
     </footer>

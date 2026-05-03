@@ -129,6 +129,124 @@
       "legalPost": ". Les données de compte sont hébergées en Europe."
     }
   },
+  "marina": {
+    "eyebrowSeason": "Saison 2026",
+    "eyebrowTrailing": "Ta carrière",
+    "title": "Marina",
+    "heroLede": "Ta flotte personnelle. Chaque bateau te suit de course en course, gagne en performance avec tes <strong>upgrades</strong> et porte tes couleurs.",
+    "counters": {
+      "boats": "Bateaux",
+      "credits": "Crédits",
+      "creditsUnit": "cr."
+    },
+    "inventoryLink": "Inventaire upgrades →",
+    "errorBannerTitle": "Impossible de charger ta flotte.",
+    "errorBannerHelp": "Vérifie que tu es connecté (page",
+    "errorBannerHelpEnd": ") et que le game-engine tourne.",
+    "emptyBanner": "Aucun bateau pour l'instant. Inscris-toi à une course pour recevoir ta première coque.",
+    "ariaFleet": "Flotte du skipper",
+    "classCount": "{n}/{max} coques",
+    "classLocked": "Verrouillée",
+    "lockedTextPre": "Inscris-toi à une course ",
+    "lockedTextPost": " pour recevoir ta coque vierge.",
+    "lockedCta": "Voir les courses {label} →",
+    "boatCard": {
+      "stateInRace": "En course · {raceId}",
+      "stateIdle": "Au port",
+      "races": "Courses",
+      "podiums": "Podiums",
+      "condition": "Condition",
+      "cta": "Détail bateau"
+    },
+    "newBoatLabel": "Nouveau {label}",
+    "errorUnknown": "Erreur inconnue",
+    "slots": {
+      "HULL": "Coque",
+      "MAST": "Mât",
+      "SAILS": "Voiles",
+      "FOILS": "Foils",
+      "KEEL": "Quille",
+      "ELECTRONICS": "Électronique",
+      "REINFORCEMENT": "Renfort"
+    },
+    "tiers": {
+      "SERIE": "Série",
+      "BRONZE": "Bronze",
+      "SILVER": "Silver",
+      "GOLD": "Gold",
+      "PROTO": "Proto"
+    },
+    "slotCard": {
+      "monotype": "Réglementation classe",
+      "lockedTooltip": "Modification impossible pendant la course",
+      "change": "Changer →"
+    },
+    "boatDetail": {
+      "ariaCrumbs": "Fil d'ariane",
+      "crumbBack": "← Marina",
+      "loadingError": "Impossible de charger ce bateau : {error}.",
+      "loadingErrorHelp": "Vérifie que tu es connecté (",
+      "loadingErrorHelpEnd": ") et que le game-engine tourne.",
+      "loadingState": "Chargement…",
+      "stateInRace": "En course · {raceId}",
+      "stateIdle": "Au port",
+      "actions": {
+        "lockedTooltip": "Impossible pendant la course",
+        "customize": "Personnaliser →",
+        "sellTooltip": "Vendre ce bateau",
+        "sell": "Vendre"
+      },
+      "stats": {
+        "races": "Courses",
+        "podiums": "Podiums",
+        "avgCondition": "Condition moyenne",
+        "avgConditionDetail": "C:{hull} G:{rig} V:{sails} E:{elec}",
+        "upgradesInstalled": "Upgrades installés"
+      },
+      "perfSection": {
+        "eyebrow": "Profil",
+        "title": "Performance vs série",
+        "aside": "Cumul des effets des upgrades installés comparé à un bateau série."
+      },
+      "autoRepair": {
+        "aria": "Réparation automatique",
+        "text": "Votre bateau est <strong>automatiquement remis en état</strong> au départ de chaque course. L'usure accumulée en mer est effacée à l'arrivée — concentrez-vous sur votre stratégie, pas sur la maintenance."
+      },
+      "equipmentSection": {
+        "eyebrow": "Performance",
+        "title": "Équipement",
+        "asideLocked": "Sept emplacements à configurer. Modifications bloquées pendant la course.",
+        "asideOpen": "Sept emplacements à configurer. Clique « Changer » pour modifier un slot."
+      },
+      "historySection": {
+        "eyebrow": "Palmarès",
+        "title": "Historique",
+        "asideCount": "{n, plural, one {# course bouclée} other {# courses bouclées}} avec ce bateau.",
+        "asideEmpty": "Aucune course disputée avec ce bateau.",
+        "emptyPre": "Inscris-toi à une course ",
+        "emptyPost": " pour démarrer son historique.",
+        "creditsGain": "+ {amount} cr.",
+        "creditsNone": "—",
+        "paginationLabel": "Pagination historique du bateau"
+      }
+    },
+    "sellModal": {
+      "title": "Vendre {name} ?",
+      "warning": "Cette action est irréversible.",
+      "palmaresTitle": "Palmarès du bateau",
+      "races": "{n} courses",
+      "wins": "{n, plural, one {# victoire} other {# victoires}}",
+      "podiums": "{n, plural, one {# podium} other {# podiums}}",
+      "top10": "{n} top 10",
+      "creditsTitle": "Crédits estimés",
+      "creditsValue": "≥ {amount} cr.",
+      "creditsZero": "0 cr.",
+      "creditsZeroNote": "Aucun palmarès — pas de gain.",
+      "upgradesTitle": "Upgrades retournés en inventaire ({n})",
+      "sellButton": "Vendre",
+      "sellButtonGain": "Vendre (+{amount} cr.)"
+    }
+  },
   "pageLegal": {
     "meta": {
       "title": "Mentions légales · Nemo",

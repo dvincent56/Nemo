@@ -2,16 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Pagination, BoatSvg } from '@/components/ui';
 import Tooltip from '@/components/ui/Tooltip';
 import {
   fetchBoatDetail, fetchCatalog,
   type BoatRecord, type InstalledUpgrade, type UpgradeSlot, type SlotAvailability,
 } from '@/lib/marina-api';
-import {
-  CLASS_LABEL,
-  type BoatRaceHistoryEntry,
-} from '../data';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
+import { type BoatRaceHistoryEntry } from '../data';
 import { SlotCard } from './SlotCard';
 import { SlotDrawer } from './SlotDrawer';
 import { SellModal } from './SellModal';
@@ -30,6 +29,9 @@ interface BoatDetailViewProps {
 }
 
 export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.ReactElement {
+  const t = useTranslations('marina.boatDetail');
+  const tMarina = useTranslations('marina');
+  const boatLabel = useBoatLabel();
   const [boat, setBoat] = useState<BoatRecord | null>(null);
   const [installed, setInstalled] = useState<InstalledUpgrade[]>([]);
   const [credits, setCredits] = useState(0);
@@ -37,7 +39,6 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
   const [history, setHistory] = useState<BoatRaceHistoryEntry[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // UI state
   const [drawerSlot, setDrawerSlot] = useState<UpgradeSlot | null>(null);
   const [showSell, setShowSell] = useState(false);
   const [page, setPage] = useState(1);
@@ -55,53 +56,51 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       if (catalog.slotsByClass[cls]) {
         setSlotsByClass(catalog.slotsByClass[cls] as Record<UpgradeSlot, SlotAvailability>);
       }
-      // Race history will come from a dedicated endpoint later
       setHistory([]);
       setLoadError(null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      const msg = err instanceof Error ? err.message : tMarina('errorUnknown');
       setLoadError(msg);
     }
-  }, [boatId]);
+  }, [boatId, tMarina]);
 
   useEffect(() => { load(); }, [load]);
 
   if (loadError) {
     return (
       <div className={styles.loading}>
-        Impossible de charger ce bateau : {loadError}.<br />
-        Vérifie que tu es connecté (<Link href="/login">/login</Link>) et que le game-engine tourne.
+        {t('loadingError', { error: loadError })}<br />
+        {t('loadingErrorHelp')}<Link href="/login">/login</Link>{t('loadingErrorHelpEnd')}
       </div>
     );
   }
 
   if (!boat) {
-    return <p className={styles.loading}>Chargement…</p>;
+    return <p className={styles.loading}>{t('loadingState')}</p>;
   }
 
   const inRace = !!boat.activeRaceId;
-  const stateLabel = inRace ? `En course · ${boat.activeRaceId}` : 'Au port';
+  const stateLabel = inRace
+    ? t('stateInRace', { raceId: boat.activeRaceId ?? '' })
+    : t('stateIdle');
   const stateCls = inRace ? styles.stateInRace : styles.stateIdle;
-  const classLabel = CLASS_LABEL[boat.boatClass];
+  const classLabel = boatLabel(boat.boatClass);
 
-  // Stats
   const avgCondition = Math.round(
     (boat.hullCondition + boat.rigCondition + boat.sailCondition + boat.elecCondition) / 4,
   );
 
-  // History pagination
   const totalPages = Math.max(1, Math.ceil(history.length / HISTORY_PAGE_SIZE));
   const visibleHistory = history.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
 
-  // Installed lookup
   const installedBySlot = new Map(installed.map((u) => [u.slot, u]));
 
   return (
     <>
       {/* Breadcrumb */}
       <div className={styles.subhead}>
-        <nav className={styles.breadcrumb} aria-label="Fil d'ariane">
-          <Link href={'/marina' as Parameters<typeof Link>[0]['href']}>← Marina</Link>
+        <nav className={styles.breadcrumb} aria-label={t('ariaCrumbs')}>
+          <Link href={'/marina' as Parameters<typeof Link>[0]['href']}>{t('crumbBack')}</Link>
           <span className={styles.breadcrumbSep}>/</span>
           <span>{boat.name}</span>
         </nav>
@@ -129,13 +128,13 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
           {/* Action bar */}
           <div className={styles.heroActions}>
             {inRace ? (
-              <Tooltip text="Impossible pendant la course" position="bottom">
+              <Tooltip text={t('actions.lockedTooltip')} position="bottom">
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnPrimary}`}
                   disabled
                 >
-                  Personnaliser →
+                  {t('actions.customize')}
                 </button>
               </Tooltip>
             ) : (
@@ -143,11 +142,11 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
                 href={`/marina/${boat.id}/customize` as Parameters<typeof Link>[0]['href']}
                 className={`${styles.btn} ${styles.btnPrimary}`}
               >
-                Personnaliser →
+                {t('actions.customize')}
               </Link>
             )}
             <Tooltip
-              text={inRace ? 'Impossible pendant la course' : 'Vendre ce bateau'}
+              text={inRace ? t('actions.lockedTooltip') : t('actions.sellTooltip')}
               position="bottom"
             >
               <button
@@ -156,7 +155,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
                 onClick={() => setShowSell(true)}
                 disabled={inRace}
               >
-                Vendre
+                {t('actions.sell')}
               </button>
             </Tooltip>
           </div>
@@ -167,37 +166,40 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       <section className={styles.statsBand}>
         <div className={styles.statsGrid}>
           <div className={styles.statCell}>
-            <p className={styles.statCellLabel}>Courses</p>
+            <p className={styles.statCellLabel}>{t('stats.races')}</p>
             <p className={styles.statCellValue}>{String(boat.racesCount).padStart(2, '0')}</p>
           </div>
           <div className={styles.statCell}>
-            <p className={styles.statCellLabel}>Podiums</p>
+            <p className={styles.statCellLabel}>{t('stats.podiums')}</p>
             <p className={`${styles.statCellValue} ${styles.statCellValueGold}`}>{boat.podiums}</p>
           </div>
           <div className={styles.statCell}>
-            <p className={styles.statCellLabel}>Condition moyenne</p>
+            <p className={styles.statCellLabel}>{t('stats.avgCondition')}</p>
             <p className={styles.statCellValue}>{avgCondition}%</p>
             <p className={styles.statCellSub}>
-              C:{boat.hullCondition} G:{boat.rigCondition} V:{boat.sailCondition} E:{boat.elecCondition}
+              {t('stats.avgConditionDetail', {
+                hull: boat.hullCondition,
+                rig: boat.rigCondition,
+                sails: boat.sailCondition,
+                elec: boat.elecCondition,
+              })}
             </p>
           </div>
           <div className={styles.statCell}>
-            <p className={styles.statCellLabel}>Upgrades installés</p>
+            <p className={styles.statCellLabel}>{t('stats.upgradesInstalled')}</p>
             <p className={styles.statCellValue}>{installed.length}<small>/7</small></p>
           </div>
         </div>
       </section>
 
-      {/* Aggregated effects — vs a stock boat */}
+      {/* Aggregated effects */}
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Profil</p>
-            <h2 className={styles.sectionTitle}>Performance vs série</h2>
+            <p className={styles.sectionEyebrow}>{t('perfSection.eyebrow')}</p>
+            <h2 className={styles.sectionTitle}>{t('perfSection.title')}</h2>
           </div>
-          <p className={styles.sectionAside}>
-            Cumul des effets des upgrades installés comparé à un bateau série.
-          </p>
+          <p className={styles.sectionAside}>{t('perfSection.aside')}</p>
         </div>
         <div className={styles.effectsWrap}>
           <EffectsSummary effects={aggregateInstalledEffects(installed)} variant="bars" />
@@ -205,12 +207,12 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       </section>
 
       <div className={styles.autoRepairWrap}>
-        <aside className={styles.autoRepairNotice} aria-label="Réparation automatique">
+        <aside className={styles.autoRepairNotice} aria-label={t('autoRepair.aria')}>
           <span className={styles.autoRepairIcon} aria-hidden>✦</span>
           <p className={styles.autoRepairText}>
-            Votre bateau est <strong>automatiquement remis en état</strong> au départ de
-            chaque course. L&apos;usure accumulée en mer est effacée à l&apos;arrivée — concentrez-vous
-            sur votre stratégie, pas sur la maintenance.
+            {t.rich('autoRepair.text', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </aside>
       </div>
@@ -219,11 +221,11 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Performance</p>
-            <h2 className={styles.sectionTitle}>Équipement</h2>
+            <p className={styles.sectionEyebrow}>{t('equipmentSection.eyebrow')}</p>
+            <h2 className={styles.sectionTitle}>{t('equipmentSection.title')}</h2>
           </div>
           <p className={styles.sectionAside}>
-            Sept emplacements à configurer. {inRace ? 'Modifications bloquées pendant la course.' : 'Clique « Changer » pour modifier un slot.'}
+            {inRace ? t('equipmentSection.asideLocked') : t('equipmentSection.asideOpen')}
           </p>
         </div>
 
@@ -248,18 +250,18 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
       <section className={`${styles.section} ${styles.sectionTop0}`}>
         <div className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Palmarès</p>
-            <h2 className={styles.sectionTitle}>Historique</h2>
+            <p className={styles.sectionEyebrow}>{t('historySection.eyebrow')}</p>
+            <h2 className={styles.sectionTitle}>{t('historySection.title')}</h2>
           </div>
           <p className={styles.sectionAside}>
             {history.length > 0
-              ? `${history.length} course${history.length > 1 ? 's' : ''} bouclée${history.length > 1 ? 's' : ''} avec ce bateau.`
-              : 'Aucune course disputée avec ce bateau.'}
+              ? t('historySection.asideCount', { n: history.length })
+              : t('historySection.asideEmpty')}
           </p>
         </div>
         {history.length === 0 ? (
           <p className={styles.historyEmpty}>
-            Inscris-toi à une course <strong>{classLabel}</strong> pour démarrer son historique.
+            {t('historySection.emptyPre')}<strong>{classLabel}</strong>{t('historySection.emptyPost')}
           </p>
         ) : (
           <>
@@ -281,7 +283,9 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
                   </div>
                   <span className={styles.historyTime}>{h.durationLabel}</span>
                   <span className={styles.historyCredits}>
-                    {h.creditsEarned > 0 ? `+ ${h.creditsEarned.toLocaleString('fr-FR')} cr.` : '—'}
+                    {h.creditsEarned > 0
+                      ? t('historySection.creditsGain', { amount: h.creditsEarned.toLocaleString('fr-FR') })
+                      : t('historySection.creditsNone')}
                   </span>
                 </Link>
               ))}
@@ -293,7 +297,7 @@ export default function BoatDetailView({ boatId }: BoatDetailViewProps): React.R
                 totalItems={history.length}
                 pageSize={HISTORY_PAGE_SIZE}
                 onChange={setPage}
-                label="Pagination historique du bateau"
+                label={t('historySection.paginationLabel')}
               />
             )}
           </>

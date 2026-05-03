@@ -3,19 +3,22 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Eyebrow, BoatSvg } from '@/components/ui';
 import {
   fetchMyBoats, createBoat,
   type BoatRecord, type BoatClass,
 } from '@/lib/marina-api';
-import {
-  CLASS_LABEL, ALL_CLASSES, MAX_BOATS_PER_CLASS,
-} from './data';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
+import { ALL_CLASSES, MAX_BOATS_PER_CLASS } from './data';
 import styles from './page.module.css';
 
 function BoatCard({ boat }: { boat: BoatRecord }): React.ReactElement {
+  const t = useTranslations('marina.boatCard');
   const inRace = !!boat.activeRaceId;
-  const stateLabel = inRace ? `En course · ${boat.activeRaceId}` : 'Au port';
+  const stateLabel = inRace
+    ? t('stateInRace', { raceId: boat.activeRaceId ?? '' })
+    : t('stateIdle');
   const stateCls = inRace ? styles.stateInRace : styles.stateIdle;
   const cardCls = `${styles.card} ${inRace ? styles.cardActive : ''}`;
 
@@ -30,22 +33,22 @@ function BoatCard({ boat }: { boat: BoatRecord }): React.ReactElement {
       </div>
       <div className={styles.stats}>
         <div>
-          <p className={styles.statLabel}>Courses</p>
+          <p className={styles.statLabel}>{t('races')}</p>
           <p className={styles.statValue}>{String(boat.racesCount).padStart(2, '0')}</p>
         </div>
         <div>
-          <p className={styles.statLabel}>Podiums</p>
+          <p className={styles.statLabel}>{t('podiums')}</p>
           <p className={`${styles.statValue} ${styles.statValueGold}`}>{boat.podiums}</p>
         </div>
         <div>
-          <p className={styles.statLabel}>Condition</p>
+          <p className={styles.statLabel}>{t('condition')}</p>
           <p className={styles.statValue}>
             {Math.round((boat.hullCondition + boat.rigCondition + boat.sailCondition + boat.elecCondition) / 4)}%
           </p>
         </div>
       </div>
       <div className={styles.cta}>
-        <span>Détail bateau</span>
+        <span>{t('cta')}</span>
         <span className={styles.ctaArrow}>→</span>
       </div>
     </Link>
@@ -57,7 +60,9 @@ function NewBoatButton({ boatClass, onCreated }: {
   onCreated: () => void;
 }): React.ReactElement {
   const router = useRouter();
-  const label = CLASS_LABEL[boatClass];
+  const t = useTranslations('marina');
+  const boatLabel = useBoatLabel();
+  const label = boatLabel(boatClass);
   const [busy, setBusy] = useState(false);
 
   const handleCreate = async () => {
@@ -76,12 +81,14 @@ function NewBoatButton({ boatClass, onCreated }: {
   return (
     <button type="button" className={`${styles.card} ${styles.cardNew}`} onClick={handleCreate} disabled={busy}>
       <span className={styles.newIcon}>+</span>
-      <span className={styles.newLabel}>Nouveau {label}</span>
+      <span className={styles.newLabel}>{t('newBoatLabel', { label })}</span>
     </button>
   );
 }
 
 export default function MarinaClient(): React.ReactElement {
+  const t = useTranslations('marina');
+  const boatLabel = useBoatLabel();
   const [boats, setBoats] = useState<BoatRecord[]>([]);
   const [credits, setCredits] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -94,11 +101,11 @@ export default function MarinaClient(): React.ReactElement {
       setCredits(data.credits);
       setLoadError(null);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      const msg = err instanceof Error ? err.message : t('errorUnknown');
       setLoadError(msg);
     }
     setLoaded(true);
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -115,30 +122,31 @@ export default function MarinaClient(): React.ReactElement {
     <>
       <section className={styles.hero}>
         <div className={styles.heroMain}>
-          <Eyebrow trailing="Ta carrière">Saison 2026</Eyebrow>
-          <h1 className={styles.title}>Marina</h1>
+          <Eyebrow trailing={t('eyebrowTrailing')}>{t('eyebrowSeason')}</Eyebrow>
+          <h1 className={styles.title}>{t('title')}</h1>
         </div>
         <div>
           <p className={styles.heroMeta}>
-            Ta flotte personnelle. Chaque bateau te suit de course en course,
-            gagne en performance avec tes <strong>upgrades</strong> et porte tes couleurs.
+            {t.rich('heroLede', {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
           <div className={styles.counters}>
             <div className={styles.counter}>
-              <p className={styles.counterLabel}>Bateaux</p>
+              <p className={styles.counterLabel}>{t('counters.boats')}</p>
               <p className={styles.counterValue}>{String(totalBoats).padStart(2, '0')}</p>
             </div>
             <div className={styles.counter}>
-              <p className={styles.counterLabel}>Crédits</p>
+              <p className={styles.counterLabel}>{t('counters.credits')}</p>
               <p className={styles.counterValue}>
-                {credits.toLocaleString('fr-FR')}<small>cr.</small>
+                {credits.toLocaleString('fr-FR')}<small>{t('counters.creditsUnit')}</small>
               </p>
             </div>
             <Link
               href={'/marina/inventory' as Parameters<typeof Link>[0]['href']}
               className={styles.inventoryLink}
             >
-              Inventaire upgrades →
+              {t('inventoryLink')}
             </Link>
           </div>
         </div>
@@ -146,29 +154,29 @@ export default function MarinaClient(): React.ReactElement {
 
       {loadError && (
         <div className={styles.errorBanner}>
-          <strong>Impossible de charger ta flotte.</strong> {loadError}.
-          Vérifie que tu es connecté (page <Link href="/login">/login</Link>) et que le game-engine tourne.
+          <strong>{t('errorBannerTitle')}</strong> {loadError}.
+          {' '}{t('errorBannerHelp')}{' '}
+          <Link href="/login">/login</Link>
+          {t('errorBannerHelpEnd')}
         </div>
       )}
 
       {loaded && !loadError && boats.length === 0 && (
-        <div className={styles.emptyBanner}>
-          Aucun bateau pour l'instant. Inscris-toi à une course pour recevoir ta première coque.
-        </div>
+        <div className={styles.emptyBanner}>{t('emptyBanner')}</div>
       )}
 
-      <main className={styles.fleet} aria-label="Flotte du skipper">
+      <main className={styles.fleet} aria-label={t('ariaFleet')}>
         {ALL_CLASSES.map((cls) => {
           const classBoats = byClass.get(cls) ?? [];
           const unlocked = classBoats.length > 0;
-          const label = CLASS_LABEL[cls];
+          const label = boatLabel(cls);
 
           return (
             <section key={cls} className={styles.classSection}>
               <header className={styles.classHeader}>
                 <h2 className={styles.className}>{label}</h2>
                 <span className={styles.classCount}>
-                  {unlocked ? `${classBoats.length}/${MAX_BOATS_PER_CLASS} coques` : 'Verrouillée'}
+                  {unlocked ? t('classCount', { n: classBoats.length, max: MAX_BOATS_PER_CLASS }) : t('classLocked')}
                 </span>
               </header>
 
@@ -182,13 +190,13 @@ export default function MarinaClient(): React.ReactElement {
               ) : (
                 <div className={styles.classLocked}>
                   <p className={styles.lockedText}>
-                    Inscris-toi à une course <strong>{label}</strong> pour recevoir ta coque vierge.
+                    {t('lockedTextPre')}<strong>{label}</strong>{t('lockedTextPost')}
                   </p>
                   <Link
                     href={`/races?class=${cls}` as Parameters<typeof Link>[0]['href']}
                     className={styles.lockedCta}
                   >
-                    Voir les courses {label} →
+                    {t('lockedCta', { label })}
                   </Link>
                 </div>
               )}

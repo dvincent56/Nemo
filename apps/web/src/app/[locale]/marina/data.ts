@@ -7,6 +7,11 @@ export type { BoatRecord, InstalledUpgrade, UpgradeSlot, UpgradeTier, BoatClass 
 
 export { CLASS_LABEL } from '@/lib/boat-classes';
 
+/**
+ * Labels FR de fallback — utilisés en seed/test data hors contexte React.
+ * Pour les composants, préférer `useTranslations('marina.slots')` /
+ * `useTranslations('marina.tiers')` qui retournent la version localisée.
+ */
 export const SLOT_LABEL: Record<UpgradeSlot, string> = {
   HULL: 'Coque',
   MAST: 'Mât',
