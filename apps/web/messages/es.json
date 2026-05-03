@@ -129,6 +129,86 @@
       "legalPost": ". Les données de compte sont hébergées en Europe."
     }
   },
+  "pageLegal": {
+    "meta": {
+      "title": "Mentions légales · Nemo",
+      "description": "Éditeur, hébergeur et informations légales du service Nemo."
+    },
+    "eyebrow": "Informations légales",
+    "trailing": "LCEN · art. 6-III",
+    "title": "Mentions légales",
+    "intro": "Qui édite ce service, qui l'héberge, qui contacter. Rien de caché, tout dans la même page — conformément à la loi française pour la confiance dans l'économie numérique.",
+    "lastUpdated": "16 avril 2026",
+    "sections": {
+      "editeur": "Éditeur",
+      "directeur": "Directeur de la publication",
+      "hebergeur": "Hébergeur",
+      "ip": "Propriété intellectuelle",
+      "marques": "Marques",
+      "responsabilite": "Limitation de responsabilité",
+      "contact": "Contact et signalement"
+    }
+  },
+  "pageCgu": {
+    "meta": {
+      "title": "CGU · Nemo",
+      "description": "Conditions générales d'utilisation du circuit Nemo."
+    },
+    "eyebrow": "Cadre contractuel",
+    "trailing": "CGU",
+    "title": "Conditions générales d'utilisation",
+    "intro": "Les règles du jeu, de l'inscription à la résiliation. Écrites pour être lisibles, pas pour se planquer derrière du jargon juridique.",
+    "lastUpdated": "16 avril 2026",
+    "sections": {
+      "objet": "Objet",
+      "acceptation": "Acceptation et modification",
+      "compte": "Compte joueur",
+      "regles": "Règles de jeu et fair-play",
+      "abonnement": "Abonnement Mode Carrière",
+      "ip": "Propriété intellectuelle",
+      "responsabilite": "Responsabilité",
+      "resiliation": "Résiliation",
+      "loi": "Loi applicable et juridiction"
+    }
+  },
+  "pagePrivacy": {
+    "meta": {
+      "title": "Confidentialité · Nemo",
+      "description": "Politique de confidentialité et traitement des données personnelles de Nemo."
+    },
+    "eyebrow": "RGPD · Loi informatique et libertés",
+    "trailing": "Confidentialité",
+    "title": "Politique de confidentialité",
+    "intro": "Ce qu'on collecte, pourquoi, combien de temps on le garde, et comment tu peux tout récupérer ou tout effacer. Ton email ne sera jamais revendu.",
+    "lastUpdated": "16 avril 2026",
+    "sections": {
+      "responsable": "Responsable du traitement",
+      "donnees": "Données collectées",
+      "finalites": "Finalités et bases légales",
+      "destinataires": "Destinataires et sous-traitants",
+      "droits": "Tes droits",
+      "securite": "Sécurité",
+      "mineurs": "Mineurs"
+    }
+  },
+  "pageCookies": {
+    "meta": {
+      "title": "Cookies · Nemo",
+      "description": "Politique d'utilisation des cookies et traceurs sur Nemo."
+    },
+    "eyebrow": "Traceurs et consentement",
+    "trailing": "Cookies",
+    "title": "Politique cookies",
+    "intro": "Uniquement ceux qu'il faut pour te connecter. Pas de tracking publicitaire, pas de pixel caché, pas de régie tierce.",
+    "lastUpdated": "1er mai 2026",
+    "sections": {
+      "definition": "Qu'est-ce qu'un cookie",
+      "liste": "Cookies utilisés",
+      "pas-de-tracking": "Ce que nous ne faisons PAS",
+      "gestion": "Gérer tes cookies",
+      "evolution": "Évolution de cette politique"
+    }
+  },
   "news": {
     "indexEyebrowNum": "01 · Actualités",
     "indexEyebrowTrailing": "Saison 2026 · Circuit Nemo",
