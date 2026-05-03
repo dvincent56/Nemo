@@ -87,6 +87,8 @@ const config = [
       'src/components/play/prog/WpEditor.tsx',
       'src/components/play/prog/FinalCapEditor.tsx',
       'src/components/play/prog/SailEditor.tsx',
+      'src/components/play/compass/CompassReadouts.tsx',
+      'src/components/play/compass/CompassLockToggle.tsx',
       'src/components/play/timeline/TimelineHeader.tsx',
       'src/components/play/timeline/TimelineControls.tsx',
       'src/components/play/timeline/TimelineTrack.tsx',

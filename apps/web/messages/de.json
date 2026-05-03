@@ -410,6 +410,11 @@
       },
       "quit": "← Quitter"
     },
+    "compassReadouts": {
+      "speed": "Vitesse",
+      "heading": "Cap",
+      "twa": "TWA"
+    },
     "compass": {
       "tooltips": {
         "lockedOn": "TWA verrouillé — le cap suit le vent",
@@ -535,7 +540,7 @@
     },
     "progBanner": {
       "title": "{n, plural, one {# ORDRE OBSOLÈTE} other {# ORDRES OBSOLÈTES}}",
-      "desc": "{n, plural, one {Heure passée sous le seuil de <bold>maintenant + 5min</bold>. Sera retiré à la confirmation.} other {Heure passée sous le seuil de <bold>maintenant + 5min</bold>. Seront retirés à la confirmation.}}",
+      "desc": "{n, plural, one {Heure de déclenchement déjà passée. Sera retiré automatiquement.} other {Heure de déclenchement déjà passée. Seront retirés automatiquement.}}",
       "ariaClose": "Fermer l'alerte"
     },
     "progToast": {

@@ -10,8 +10,11 @@
  * so the absolute-positioned hint anchors correctly.
  */
 
+'use client';
+
 import type { ReactElement } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import styles from './CompassReadouts.module.css';
 import compassStyles from '../Compass.module.css';
 
@@ -39,6 +42,7 @@ export default function CompassReadouts({
   bspColorClass,
   pendingHint,
 }: CompassReadoutsProps): ReactElement {
+  const t = useTranslations('play.compassReadouts');
   const bspClass = bspColorClass ? styles[bspColorClass] : '';
   return (
     <>
@@ -53,18 +57,18 @@ export default function CompassReadouts({
       <div className={styles.readouts}>
         {bspKn !== undefined && (
           <div>
-            <p className={styles.readoutLabel}>Vitesse</p>
+            <p className={styles.readoutLabel}>{t('speed')}</p>
             <p className={`${styles.readoutValue} ${bspClass}`}>
               {bspKn.toFixed(2)} <small>nds</small>
             </p>
           </div>
         )}
         <div>
-          <p className={styles.readoutLabel}>Cap</p>
+          <p className={styles.readoutLabel}>{t('heading')}</p>
           <p className={`${styles.readoutValue} ${styles.gold}`}>{Math.round(headingDeg)}°</p>
         </div>
         <div>
-          <p className={styles.readoutLabel}>TWA</p>
+          <p className={styles.readoutLabel}>{t('twa')}</p>
           <p className={`${styles.readoutValue} ${vmgGlow ? styles.live : ''}`}>
             {Math.round(twaDeg)}°
           </p>
