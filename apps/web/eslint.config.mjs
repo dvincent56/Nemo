@@ -31,9 +31,7 @@ const config = [
   // i18n : interdit les strings litterales dans les fichiers deja migres
   // sur next-intl. Au fur et a mesure des Plans 5-6, on ajoute les fichiers
   // / dossiers migres a cette liste de globs.
-  // Pages legales : chrome migre (cf Plan 4b) mais bodies juridiques restent
-  // inline FR -- non-couvertes par la regle. Inclusion de ces globs viendra
-  // avec la "vraie traduction" legale.
+  // Pages legales : chrome + bodies migres (premier passage de traduction).
   // dev/simulator/** : outil interne gate par NODE_ENV !== 'production',
   // jamais expose aux utilisateurs finaux. Volontairement hors scope i18n.
   {
@@ -43,6 +41,10 @@ const config = [
       'src/app/\\[locale\\]/HomeHeroTopbar.tsx',
       'src/app/\\[locale\\]/HomeView.tsx',
       'src/app/\\[locale\\]/not-found.tsx',
+      'src/app/\\[locale\\]/legal/page.tsx',
+      'src/app/\\[locale\\]/cgu/page.tsx',
+      'src/app/\\[locale\\]/privacy/page.tsx',
+      'src/app/\\[locale\\]/cookies/page.tsx',
       'src/app/\\[locale\\]/login/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/news/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/marina/page.tsx',

@@ -8,12 +8,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('title'), description: t('description') };
 }
 
-// NB : les bodies des sections restent en JSX FR inline. Le texte juridique
-// nécessite une traduction par juriste local — sera externalisé en messages
-// JSON / MDX par locale dans une vague de "vraie traduction" ultérieure.
-
 export default async function CookiesPage(): Promise<React.ReactElement> {
   const t = await getTranslations('pageCookies');
+  const tb = await getTranslations('pageCookies.body');
+
+  const richTags = {
+    b: (chunks: React.ReactNode) => <strong>{chunks}</strong>,
+    i: (chunks: React.ReactNode) => <em>{chunks}</em>,
+  };
+
+  const listeHeaders = tb.raw('liste.headers') as string[];
+  const listeRows = tb.raw('liste.rows') as string[][];
+  const trackingItems = tb.raw('pasDeTracking.items') as string[];
+  const browsers = tb.raw('gestion.browsers') as [string, string][];
 
   const sections: LegalSection[] = [
     {
@@ -22,16 +29,8 @@ export default async function CookiesPage(): Promise<React.ReactElement> {
       title: t('sections.definition'),
       body: (
         <>
-          <p>
-            Un cookie est un petit fichier texte stocké par ton navigateur lorsque tu visites un site web. Il
-            permet au site de te reconnaître lors de tes visites suivantes, de mémoriser tes préférences et
-            parfois d'analyser ton usage.
-          </p>
-          <p>
-            Nemo utilise <strong>uniquement des cookies strictement nécessaires</strong> au fonctionnement du
-            service. Nous n'utilisons aucun cookie publicitaire, aucun cookie de tracking tiers, et nous ne
-            vendons aucune donnée à des régies publicitaires.
-          </p>
+          <p>{tb('definition.p1')}</p>
+          <p>{tb.rich('definition.p2', richTags)}</p>
         </>
       ),
     },
@@ -44,37 +43,25 @@ export default async function CookiesPage(): Promise<React.ReactElement> {
           <table>
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Finalité</th>
-                <th>Durée</th>
-                <th>Type</th>
+                {listeHeaders.map((h) => <th key={h}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td><code>nemo_access_token</code></td>
-                <td>Jeton d'authentification de session (obligatoire pour jouer)</td>
-                <td>1 heure, renouvelé à chaque connexion</td>
-                <td>Nécessaire</td>
-              </tr>
-              <tr>
-                <td><code>NEMO_LOCALE</code></td>
-                <td>Mémorise la langue d'affichage choisie (français, anglais, espagnol, allemand)</td>
-                <td>1 an, renouvelé à chaque changement de langue</td>
-                <td>Fonctionnel</td>
-              </tr>
+              {listeRows.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => (
+                    <td key={j}>
+                      {/* La 1re colonne contient un identifiant de cookie : on
+                         le rend dans <code> pour suivre l'esthétique d'origine. */}
+                      {j === 0 ? <code>{cell}</code> : cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
             </tbody>
           </table>
-          <p>
-            Ce cookie est strictement nécessaire au fonctionnement du service. Conformément à la
-            législation française, il ne requiert pas de consentement préalable.
-          </p>
-          <p>
-            Cette liste sera mise à jour au fur et à mesure de l'arrivée des fonctionnalités (jeton
-            anti-CSRF pour les actions sensibles, mémorisation des préférences d'affichage, protection
-            anti-bots Cloudflare). Toute évolution sera annoncée selon la procédure décrite à
-            l'article 05.
-          </p>
+          <p>{tb('liste.p1')}</p>
+          <p>{tb('liste.p2')}</p>
         </>
       ),
     },
@@ -85,16 +72,9 @@ export default async function CookiesPage(): Promise<React.ReactElement> {
       body: (
         <>
           <ul>
-            <li>Aucun cookie publicitaire (Google Ads, Meta Pixel, etc.)</li>
-            <li>Aucun traceur tiers à des fins marketing</li>
-            <li>Aucun partage de données comportementales à des régies</li>
-            <li>Aucune empreinte de navigateur (<em>fingerprinting</em>)</li>
-            <li>Aucun pixel invisible dans les emails transactionnels</li>
+            {trackingItems.map((m) => <li key={m}>{m}</li>)}
           </ul>
-          <p>
-            Les analytics internes (temps de session, taux de complétion des courses) sont agrégés côté
-            serveur sans cookie ni identifiant persistant associé à ton compte.
-          </p>
+          <p>{tb('pasDeTracking.outro')}</p>
         </>
       ),
     },
@@ -104,17 +84,12 @@ export default async function CookiesPage(): Promise<React.ReactElement> {
       title: t('sections.gestion'),
       body: (
         <>
-          <p>
-            Tu peux à tout moment supprimer ou bloquer les cookies via les paramètres de ton navigateur.
-            <strong> Attention&nbsp;:</strong> bloquer les cookies strictement nécessaires empêche la
-            connexion au compte et rend le service inutilisable.
-          </p>
-          <p>Documentation constructeur&nbsp;:</p>
+          <p>{tb.rich('gestion.intro', richTags)}</p>
+          <p>{tb('gestion.docsLabel')}</p>
           <ul>
-            <li><a href="https://support.mozilla.org/fr/kb/effacer-cookies-donnees-sites-firefox">Firefox</a></li>
-            <li><a href="https://support.google.com/chrome/answer/95647">Chrome</a></li>
-            <li><a href="https://support.apple.com/fr-fr/guide/safari/sfri11471/mac">Safari</a></li>
-            <li><a href="https://support.microsoft.com/fr-fr/microsoft-edge/supprimer-les-cookies-dans-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09">Edge</a></li>
+            {browsers.map(([name, url]) => (
+              <li key={name}><a href={url}>{name}</a></li>
+            ))}
           </ul>
         </>
       ),
@@ -125,16 +100,8 @@ export default async function CookiesPage(): Promise<React.ReactElement> {
       title: t('sections.evolution'),
       body: (
         <>
-          <p>
-            Si Nemo venait à introduire un cookie analytique soumis à consentement (par exemple pour mesurer
-            la performance d'un nouveau mode), un bandeau de consentement explicite serait déployé, conforme
-            aux recommandations de la CNIL. Aucun cookie non nécessaire ne sera déposé sans ton accord clair
-            et préalable.
-          </p>
-          <p>
-            Les évolutions de cette politique seront communiquées par email aux utilisateurs actifs et
-            signalées en haut de cette page avec un préavis de 15 jours.
-          </p>
+          <p>{tb('evolution.p1')}</p>
+          <p>{tb('evolution.p2')}</p>
         </>
       ),
     },

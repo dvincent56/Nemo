@@ -1261,6 +1261,65 @@
       "marques": "Marcas",
       "responsabilite": "Limitación de responsabilidad",
       "contact": "Contacto y notificación"
+    },
+    "body": {
+      "editeur": {
+        "items": [
+          ["Razón social", "<Por completar — nombre de la sociedad>"],
+          ["Forma jurídica", "<SAS / SARL / EURL>"],
+          ["Capital social", "<Importe en €>"],
+          ["Domicilio social", "<Dirección completa>"],
+          ["RCS", "<Ciudad> <Número>"],
+          ["SIREN", "<9 dígitos>"],
+          ["IVA intracomunitario", "FR <Número>"]
+        ],
+        "emailLabel": "Email"
+      },
+      "directeur": {
+        "p1": "<Nombre Apellido>, en calidad de <cargo — gerente, presidente, director general>.",
+        "contactLabel": "Contacto:"
+      },
+      "hebergeur": {
+        "items": [
+          {
+            "term": "Alojamiento principal",
+            "lines": [
+              "Amazon Web Services EMEA SARL",
+              "38 Avenue John F. Kennedy, L-1855 Luxemburgo",
+              "Región eu-west-3 (París, Francia)"
+            ]
+          },
+          {
+            "term": "CDN / Proxy",
+            "lines": [
+              "Cloudflare, Inc.",
+              "101 Townsend St, San Francisco, CA 94107, EE. UU.",
+              "Puntos de presencia: París, Fráncfort, Londres"
+            ]
+          }
+        ]
+      },
+      "ip": {
+        "p1": "La estructura general, los textos, gráficos, sonidos, vídeos y animaciones que componen el sitio son propiedad exclusiva del editor o de sus socios, y están protegidos por las leyes vigentes sobre propiedad intelectual.",
+        "p2": "Toda reproducción, representación o explotación, total o parcial, de los contenidos y servicios del sitio, por cualquier procedimiento, sin autorización escrita previa del editor, está prohibida y constituiría una infracción sancionada por el Código de la propiedad intelectual.",
+        "p3": "Las polares de barcos utilizadas en el motor de juego son datos públicos certificados por los astilleros, o adquiridos bajo licencia comercial con ellos. Los datos meteorológicos provienen del modelo <b>NOAA GFS</b>, distribuido gratuitamente por la agencia estadounidense NOAA."
+      },
+      "marques": {
+        "p1": "«<b>Nemo</b>», el logotipo y los nombres de los modos de juego son marcas registradas por el editor. Las marcas de barcos y constructores (Figaro, Class40, IMOCA, Ultim, Ocean Fifty) pertenecen a sus respectivos propietarios y se utilizan bajo licencia o con fines informativos."
+      },
+      "responsabilite": {
+        "p1": "La información y los contenidos difundidos en el sitio se proporcionan a título indicativo. El editor se esfuerza por garantizar la exactitud y la actualización de la información, pero no puede garantizar su exhaustividad.",
+        "p2": "El editor declina toda responsabilidad sobre la interpretación que se pueda hacer de la información presente en el sitio, y sobre las consecuencias de su uso."
+      },
+      "contact": {
+        "intro": "Para cualquier pregunta, solicitud o notificación relativa al servicio:",
+        "items": [
+          ["Soporte general", "hello@nemo.sail"],
+          ["Datos personales / RGPD", "dpo@nemo.sail"],
+          ["Notificación de contenido ilícito", "abuse@nemo.sail"],
+          ["Prensa", "press@nemo.sail"]
+        ]
+      }
     }
   },
   "pageCgu": {
@@ -1283,6 +1342,57 @@
       "responsabilite": "Responsabilidad",
       "resiliation": "Baja",
       "loi": "Ley aplicable y jurisdicción"
+    },
+    "body": {
+      "objet": {
+        "p1": "Las presentes condiciones generales de uso (en adelante «<b>CGU</b>») rigen el acceso y el uso del servicio <b>Nemo</b>, juego de regata offshore en línea accesible en <ext>nemo.sail</ext> y a través de la aplicación móvil asociada.",
+        "p2": "El servicio está editado por la sociedad editora identificada en el <legal>aviso legal</legal>. El uso del servicio implica la aceptación plena y total de las presentes CGU."
+      },
+      "acceptation": {
+        "p1": "La aceptación de las CGU se materializa con la creación de una cuenta de jugador. Es válida durante toda la duración del uso del servicio.",
+        "p2": "El editor puede modificar las presentes CGU en cualquier momento. Las nuevas condiciones se aplican desde su publicación en el sitio. En caso de cambio sustancial (precios, datos personales, reglas de juego), los usuarios activos son informados por correo con un preaviso de 30 días."
+      },
+      "compte": {
+        "p1": "La creación de una cuenta requiere proporcionar una dirección de correo válida y elegir un apodo único. El jugador garantiza la exactitud de la información proporcionada y se compromete a mantenerla actualizada en su perfil.",
+        "p2": "La cuenta es estrictamente personal e intransferible. Compartir las credenciales, la reventa o la creación de multicuentas están prohibidos y constituyen motivo de suspensión inmediata.",
+        "p3": "El editor se reserva el derecho de rechazar o modificar un apodo que contenga insultos, comentarios racistas, sexistas, difamatorios, o que usurpe la identidad de un tercero."
+      },
+      "regles": {
+        "intro": "El servicio es una competición de regata simulada. Todos los jugadores utilizan las mismas polares reales de barcos, la misma meteo NOAA GFS y el mismo motor de cálculo. Ningún beneficio de pago es accesible en el juego: los créditos para las mejoras de barco no pueden comprarse con dinero y se obtienen únicamente a través de los resultados en regata.",
+        "forbiddenIntro": "Están formalmente prohibidos:",
+        "forbidden": [
+          "El uso de robots, scripts o módulos de automatización no autorizados",
+          "La explotación de bugs conocidos, inyecciones de peticiones, o cualquier evasión técnica",
+          "Los acuerdos entre cuentas para falsear una clasificación",
+          "Los comportamientos tóxicos, acoso o comentarios discriminatorios en los chats y equipos"
+        ],
+        "sanctions": "Las sanciones van desde la advertencia hasta la suspensión definitiva, pasando por la invalidación de resultados y la revocación de créditos obtenidos fraudulentamente."
+      },
+      "abonnement": {
+        "intro": "<b>Todas las regatas del circuito son accesibles a todos los jugadores</b>, sea cual sea su nivel. La diferencia Libre / Carrera concierne al gameplay alrededor de la regata, no al acceso a las propias regatas.",
+        "tiersIntro": "El servicio ofrece dos niveles:",
+        "tiers": [
+          ["Modo Libre", "Gratis. Regatas one-shot, clasificación temporada, broadcast en tiempo real cada 120 s. Sin acceso a la marina, sin progresión en la temporada."],
+          ["Modo Carrera", "Suscripción mensual o anual. Marina completa (mejoras de barco, personalización de casco y velas), broadcast en tiempo real cada 30 s, herramientas de routing (isócronas), progresión de carrera persistente durante la temporada."]
+        ],
+        "billing": "La suscripción se cobra a través de Stripe. Es cancelable en cualquier momento desde la página de cuenta; la cancelación tiene efecto al final del período en curso. No se realiza ningún reembolso prorrateado por un período ya iniciado, salvo casos previstos por la ley (derecho de retracción de 14 días para una primera suscripción)."
+      },
+      "ip": {
+        "p1": "El conjunto de elementos del servicio (código, gráficos, textos, marcas, polares calculadas, modelo meteo derivado) es propiedad exclusiva del editor o de sus socios y está protegido por el derecho de autor y el derecho de marcas.",
+        "p2": "El jugador conserva la propiedad de los nombres de barcos, lemas y elementos de personalización que introduce, pero concede al editor una licencia no exclusiva para mostrarlos en el marco del servicio (clasificación, replays, compartir social)."
+      },
+      "responsabilite": {
+        "p1": "El editor se compromete a mantener el servicio accesible en condiciones razonables. Pueden producirse interrupciones por mantenimiento, incidentes técnicos o casos de fuerza mayor (avería de operador, corte de red, ciberataque) sin que se pueda comprometer la responsabilidad del editor.",
+        "p2": "El editor no podrá ser considerado responsable de las pérdidas de créditos, posiciones o estadísticas resultantes de un caso de fuerza mayor o de una intervención de seguridad. Pueden concederse compensaciones razonables caso por caso."
+      },
+      "resiliation": {
+        "p1": "El jugador puede eliminar su cuenta en cualquier momento desde la página Ajustes. La eliminación es inmediata e irreversible: apodo, flota, historial y créditos se eliminan en 30 días. Los datos necesarios para las obligaciones legales y contables se conservan durante el plazo previsto por la ley.",
+        "p2": "El editor puede rescindir unilateralmente una cuenta en caso de violación grave de las CGU, con preaviso de 15 días salvo fraude probado o ataque a la seguridad del servicio."
+      },
+      "loi": {
+        "p1": "Las presentes CGU se rigen por el derecho francés. Cualquier litigio relativo a su interpretación o ejecución corresponde, a falta de resolución amistosa, a los tribunales competentes de la jurisdicción del domicilio social del editor, sin perjuicio de las disposiciones legales imperativas a favor de los consumidores.",
+        "p2": "Un procedimiento de mediación es accesible vía la <ext>plataforma de mediación del consumo</ext> para cualquier litigio que no haya encontrado solución amistosa con el servicio de atención al cliente."
+      }
     }
   },
   "pagePrivacy": {
@@ -1303,6 +1413,73 @@
       "droits": "Tus derechos",
       "securite": "Seguridad",
       "mineurs": "Menores"
+    },
+    "body": {
+      "responsable": {
+        "p1": "El responsable del tratamiento de los datos de carácter personal es la sociedad editora identificada en el <legal>aviso legal</legal>.",
+        "p2": "Para cualquier pregunta relativa al tratamiento de tus datos o al ejercicio de tus derechos, puedes contactar con nuestro delegado de protección de datos: <mail>dpo@nemo.sail</mail>."
+      },
+      "donnees": {
+        "intro": "Nemo recoge únicamente los datos estrictamente necesarios para el funcionamiento del servicio:",
+        "items": [
+          ["Cuenta", "Email, contraseña hasheada (bcrypt), apodo, fecha de inscripción"],
+          ["Perfil", "País, departamento, ciudad, lema (opcional), equipo (opcional)"],
+          ["Gameplay", "Historial de regatas, posiciones GPS simuladas, resultados, barcos y mejoras de la flota, créditos obtenidos"],
+          ["Social", "Relaciones de amistad, pertenencia a equipo, invitaciones enviadas y recibidas"],
+          ["Técnico", "Dirección IP, user-agent, resolución de pantalla, zona horaria — para la detección de fraude y la adaptación responsive"],
+          ["Pago (Modo Carrera)", "ID cliente Stripe únicamente. Los números de tarjeta nunca pasan por nuestros servidores"]
+        ]
+      },
+      "finalites": {
+        "headers": ["Finalidad", "Base legal", "Plazo de conservación"],
+        "rows": [
+          ["Prestación del servicio (autenticación, gameplay, clasificación)", "Ejecución del contrato", "Duración de la cuenta + 12 meses tras la baja"],
+          ["Facturación Modo Carrera", "Obligación legal (contable)", "10 años"],
+          ["Detección de fraude y seguridad", "Interés legítimo", "12 meses"],
+          ["Estadísticas de uso agregadas", "Interés legítimo", "Anonimizadas, conservación indefinida"],
+          ["Newsletter y comunicación marketing", "Consentimiento (opt-in explícito)", "Hasta retirada del consentimiento"]
+        ]
+      },
+      "destinataires": {
+        "intro": "Tus datos <b>nunca se venden</b>. Son accesibles únicamente a los equipos técnicos del editor y a los siguientes subcontratistas, estrictamente vinculados por contrato conforme al RGPD:",
+        "items": [
+          ["AWS (Amazon Web Services)", "Alojamiento de los servidores de juego y bases de datos, región eu-west-3 (París)"],
+          ["Cognito", "Autenticación, gestión de contraseñas"],
+          ["Stripe", "Procesamiento de pagos, suscripciones Modo Carrera"],
+          ["Cloudflare", "Protección anti-DDoS, CDN"],
+          ["Sentry", "Recogida anónima de errores aplicativos para debug"]
+        ],
+        "outro": "El conjunto de estos subcontratistas aloja o trata los datos en la Unión Europea. No se efectúa ninguna transferencia fuera de la UE sin tu consentimiento explícito."
+      },
+      "droits": {
+        "intro": "Conforme al RGPD y a la ley de Protección de Datos, dispones de los siguientes derechos:",
+        "items": [
+          ["Acceso", "Obtener una copia de tus datos tratados"],
+          ["Rectificación", "Corregir datos inexactos desde la página Ajustes, o bajo solicitud"],
+          ["Supresión", "Eliminar tu cuenta y tus datos (botón Eliminar mi cuenta en Ajustes)"],
+          ["Portabilidad", "Recibir tus datos en un formato estructurado (archivo ZIP JSON) vía el botón «Solicitar exportación»"],
+          ["Oposición", "Oponerte a un tratamiento basado en el interés legítimo"],
+          ["Limitación", "Congelar temporalmente un tratamiento en caso de impugnación"]
+        ],
+        "exercise": "Para ejercer estos derechos: <mail>dpo@nemo.sail</mail>. Respondemos en un plazo de un mes.",
+        "complaint": "También puedes presentar una reclamación ante la <ext>CNIL</ext> si consideras que el tratamiento de tus datos infringe el RGPD."
+      },
+      "securite": {
+        "intro": "Implementamos las siguientes medidas técnicas y organizativas para proteger tus datos:",
+        "measures": [
+          "Cifrado TLS 1.3 para todas las comunicaciones",
+          "Contraseñas hasheadas con bcrypt (coste 12)",
+          "Aislamiento de red de las bases de datos (VPC privado)",
+          "Copia de seguridad cifrada diaria, retención 30 días",
+          "Auditoría de seguridad anual",
+          "Principio del menor privilegio para los accesos internos"
+        ],
+        "breach": "En caso de violación de datos susceptible de generar un riesgo para tus derechos y libertades, informamos a la CNIL en 72 horas y nos comunicamos con las personas afectadas en el menor plazo posible."
+      },
+      "mineurs": {
+        "p1": "El servicio es accesible a menores de 13 años o más. Para los jugadores menores de 15 años, se requiere el consentimiento de un titular de la patria potestad en el momento de la inscripción, conforme a la ley francesa.",
+        "p2": "Ningún dato se utiliza con fines de perfilado publicitario dirigido a los jugadores menores."
+      }
     }
   },
   "pageCookies": {
@@ -1321,6 +1498,45 @@
       "pas-de-tracking": "Lo que NO hacemos",
       "gestion": "Gestionar tus cookies",
       "evolution": "Evolución de esta política"
+    },
+    "body": {
+      "definition": {
+        "p1": "Una cookie es un pequeño archivo de texto almacenado por tu navegador cuando visitas un sitio web. Permite al sitio reconocerte en visitas posteriores, memorizar tus preferencias y a veces analizar tu uso.",
+        "p2": "Nemo utiliza <b>únicamente cookies estrictamente necesarias</b> para el funcionamiento del servicio. No utilizamos ninguna cookie publicitaria, ninguna cookie de tracking de terceros, y no vendemos ningún dato a agencias publicitarias."
+      },
+      "liste": {
+        "headers": ["Nombre", "Finalidad", "Duración", "Tipo"],
+        "rows": [
+          ["nemo_access_token", "Token de autenticación de sesión (obligatorio para jugar)", "1 hora, renovado en cada conexión", "Necesaria"],
+          ["NEMO_LOCALE", "Memoriza el idioma de visualización elegido (francés, inglés, español, alemán)", "1 año, renovado en cada cambio de idioma", "Funcional"]
+        ],
+        "p1": "Esta cookie es estrictamente necesaria para el funcionamiento del servicio. Conforme a la legislación francesa, no requiere consentimiento previo.",
+        "p2": "Esta lista se actualizará a medida que lleguen las funcionalidades (token anti-CSRF para acciones sensibles, memorización de preferencias de visualización, protección anti-bots Cloudflare). Toda evolución se anunciará según el procedimiento descrito en el artículo 05."
+      },
+      "pasDeTracking": {
+        "items": [
+          "Ninguna cookie publicitaria (Google Ads, Meta Pixel, etc.)",
+          "Ningún rastreador de terceros con fines marketing",
+          "Ningún intercambio de datos comportamentales con agencias",
+          "Ninguna huella de navegador (fingerprinting)",
+          "Ningún píxel invisible en los emails transaccionales"
+        ],
+        "outro": "Las analíticas internas (tiempo de sesión, tasa de finalización de regatas) se agregan en el lado servidor sin cookie ni identificador persistente asociado a tu cuenta."
+      },
+      "gestion": {
+        "intro": "Puedes en cualquier momento eliminar o bloquear las cookies a través de los ajustes de tu navegador. <b>Atención:</b> bloquear las cookies estrictamente necesarias impide la conexión a la cuenta y hace inutilizable el servicio.",
+        "docsLabel": "Documentación del fabricante:",
+        "browsers": [
+          ["Firefox", "https://support.mozilla.org/es/kb/Borrar%20cookies"],
+          ["Chrome", "https://support.google.com/chrome/answer/95647"],
+          ["Safari", "https://support.apple.com/es-es/guide/safari/sfri11471/mac"],
+          ["Edge", "https://support.microsoft.com/es-es/microsoft-edge/eliminar-las-cookies-en-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09"]
+        ]
+      },
+      "evolution": {
+        "p1": "Si Nemo introdujera una cookie analítica sometida a consentimiento (por ejemplo para medir el rendimiento de un nuevo modo), se desplegaría un banner de consentimiento explícito, conforme a las recomendaciones de la CNIL. Ninguna cookie no necesaria se depositará sin tu acuerdo claro y previo.",
+        "p2": "Las evoluciones de esta política se comunicarán por email a los usuarios activos y se señalarán en la parte superior de esta página con un preaviso de 15 días."
+      }
     }
   },
   "news": {
