@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LanguageSelector } from './LanguageSelector';
 import styles from './SiteFooter.module.css';
 
 type Href = Parameters<typeof Link>[0]['href'];
@@ -62,6 +63,7 @@ export function SiteFooter(): React.ReactElement {
         <Link href="/" className={styles.brand} aria-label="Nemo">
           NE<span>M</span>O
         </Link>
+        <LanguageSelector />
         <p className={styles.copy}>© 2026 Nemo · Hébergé en Europe</p>
       </div>
     </footer>
