@@ -618,6 +618,52 @@
       "clearAll": "Tout effacer",
       "multiTabNote": "La dernière confirmation prime. Évitez de programmer depuis plusieurs onglets simultanément."
     },
+    "progEditor": {
+      "back": "Annuler",
+      "ok": "OK",
+      "common": {
+        "twaLockTitle": "Verrouiller TWA",
+        "twaLockSub": "Cap relatif au vent · suit les bascules"
+      },
+      "cap": {
+        "titleNew": "NOUVEL ORDRE CAP",
+        "titleEditNoIndex": "MODIFIER CAP",
+        "titleEdit": "MODIFIER CAP · N°{n}",
+        "executionTime": "HEURE D'EXÉCUTION"
+      },
+      "wp": {
+        "titleNew": "NOUVEAU WAYPOINT",
+        "titleEdit": "MODIFIER WP {n}",
+        "position": "POSITION",
+        "pickStart": "Cliquer sur la carte pour positionner",
+        "pickInProgress": "Cliquer sur la carte…",
+        "minDistance": "Distance min. requise du bateau : {n} NM (rayon de sécurité).",
+        "dragHint": "Glissez le marker sur la carte pour déplacer."
+      },
+      "finalCap": {
+        "titleNew": "NOUVEAU CAP FINAL",
+        "titleEdit": "MODIFIER CAP FINAL",
+        "trigger": "DÉCLENCHEUR",
+        "afterWpFinal": "APRÈS WP {n} (FINAL)"
+      },
+      "sail": {
+        "titleNew": "NOUVEL ORDRE VOILE",
+        "titleEdit": "MODIFIER VOILE",
+        "mode": "MODE",
+        "auto": "AUTO",
+        "manual": "MANUEL",
+        "alreadyAuto": "Le bateau est déjà en voile auto à cette heure",
+        "warnAutoNoOp": "⚠ Le bateau est déjà en voile auto à cette heure. L'ordre serait sans effet.",
+        "sailToHoist": "VOILE À HISSER",
+        "trigger": "DÉCLENCHEUR",
+        "atTime": "À UNE HEURE",
+        "atWaypoint": "À UN WAYPOINT",
+        "warnTransition": "⚠ Une transition voile précédente n'est pas terminée à cette heure.",
+        "wpLabel": "WAYPOINT",
+        "noWpAvail": "AUCUN WAYPOINT DISPONIBLE — TOUS DÉJÀ RÉFÉRENCÉS",
+        "wpItem": "WP {n}"
+      }
+    },
     "progPanel": {
       "noWp": "Aucun WP disponible.",
       "close": "Fermer",

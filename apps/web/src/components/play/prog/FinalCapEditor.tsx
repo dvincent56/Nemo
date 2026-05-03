@@ -1,6 +1,7 @@
 'use client';
 import { useState, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { FinalCapOrder } from '@/lib/prog/types';
 import CompassReadouts from '../compass/CompassReadouts';
 import CompassDial from '../compass/CompassDial';
@@ -9,13 +10,9 @@ import styles from './Editor.module.css';
 
 export interface FinalCapEditorProps {
   initialOrder: FinalCapOrder | null;
-  /** id of the last WP in the chain (used to set the trigger if creating new) */
   lastWpId: string;
-  /** 1-based index of the last WP for the display label */
   lastWpIndex: number;
-  /** Wind direction (TWD) for the compass tick */
   windDir: number;
-  /** Heading default for new orders (current hud.hdg) */
   defaultHeading: number;
   onCancel: () => void;
   onSave: (order: FinalCapOrder) => void;
@@ -28,9 +25,7 @@ function makeId(): string {
 export default function FinalCapEditor({
   initialOrder, lastWpId, lastWpIndex, windDir, defaultHeading, onCancel, onSave,
 }: FinalCapEditorProps): ReactElement {
-  // When TWA-locked, the stored heading is a TWA in [-180, 180]. The dial
-  // works in absolute 0..359, so convert back on open. Cf. CapEditor for the
-  // full reasoning behind this conversion.
+  const t = useTranslations('play.progEditor');
   const initialHeading = (() => {
     if (initialOrder && initialOrder.twaLock) {
       return (((initialOrder.heading + windDir) % 360) + 360) % 360;
@@ -41,14 +36,11 @@ export default function FinalCapEditor({
   const [twaLock, setTwaLock] = useState<boolean>(initialOrder?.twaLock ?? false);
 
   const isNew = initialOrder === null;
-  const title = isNew ? 'NOUVEAU CAP FINAL' : 'MODIFIER CAP FINAL';
+  const title = isNew ? t('finalCap.titleNew') : t('finalCap.titleEdit');
 
-  // TWA = signed angle from wind to heading, normalised to [-180, +180].
   const twa = ((heading - windDir + 540) % 360) - 180;
 
   const handleSave = (): void => {
-    // TWA-locked → store a relative-to-wind angle so the serializer emits
-    // `{ twa }`. Mirrors CapEditor + Compass.tsx apply() math.
     const storedHeading = twaLock
       ? Math.round(((heading - windDir + 540) % 360) - 180)
       : heading;
@@ -65,7 +57,7 @@ export default function FinalCapEditor({
     <div className={styles.editor}>
       <header className={styles.editorHeader}>
         <button type="button" className={styles.backBtn} onClick={onCancel}>
-          <ArrowLeft size={11} strokeWidth={2} /> Annuler
+          <ArrowLeft size={11} strokeWidth={2} /> {t('back')}
         </button>
         <h3 className={styles.title}>{title}</h3>
         <span style={{ width: 70 }} />
@@ -91,30 +83,30 @@ export default function FinalCapEditor({
 
         <div className={styles.optRow}>
           <div className={styles.optLabel}>
-            <div className={styles.optTitle}>Verrouiller TWA</div>
-            <div className={styles.optSub}>Cap relatif au vent · suit les bascules</div>
+            <div className={styles.optTitle}>{t('common.twaLockTitle')}</div>
+            <div className={styles.optSub}>{t('common.twaLockSub')}</div>
           </div>
           <CompassLockToggle locked={twaLock} onToggle={() => setTwaLock(!twaLock)} />
         </div>
 
         <div>
-          <p className={styles.fieldLabel}>DÉCLENCHEUR</p>
+          <p className={styles.fieldLabel}>{t('finalCap.trigger')}</p>
           <div className={styles.triggerReadout}>
-            APRÈS WP {lastWpIndex} (FINAL)
+            {t('finalCap.afterWpFinal', { n: lastWpIndex })}
           </div>
         </div>
       </div>
 
       <footer className={styles.footer}>
         <button type="button" className={styles.footerBtn} onClick={onCancel}>
-          Annuler
+          {t('back')}
         </button>
         <button
           type="button"
           className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
           onClick={handleSave}
         >
-          <Check size={14} strokeWidth={2.5} />&nbsp;OK
+          <Check size={14} strokeWidth={2.5} />&nbsp;{t('ok')}
         </button>
       </footer>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { CapOrder } from '@/lib/prog/types';
 import { useGameStore } from '@/lib/store';
 import { useThrottledEffect } from '@/hooks/useThrottledEffect';
@@ -48,6 +49,7 @@ export default function CapEditor({
   onCancel,
   onSave,
 }: CapEditorProps): ReactElement {
+  const t = useTranslations('play.progEditor');
   // When TWA-locked, the stored heading is a TWA in [-180, 180] (so the
   // serializer can emit `{ twa }` and the engine consumes a relative-to-wind
   // angle). The compass dial works in absolute 0..359, so on open we convert
@@ -102,8 +104,10 @@ export default function CapEditor({
 
   const isNew = initialOrder === null;
   const title = isNew
-    ? 'NOUVEL ORDRE CAP'
-    : `MODIFIER CAP${index !== null ? ` · N°${String(index).padStart(2, '0')}` : ''}`;
+    ? t('cap.titleNew')
+    : index !== null
+      ? t('cap.titleEdit', { n: String(index).padStart(2, '0') })
+      : t('cap.titleEditNoIndex');
 
   const handleSave = (): void => {
     // `storedHeading` already encodes the TWA-frame conversion (see the
@@ -125,7 +129,7 @@ export default function CapEditor({
     <div className={styles.editor}>
       <header className={styles.editorHeader}>
         <button type="button" className={styles.backBtn} onClick={onCancel}>
-          <ArrowLeft size={11} strokeWidth={2} /> Annuler
+          <ArrowLeft size={11} strokeWidth={2} /> {t('back')}
         </button>
         <h3 className={styles.title}>{title}</h3>
         <span style={{ width: 70 }} />
@@ -151,14 +155,14 @@ export default function CapEditor({
 
         <div className={styles.optRow}>
           <div className={styles.optLabel}>
-            <div className={styles.optTitle}>Verrouiller TWA</div>
-            <div className={styles.optSub}>Cap relatif au vent · suit les bascules</div>
+            <div className={styles.optTitle}>{t('common.twaLockTitle')}</div>
+            <div className={styles.optSub}>{t('common.twaLockSub')}</div>
           </div>
           <CompassLockToggle locked={twaLock} onToggle={() => setTwaLock(!twaLock)} />
         </div>
 
         <div>
-          <p className={styles.fieldLabel}>HEURE D'EXÉCUTION</p>
+          <p className={styles.fieldLabel}>{t('cap.executionTime')}</p>
           <TimeStepper
             value={time}
             onChange={(t) => setTime(t)}
@@ -171,14 +175,14 @@ export default function CapEditor({
 
       <footer className={styles.footer}>
         <button type="button" className={styles.footerBtn} onClick={onCancel}>
-          Annuler
+          {t('back')}
         </button>
         <button
           type="button"
           className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
           onClick={handleSave}
         >
-          <Check size={14} strokeWidth={2.5} />&nbsp;OK
+          <Check size={14} strokeWidth={2.5} />&nbsp;{t('ok')}
         </button>
       </footer>
     </div>

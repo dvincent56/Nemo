@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, type ReactElement } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { SailId } from '@nemo/shared-types';
 import type { SailOrder, WpOrder, ProgMode } from '@/lib/prog/types';
 import { useGameStore } from '@/lib/store';
@@ -48,6 +49,7 @@ function makeId(): string {
 export default function SailEditor({
   initialOrder, draftMode, availableWps, defaultTime, minValueSec, maxValueSec, nowSec, priorIsAuto, minTimeFromTransition, onCancel, onSave,
 }: SailEditorProps): ReactElement {
+  const t = useTranslations('play.progEditor');
   const isNew = initialOrder === null;
   // If the boat is already in auto at this order's trigger time, emitting
   // another auto-sail order is a no-op — default a new order to Manuel so
@@ -145,13 +147,13 @@ export default function SailEditor({
     onSave(order);
   };
 
-  const title = isNew ? 'NOUVEL ORDRE VOILE' : 'MODIFIER VOILE';
+  const title = isNew ? t('sail.titleNew') : t('sail.titleEdit');
 
   return (
     <div className={styles.editor}>
       <header className={styles.editorHeader}>
         <button type="button" className={styles.backBtn} onClick={onCancel}>
-          <ArrowLeft size={11} strokeWidth={2} /> Annuler
+          <ArrowLeft size={11} strokeWidth={2} /> {t('back')}
         </button>
         <h3 className={styles.title}>{title}</h3>
         <span style={{ width: 70 }} />
@@ -160,17 +162,17 @@ export default function SailEditor({
       <div className={styles.body}>
         {/* Mode segmented (Auto / Manuel) */}
         <div>
-          <p className={styles.fieldLabel}>MODE</p>
+          <p className={styles.fieldLabel}>{t('sail.mode')}</p>
           <div className={sailStyles.seg}>
             <button
               type="button"
               className={`${sailStyles.segBtn} ${auto ? sailStyles.segBtnActive : ''}`}
               onClick={() => setAuto(true)}
               disabled={priorIsAuto}
-              title={priorIsAuto ? 'Le bateau est déjà en voile auto à cette heure' : undefined}
+              title={priorIsAuto ? t('sail.alreadyAuto') : undefined}
               aria-pressed={auto}
             >
-              AUTO
+              {t('sail.auto')}
             </button>
             <button
               type="button"
@@ -178,12 +180,12 @@ export default function SailEditor({
               onClick={() => setAuto(false)}
               aria-pressed={!auto}
             >
-              MANUEL
+              {t('sail.manual')}
             </button>
           </div>
           {isAutoNoOp && (
             <p className={sailStyles.warnText}>
-              ⚠ Le bateau est déjà en voile auto à cette heure. L&apos;ordre serait sans effet.
+              {t('sail.warnAutoNoOp')}
             </p>
           )}
         </div>
@@ -191,7 +193,7 @@ export default function SailEditor({
         {/* Sail grid (only when Manuel) */}
         {!auto && (
           <div>
-            <p className={styles.fieldLabel}>VOILE À HISSER</p>
+            <p className={styles.fieldLabel}>{t('sail.sailToHoist')}</p>
             <div className={sailStyles.sailGrid}>
               {SAIL_DEFS.map((s) => (
                 <button
@@ -212,7 +214,7 @@ export default function SailEditor({
         {/* Trigger picker — only in WP mode (cap mode forces AT_TIME) */}
         {draftMode === 'wp' && (
           <div>
-            <p className={styles.fieldLabel}>DÉCLENCHEUR</p>
+            <p className={styles.fieldLabel}>{t('sail.trigger')}</p>
             <div className={sailStyles.seg}>
               <button
                 type="button"
@@ -220,7 +222,7 @@ export default function SailEditor({
                 onClick={() => setTriggerKind('AT_TIME')}
                 aria-pressed={triggerKind === 'AT_TIME'}
               >
-                À UNE HEURE
+                {t('sail.atTime')}
               </button>
               <button
                 type="button"
@@ -229,7 +231,7 @@ export default function SailEditor({
                 aria-pressed={triggerKind === 'AT_WAYPOINT'}
                 disabled={availableWps.length === 0}
               >
-                À UN WAYPOINT
+                {t('sail.atWaypoint')}
               </button>
             </div>
           </div>
@@ -240,14 +242,14 @@ export default function SailEditor({
           <>
             <TimeStepper
               value={time}
-              onChange={(t) => setTime(t)}
+              onChange={(newTime) => setTime(newTime)}
               minValue={effectiveMinValueSec}
               {...(maxValueSec !== undefined ? { maxValue: maxValueSec } : {})}
               nowSec={nowSec}
             />
             {isBlockedByTransition && (
               <p className={sailStyles.warnText}>
-                ⚠ Une transition voile précédente n&apos;est pas terminée à cette heure.
+                {t('sail.warnTransition')}
               </p>
             )}
           </>
@@ -256,10 +258,10 @@ export default function SailEditor({
         {/* WP picker */}
         {effectiveTriggerKind === 'AT_WAYPOINT' && (
           <div>
-            <p className={styles.fieldLabel}>WAYPOINT</p>
+            <p className={styles.fieldLabel}>{t('sail.wpLabel')}</p>
             {availableWps.length === 0 ? (
               <div className={sailStyles.empty}>
-                AUCUN WAYPOINT DISPONIBLE — TOUS DÉJÀ RÉFÉRENCÉS
+                {t('sail.noWpAvail')}
               </div>
             ) : (
               <div className={sailStyles.wpList}>
@@ -271,7 +273,7 @@ export default function SailEditor({
                     onClick={() => setWpId(wp.id)}
                     aria-pressed={wpId === wp.id}
                   >
-                    WP {idx + 1} · {wp.lat.toFixed(2)}°, {wp.lon.toFixed(2)}°
+                    {t('sail.wpItem', { n: idx + 1 })} · {wp.lat.toFixed(2)}°, {wp.lon.toFixed(2)}°
                   </button>
                 ))}
               </div>
@@ -282,7 +284,7 @@ export default function SailEditor({
 
       <footer className={styles.footer}>
         <button type="button" className={styles.footerBtn} onClick={onCancel}>
-          Annuler
+          {t('back')}
         </button>
         <button
           type="button"
@@ -290,7 +292,7 @@ export default function SailEditor({
           onClick={handleSave}
           disabled={!canSave}
         >
-          <Check size={14} strokeWidth={2.5} />&nbsp;OK
+          <Check size={14} strokeWidth={2.5} />&nbsp;{t('ok')}
         </button>
       </footer>
     </div>
