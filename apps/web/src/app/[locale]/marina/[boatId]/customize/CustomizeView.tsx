@@ -2,7 +2,9 @@
 
 import { useMemo, useState, type ChangeEvent } from 'react';
 import Link from 'next/link';
-import { CLASS_LABEL, type BoatDetail } from '../../data';
+import { useTranslations } from 'next-intl';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
+import { type BoatDetail } from '../../data';
 import styles from './page.module.css';
 
 /* =========================================================================
@@ -54,25 +56,15 @@ const PALETTE = [
   '#e85d3a', '#d4a574', '#3a7ca5', '#f2c94c',
 ];
 
-const PATTERNS: { id: PatternName; label: string }[] = [
-  { id: 'none', label: 'Aucun' },
-  { id: 'stripes', label: 'Lignes' },
-  { id: 'dots', label: 'Ronds' },
-  { id: 'honeycomb', label: "Nid d'ab." },
-];
+const PATTERN_IDS: PatternName[] = ['none', 'stripes', 'dots', 'honeycomb'];
 
 const ZONE_ORDER: ZoneId[] = ['hull', 'cabin', 'mast', 'appendages', 'mainsail', 'jib'];
 
-const ZONE_META: Record<ZoneId, { label: string; aside?: string; supportsPattern: boolean }> = {
-  hull:        { label: 'Coque',          supportsPattern: true },
-  cabin:       { label: 'Cabine',         supportsPattern: false },
-  mast:        { label: 'Mât & gréement', supportsPattern: false },
-  appendages:  { label: 'Foils & quille', aside: 'Couleur appliquée à toutes les pièces immergées.', supportsPattern: false },
-  mainsail:    { label: 'Grande voile',   supportsPattern: true },
-  jib:         { label: 'Foc / Génois',   supportsPattern: true },
+const ZONE_PATTERN_SUPPORT: Record<ZoneId, boolean> = {
+  hull: true, cabin: false, mast: false, appendages: false, mainsail: true, jib: true,
 };
 
-/* ── IMOCA SVG path data ────────────────────────────────────── */
+/* IMOCA SVG path data */
 
 const IMOCA = {
   viewBox: '0 0 628.14 1004.8',
@@ -171,6 +163,8 @@ function buildBlank(currentName: string): CustomizeState {
    ========================================================================= */
 
 export default function CustomizeView({ boat }: { boat: BoatDetail }): React.ReactElement {
+  const t = useTranslations('marinaCustomize');
+  const boatLabel = useBoatLabel();
   const [baseline, setBaseline] = useState<CustomizeState>(() => buildInitial(boat));
   const [state, setState] = useState<CustomizeState>(baseline);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -208,7 +202,6 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
   const handleReset = (): void => setState(buildBlank(state.name));
   const handleCancel = (): void => setState(baseline);
   const handleSave = (): void => {
-    // TODO POST /api/v1/boats/:id/customization
     setBaseline(state);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2400);
@@ -217,73 +210,78 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
   return (
     <>
       <div className={styles.subhead}>
-        <nav className={styles.breadcrumb} aria-label="Fil d'ariane">
-          <Link href={'/marina' as Parameters<typeof Link>[0]['href']}>← Marina</Link>
+        <nav className={styles.breadcrumb} aria-label={t('breadcrumb.aria')}>
+          <Link href={'/marina' as Parameters<typeof Link>[0]['href']}>{t('breadcrumb.marina')}</Link>
           <span className={styles.breadcrumbSep}>/</span>
           <Link href={`/marina/${boat.id}` as Parameters<typeof Link>[0]['href']}>{baseline.name}</Link>
           <span className={styles.breadcrumbSep}>/</span>
-          <span>Personnaliser</span>
+          <span>{t('breadcrumb.tail')}</span>
         </nav>
       </div>
 
       <main className={styles.studio}>
-        {/* ── Preview ───────────────────────────────────────────── */}
+        {/* Preview */}
         <aside className={styles.preview}>
-          <p className={styles.previewEyebrow}>Aperçu</p>
-          <div className={styles.previewStage} aria-label="Aperçu du bateau personnalisé">
-            <ImocaPreview state={state} />
+          <p className={styles.previewEyebrow}>{t('preview.eyebrow')}</p>
+          <div className={styles.previewStage} aria-label={t('preview.aria')}>
+            <ImocaPreview state={state} svgAria={t('preview.svgAria', { name: state.name })} />
           </div>
-          <h1 className={styles.previewName}>{state.name || 'Sans nom'}</h1>
+          <h1 className={styles.previewName}>{state.name || t('preview.noName')}</h1>
           <p className={styles.previewMeta}>
-            {CLASS_LABEL[boat.boatClass]} · <strong>{state.markings.mainsailCountryCode}-{boat.hullNumber}</strong>
+            {boatLabel(boat.boatClass)} · <strong>{state.markings.mainsailCountryCode}-{boat.hullNumber}</strong>
             {' · '}
-            {dirty ? 'Aperçu non sauvegardé' : 'Configuration enregistrée'}
+            {dirty ? t('preview.metaSavedDirty') : t('preview.metaSavedClean')}
           </p>
           <div className={styles.actionBar}>
             <span className={`${styles.actionBarMsg} ${dirty ? styles.actionBarMsgDirty : ''}`}>
-              {savedFlash ? '✓ Enregistré' : dirty ? 'Modifications en cours' : 'Aucune modification'}
+              {savedFlash ? t('actions.saved') : dirty ? t('actions.dirty') : t('actions.clean')}
             </span>
             <div className={styles.actionBarButtons}>
               <button type="button" className={`${styles.btn} ${styles.btnGhost}`}
                       onClick={handleReset} disabled={!canReset}>
-                Réinitialiser
+                {t('actions.reset')}
               </button>
               <button type="button" className={`${styles.btn} ${styles.btnSecondary}`}
                       onClick={handleCancel} disabled={!dirty}>
-                Annuler
+                {t('actions.cancel')}
               </button>
               <button type="button" className={`${styles.btn} ${styles.btnPrimary}`}
                       onClick={handleSave} disabled={!dirty}>
-                Enregistrer
+                {t('actions.save')}
               </button>
             </div>
           </div>
         </aside>
 
-        {/* ── Controls ──────────────────────────────────────────── */}
-        <section className={styles.controls} aria-label="Personnalisation">
-          {/* 01 · Identité */}
-          <SectionCard num="01 · Identité" title="Nom">
+        {/* Controls */}
+        <section className={styles.controls} aria-label={t('controls.aria')}>
+          {/* 01 — Identité */}
+          <SectionCard num={t('identity.num')} title={t('identity.title')}>
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>Nom du bateau</span>
+              <span className={styles.fieldLabel}>{t('identity.boatNameLabel')}</span>
               <input
                 className={styles.fieldInput}
                 value={state.name}
                 maxLength={20}
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
               />
-              <span className={styles.fieldHint}>
-                20 caractères max. Visible sur le pont, le palmarès et le classement.
-              </span>
+              <span className={styles.fieldHint}>{t('identity.boatNameHint')}</span>
             </label>
           </SectionCard>
 
           {/* Zones 02–07 */}
           {ZONE_ORDER.map((id, i) => {
-            const meta = ZONE_META[id];
             const num = String(i + 2).padStart(2, '0');
+            const label = t(`zones.${id}`);
+            const aside = id === 'appendages' ? t('zones.appendagesAside') : undefined;
+            const supportsPattern = ZONE_PATTERN_SUPPORT[id];
             return (
-              <SectionCard key={id} num={`${num} · ${meta.label}`} title={meta.label} {...(meta.aside ? { aside: meta.aside } : {})}>
+              <SectionCard
+                key={id}
+                num={t('sectionNum', { num, label })}
+                title={label}
+                {...(aside ? { aside } : {})}
+              >
                 <ZonePicker
                   zone={state.zones[id]}
                   onChangeMode={(m) => updateZone(id, { mode: m })}
@@ -291,7 +289,7 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
                   onChangeGradient={(p) => updateZoneGradient(id, p)}
                   palette={PALETTE}
                 />
-                {meta.supportsPattern && (
+                {supportsPattern && (
                   <PatternPicker
                     pattern={state.zones[id].pattern}
                     onChangeName={(n) => updateZonePattern(id, { name: n })}
@@ -303,9 +301,8 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
             );
           })}
 
-          {/* 08 · Marquages */}
-          <SectionCard num="08 · Marquages" title="Textes & marquages"
-                       aside="Numéros, sponsors fictifs, devises.">
+          {/* 08 — Marquages */}
+          <SectionCard num={t('markings.num')} title={t('markings.title')} aside={t('markings.aside')}>
             <MarkingsForm
               markings={state.markings}
               onChange={updateMarkings}
@@ -318,7 +315,7 @@ export default function CustomizeView({ boat }: { boat: BoatDetail }): React.Rea
   );
 }
 
-/* ─── Sub-components ──────────────────────────────────────────── */
+/* Sub-components */
 
 function SectionCard({
   num, title, aside, children,
@@ -340,8 +337,6 @@ function SectionCard({
   );
 }
 
-/* ── Zone picker (solid / gradient) ───────────────────────────── */
-
 function ZonePicker({
   zone, onChangeMode, onChangeSolid, onChangeGradient, palette,
 }: {
@@ -351,23 +346,21 @@ function ZonePicker({
   onChangeGradient: (p: Partial<ZoneConfig['gradient']>) => void;
   palette: string[];
 }): React.ReactElement {
-  const modes: { id: ColorMode; label: string }[] = [
-    { id: 'solid', label: 'Uni' },
-    { id: 'gradient', label: 'Dégradé' },
-  ];
+  const t = useTranslations('marinaCustomize');
+  const modes: ColorMode[] = ['solid', 'gradient'];
   return (
     <>
       <div className={styles.modeTabs} role="tablist">
         {modes.map((m) => (
           <button
-            key={m.id}
+            key={m}
             type="button"
             role="tab"
-            aria-selected={zone.mode === m.id}
-            className={`${styles.modeTab} ${zone.mode === m.id ? styles.modeTabActive : ''}`}
-            onClick={() => onChangeMode(m.id)}
+            aria-selected={zone.mode === m}
+            className={`${styles.modeTab} ${zone.mode === m ? styles.modeTabActive : ''}`}
+            onClick={() => onChangeMode(m)}
           >
-            {m.label}
+            {t(`modes.${m}`)}
           </button>
         ))}
       </div>
@@ -384,30 +377,30 @@ function ZonePicker({
           />
           <div className={styles.gradientRow}>
             <div className={styles.gradientStop}>
-              <span className={styles.gradientStopLabel}>Couleur 1</span>
+              <span className={styles.gradientStopLabel}>{t('gradient.color1')}</span>
               <HexField value={zone.gradient.c1} onChange={(c) => onChangeGradient({ c1: c })} />
             </div>
             <div className={styles.gradientStop}>
-              <span className={styles.gradientStopLabel}>Couleur 2</span>
+              <span className={styles.gradientStopLabel}>{t('gradient.color2')}</span>
               <HexField value={zone.gradient.c2} onChange={(c) => onChangeGradient({ c2: c })} />
             </div>
           </div>
           <div className={styles.gradientAngle}>
-            <span className={styles.gradientStopLabel}>Angle</span>
+            <span className={styles.gradientStopLabel}>{t('gradient.angle')}</span>
             <input
               type="range" min={0} max={360} value={zone.gradient.angle}
               className={styles.gradientAngleInput}
-              aria-label="Angle du dégradé"
+              aria-label={t('gradient.angleAria')}
               onChange={(e) => onChangeGradient({ angle: parseInt(e.target.value, 10) })}
             />
             <span className={styles.gradientAngleValue}>{zone.gradient.angle}°</span>
           </div>
-          <div className={styles.pickerSwatches} aria-label="Palette couleur 1">
+          <div className={styles.pickerSwatches} aria-label={t('gradient.paletteAria')}>
             {palette.map((c) => (
               <button
                 key={c}
                 type="button"
-                aria-label={`Couleur ${c}`}
+                aria-label={t('hex.swatchAria', { hex: c })}
                 className={`${styles.swatch} ${zone.gradient.c1.toLowerCase() === c.toLowerCase() ? styles.swatchActive : ''}`}
                 style={{ background: c }}
                 onClick={() => onChangeGradient({ c1: c })}
@@ -420,8 +413,6 @@ function ZonePicker({
   );
 }
 
-/* ── Pattern picker ───────────────────────────────────────────── */
-
 function PatternPicker({
   pattern, onChangeName, onChangeColor, palette,
 }: {
@@ -430,26 +421,30 @@ function PatternPicker({
   onChangeColor: (c: string) => void;
   palette: string[];
 }): React.ReactElement {
+  const t = useTranslations('marinaCustomize');
   return (
     <div className={styles.patternSection}>
-      <p className={styles.patternTitle}>Motif</p>
+      <p className={styles.patternTitle}>{t('patterns.title')}</p>
       <div className={styles.patternGrid}>
-        {PATTERNS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`${styles.patternOption} ${pattern.name === p.id ? styles.patternOptionActive : ''}`}
-            onClick={() => onChangeName(p.id)}
-            aria-label={`Motif ${p.label}`}
-          >
-            <PatternThumbnail name={p.id} color={pattern.color} />
-            <span className={styles.patternLabel}>{p.label}</span>
-          </button>
-        ))}
+        {PATTERN_IDS.map((id) => {
+          const label = t(`patterns.labels.${id}`);
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`${styles.patternOption} ${pattern.name === id ? styles.patternOptionActive : ''}`}
+              onClick={() => onChangeName(id)}
+              aria-label={t('patterns.tileAria', { label })}
+            >
+              <PatternThumbnail name={id} color={pattern.color} />
+              <span className={styles.patternLabel}>{label}</span>
+            </button>
+          );
+        })}
       </div>
       {pattern.name !== 'none' && (
         <div className={styles.patternColorRow}>
-          <span className={styles.gradientStopLabel}>Couleur du motif</span>
+          <span className={styles.gradientStopLabel}>{t('patterns.colorTitle')}</span>
           <HexPicker value={pattern.color} onChange={onChangeColor} palette={palette} />
         </div>
       )}
@@ -489,20 +484,19 @@ function PatternThumbnail({ name, color }: { name: PatternName; color: string })
   );
 }
 
-/* ── Hex pickers ──────────────────────────────────────────────── */
-
 function HexPicker({
   value, onChange, palette,
 }: { value: string; onChange: (hex: string) => void; palette: string[] }): React.ReactElement {
+  const t = useTranslations('marinaCustomize.hex');
   return (
     <div className={styles.picker}>
       <HexField value={value} onChange={onChange} />
-      <div className={styles.pickerSwatches} aria-label="Palette de couleurs">
+      <div className={styles.pickerSwatches} aria-label={t('paletteAria')}>
         {palette.map((c) => (
           <button
             key={c}
             type="button"
-            aria-label={`Couleur ${c}`}
+            aria-label={t('swatchAria', { hex: c })}
             className={`${styles.swatch} ${value.toLowerCase() === c.toLowerCase() ? styles.swatchActive : ''}`}
             style={{ background: c }}
             onClick={() => onChange(c)}
@@ -516,6 +510,7 @@ function HexPicker({
 function HexField({
   value, onChange,
 }: { value: string; onChange: (hex: string) => void }): React.ReactElement {
+  const t = useTranslations('marinaCustomize.hex');
   const [draft, setDraft] = useState(value.toUpperCase());
   if (value.toUpperCase() !== draft && isValidHex(value)) {
     setDraft(value.toUpperCase());
@@ -533,7 +528,7 @@ function HexField({
           className={styles.pickerHexNative}
           value={isValidHex(draft) ? draft : value}
           onChange={(e) => { setDraft(e.target.value.toUpperCase()); onChange(e.target.value.toUpperCase()); }}
-          aria-label="Sélecteur de couleur"
+          aria-label={t('nativeAria')}
         />
       </label>
       <input
@@ -546,8 +541,6 @@ function HexField({
   );
 }
 
-/* ── Markings form ────────────────────────────────────────────── */
-
 function MarkingsForm({
   markings, onChange,
 }: {
@@ -555,41 +548,40 @@ function MarkingsForm({
   onChange: (p: Partial<MarkingConfig>) => void;
   palette: string[];
 }): React.ReactElement {
+  const t = useTranslations('marinaCustomize.markings');
   return (
     <>
       {/* Grande voile */}
       <div className={styles.markingBlock}>
-        <p className={styles.markingBlockTitle}>Grande voile</p>
+        <p className={styles.markingBlockTitle}>{t('mainsail.title')}</p>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Numéro de voile</span>
+          <span className={styles.fieldLabel}>{t('mainsail.numberLabel')}</span>
           <input
             className={styles.fieldInput} maxLength={6} value={markings.mainsailText}
             onChange={(e) => onChange({ mainsailText: e.target.value.toUpperCase() })}
           />
-          <span className={styles.fieldHint}>
-            6 caractères max. Visible à grande distance — privilégier numéro ou sigle.
-          </span>
+          <span className={styles.fieldHint}>{t('mainsail.numberHint')}</span>
         </label>
         <div className={styles.fieldRow}>
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Couleur</span>
+            <span className={styles.fieldLabel}>{t('mainsail.colorLabel')}</span>
             <HexField value={markings.mainsailTextColor} onChange={(c) => onChange({ mainsailTextColor: c })} />
           </div>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Taille</span>
+            <span className={styles.fieldLabel}>{t('mainsail.sizeLabel')}</span>
             <select
               className={styles.fieldSelect}
               value={markings.mainsailTextSize}
               onChange={(e) => onChange({ mainsailTextSize: e.target.value as MarkingConfig['mainsailTextSize'] })}
             >
-              <option value="S">Petite</option>
-              <option value="M">Grande</option>
-              <option value="L">Très grande</option>
+              <option value="S">{t('mainsail.sizeS')}</option>
+              <option value="M">{t('mainsail.sizeM')}</option>
+              <option value="L">{t('mainsail.sizeL')}</option>
             </select>
           </label>
         </div>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Code pays</span>
+          <span className={styles.fieldLabel}>{t('mainsail.countryLabel')}</span>
           <input
             className={styles.fieldInput} maxLength={3}
             value={markings.mainsailCountryCode}
@@ -600,57 +592,53 @@ function MarkingsForm({
 
       {/* Foc */}
       <div className={styles.markingBlock}>
-        <p className={styles.markingBlockTitle}>Foc / Génois</p>
+        <p className={styles.markingBlockTitle}>{t('jib.title')}</p>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Texte (sponsor / devise)</span>
+          <span className={styles.fieldLabel}>{t('jib.textLabel')}</span>
           <input
             className={styles.fieldInput} maxLength={12} value={markings.jibText}
             onChange={(e) => onChange({ jibText: e.target.value.toUpperCase() })}
           />
-          <span className={styles.fieldHint}>
-            12 caractères max. Optionnel — laissez vide pour une voile neutre.
-          </span>
+          <span className={styles.fieldHint}>{t('jib.textHint')}</span>
         </label>
         <div className={styles.field}>
-          <span className={styles.fieldLabel}>Couleur</span>
+          <span className={styles.fieldLabel}>{t('jib.colorLabel')}</span>
           <HexField value={markings.jibTextColor} onChange={(c) => onChange({ jibTextColor: c })} />
         </div>
       </div>
 
       {/* Coque */}
       <div className={styles.markingBlock}>
-        <p className={styles.markingBlockTitle}>Coque</p>
+        <p className={styles.markingBlockTitle}>{t('hull.title')}</p>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Texte (sponsor / devise)</span>
+          <span className={styles.fieldLabel}>{t('hull.textLabel')}</span>
           <input
             className={styles.fieldInput} maxLength={20}
             value={markings.hullText}
             onChange={(e) => onChange({ hullText: e.target.value.toUpperCase() })}
           />
-          <span className={styles.fieldHint}>
-            20 caractères max. Le nom du bateau est utilisé par défaut.
-          </span>
+          <span className={styles.fieldHint}>{t('hull.textHint')}</span>
         </label>
         <div className={styles.fieldRow}>
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Couleur</span>
+            <span className={styles.fieldLabel}>{t('hull.colorLabel')}</span>
             <HexField value={markings.hullTextColor} onChange={(c) => onChange({ hullTextColor: c })} />
           </div>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Position</span>
+            <span className={styles.fieldLabel}>{t('hull.positionLabel')}</span>
             <select
               className={styles.fieldSelect}
               value={markings.hullTextPosition}
               onChange={(e) => onChange({ hullTextPosition: e.target.value as MarkingConfig['hullTextPosition'] })}
             >
-              <option value="center">Centrée</option>
-              <option value="fore">Avant</option>
-              <option value="aft">Arrière</option>
+              <option value="center">{t('hull.positionCenter')}</option>
+              <option value="fore">{t('hull.positionFore')}</option>
+              <option value="aft">{t('hull.positionAft')}</option>
             </select>
           </label>
         </div>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Numéro tribord</span>
+          <span className={styles.fieldLabel}>{t('hull.numberLabel')}</span>
           <input
             className={styles.fieldInput} maxLength={4}
             value={markings.hullNumberSide}
@@ -663,7 +651,7 @@ function MarkingsForm({
 }
 
 /* =========================================================================
-   IMOCA Preview — renders the real SVG with dynamic fills
+   IMOCA Preview
    ========================================================================= */
 
 function getZoneFill(id: ZoneId, zone: ZoneConfig): string {
@@ -671,7 +659,7 @@ function getZoneFill(id: ZoneId, zone: ZoneConfig): string {
   return zone.solid;
 }
 
-function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement {
+function ImocaPreview({ state, svgAria }: { state: CustomizeState; svgAria: string }): React.ReactElement {
   const z = state.zones;
   const m = state.markings;
 
@@ -686,10 +674,9 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
       className={styles.previewSvg}
       viewBox={IMOCA.viewBox}
       preserveAspectRatio="xMidYMid meet"
-      aria-label={`Aperçu IMOCA — ${state.name}`}
+      aria-label={svgAria}
     >
       <defs>
-        {/* Gradient defs */}
         {ZONE_ORDER.map((id) => {
           const zone = z[id];
           if (zone.mode !== 'gradient') return null;
@@ -702,7 +689,6 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
           );
         })}
 
-        {/* Pattern defs */}
         {(['hull', 'mainsail', 'jib'] as const).map((id) => {
           const p = z[id].pattern;
           if (p.name === 'none') return null;
@@ -710,42 +696,30 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
         })}
       </defs>
 
-      {/* Water line hint */}
       <line x1="0" y1="840" x2="628" y2="840"
             stroke="#1a2840" strokeOpacity="0.10" strokeWidth="1" strokeDasharray="4 8" />
 
-      {/* ── Zone paths (render order: back to front) ── */}
-
-      {/* Grande voile (mainsail) */}
       <path d={IMOCA.mainsail} fill={getZoneFill('mainsail', z.mainsail)} />
       {z.mainsail.pattern.name !== 'none' && (
         <path d={IMOCA.mainsail} fill={`url(#pat-${z.mainsail.pattern.name}-mainsail)`} opacity="0.35" />
       )}
 
-      {/* Petite voile (jib) */}
       <path d={IMOCA.jib} fill={getZoneFill('jib', z.jib)} />
       {z.jib.pattern.name !== 'none' && (
         <path d={IMOCA.jib} fill={`url(#pat-${z.jib.pattern.name}-jib)`} opacity="0.35" />
       )}
 
-      {/* Mât */}
       <path d={IMOCA.mast} fill={getZoneFill('mast', z.mast)} />
 
-      {/* Coque */}
       <path d={IMOCA.hull} fill={getZoneFill('hull', z.hull)} />
       {z.hull.pattern.name !== 'none' && (
         <path d={IMOCA.hull} fill={`url(#pat-${z.hull.pattern.name}-hull)`} opacity="0.35" />
       )}
 
-      {/* Cabine */}
       <path d={IMOCA.cabin} fill={getZoneFill('cabin', z.cabin)} />
 
-      {/* Appendices */}
       <path d={IMOCA.appendages} fill={getZoneFill('appendages', z.appendages)} />
 
-      {/* ── Text markings ── */}
-
-      {/* Mainsail number */}
       {m.mainsailText && (
         <text x="155" y="380" fontFamily="var(--font-display)" fontSize={mainsailFontSize}
               fill={m.mainsailTextColor} textAnchor="middle" letterSpacing="0.08em"
@@ -761,7 +735,6 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
         </text>
       )}
 
-      {/* Jib text */}
       {m.jibText && (
         <text x="280" y="460" fontFamily="var(--font-display)" fontSize="36"
               fill={m.jibTextColor} textAnchor="middle" letterSpacing="0.06em"
@@ -770,7 +743,6 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
         </text>
       )}
 
-      {/* Hull text */}
       {m.hullText && (
         <text x={hullTextX} y="862" fontFamily="var(--font-display)" fontSize="22"
               fill={m.hullTextColor} textAnchor="middle" letterSpacing="0.14em">
@@ -778,7 +750,6 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
         </text>
       )}
 
-      {/* Hull number (starboard) */}
       {m.hullNumberSide && (
         <text x="530" y="848" fontFamily="var(--font-mono)" fontSize="14"
               fill="#c9a227" letterSpacing="0.10em" fontWeight="700">
@@ -788,8 +759,6 @@ function ImocaPreview({ state }: { state: CustomizeState }): React.ReactElement 
     </svg>
   );
 }
-
-/* ── SVG pattern definitions ──────────────────────────────────── */
 
 function SvgPatternDef({
   zoneId, patternName, color,

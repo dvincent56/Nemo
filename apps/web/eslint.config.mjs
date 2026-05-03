@@ -61,6 +61,9 @@ const config = [
       'src/app/\\[locale\\]/profile/social/SocialView.tsx',
       'src/app/\\[locale\\]/team/\\[slug\\]/page.tsx',
       'src/app/\\[locale\\]/team/\\[slug\\]/TeamView.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/page.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/CustomizeLoader.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/CustomizeView.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.
@@ -85,6 +88,7 @@ const config = [
           '%', '/7', 'NM',
           '01', '02', '03', '04', '05',
           '⌕', 'e',
+          '°',
         ],
       }],
     },

@@ -369,6 +369,113 @@
       }
     }
   },
+  "marinaCustomize": {
+    "loader": {
+      "loading": "Chargement…",
+      "errorPrefix": "Impossible de charger ce bateau :",
+      "errorUnknown": "Erreur inconnue"
+    },
+    "breadcrumb": {
+      "aria": "Fil d'ariane",
+      "marina": "← Marina",
+      "tail": "Personnaliser"
+    },
+    "preview": {
+      "eyebrow": "Aperçu",
+      "aria": "Aperçu du bateau personnalisé",
+      "noName": "Sans nom",
+      "metaSavedDirty": "Aperçu non sauvegardé",
+      "metaSavedClean": "Configuration enregistrée",
+      "svgAria": "Aperçu IMOCA — {name}"
+    },
+    "actions": {
+      "saved": "✓ Enregistré",
+      "dirty": "Modifications en cours",
+      "clean": "Aucune modification",
+      "reset": "Réinitialiser",
+      "cancel": "Annuler",
+      "save": "Enregistrer"
+    },
+    "controls": {
+      "aria": "Personnalisation"
+    },
+    "identity": {
+      "num": "01 · Identité",
+      "title": "Nom",
+      "boatNameLabel": "Nom du bateau",
+      "boatNameHint": "20 caractères max. Visible sur le pont, le palmarès et le classement."
+    },
+    "zones": {
+      "hull": "Coque",
+      "cabin": "Cabine",
+      "mast": "Mât & gréement",
+      "appendages": "Foils & quille",
+      "appendagesAside": "Couleur appliquée à toutes les pièces immergées.",
+      "mainsail": "Grande voile",
+      "jib": "Foc / Génois"
+    },
+    "modes": {
+      "solid": "Uni",
+      "gradient": "Dégradé"
+    },
+    "gradient": {
+      "color1": "Couleur 1",
+      "color2": "Couleur 2",
+      "angle": "Angle",
+      "angleAria": "Angle du dégradé",
+      "paletteAria": "Palette couleur 1"
+    },
+    "patterns": {
+      "title": "Motif",
+      "colorTitle": "Couleur du motif",
+      "labels": {
+        "none": "Aucun",
+        "stripes": "Lignes",
+        "dots": "Ronds",
+        "honeycomb": "Nid d'ab."
+      },
+      "tileAria": "Motif {label}"
+    },
+    "hex": {
+      "paletteAria": "Palette de couleurs",
+      "swatchAria": "Couleur {hex}",
+      "nativeAria": "Sélecteur de couleur"
+    },
+    "markings": {
+      "num": "08 · Marquages",
+      "title": "Textes & marquages",
+      "aside": "Numéros, sponsors fictifs, devises.",
+      "mainsail": {
+        "title": "Grande voile",
+        "numberLabel": "Numéro de voile",
+        "numberHint": "6 caractères max. Visible à grande distance — privilégier numéro ou sigle.",
+        "colorLabel": "Couleur",
+        "sizeLabel": "Taille",
+        "sizeS": "Petite",
+        "sizeM": "Grande",
+        "sizeL": "Très grande",
+        "countryLabel": "Code pays"
+      },
+      "jib": {
+        "title": "Foc / Génois",
+        "textLabel": "Texte (sponsor / devise)",
+        "textHint": "12 caractères max. Optionnel — laissez vide pour une voile neutre.",
+        "colorLabel": "Couleur"
+      },
+      "hull": {
+        "title": "Coque",
+        "textLabel": "Texte (sponsor / devise)",
+        "textHint": "20 caractères max. Le nom du bateau est utilisé par défaut.",
+        "colorLabel": "Couleur",
+        "positionLabel": "Position",
+        "positionCenter": "Centrée",
+        "positionFore": "Avant",
+        "positionAft": "Arrière",
+        "numberLabel": "Numéro tribord"
+      }
+    },
+    "sectionNum": "{num} · {label}"
+  },
   "team": {
     "hero": {
       "eyebrow": "Circuit Nemo",

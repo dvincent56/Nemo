@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { fetchBoatDetail } from '@/lib/marina-api';
 import type { BoatDetail } from '../../data';
 import CustomizeView from './CustomizeView';
@@ -10,12 +11,8 @@ interface CustomizeLoaderProps {
   boatId: string;
 }
 
-/**
- * Fetches the boat from the marina API and hands it to CustomizeView.
- * Kept as a thin adapter: CustomizeView only needs id/name/class/hullColor/
- * hullNumber/deckColor, which we synthesize from the API response.
- */
 export default function CustomizeLoader({ boatId }: CustomizeLoaderProps): React.ReactElement {
+  const t = useTranslations('marinaCustomize.loader');
   const [boat, setBoat] = useState<BoatDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +29,13 @@ export default function CustomizeLoader({ boatId }: CustomizeLoaderProps): React
         });
         setError(null);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Erreur inconnue'));
-  }, [boatId]);
+      .catch((err) => setError(err instanceof Error ? err.message : t('errorUnknown')));
+  }, [boatId, t]);
 
   if (error) {
     return (
       <div className={styles.loadingState ?? ''} style={{ padding: '2rem', textAlign: 'center' }}>
-        Impossible de charger ce bateau : {error}.
+        {t('errorPrefix')} {error}.
       </div>
     );
   }
@@ -46,7 +43,7 @@ export default function CustomizeLoader({ boatId }: CustomizeLoaderProps): React
   if (!boat) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        Chargement…
+        {t('loading')}
       </div>
     );
   }
