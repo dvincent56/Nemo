@@ -1,5 +1,5 @@
 import { Eyebrow, NewsCard } from '@/components/ui';
-import type { NewsItem } from '@/app/home-data';
+import type { NewsItem } from '@/lib/home-data';
 import styles from './page.module.css';
 
 export default function NewsIndexView({

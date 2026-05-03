@@ -2,8 +2,8 @@ import { cookies } from 'next/headers';
 import { SiteFooter } from '@/components/ui';
 import { fetchNews, fetchRaces } from '@/lib/api';
 import { parseDevToken } from '@/lib/access';
+import { HERO_STATS } from '@/lib/home-data';
 import HomeView from './HomeView';
-import { HERO_STATS } from './home-data';
 import { getRanking } from './ranking/data';
 
 export const dynamic = 'force-dynamic';

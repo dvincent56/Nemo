@@ -5,7 +5,7 @@ import {
   formatNewsDate,
   type NewsBlock,
   type NewsItem,
-} from '@/app/home-data';
+} from '@/lib/home-data';
 import styles from './page.module.css';
 
 type LinkHref = Parameters<typeof Link>[0]['href'];

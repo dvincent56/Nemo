@@ -125,7 +125,7 @@ export async function fetchRace(id: string): Promise<RaceSummary | null> {
 // En Phase 5, pointera vers Fastify.
 // ---------------------------------------------------------------------------
 
-import type { NewsItem } from '@/app/home-data';
+import type { NewsItem } from '@/lib/home-data';
 
 export async function fetchNews(): Promise<NewsItem[]> {
   const res = await fetch(new URL('/api/public/news', WEB_BASE), {
