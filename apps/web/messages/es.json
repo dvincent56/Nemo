@@ -3,6 +3,12 @@
     "actions": {
       "save": "Enregistrer",
       "cancel": "Annuler"
+    },
+    "meta": {
+      "title": "Nemo — Jeu de voile offshore",
+      "shortName": "Nemo",
+      "description": "Jeu de voile offshore en ligne. Polaires réelles, météo NOAA, zéro pay-to-win.",
+      "applicationName": "Nemo"
     }
   }
 }
