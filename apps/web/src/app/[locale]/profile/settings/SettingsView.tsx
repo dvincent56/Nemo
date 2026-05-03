@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import {
@@ -29,12 +30,12 @@ function useSavedFlash(): [SavedKey | null, (k: SavedKey) => void] {
 
 type SectionId = 'identite' | 'compte' | 'preferences' | 'notifications' | 'danger';
 
-const SECTIONS: ReadonlyArray<{ id: SectionId; num: string; label: string; danger?: boolean }> = [
-  { id: 'identite',      num: '01', label: 'Identité publique' },
-  { id: 'compte',        num: '02', label: 'Compte' },
-  { id: 'preferences',   num: '03', label: 'Préférences' },
-  { id: 'notifications', num: '04', label: 'Notifications' },
-  { id: 'danger',        num: '05', label: 'Zone sensible', danger: true },
+const SECTION_DEFS: ReadonlyArray<{ id: SectionId; num: string; danger?: boolean }> = [
+  { id: 'identite',      num: '01' },
+  { id: 'compte',        num: '02' },
+  { id: 'preferences',   num: '03' },
+  { id: 'notifications', num: '04' },
+  { id: 'danger',        num: '05', danger: true },
 ];
 
 function shallowEqual<T extends object>(a: T, b: T): boolean {
@@ -100,8 +101,8 @@ function Toggle({
   );
 }
 
-// ── Valeurs initiales des 4 sections. Seront chargées depuis
-//    l'API `/api/v1/me/*` en Phase 4 ; pour l'instant seed local.
+// Valeurs initiales des 4 sections. Seront chargées depuis
+// l'API `/api/v1/me/*` en Phase 4 ; pour l'instant seed local.
 const INITIAL_IDENTITY: IdentityPatch = {
   pseudo: 'Skipper',
   country: 'FR',
@@ -132,6 +133,7 @@ const INITIAL_NOTIFICATIONS: NotificationsPatch = {
 };
 
 export default function SettingsView(): React.ReactElement {
+  const t = useTranslations('profile.settings');
   const [activeSection, setActiveSection] = useState<SectionId>('identite');
   const [saved, flashSaved] = useSavedFlash();
   const [pending, setPending] = useState<SavedKey | null>(null);
@@ -164,8 +166,7 @@ export default function SettingsView(): React.ReactElement {
   const [notificationsBase, setNotificationsBase] = useState<NotificationsPatch>(INITIAL_NOTIFICATIONS);
   const notificationsDirty = !shallowEqual(notifications, notificationsBase);
 
-  // Hydrate le pseudo depuis la session côté client. Aligne aussi la
-  // valeur "de base" pour que le champ ne soit pas marqué dirty tout seul.
+  // Hydrate le pseudo depuis la session côté client.
   useEffect(() => {
     const s = readClientSession();
     if (s.username) {
@@ -174,9 +175,7 @@ export default function SettingsView(): React.ReactElement {
     }
   }, []);
 
-  // Scroll spy : active la section visible dans le sidenav. Même pattern
-  // que LegalLayout (IntersectionObserver) : se déclenche dès le montage
-  // et gère les cas limites (haut/bas de page, arrivée via #hash).
+  // Scroll spy : active la section visible dans le sidenav.
   useEffect(() => {
     const visible = new Set<string>();
     const io = new IntersectionObserver(
@@ -197,39 +196,33 @@ export default function SettingsView(): React.ReactElement {
           if (bestId !== null) setActiveSection(bestId);
           return;
         }
-        // Aucune section dans la bande : haut de page → première, bas → dernière.
-        const firstEl = document.getElementById(SECTIONS[0]!.id);
+        const firstEl = document.getElementById(SECTION_DEFS[0]!.id);
         if (firstEl && firstEl.getBoundingClientRect().top > 0) {
-          setActiveSection(SECTIONS[0]!.id);
+          setActiveSection(SECTION_DEFS[0]!.id);
         } else {
-          setActiveSection(SECTIONS[SECTIONS.length - 1]!.id);
+          setActiveSection(SECTION_DEFS[SECTION_DEFS.length - 1]!.id);
         }
       },
       { rootMargin: '-120px 0px -55% 0px', threshold: 0 },
     );
-    for (const s of SECTIONS) {
+    for (const s of SECTION_DEFS) {
       const el = document.getElementById(s.id);
       if (el) io.observe(el);
     }
     return () => io.disconnect();
   }, []);
 
-  // ── Cascade Pays → Subdivision → Ville ──
-  // Chaque liste est alimentée par un fetch vers /api/v1/places/* ; les
-  // données brutes (Etalab + country-state-city) restent côté serveur.
+  // Cascade Pays → Subdivision → Ville
   const [countries, setCountries] = useState<Country[]>([]);
   const [subdivisions, setSubdivisions] = useState<Subdivision[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [loadingSubdivisions, setLoadingSubdivisions] = useState(false);
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // 1. Liste des pays au montage
   useEffect(() => {
     fetchCountries().then(setCountries).catch(() => setCountries([]));
   }, []);
 
-  // 2. Subdivisions quand le pays change. Si le dpt courant n'existe pas
-  //    dans la nouvelle liste, on retombe sur le premier.
   useEffect(() => {
     let cancelled = false;
     setLoadingSubdivisions(true);
@@ -247,7 +240,6 @@ export default function SettingsView(): React.ReactElement {
     return () => { cancelled = true; };
   }, [identity.country]);
 
-  // 3. Villes quand le dpt change. Même logique de retombée pour city.
   useEffect(() => {
     if (!identity.dpt) { setCities([]); return; }
     let cancelled = false;
@@ -267,7 +259,6 @@ export default function SettingsView(): React.ReactElement {
   }, [identity.country, identity.dpt]);
 
   function selectCountry(newCountry: string): void {
-    // Le useEffect [identity.country] remplira les subdivisions + réalignera dpt/city.
     setIdentity((prev) => ({ ...prev, country: newCountry }));
   }
 
@@ -275,7 +266,6 @@ export default function SettingsView(): React.ReactElement {
     setIdentity((prev) => ({ ...prev, dpt: newDpt }));
   }
 
-  // Handlers de sauvegarde — appels API stubs + mise à jour de la base
   async function saveIdentity(): Promise<void> {
     setPending('identite');
     try {
@@ -290,7 +280,6 @@ export default function SettingsView(): React.ReactElement {
     setPending('compte');
     try {
       await updateAccount(account);
-      // Reset des champs mot de passe après sauvegarde réussie
       const cleared: AccountPatch = {
         email: account.email ?? '',
         passwordOld: '',
@@ -327,15 +316,13 @@ export default function SettingsView(): React.ReactElement {
   return (
     <>
       <header className={styles.head}>
-        <h1 className={styles.title}>Paramètres</h1>
-        <p className={styles.sub}>
-          Gère ton identité publique, ton compte, tes préférences de jeu et les notifications.
-        </p>
+        <h1 className={styles.title}>{t('title')}</h1>
+        <p className={styles.sub}>{t('sub')}</p>
       </header>
 
       <main className={styles.layout}>
-        <aside className={styles.sidenav} aria-label="Sections">
-          {SECTIONS.map((s) => {
+        <aside className={styles.sidenav} aria-label={t('ariaSections')}>
+          {SECTION_DEFS.map((s) => {
             const cls = [
               styles.sidenavLink,
               s.id === activeSection ? styles.sidenavLinkActive : '',
@@ -343,7 +330,7 @@ export default function SettingsView(): React.ReactElement {
             ].filter(Boolean).join(' ');
             return (
               <a key={s.id} href={`#${s.id}`} className={cls}>
-                <span>{s.label}</span>
+                <span>{t(`sections.${s.id}`)}</span>
                 <span className={styles.sidenavNum}>{s.num}</span>
               </a>
             );
@@ -355,34 +342,29 @@ export default function SettingsView(): React.ReactElement {
           <article className={styles.card} id="identite">
             <header className={styles.cardHead}>
               <span className={styles.cardNum}>01</span>
-              <h2 className={styles.cardTitle}>Identité publique</h2>
+              <h2 className={styles.cardTitle}>{t('identity.title')}</h2>
             </header>
-            <p className={styles.cardAside}>
-              Ces informations sont visibles par les autres skippers dans le classement,
-              l'historique des courses et sur ta page profil.
-            </p>
+            <p className={styles.cardAside}>{t('identity.aside')}</p>
 
             <div className={styles.field}>
-              <label className={styles.fieldLabel} htmlFor="pseudo">Pseudo</label>
+              <label className={styles.fieldLabel} htmlFor="pseudo">{t('identity.pseudoLabel')}</label>
               <input
                 id="pseudo" className={styles.fieldInput}
                 value={identity.pseudo}
                 onChange={(e) => setIdentity((p) => ({ ...p, pseudo: e.target.value }))}
                 maxLength={24}
               />
-              <p className={styles.fieldHint}>
-                Entre 3 et 24 caractères. Lettres, chiffres, tirets et underscores.
-              </p>
+              <p className={styles.fieldHint}>{t('identity.pseudoHint')}</p>
             </div>
 
             <div className={styles.fieldRow}>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="pays">Pays</label>
+                <label className={styles.fieldLabel} htmlFor="pays">{t('identity.countryLabel')}</label>
                 <select id="pays" className={styles.fieldSelect}
                         value={identity.country}
                         onChange={(e) => selectCountry(e.target.value)}
                         disabled={countries.length === 0}>
-                  {countries.length === 0 && <option value={identity.country}>Chargement…</option>}
+                  {countries.length === 0 && <option value={identity.country}>{t('identity.loading')}</option>}
                   {countries.map((c) => (
                     <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
                   ))}
@@ -390,15 +372,15 @@ export default function SettingsView(): React.ReactElement {
               </div>
               <div className={styles.field}>
                 <label className={styles.fieldLabel} htmlFor="dpt">
-                  {identity.country === 'FR' ? 'Département' : 'Région / État'}
+                  {identity.country === 'FR' ? t('identity.subdivisionLabelFR') : t('identity.subdivisionLabelOther')}
                 </label>
                 <select id="dpt" className={styles.fieldSelect}
                         value={identity.dpt}
                         onChange={(e) => selectSubdivision(e.target.value)}
                         disabled={loadingSubdivisions || subdivisions.length === 0}>
-                  {loadingSubdivisions && <option value={identity.dpt}>Chargement…</option>}
+                  {loadingSubdivisions && <option value={identity.dpt}>{t('identity.loading')}</option>}
                   {!loadingSubdivisions && subdivisions.length === 0 && (
-                    <option value="">Aucune subdivision disponible</option>
+                    <option value="">{t('identity.noSubdivision')}</option>
                   )}
                   {subdivisions.map((s) => (
                     <option key={s.code} value={s.code}>{s.name}</option>
@@ -406,14 +388,14 @@ export default function SettingsView(): React.ReactElement {
                 </select>
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="ville">Ville</label>
+                <label className={styles.fieldLabel} htmlFor="ville">{t('identity.cityLabel')}</label>
                 <select id="ville" className={styles.fieldSelect}
                         value={identity.city}
                         onChange={(e) => setIdentity((p) => ({ ...p, city: e.target.value }))}
                         disabled={loadingCities || cities.length === 0}>
-                  {loadingCities && <option value={identity.city}>Chargement…</option>}
+                  {loadingCities && <option value={identity.city}>{t('identity.loading')}</option>}
                   {!loadingCities && cities.length === 0 && (
-                    <option value="">Aucune commune trouvée</option>
+                    <option value="">{t('identity.noCity')}</option>
                   )}
                   {cities.map((c) => (
                     <option key={c.code} value={c.name}>{c.name}</option>
@@ -421,50 +403,46 @@ export default function SettingsView(): React.ReactElement {
                 </select>
                 <p className={styles.fieldHint}>
                   {identity.country === 'FR'
-                    ? `${cities.length.toLocaleString('fr-FR')} communes INSEE — tri par population`
-                    : 'Source : subdivisions ISO 3166-2'}
+                    ? t('identity.cityHintFR', { n: cities.length.toLocaleString('fr-FR') })
+                    : t('identity.cityHintOther')}
                 </p>
               </div>
             </div>
 
             <div className={styles.field}>
-              <span className={styles.fieldLabel}>Équipe</span>
+              <span className={styles.fieldLabel}>{t('identity.teamLabel')}</span>
               <div className={styles.teamReadonly}>
                 <p className={styles.teamReadonlyName}>{CURRENT_TEAM}</p>
                 <Link
                   href={'/profile/social' as Parameters<typeof Link>[0]['href']}
                   className={styles.teamManageLink}
                 >
-                  Gérer dans Social →
+                  {t('identity.manageInSocial')}
                 </Link>
               </div>
-              <p className={styles.fieldHint}>
-                La création, l'invitation et la gestion d'équipe se font sur la page Social.
-              </p>
+              <p className={styles.fieldHint}>{t('identity.teamHint')}</p>
             </div>
 
             <div className={styles.field}>
               <label className={styles.fieldLabel} htmlFor="devise">
-                Devise sur ton profil (optionnel)
+                {t('identity.taglineLabel')}
               </label>
               <textarea id="devise" className={styles.fieldTextarea}
                         value={identity.tagline}
                         onChange={(e) => setIdentity((p) => ({ ...p, tagline: e.target.value }))}
                         maxLength={120}
-                        placeholder="Une phrase d'accroche visible sur ta page profil." />
-              <p className={styles.fieldHint}>
-                120 caractères max. Laisse vide pour masquer la section sur ton profil.
-              </p>
+                        placeholder={t('identity.taglinePlaceholder')} />
+              <p className={styles.fieldHint}>{t('identity.taglineHint')}</p>
             </div>
 
             <div className={styles.cardFoot}>
-              {saved === 'identite' && <span className={styles.savedFlash}>✓ Enregistré</span>}
+              {saved === 'identite' && <span className={styles.savedFlash}>{t('savedFlash.saved')}</span>}
               <Button
                 variant="primary"
                 onClick={saveIdentity}
                 disabled={!identityDirty || pending === 'identite'}
               >
-                {pending === 'identite' ? 'Enregistrement…' : 'Enregistrer'}
+                {pending === 'identite' ? t('buttons.saving') : t('buttons.save')}
               </Button>
             </div>
           </article>
@@ -473,48 +451,44 @@ export default function SettingsView(): React.ReactElement {
           <article className={styles.card} id="compte">
             <header className={styles.cardHead}>
               <span className={styles.cardNum}>02</span>
-              <h2 className={styles.cardTitle}>Compte</h2>
+              <h2 className={styles.cardTitle}>{t('account.title')}</h2>
             </header>
-            <p className={styles.cardAside}>
-              Adresse email utilisée pour la connexion et mot de passe.
-            </p>
+            <p className={styles.cardAside}>{t('account.aside')}</p>
 
             <div className={styles.field}>
-              <label className={styles.fieldLabel} htmlFor="email">Adresse email</label>
+              <label className={styles.fieldLabel} htmlFor="email">{t('account.emailLabel')}</label>
               <input id="email" className={styles.fieldInput} type="email"
                      value={account.email ?? ''}
                      onChange={(e) => setAccount((p) => ({ ...p, email: e.target.value }))}
-                     placeholder="votre@email.fr" />
-              <p className={styles.fieldHint}>
-                Un lien de confirmation est envoyé à chaque changement.
-              </p>
+                     placeholder={t('account.emailPlaceholder')} />
+              <p className={styles.fieldHint}>{t('account.emailHint')}</p>
             </div>
 
             <div className={styles.fieldRow}>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="pwd-old">Mot de passe actuel</label>
+                <label className={styles.fieldLabel} htmlFor="pwd-old">{t('account.passwordOldLabel')}</label>
                 <input id="pwd-old" className={styles.fieldInput} type="password"
                        value={account.passwordOld ?? ''}
                        onChange={(e) => setAccount((p) => ({ ...p, passwordOld: e.target.value }))}
-                       placeholder="••••••••" autoComplete="current-password" />
+                       placeholder={t('account.passwordPlaceholder')} autoComplete="current-password" />
               </div>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="pwd-new">Nouveau mot de passe</label>
+                <label className={styles.fieldLabel} htmlFor="pwd-new">{t('account.passwordNewLabel')}</label>
                 <input id="pwd-new" className={styles.fieldInput} type="password"
                        value={account.passwordNew ?? ''}
                        onChange={(e) => setAccount((p) => ({ ...p, passwordNew: e.target.value }))}
-                       placeholder="••••••••" autoComplete="new-password" />
+                       placeholder={t('account.passwordPlaceholder')} autoComplete="new-password" />
               </div>
             </div>
 
             <div className={styles.cardFoot}>
-              {saved === 'compte' && <span className={styles.savedFlash}>✓ Mis à jour</span>}
+              {saved === 'compte' && <span className={styles.savedFlash}>{t('savedFlash.updated')}</span>}
               <Button
                 variant="primary"
                 onClick={saveAccount}
                 disabled={!accountDirty || pending === 'compte'}
               >
-                {pending === 'compte' ? 'Mise à jour…' : 'Mettre à jour'}
+                {pending === 'compte' ? t('buttons.updating') : t('buttons.update')}
               </Button>
             </div>
           </article>
@@ -523,56 +497,66 @@ export default function SettingsView(): React.ReactElement {
           <article className={styles.card} id="preferences">
             <header className={styles.cardHead}>
               <span className={styles.cardNum}>03</span>
-              <h2 className={styles.cardTitle}>Préférences de jeu</h2>
+              <h2 className={styles.cardTitle}>{t('preferences.title')}</h2>
             </header>
-            <p className={styles.cardAside}>
-              Unités, format d'affichage et langue de l'interface.
-            </p>
+            <p className={styles.cardAside}>{t('preferences.aside')}</p>
 
-            <ToggleRow title="Unité de vitesse"
-                       desc="Utilisée sur le HUD, la boussole et les polaires.">
+            <ToggleRow title={t('preferences.speedTitle')} desc={t('preferences.speedDesc')}>
               <Segmented
                 value={preferences.speedUnit}
                 onChange={(v) => setPreferences((p) => ({ ...p, speedUnit: v }))}
-                label="Unité de vitesse"
-                options={[{value:'kts',label:'Nœuds'},{value:'kmh',label:'km/h'},{value:'mph',label:'mph'}]} />
+                label={t('preferences.speedAria')}
+                options={[
+                  { value: 'kts', label: t('preferences.speedKts') },
+                  { value: 'kmh', label: t('preferences.speedKmh') },
+                  { value: 'mph', label: t('preferences.speedMph') },
+                ]} />
             </ToggleRow>
 
-            <ToggleRow title="Unité de distance"
-                       desc="Utilisée pour DTF, tracés, statistiques.">
+            <ToggleRow title={t('preferences.distanceTitle')} desc={t('preferences.distanceDesc')}>
               <Segmented
                 value={preferences.distanceUnit}
                 onChange={(v) => setPreferences((p) => ({ ...p, distanceUnit: v }))}
-                label="Unité de distance"
-                options={[{value:'NM',label:'NM'},{value:'km',label:'km'},{value:'mi',label:'mi'}]} />
+                label={t('preferences.distanceAria')}
+                options={[
+                  { value: 'NM', label: t('preferences.distanceNM') },
+                  { value: 'km', label: t('preferences.distanceKm') },
+                  { value: 'mi', label: t('preferences.distanceMi') },
+                ]} />
             </ToggleRow>
 
-            <ToggleRow title="Format d'heure"
-                       desc="Utilisé partout sur l'interface.">
+            <ToggleRow title={t('preferences.timeTitle')} desc={t('preferences.timeDesc')}>
               <Segmented
                 value={preferences.timeFormat}
                 onChange={(v) => setPreferences((p) => ({ ...p, timeFormat: v }))}
-                label="Format d'heure"
-                options={[{value:'24',label:'24 h'},{value:'12',label:'12 h (am/pm)'}]} />
+                label={t('preferences.timeAria')}
+                options={[
+                  { value: '24', label: t('preferences.time24') },
+                  { value: '12', label: t('preferences.time12') },
+                ]} />
             </ToggleRow>
 
-            <ToggleRow title="Langue de l'interface"
-                       desc="Texte du menu, des pages et des notifications.">
+            <ToggleRow title={t('preferences.languageTitle')} desc={t('preferences.languageDesc')}>
               <Segmented
                 value={preferences.language}
                 onChange={(v) => setPreferences((p) => ({ ...p, language: v }))}
-                label="Langue"
-                options={[{value:'fr',label:'FR'},{value:'en',label:'EN'},{value:'es',label:'ES'},{value:'de',label:'DE'}]} />
+                label={t('preferences.languageAria')}
+                options={[
+                  { value: 'fr', label: t('preferences.languageFR') },
+                  { value: 'en', label: t('preferences.languageEN') },
+                  { value: 'es', label: t('preferences.languageES') },
+                  { value: 'de', label: t('preferences.languageDE') },
+                ]} />
             </ToggleRow>
 
             <div className={styles.cardFoot}>
-              {saved === 'preferences' && <span className={styles.savedFlash}>✓ Enregistré</span>}
+              {saved === 'preferences' && <span className={styles.savedFlash}>{t('savedFlash.saved')}</span>}
               <Button
                 variant="primary"
                 onClick={savePreferences}
                 disabled={!preferencesDirty || pending === 'preferences'}
               >
-                {pending === 'preferences' ? 'Enregistrement…' : 'Enregistrer'}
+                {pending === 'preferences' ? t('buttons.saving') : t('buttons.save')}
               </Button>
             </div>
           </article>
@@ -581,56 +565,49 @@ export default function SettingsView(): React.ReactElement {
           <article className={styles.card} id="notifications">
             <header className={styles.cardHead}>
               <span className={styles.cardNum}>04</span>
-              <h2 className={styles.cardTitle}>Notifications</h2>
+              <h2 className={styles.cardTitle}>{t('notifications.title')}</h2>
             </header>
-            <p className={styles.cardAside}>
-              Canal email. Les notifications in-app sont toujours actives pendant une course.
-            </p>
+            <p className={styles.cardAside}>{t('notifications.aside')}</p>
 
-            <ToggleRow title="Départ imminent (H−1 h)"
-                       desc="Rappel une heure avant le départ d'une course à laquelle tu es inscrit.">
+            <ToggleRow title={t('notifications.startTitle')} desc={t('notifications.startDesc')}>
               <Toggle
                 checked={notifications.start}
                 onChange={(v) => setNotifications((p) => ({ ...p, start: v }))}
-                label="Départ imminent" />
+                label={t('notifications.startAria')} />
             </ToggleRow>
-            <ToggleRow title="Passage de porte / waypoint"
-                       desc="Email à chaque franchissement d'une porte obligatoire.">
+            <ToggleRow title={t('notifications.gateTitle')} desc={t('notifications.gateDesc')}>
               <Toggle
                 checked={notifications.gate}
                 onChange={(v) => setNotifications((p) => ({ ...p, gate: v }))}
-                label="Passage de porte" />
+                label={t('notifications.gateAria')} />
             </ToggleRow>
-            <ToggleRow title="Podium amis / équipe"
-                       desc="Un skipper que tu suis termine dans le top 3 d'une course.">
+            <ToggleRow title={t('notifications.podiumTitle')} desc={t('notifications.podiumDesc')}>
               <Toggle
                 checked={notifications.podium}
                 onChange={(v) => setNotifications((p) => ({ ...p, podium: v }))}
-                label="Podium amis" />
+                label={t('notifications.podiumAria')} />
             </ToggleRow>
-            <ToggleRow title="Nouvelles courses ouvertes"
-                       desc="Annonce des nouvelles dates de course dans les classes que tu possèdes.">
+            <ToggleRow title={t('notifications.newRacesTitle')} desc={t('notifications.newRacesDesc')}>
               <Toggle
                 checked={notifications.newRaces}
                 onChange={(v) => setNotifications((p) => ({ ...p, newRaces: v }))}
-                label="Nouvelles courses" />
+                label={t('notifications.newRacesAria')} />
             </ToggleRow>
-            <ToggleRow title="Résumé hebdomadaire"
-                       desc="Email chaque lundi avec tes résultats et l'actualité du circuit.">
+            <ToggleRow title={t('notifications.weeklyTitle')} desc={t('notifications.weeklyDesc')}>
               <Toggle
                 checked={notifications.weekly}
                 onChange={(v) => setNotifications((p) => ({ ...p, weekly: v }))}
-                label="Résumé hebdomadaire" />
+                label={t('notifications.weeklyAria')} />
             </ToggleRow>
 
             <div className={styles.cardFoot}>
-              {saved === 'notifications' && <span className={styles.savedFlash}>✓ Enregistré</span>}
+              {saved === 'notifications' && <span className={styles.savedFlash}>{t('savedFlash.saved')}</span>}
               <Button
                 variant="primary"
                 onClick={saveNotifications}
                 disabled={!notificationsDirty || pending === 'notifications'}
               >
-                {pending === 'notifications' ? 'Enregistrement…' : 'Enregistrer'}
+                {pending === 'notifications' ? t('buttons.saving') : t('buttons.save')}
               </Button>
             </div>
           </article>
@@ -639,21 +616,18 @@ export default function SettingsView(): React.ReactElement {
           <article className={`${styles.card} ${styles.cardDanger}`} id="danger">
             <header className={styles.cardHead}>
               <span className={styles.cardNum}>05</span>
-              <h2 className={styles.cardTitle}>Zone sensible</h2>
+              <h2 className={styles.cardTitle}>{t('danger.title')}</h2>
             </header>
-            <p className={styles.cardAside}>Actions irréversibles. Lis bien avant d'agir.</p>
+            <p className={styles.cardAside}>{t('danger.aside')}</p>
 
-            <ToggleRow title="Se déconnecter de tous les appareils"
-                       desc="Termine toutes les sessions actives (web, mobile). Tu devras te reconnecter partout.">
-              <Button variant="danger">Déconnecter tout</Button>
+            <ToggleRow title={t('danger.logoutAllTitle')} desc={t('danger.logoutAllDesc')}>
+              <Button variant="danger">{t('danger.logoutAllButton')}</Button>
             </ToggleRow>
-            <ToggleRow title="Exporter mes données"
-                       desc="Archive ZIP avec ton historique de courses, ta flotte et tes paramètres. RGPD.">
-              <Button variant="secondary">Demander l'export</Button>
+            <ToggleRow title={t('danger.exportTitle')} desc={t('danger.exportDesc')}>
+              <Button variant="secondary">{t('danger.exportButton')}</Button>
             </ToggleRow>
-            <ToggleRow title="Supprimer mon compte"
-                       desc="Suppression définitive de ton skipper, ta flotte et ton historique. Aucun retour possible.">
-              <Button variant="dangerSolid">Supprimer mon compte</Button>
+            <ToggleRow title={t('danger.deleteTitle')} desc={t('danger.deleteDesc')}>
+              <Button variant="dangerSolid">{t('danger.deleteButton')}</Button>
             </ToggleRow>
           </article>
 
