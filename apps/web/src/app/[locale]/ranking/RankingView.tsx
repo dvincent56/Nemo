@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Eyebrow, Flag, Pagination } from '@/components/ui';
 import { profileHref } from '@/lib/routes';
+import { BOAT_CLASS_ORDER } from '@/lib/boat-classes';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
 import { ME_CONTEXT, getRanking, type BoatClass, type RankingConfig, type SkipperRanking } from './data';
 import styles from './page.module.css';
 
@@ -12,29 +15,8 @@ const PAGE_SIZE = 10;
 type ClassFilter = 'ALL' | BoatClass;
 type ScopeFilter = 'GENERAL' | 'FRIENDS' | 'TEAM' | 'CITY' | 'DPT' | 'REGION' | 'COUNTRY';
 
-const CLASS_OPTIONS: { value: ClassFilter; label: string }[] = [
-  { value: 'ALL', label: 'Toutes' },
-  { value: 'FIGARO', label: 'Figaro III' },
-  { value: 'CLASS40', label: 'Class40' },
-  { value: 'OCEAN_FIFTY', label: 'Ocean Fifty' },
-  { value: 'IMOCA60', label: 'IMOCA 60' },
-  { value: 'ULTIM', label: 'Ultim' },
-];
-
-const SCOPE_OPTIONS: { value: ScopeFilter; label: string }[] = [
-  { value: 'GENERAL', label: 'Général' },
-  { value: 'FRIENDS', label: 'Amis' },
-  { value: 'TEAM', label: 'Équipe' },
-  { value: 'CITY', label: 'Ville' },
-  { value: 'DPT', label: 'Département' },
-  { value: 'REGION', label: 'Région' },
-  { value: 'COUNTRY', label: 'Pays' },
-];
-
-const CONFIG_OPTIONS: { value: RankingConfig; label: string }[] = [
-  { value: 'all', label: 'Toutes' },
-  { value: 'series', label: 'Série' },
-];
+const SCOPE_VALUES: ScopeFilter[] = ['GENERAL', 'FRIENDS', 'TEAM', 'CITY', 'DPT', 'REGION', 'COUNTRY'];
+const CONFIG_VALUES: RankingConfig[] = ['all', 'series'];
 
 function formatRank(n: number): { main: string; suffix: string } {
   const main = String(n).padStart(2, '0');
@@ -48,8 +30,6 @@ function Trend({ trend }: { trend: SkipperRanking['trend'] }): React.ReactElemen
   return <span className={styles.trend}>—</span>;
 }
 
-/** Renvoie le username affiché : si c'est la ligne "me", on remplace par
- *  celui de la session courante ; sinon on retourne le username du DTO. */
 function displayUsername(r: SkipperRanking, meUsername: string | null): string {
   if (r.isMe && meUsername) return meUsername;
   return r.username;
@@ -57,7 +37,6 @@ function displayUsername(r: SkipperRanking, meUsername: string | null): string {
 
 export interface RankingViewProps {
   totalSkippers: number;
-  /** Non authentifié : cache "Ta position", filtre les scopes à GENERAL. */
   isVisitor: boolean;
   meUsername: string | null;
 }
@@ -67,19 +46,20 @@ export default function RankingView({
   isVisitor,
   meUsername,
 }: RankingViewProps): React.ReactElement {
+  const t = useTranslations('ranking');
+  const tScope = useTranslations('ranking.filters.scope');
+  const tConfig = useTranslations('ranking.filters.config');
+  const boatLabel = useBoatLabel();
+
   const [classFilter, setClassFilter] = useState<ClassFilter>('ALL');
   const [scope, setScope] = useState<ScopeFilter>('GENERAL');
   const [config, setConfig] = useState<RankingConfig>('all');
 
   const scopeOptions = useMemo(
-    () => (isVisitor ? SCOPE_OPTIONS.filter((s) => s.value === 'GENERAL') : SCOPE_OPTIONS),
+    () => (isVisitor ? (['GENERAL'] as ScopeFilter[]) : SCOPE_VALUES),
     [isVisitor],
   );
 
-  // Classement par classe (ou cumul ALL), dérivé du modèle joueurs +
-  // résultats par classe. Chaque jeu de données est déjà rangé localement
-  // (1er, 2e, …). On applique ensuite le filtre Périmètre et on **re-rang**
-  // dans le sous-classement (1er entre amis, 1er du département, …).
   const rows = useMemo(() => {
     const base = getRanking(classFilter, config);
     const filtered = base.filter((r) => {
@@ -96,7 +76,6 @@ export default function RankingView({
     return filtered.map((r, i) => ({ ...r, rank: i + 1 }));
   }, [classFilter, scope, config]);
 
-  // Pagination de la table — reset à la page 1 si le filtre change
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [classFilter, scope, config]);
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -105,8 +84,6 @@ export default function RankingView({
     [rows, page],
   );
 
-  // Podium et "ma position" se calculent sur le sous-classement courant.
-  // En mode visiteur (non authentifié), on ignore la ligne mockée `isMe`.
   const me = isVisitor ? undefined : rows.find((r) => r.isMe);
   const [p1, p2, p3] = rows;
 
@@ -114,22 +91,22 @@ export default function RankingView({
     <>
       <section className={styles.hero}>
         <div className={styles.heroMain}>
-          <Eyebrow trailing="Circuit Nemo">Saison 2026</Eyebrow>
-          <h1 className={styles.title}>Classement</h1>
+          <Eyebrow trailing={t('eyebrowTrailing')}>{t('eyebrowSeason')}</Eyebrow>
+          <h1 className={styles.title}>{t('title')}</h1>
         </div>
         <div>
           <p className={styles.heroMeta}>
             {config === 'series' ? (
               <>
-                Classement <strong>Série</strong> — uniquement les performances réalisées
-                avec un bateau strictement au défaut. <strong>{rows.length.toLocaleString('fr-FR')} skippers</strong> éligibles
-                sur le sous-classement courant.
+                {t('lede.seriesPre')}<strong>{t('lede.seriesEm')}</strong>{t('lede.seriesMid')}
+                <strong>{t('lede.seriesCount', { n: rows.length.toLocaleString('fr-FR') })}</strong>
+                {t('lede.seriesEnd')}
               </>
             ) : (
               <>
-                Rang cumulé sur l'ensemble des courses de la saison, toutes classes
-                confondues. <strong>{totalSkippers.toLocaleString('fr-FR')} skippers</strong> actifs
-                sur le circuit.
+                {t('lede.allPre')}
+                <strong>{t('lede.allCount', { n: totalSkippers.toLocaleString('fr-FR') })}</strong>
+                {t('lede.allEnd')}
               </>
             )}
           </p>
@@ -140,10 +117,14 @@ export default function RankingView({
                 <sup>{formatRank(me.rank).suffix}</sup>
               </span>
               <div className={styles.meInfo}>
-                <p className={styles.meLabel}>Ta position</p>
+                <p className={styles.meLabel}>{t('me.label')}</p>
                 <p className={styles.mePseudo}>{displayUsername(me, meUsername)}</p>
                 <p className={styles.meStats}>
-                  {me.rankingScore.toLocaleString('fr-FR')} pts · {me.racesFinished} courses · {String(me.podiums).padStart(2, '0')} podiums
+                  {t('me.stats', {
+                    points: me.rankingScore.toLocaleString('fr-FR'),
+                    races: me.racesFinished,
+                    podiums: String(me.podiums).padStart(2, '0'),
+                  })}
                 </p>
               </div>
             </div>
@@ -152,7 +133,7 @@ export default function RankingView({
       </section>
 
       {p1 && p2 && p3 && (
-        <section className={styles.podiumWrap} aria-label="Podium saison">
+        <section className={styles.podiumWrap} aria-label={t('ariaPodium')}>
           <div className={styles.podium}>
             <PodiumCard skipper={p2} position={2} tone="p2" meUsername={meUsername} isVisitor={isVisitor} />
             <PodiumCard skipper={p1} position={1} tone="p1" meUsername={meUsername} isVisitor={isVisitor} />
@@ -162,54 +143,54 @@ export default function RankingView({
       )}
 
       <div className={styles.viewSwitch}>
-        <button type="button" className={`${styles.viewBtn} ${styles.active}`}>Saison</button>
+        <button type="button" className={`${styles.viewBtn} ${styles.active}`}>{t('viewSwitch.season')}</button>
         <Link
           href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
-        >Par course</Link>
+        >{t('viewSwitch.races')}</Link>
         <Link
           href={'/ranking/teams' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
-        >Équipes</Link>
+        >{t('viewSwitch.teams')}</Link>
       </div>
 
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Classe</p>
-          {CLASS_OPTIONS.map((c) => (
+          <p className={styles.filterLabel}>{t('filters.classLabel')}</p>
+          {(['ALL', ...BOAT_CLASS_ORDER.filter((c) => c !== 'CRUISER_RACER' && c !== 'MINI650')] as ClassFilter[]).map((c) => (
             <button
-              key={c.value}
+              key={c}
               type="button"
-              className={`${styles.filterTab} ${c.value === classFilter ? styles.filterTabActive : ''}`}
-              onClick={() => setClassFilter(c.value)}
+              className={`${styles.filterTab} ${c === classFilter ? styles.filterTabActive : ''}`}
+              onClick={() => setClassFilter(c)}
             >
-              {c.label}
+              {c === 'ALL' ? t('filters.classAll') : boatLabel(c)}
             </button>
           ))}
         </div>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Périmètre</p>
+          <p className={styles.filterLabel}>{t('filters.scopeLabel')}</p>
           {scopeOptions.map((s) => (
             <button
-              key={s.value}
+              key={s}
               type="button"
-              className={`${styles.filterTab} ${s.value === scope ? styles.filterTabActive : ''}`}
-              onClick={() => setScope(s.value)}
+              className={`${styles.filterTab} ${s === scope ? styles.filterTabActive : ''}`}
+              onClick={() => setScope(s)}
             >
-              {s.label}
+              {tScope(s.toLowerCase() as 'general' | 'friends' | 'team' | 'city' | 'dpt' | 'region' | 'country')}
             </button>
           ))}
         </div>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Configuration</p>
-          {CONFIG_OPTIONS.map((c) => (
+          <p className={styles.filterLabel}>{t('filters.configLabel')}</p>
+          {CONFIG_VALUES.map((c) => (
             <button
-              key={c.value}
+              key={c}
               type="button"
-              className={`${styles.filterTab} ${c.value === config ? styles.filterTabActive : ''}`}
-              onClick={() => setConfig(c.value)}
+              className={`${styles.filterTab} ${c === config ? styles.filterTabActive : ''}`}
+              onClick={() => setConfig(c)}
             >
-              {c.label}
+              {tConfig(c)}
             </button>
           ))}
         </div>
@@ -218,13 +199,13 @@ export default function RankingView({
       <section className={styles.rankingWrap}>
         <div className={styles.ranking}>
           <div className={styles.rankingHead}>
-            <span className={styles.num}>Rang</span>
-            <span>Skipper</span>
-            <span className={styles.num}>Points</span>
-            <span className={`${styles.num} ${styles.colCourses}`}>Courses</span>
-            <span className={`${styles.num} ${styles.colPodiums}`}>Podiums</span>
-            <span className={`${styles.num} ${styles.boat}`}>Bateau favori</span>
-            <span className={styles.num}>Tendance</span>
+            <span className={styles.num}>{t('table.rank')}</span>
+            <span>{t('table.skipper')}</span>
+            <span className={styles.num}>{t('table.points')}</span>
+            <span className={`${styles.num} ${styles.colCourses}`}>{t('table.races')}</span>
+            <span className={`${styles.num} ${styles.colPodiums}`}>{t('table.podiums')}</span>
+            <span className={`${styles.num} ${styles.boat}`}>{t('table.favoriteBoat')}</span>
+            <span className={styles.num}>{t('table.trend')}</span>
           </div>
           {visibleRows.map((r) => {
             const { main, suffix } = formatRank(r.rank);
@@ -247,7 +228,7 @@ export default function RankingView({
                       >
                         {displayUsername(r, meUsername)}
                       </Link>
-                      {isMeRow && <span className={styles.meBadge}>Moi</span>}
+                      {isMeRow && <span className={styles.meBadge}>{t('meBadge')}</span>}
                     </p>
                     <p className={styles.skCity}>{r.city} · {r.country.toUpperCase()}</p>
                   </div>
@@ -272,7 +253,7 @@ export default function RankingView({
           totalItems={rows.length}
           pageSize={PAGE_SIZE}
           onChange={setPage}
-          label="Pagination classement saison"
+          label={t('paginationLabel')}
         />
       </section>
     </>
@@ -288,6 +269,7 @@ function PodiumCard({
   meUsername: string | null;
   isVisitor: boolean;
 }): React.ReactElement {
+  const tCommon = useTranslations('common.units');
   const { main, suffix } = formatRank(position);
   const isMeRow = !isVisitor && skipper.isMe;
   return (
@@ -306,7 +288,7 @@ function PodiumCard({
         {skipper.city}
       </div>
       <p className={styles.podiumPoints}>
-        {skipper.rankingScore.toLocaleString('fr-FR')}<small>pts</small>
+        {skipper.rankingScore.toLocaleString('fr-FR')}<small>{tCommon('points')}</small>
       </p>
     </article>
   );

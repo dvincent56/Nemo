@@ -129,6 +129,121 @@
       "legalPost": ". Les données de compte sont hébergées en Europe."
     }
   },
+  "ranking": {
+    "eyebrowSeason": "Saison 2026",
+    "eyebrowTrailing": "Circuit Nemo",
+    "title": "Classement",
+    "lede": {
+      "seriesPre": "Classement ",
+      "seriesEm": "Série",
+      "seriesMid": " — uniquement les performances réalisées avec un bateau strictement au défaut. ",
+      "seriesCount": "{n} skippers",
+      "seriesEnd": " éligibles sur le sous-classement courant.",
+      "allPre": "Rang cumulé sur l'ensemble des courses de la saison, toutes classes confondues. ",
+      "allCount": "{n} skippers",
+      "allEnd": " actifs sur le circuit."
+    },
+    "me": {
+      "label": "Ta position",
+      "stats": "{points} pts · {races} courses · {podiums} podiums"
+    },
+    "ariaPodium": "Podium saison",
+    "viewSwitch": {
+      "season": "Saison",
+      "races": "Par course",
+      "teams": "Équipes"
+    },
+    "filters": {
+      "classLabel": "Classe",
+      "classAll": "Toutes",
+      "scopeLabel": "Périmètre",
+      "scope": {
+        "general": "Général",
+        "friends": "Amis",
+        "team": "Équipe",
+        "city": "Ville",
+        "dpt": "Département",
+        "region": "Région",
+        "country": "Pays"
+      },
+      "configLabel": "Configuration",
+      "config": {
+        "all": "Toutes",
+        "series": "Série"
+      }
+    },
+    "table": {
+      "rank": "Rang",
+      "skipper": "Skipper",
+      "points": "Points",
+      "races": "Courses",
+      "podiums": "Podiums",
+      "favoriteBoat": "Bateau favori",
+      "trend": "Tendance"
+    },
+    "meBadge": "Moi",
+    "paginationLabel": "Pagination classement saison",
+    "races": {
+      "eyebrowTrailing": "Classement par course",
+      "liveSection": {
+        "eyebrow": "Mises à jour en temps réel",
+        "title": "En cours"
+      },
+      "pastSection": {
+        "eyebrow": "Replays disponibles",
+        "title": "Terminées"
+      },
+      "tier": {
+        "career": "Carrière",
+        "free": "Libre"
+      },
+      "skippers": "Skippers",
+      "chipLive": "En direct",
+      "chipFinished": "Terminée",
+      "empty": "Aucune course consultable pour le moment."
+    },
+    "race": {
+      "pickerLabel": "Course sélectionnée",
+      "skippers": "{n} skippers",
+      "chipLive": "En cours",
+      "changeRace": "Changer de course →",
+      "meStats": "DTF {dtf} NM · BSP {bsp} nds",
+      "ariaPodium": "Podium course",
+      "podiumDtfUnit": "NM restants",
+      "table": {
+        "rank": "Rang",
+        "skipper": "Skipper",
+        "dtf": "DTF",
+        "bsp": "BSP",
+        "gapToLeader": "Écart leader",
+        "boat": "Bateau",
+        "trend": "Tendance"
+      },
+      "knotUnit": "nds",
+      "nmUnit": "NM",
+      "noGap": "—",
+      "paginationLabel": "Pagination classement course"
+    },
+    "teams": {
+      "lede": "Rang cumulé des écuries, agrégé sur les résultats de tous leurs membres toutes classes confondues. ",
+      "ledeCount": "{n} équipes",
+      "ledeEnd": " actives sur le circuit.",
+      "myTeamLabel": "Ton équipe",
+      "myTeamStats": "{points} pts · {members} membres · {podiums} podiums",
+      "ariaPodium": "Podium équipes",
+      "table": {
+        "rank": "Rang",
+        "team": "Équipe",
+        "captain": "Capitaine",
+        "members": "Membres",
+        "points": "Points",
+        "podiums": "Podiums",
+        "trend": "Tendance"
+      },
+      "captainLabel": "Capitaine",
+      "myBadge": "Mon équipe"
+    }
+  },
   "races": {
     "eyebrowSeason": "Saison 2026 · Circuit offshore",
     "eyebrowNum": "01 · Courses disponibles",

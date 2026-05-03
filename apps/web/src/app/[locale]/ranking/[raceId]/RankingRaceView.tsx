@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Eyebrow, Flag, Pagination } from '@/components/ui';
 import { profileHref } from '@/lib/routes';
 import styles from './page.module.css';
@@ -21,7 +22,7 @@ interface RaceRow {
   country: Country;
   dtfNm: number;
   bspKnots: number;
-  gapToLeaderNm: number | null; // null pour le leader
+  gapToLeaderNm: number | null;
   boat: string;
   trend: Trend;
   isFriend?: boolean;
@@ -62,15 +63,7 @@ const RACE_SEED = {
   ] satisfies RaceRow[],
 };
 
-const SCOPE_OPTIONS: { value: Scope; label: string }[] = [
-  { value: 'GENERAL', label: 'Général' },
-  { value: 'FRIENDS', label: 'Amis' },
-  { value: 'TEAM',    label: 'Équipe' },
-  { value: 'CITY',    label: 'Ville' },
-  { value: 'DPT',     label: 'Département' },
-  { value: 'REGION',  label: 'Région' },
-  { value: 'COUNTRY', label: 'Pays' },
-];
+const SCOPE_VALUES: Scope[] = ['GENERAL', 'FRIENDS', 'TEAM', 'CITY', 'DPT', 'REGION', 'COUNTRY'];
 
 function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };
@@ -97,20 +90,18 @@ export default function RankingRaceView({
   isVisitor,
   meUsername,
 }: RankingRaceViewProps): React.ReactElement {
+  const t = useTranslations('ranking');
+  const tRace = useTranslations('ranking.race');
+  const tScope = useTranslations('ranking.filters.scope');
   const [scope, setScope] = useState<Scope>('GENERAL');
 
   const scopeOptions = useMemo(
-    () => (isVisitor ? SCOPE_OPTIONS.filter((s) => s.value === 'GENERAL') : SCOPE_OPTIONS),
+    () => (isVisitor ? (['GENERAL'] as Scope[]) : SCOPE_VALUES),
     [isVisitor],
   );
 
   const allRows = RACE_SEED.rows;
 
-  // Sous-classement : on filtre par Périmètre puis on **recalcule un rang
-  // local** (1er, 2e, …). Le filtre n'est pas un masque sur le ranking
-  // général, c'est un classement à part entière (1er entre amis, 1er
-  // de l'équipe, …). Les rows seed sont déjà triées par rang général,
-  // donc l'ordre relatif reste correct après filtre.
   const rows = useMemo(() => {
     return allRows
       .filter((r) => {
@@ -127,8 +118,6 @@ export default function RankingRaceView({
       .map((r, i) => ({ ...r, rank: i + 1 }));
   }, [allRows, scope]);
 
-  // Podium et "ma position" reflètent le sous-classement courant.
-  // En mode visiteur, on masque le bloc perso — pas d'identité.
   const me = isVisitor ? undefined : rows.find((r) => r.isMe);
   const [p1, p2, p3] = rows;
 
@@ -143,43 +132,43 @@ export default function RankingRaceView({
   return (
     <>
       <section className={styles.hero}>
-        <Eyebrow trailing="Classement par course">Saison 2026</Eyebrow>
-        <h1 className={styles.title}>Classement</h1>
+        <Eyebrow trailing={t('races.eyebrowTrailing')}>{t('eyebrowSeason')}</Eyebrow>
+        <h1 className={styles.title}>{t('title')}</h1>
       </section>
 
       <div className={styles.viewSwitch}>
         <Link
           href={'/ranking' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
-        >Saison</Link>
+        >{t('viewSwitch.season')}</Link>
         <Link
           href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={`${styles.viewBtn} ${styles.viewBtnActive}`}
-        >Par course</Link>
+        >{t('viewSwitch.races')}</Link>
       </div>
 
       <div className={styles.pickerWrap}>
         <article className={styles.picker}>
           <div>
-            <p className={styles.pickerLabel}>Course sélectionnée</p>
+            <p className={styles.pickerLabel}>{tRace('pickerLabel')}</p>
             <h2 className={styles.pickerName}>{RACE_SEED.raceName}</h2>
             <p className={styles.pickerMeta}>
               <span>{RACE_SEED.raceClass}</span>
-              <span>{RACE_SEED.raceDistanceNm.toLocaleString('fr-FR')} <strong>NM</strong></span>
+              <span>{RACE_SEED.raceDistanceNm.toLocaleString('fr-FR')} <strong>{tRace('nmUnit')}</strong></span>
               <span>{RACE_SEED.raceDayLabel}</span>
-              <span>{RACE_SEED.raceParticipants} skippers</span>
+              <span>{tRace('skippers', { n: RACE_SEED.raceParticipants })}</span>
             </p>
           </div>
           <div className={styles.pickerSide}>
             <span className={styles.chip}>
               <span className={styles.chipDot} aria-hidden />
-              En cours
+              {tRace('chipLive')}
             </span>
             <Link
               href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
               className={styles.pickerChange}
             >
-              Changer de course →
+              {tRace('changeRace')}
             </Link>
           </div>
         </article>
@@ -190,10 +179,13 @@ export default function RankingRaceView({
               {formatRank(me.rank).main}<sup>{formatRank(me.rank).suffix}</sup>
             </span>
             <div className={styles.meInfo}>
-              <p className={styles.meLabel}>Ta position</p>
+              <p className={styles.meLabel}>{t('me.label')}</p>
               <p className={styles.mePseudo}>{display(me, meUsername)}</p>
               <p className={styles.meStats}>
-                DTF {me.dtfNm.toLocaleString('fr-FR')} NM · BSP {me.bspKnots.toFixed(1)} nds
+                {tRace('meStats', {
+                  dtf: me.dtfNm.toLocaleString('fr-FR'),
+                  bsp: me.bspKnots.toFixed(1),
+                })}
               </p>
             </div>
           </div>
@@ -201,7 +193,7 @@ export default function RankingRaceView({
       </div>
 
       {p1 && p2 && p3 && (
-        <section className={styles.podiumWrap} aria-label="Podium course">
+        <section className={styles.podiumWrap} aria-label={tRace('ariaPodium')}>
           <div className={styles.podium}>
             {[
               { p: p2, position: 2 as const, tone: 'p2' as const },
@@ -226,7 +218,7 @@ export default function RankingRaceView({
                     {p.city}
                   </div>
                   <p className={styles.podiumDtf}>
-                    {p.dtfNm.toLocaleString('fr-FR')}<small>NM restants</small>
+                    {p.dtfNm.toLocaleString('fr-FR')}<small>{tRace('podiumDtfUnit')}</small>
                   </p>
                 </article>
               );
@@ -237,14 +229,14 @@ export default function RankingRaceView({
 
       <div className={styles.filters}>
         <div className={styles.filterGroup}>
-          <p className={styles.filterLabel}>Périmètre</p>
+          <p className={styles.filterLabel}>{t('filters.scopeLabel')}</p>
           {scopeOptions.map((s) => (
             <button
-              key={s.value}
+              key={s}
               type="button"
-              className={`${styles.filterTab} ${s.value === scope ? styles.filterTabActive : ''}`}
-              onClick={() => setScope(s.value)}
-            >{s.label}</button>
+              className={`${styles.filterTab} ${s === scope ? styles.filterTabActive : ''}`}
+              onClick={() => setScope(s)}
+            >{tScope(s.toLowerCase() as 'general' | 'friends' | 'team' | 'city' | 'dpt' | 'region' | 'country')}</button>
           ))}
         </div>
       </div>
@@ -252,13 +244,13 @@ export default function RankingRaceView({
       <section className={styles.rankingWrap}>
         <div className={styles.ranking}>
           <div className={styles.rankingHead}>
-            <span className={styles.num}>Rang</span>
-            <span>Skipper</span>
-            <span className={styles.num}>DTF</span>
-            <span className={`${styles.num} ${styles.colBsp}`}>BSP</span>
-            <span className={`${styles.num} ${styles.colEta}`}>Écart leader</span>
-            <span className={`${styles.num} ${styles.colBoat} ${styles.boat}`}>Bateau</span>
-            <span className={styles.num}>Tendance</span>
+            <span className={styles.num}>{tRace('table.rank')}</span>
+            <span>{tRace('table.skipper')}</span>
+            <span className={styles.num}>{tRace('table.dtf')}</span>
+            <span className={`${styles.num} ${styles.colBsp}`}>{tRace('table.bsp')}</span>
+            <span className={`${styles.num} ${styles.colEta}`}>{tRace('table.gapToLeader')}</span>
+            <span className={`${styles.num} ${styles.colBoat} ${styles.boat}`}>{tRace('table.boat')}</span>
+            <span className={styles.num}>{tRace('table.trend')}</span>
           </div>
           {visibleRows.map((r) => {
             const { main, suffix } = formatRank(r.rank);
@@ -281,19 +273,19 @@ export default function RankingRaceView({
                       >
                         {display(r, meUsername)}
                       </Link>
-                      {isMeRow && <span className={styles.meBadge}>Moi</span>}
+                      {isMeRow && <span className={styles.meBadge}>{t('meBadge')}</span>}
                     </p>
                     <p className={styles.skCity}>{r.city} · {r.country.toUpperCase()}</p>
                   </div>
                 </div>
                 <span className={`${styles.rankingNum} ${r.rank <= 3 ? styles.rankingNumGold : ''}`}>
-                  {r.dtfNm.toLocaleString('fr-FR')}<small>NM</small>
+                  {r.dtfNm.toLocaleString('fr-FR')}<small>{tRace('nmUnit')}</small>
                 </span>
                 <span className={`${styles.rankingNum} ${styles.rankingNumLive} ${styles.colBsp}`}>
-                  {r.bspKnots.toFixed(1)}<small>nds</small>
+                  {r.bspKnots.toFixed(1)}<small>{tRace('knotUnit')}</small>
                 </span>
                 <span className={`${styles.rankingNum} ${styles.colEta}`}>
-                  {r.gapToLeaderNm === null ? '—' : <>+ {r.gapToLeaderNm}<small>NM</small></>}
+                  {r.gapToLeaderNm === null ? tRace('noGap') : <>+ {r.gapToLeaderNm}<small>{tRace('nmUnit')}</small></>}
                 </span>
                 <span className={`${styles.boat} ${styles.colBoat}`}>{r.boat}</span>
                 <TrendCell trend={r.trend} />
@@ -308,7 +300,7 @@ export default function RankingRaceView({
           totalItems={rows.length}
           pageSize={PAGE_SIZE}
           onChange={setPage}
-          label="Pagination classement course"
+          label={tRace('paginationLabel')}
         />
       </section>
     </>

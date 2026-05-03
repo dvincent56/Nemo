@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Eyebrow, Flag } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
 import { parseDevToken } from '@/lib/access';
@@ -13,27 +14,30 @@ function formatRank(n: number): { main: string; suffix: string } {
 }
 
 export default async function RankingTeamsPage(): Promise<React.ReactElement> {
+  const t = await getTranslations('ranking');
+  const tTeams = await getTranslations('ranking.teams');
+  const tUnits = await getTranslations('common.units');
   const cookieStore = await cookies();
   const token = cookieStore.get('nemo_access_token')?.value ?? null;
   const session = parseDevToken(token);
   const isVisitor = session.role === 'VISITOR';
 
   const teams = getTeamsRanking(session.username);
-  const myTeam = isVisitor ? undefined : teams.find((t) => t.isMyTeam);
+  const myTeam = isVisitor ? undefined : teams.find((tm) => tm.isMyTeam);
   const [p1, p2, p3] = teams;
 
   return (
     <SiteShell>
       <section className={styles.hero}>
         <div className={styles.heroMain}>
-          <Eyebrow trailing="Circuit Nemo">Saison 2026</Eyebrow>
-          <h1 className={styles.title}>Classement</h1>
+          <Eyebrow trailing={t('eyebrowTrailing')}>{t('eyebrowSeason')}</Eyebrow>
+          <h1 className={styles.title}>{t('title')}</h1>
         </div>
         <div>
           <p className={styles.heroMeta}>
-            Rang cumulé des écuries, agrégé sur les résultats de tous leurs
-            membres toutes classes confondues. <strong>{teams.length} équipes</strong>{' '}
-            actives sur le circuit.
+            {tTeams('lede')}
+            <strong>{tTeams('ledeCount', { n: teams.length })}</strong>
+            {tTeams('ledeEnd')}
           </p>
           {myTeam && (
             <div className={styles.me}>
@@ -42,10 +46,14 @@ export default async function RankingTeamsPage(): Promise<React.ReactElement> {
                 <sup>{formatRank(myTeam.rank).suffix}</sup>
               </span>
               <div className={styles.meInfo}>
-                <p className={styles.meLabel}>Ton équipe</p>
+                <p className={styles.meLabel}>{tTeams('myTeamLabel')}</p>
                 <p className={styles.meTeam}>{myTeam.name}</p>
                 <p className={styles.meStats}>
-                  {myTeam.totalRankingScore.toLocaleString('fr-FR')} pts · {myTeam.totalMembers} membres · {String(myTeam.totalPodiums).padStart(2, '0')} podiums
+                  {tTeams('myTeamStats', {
+                    points: myTeam.totalRankingScore.toLocaleString('fr-FR'),
+                    members: myTeam.totalMembers,
+                    podiums: String(myTeam.totalPodiums).padStart(2, '0'),
+                  })}
                 </p>
               </div>
             </div>
@@ -54,11 +62,11 @@ export default async function RankingTeamsPage(): Promise<React.ReactElement> {
       </section>
 
       {p1 && p2 && p3 && (
-        <section className={styles.podiumWrap} aria-label="Podium équipes">
+        <section className={styles.podiumWrap} aria-label={tTeams('ariaPodium')}>
           <div className={styles.podium}>
-            <TeamPodiumCard team={p2} position={2} tone="p2" />
-            <TeamPodiumCard team={p1} position={1} tone="p1" />
-            <TeamPodiumCard team={p3} position={3} tone="p3" />
+            <TeamPodiumCard team={p2} position={2} tone="p2" pointsUnit={tUnits('points')} />
+            <TeamPodiumCard team={p1} position={1} tone="p1" pointsUnit={tUnits('points')} />
+            <TeamPodiumCard team={p3} position={3} tone="p3" pointsUnit={tUnits('points')} />
           </div>
         </section>
       )}
@@ -67,65 +75,65 @@ export default async function RankingTeamsPage(): Promise<React.ReactElement> {
         <Link
           href={'/ranking' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
-        >Saison</Link>
+        >{t('viewSwitch.season')}</Link>
         <Link
           href={'/ranking/races' as Parameters<typeof Link>[0]['href']}
           className={styles.viewBtn}
-        >Par course</Link>
-        <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Équipes</button>
+        >{t('viewSwitch.races')}</Link>
+        <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>{t('viewSwitch.teams')}</button>
       </div>
 
       <section className={styles.rankingWrap}>
         <div className={styles.ranking}>
           <div className={styles.rankingHead}>
-            <span className={styles.num}>Rang</span>
-            <span>Équipe</span>
-            <span className={styles.colCaptain}>Capitaine</span>
-            <span className={`${styles.num} ${styles.colMembers}`}>Membres</span>
-            <span className={`${styles.num} ${styles.colPoints}`}>Points</span>
-            <span className={`${styles.num} ${styles.colPodiums}`}>Podiums</span>
-            <span className={styles.num}>Tendance</span>
+            <span className={styles.num}>{tTeams('table.rank')}</span>
+            <span>{tTeams('table.team')}</span>
+            <span className={styles.colCaptain}>{tTeams('table.captain')}</span>
+            <span className={`${styles.num} ${styles.colMembers}`}>{tTeams('table.members')}</span>
+            <span className={`${styles.num} ${styles.colPoints}`}>{tTeams('table.points')}</span>
+            <span className={`${styles.num} ${styles.colPodiums}`}>{tTeams('table.podiums')}</span>
+            <span className={styles.num}>{tTeams('table.trend')}</span>
           </div>
 
-          {teams.map((t) => {
-            const { main, suffix } = formatRank(t.rank);
-            const isMyTeamRow = !isVisitor && t.isMyTeam;
+          {teams.map((tm) => {
+            const { main, suffix } = formatRank(tm.rank);
+            const isMyTeamRow = !isVisitor && tm.isMyTeam;
             const rowCls = [
               styles.row,
-              t.rank <= 3 ? styles.rowPodium : '',
+              tm.rank <= 3 ? styles.rowPodium : '',
               isMyTeamRow ? styles.rowMyTeam : '',
             ].filter(Boolean).join(' ');
             return (
               <Link
-                key={t.slug}
-                href={`/team/${encodeURIComponent(t.slug)}` as Parameters<typeof Link>[0]['href']}
+                key={tm.slug}
+                href={`/team/${encodeURIComponent(tm.slug)}` as Parameters<typeof Link>[0]['href']}
                 className={rowCls}
               >
                 <span className={styles.pos}>{main}<sup>{suffix}</sup></span>
                 <div className={styles.team}>
-                  <Flag code={t.country} className={styles.flag} />
+                  <Flag code={tm.country} className={styles.flag} />
                   <div className={styles.teamInfo}>
                     <p className={styles.teamName}>
-                      {t.name}
-                      {isMyTeamRow && <span className={styles.myBadge}>Mon équipe</span>}
+                      {tm.name}
+                      {isMyTeamRow && <span className={styles.myBadge}>{tTeams('myBadge')}</span>}
                     </p>
-                    <p className={styles.teamCity}>{t.baseCity} · {t.countryLabel}</p>
+                    <p className={styles.teamCity}>{tm.baseCity} · {tm.countryLabel}</p>
                   </div>
                 </div>
                 <span className={`${styles.captain} ${styles.colCaptain}`}>
-                  <span className={styles.captainLabel}>Capitaine</span>
-                  @{t.captainUsername}
+                  <span className={styles.captainLabel}>{tTeams('captainLabel')}</span>
+                  @{tm.captainUsername}
                 </span>
                 <span className={`${styles.cellNum} ${styles.colMembers}`}>
-                  {t.totalMembers}
+                  {tm.totalMembers}
                 </span>
-                <span className={`${styles.cellNum} ${styles.colPoints} ${t.rank <= 3 ? styles.gold : ''}`}>
-                  {t.totalRankingScore.toLocaleString('fr-FR')}
+                <span className={`${styles.cellNum} ${styles.colPoints} ${tm.rank <= 3 ? styles.gold : ''}`}>
+                  {tm.totalRankingScore.toLocaleString('fr-FR')}
                 </span>
                 <span className={`${styles.cellNum} ${styles.colPodiums}`}>
-                  {String(t.totalPodiums).padStart(2, '0')}
+                  {String(tm.totalPodiums).padStart(2, '0')}
                 </span>
-                <TrendCell trend={t.trend} />
+                <TrendCell trend={tm.trend} />
               </Link>
             );
           })}
@@ -136,11 +144,12 @@ export default async function RankingTeamsPage(): Promise<React.ReactElement> {
 }
 
 function TeamPodiumCard({
-  team, position, tone,
+  team, position, tone, pointsUnit,
 }: {
   team: TeamRankingEntry;
   position: 1 | 2 | 3;
   tone: 'p1' | 'p2' | 'p3';
+  pointsUnit: string;
 }): React.ReactElement {
   const { main, suffix } = formatRank(position);
   return (
@@ -155,7 +164,7 @@ function TeamPodiumCard({
         {team.baseCity}
       </div>
       <p className={styles.podiumPoints}>
-        {team.totalRankingScore.toLocaleString('fr-FR')}<small>pts</small>
+        {team.totalRankingScore.toLocaleString('fr-FR')}<small>{pointsUnit}</small>
       </p>
     </Link>
   );

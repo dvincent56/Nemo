@@ -51,6 +51,7 @@ const config = [
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotDrawer.tsx',
       'src/app/\\[locale\\]/marina/inventory/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/races/**/*.{tsx,ts}',
+      'src/app/\\[locale\\]/ranking/**/*.{tsx,ts}',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.
@@ -66,7 +67,7 @@ const config = [
         noAttributeStrings: false,
         allowedStrings: [
           '—', '·', '•', '/', ':', '|', '×', '+', '-', '.', '(', ')',
-          '→', '←', '↑', '↓', '…', '▸', '✦', '✕',
+          '→', '←', '↑', '↓', '…', '▸', '✦', '✕', '▲', '▼', '@',
           'NE', 'M', 'O',
           'hello@nemo.sail',
           'G', '⌘',
