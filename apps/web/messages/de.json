@@ -374,6 +374,80 @@
       "map": "Chargement de la carte nautique…",
       "balance": "Chargement des paramètres de jeu…"
     },
+    "hud": {
+      "ariaToolbar": "Tableau de bord course",
+      "ariaRank": "Rang actuel",
+      "rankLabel": "Rang",
+      "tooltips": {
+        "bspBase": "Vitesse réelle du bateau — pénalités de manœuvre incluses",
+        "bspWithPenalty": "Vitesse réelle du bateau · {penalty}",
+        "tws": "Vitesse réelle du vent",
+        "twd": "Direction du vent (d'où il vient)",
+        "twa": "Angle du vent / bateau",
+        "hdg": "Cap du bateau",
+        "vmg": "Vitesse vers le waypoint",
+        "dtf": "Distance restante",
+        "factor": "Zone de recouvrement — en voile auto uniquement, garde la voile active quand une autre serait marginalement plus rapide (≤ +1.4%) et lui applique la BSP de l'optimale pour éviter les allers-retours.",
+        "quit": "Quitter et revenir aux courses"
+      },
+      "penalty": {
+        "gybe": "Empannage en cours — vitesse réduite",
+        "tack": "Virement en cours — vitesse réduite",
+        "sail": "Changement de voile en cours — vitesse réduite",
+        "zone": "Zone de ralentissement −{pct}%"
+      },
+      "wear": {
+        "ariaLabel": "Usure du bateau",
+        "label": "⚓ Usure",
+        "explain": "Un bateau usé navigue plus lentement. Évitez les conditions extrêmes pour préserver vos performances.",
+        "penaltyLabel": "Pénalité de vitesse :",
+        "parts": {
+          "hull": "Coque",
+          "rig": "Gréement",
+          "sails": "Voiles",
+          "electronics": "Électronique"
+        }
+      },
+      "quit": "← Quitter"
+    },
+    "compass": {
+      "tooltips": {
+        "lockedOn": "TWA verrouillé — le cap suit le vent",
+        "lockedOff": "Verrouiller le TWA",
+        "lockedShortcut": "T",
+        "apply": "Valider l'ordre (cap ou TWA lock)",
+        "applyShortcut": "Entrée",
+        "cancel": "Annuler le changement en cours",
+        "cancelShortcut": "Échap"
+      },
+      "actions": {
+        "validate": "Valider",
+        "cancelAria": "Annuler"
+      },
+      "hints": {
+        "gybe": "Empannage — vitesse −{pct}% (~{dur}s)",
+        "tack": "Virement — vitesse −{pct}% (~{dur}s)",
+        "sail": "Voile auto : {from} → {to} (−{pct}% ~{dur}s)"
+      }
+    },
+    "coords": {
+      "ariaPosition": "Position"
+    },
+    "windLegend": {
+      "ariaWind": "Échelle vent",
+      "ariaSwell": "Échelle houle",
+      "labelWind": "Vent",
+      "labelSwell": "Houle",
+      "ticksWind": "0 · 40 nds",
+      "ticksSwell": "0 · 6 m"
+    },
+    "cursor": {
+      "pos": "Pos",
+      "dtu": "DTU",
+      "dir": "Dir",
+      "swh": "SWH",
+      "tws": "TWS"
+    },
     "blocked": {
       "eyebrow": "Accès refusé",
       "draft": "Cette course n'est pas encore publiée.",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import type { SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { sendOrder, useGameStore } from '@/lib/store';
@@ -16,6 +17,7 @@ import CompassLockToggle from './compass/CompassLockToggle';
 import CompassDial from './compass/CompassDial';
 
 export default function Compass(): React.ReactElement {
+  const t = useTranslations('play.compass');
   const [targetHdg, setTargetHdg] = useState<number | null>(null);
   const [twaLocked, setTwaLocked] = useState(false);
   const [lockedTwa, setLockedTwa] = useState(0);
@@ -103,18 +105,18 @@ export default function Compass(): React.ReactElement {
     if (isGybe) {
       const dur = GameBalance.maneuvers?.gybe?.durationSec?.[boatClass] ?? 120;
       const pct = Math.round((1 - (GameBalance.maneuvers?.gybe?.speedFactor ?? 0.55)) * 100);
-      pendingHint = { label: `Empannage — vitesse −${pct}% (~${dur}s)`, className: 'hintGybe' };
+      pendingHint = { label: t('hints.gybe', { pct, dur }), className: 'hintGybe' };
     } else if (isTack) {
       const dur = GameBalance.maneuvers?.tack?.durationSec?.[boatClass] ?? 90;
       const pct = Math.round((1 - (GameBalance.maneuvers?.tack?.speedFactor ?? 0.60)) * 100);
-      pendingHint = { label: `Virement — vitesse −${pct}% (~${dur}s)`, className: 'hintTack' };
+      pendingHint = { label: t('hints.tack', { pct, dur }), className: 'hintTack' };
     } else if (sailAuto) {
       const optimal = pickOptimalSail(polar, displayTwa, tws);
       if (optimal !== currentSail) {
         const key = `${currentSail}_${optimal}`;
         const dur = (GameBalance.sails?.transitionTimes as Record<string, number> | undefined)?.[key] ?? 180;
         const pct = Math.round((1 - (GameBalance.sails?.transitionPenalty ?? 0.7)) * 100);
-        pendingHint = { label: `Voile auto : ${currentSail} → ${optimal} (−${pct}% ~${dur}s)`, className: 'hintSail' };
+        pendingHint = { label: t('hints.sail', { from: currentSail, to: optimal, pct, dur }), className: 'hintSail' };
       }
     }
   }
@@ -285,26 +287,26 @@ export default function Compass(): React.ReactElement {
 
         {/* Action buttons */}
         <div className={styles.actions}>
-          <Tooltip text={twaLocked ? "TWA verrouillé — le cap suit le vent" : "Verrouiller le TWA"} shortcut="T" position="bottom">
+          <Tooltip text={twaLocked ? t('tooltips.lockedOn') : t('tooltips.lockedOff')} shortcut={t('tooltips.lockedShortcut')} position="bottom">
             <CompassLockToggle locked={twaLocked} onToggle={toggleTwaLock} />
           </Tooltip>
-          <Tooltip text="Valider l'ordre (cap ou TWA lock)" shortcut="Entrée" position="bottom">
+          <Tooltip text={t('tooltips.apply')} shortcut={t('tooltips.applyShortcut')} position="bottom">
             <button
               type="button"
               className={`${styles.actionBtn} ${applyActive ? styles.applyActive : styles.applyInactive}`}
               onClick={apply}
             >
               <Check size={14} strokeWidth={3} />
-              <span>Valider</span>
+              <span>{t('actions.validate')}</span>
             </button>
           </Tooltip>
-          <Tooltip text="Annuler le changement en cours" shortcut="Échap" position="bottom">
+          <Tooltip text={t('tooltips.cancel')} shortcut={t('tooltips.cancelShortcut')} position="bottom">
             <button
               type="button"
               className={`${styles.actionBtn} ${applyActive ? styles.cancelActive : styles.cancelInactive}`}
               onClick={cancelEdit}
               disabled={!applyActive}
-              aria-label="Annuler"
+              aria-label={t('actions.cancelAria')}
             >
               <span className={styles.cancelX} aria-hidden="true">×</span>
             </button>

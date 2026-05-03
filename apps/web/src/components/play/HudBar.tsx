@@ -2,6 +2,7 @@
 
 import { memo, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import type { SailId } from '@nemo/shared-types';
 import { GameBalance } from '@nemo/game-balance/browser';
 import { useGameStore } from '@/lib/store';
@@ -40,6 +41,7 @@ function pointInPolygon(lat: number, lon: number, ring: [number, number][]): boo
 }
 
 function HudBarInner(): React.ReactElement {
+  const t = useTranslations('play.hud');
   const hud = useGameStore((s) => s.hud);
   const sail = useGameStore((s) => s.sail);
   const zones = useGameStore((s) => s.zones);
@@ -92,11 +94,11 @@ function HudBarInner(): React.ReactElement {
   // Priority: gybe > tack > sail transition > zone (matches engine penalty ordering).
   let penaltyDot: { tooltip: string; dotClass: string } | null = null;
   if (tackOrGybe && sail.maneuverKind === 2) {
-    penaltyDot = { tooltip: 'Empannage en cours — vitesse réduite', dotClass: styles.maneuverDotGybe! };
+    penaltyDot = { tooltip: t('penalty.gybe'), dotClass: styles.maneuverDotGybe! };
   } else if (tackOrGybe && sail.maneuverKind === 1) {
-    penaltyDot = { tooltip: 'Virement en cours — vitesse réduite', dotClass: styles.maneuverDotTack! };
+    penaltyDot = { tooltip: t('penalty.tack'), dotClass: styles.maneuverDotTack! };
   } else if (sailTransitioning) {
-    penaltyDot = { tooltip: 'Changement de voile en cours — vitesse réduite', dotClass: styles.maneuverDotSail! };
+    penaltyDot = { tooltip: t('penalty.sail'), dotClass: styles.maneuverDotSail! };
   } else if (hud.lat || hud.lon) {
     const activeZone = zones.find((z) => {
       const ring = z.geometry.coordinates[0];
@@ -105,7 +107,7 @@ function HudBarInner(): React.ReactElement {
     });
     if (activeZone) {
       const pct = Math.round((1 - (activeZone.speedMultiplier ?? 1)) * 100);
-      penaltyDot = { tooltip: `Zone de ralentissement −${pct}%`, dotClass: styles.maneuverDotZone! };
+      penaltyDot = { tooltip: t('penalty.zone', { pct }), dotClass: styles.maneuverDotZone! };
     }
   }
 
@@ -113,15 +115,15 @@ function HudBarInner(): React.ReactElement {
   const trendText = hud.rankTrend > 0 ? `▲ ${hud.rankTrend}` : hud.rankTrend < 0 ? `▼ ${Math.abs(hud.rankTrend)}` : '';
 
   return (
-    <div className={styles.bar} role="toolbar" aria-label="Tableau de bord course">
+    <div className={styles.bar} role="toolbar" aria-label={t('ariaToolbar')}>
       {/* Brand */}
       <Link href="/" className={styles.brand}>
         NE<span className={styles.brandAccent}>M</span>O
       </Link>
 
       {/* Rank hero */}
-      <div className={styles.rankHero} aria-label="Rang actuel">
-        <span className={styles.rankLabel}>Rang</span>
+      <div className={styles.rankHero} aria-label={t('ariaRank')}>
+        <span className={styles.rankLabel}>{t('rankLabel')}</span>
         <span className={styles.rankValue}>
           {hud.rank || '—'}
           <span className={styles.rankTotal}>/{hud.totalParticipants || '—'}</span>
@@ -133,8 +135,8 @@ function HudBarInner(): React.ReactElement {
       <div className={styles.stats}>
         <Tooltip
           text={penaltyDot
-            ? `Vitesse réelle du bateau · ${penaltyDot.tooltip}`
-            : 'Vitesse réelle du bateau — pénalités de manœuvre incluses'}
+            ? t('tooltips.bspWithPenalty', { penalty: penaltyDot.tooltip })
+            : t('tooltips.bspBase')}
           position="bottom"
         >
           <div className={styles.stat}>
@@ -149,50 +151,50 @@ function HudBarInner(): React.ReactElement {
             </span>
           </div>
         </Tooltip>
-        <Tooltip text="Vitesse réelle du vent" position="bottom">
+        <Tooltip text={t('tooltips.tws')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWS</span>
             <span className={styles.statValue}>{hud.tws.toFixed(1)} <small>nds</small></span>
           </div>
         </Tooltip>
-        <Tooltip text="Direction du vent (d'où il vient)" position="bottom">
+        <Tooltip text={t('tooltips.twd')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWD</span>
             <span className={styles.statValue}>{Math.round(hud.twd)}°</span>
           </div>
         </Tooltip>
-        <Tooltip text="Angle du vent / bateau" position="bottom">
+        <Tooltip text={t('tooltips.twa')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>TWA</span>
             <span className={styles.statValue}>{Math.round(hud.twa)}°</span>
           </div>
         </Tooltip>
-        <Tooltip text="Cap du bateau" position="bottom">
+        <Tooltip text={t('tooltips.hdg')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>HDG</span>
             <span className={styles.statValue}>{Math.round(hud.hdg)}°</span>
           </div>
         </Tooltip>
-        <Tooltip text="Vitesse vers le waypoint" position="bottom">
+        <Tooltip text={t('tooltips.vmg')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>VMG</span>
             <span className={`${styles.statValue} ${styles.gold}`}>{hud.vmg.toFixed(3)} <small>nds</small></span>
           </div>
         </Tooltip>
-        <Tooltip text="Distance restante" position="bottom">
+        <Tooltip text={t('tooltips.dtf')} position="bottom">
           <div className={styles.stat}>
             <span className={styles.statLabel}>DTF</span>
             <span className={styles.statValue}>{Math.round(hud.dtf).toLocaleString('fr-FR')} <small>NM</small></span>
           </div>
         </Tooltip>
         <Tooltip
-          text="Zone de recouvrement — en voile auto uniquement, garde la voile active quand une autre serait marginalement plus rapide (≤ +1.4%) et lui applique la BSP de l'optimale pour éviter les allers-retours."
+          text={t('tooltips.factor')}
           position="bottom"
         >
           <div className={styles.stat}>
             <span className={styles.statLabel}>Factor</span>
             <span className={styles.statValue} style={{ color: factorColor(hud.overlapFactor) }}>
-              {`+${((hud.overlapFactor - 1) * 100).toFixed(2)}%`}
+              +{((hud.overlapFactor - 1) * 100).toFixed(2)}%
             </span>
           </div>
         </Tooltip>
@@ -203,13 +205,10 @@ function HudBarInner(): React.ReactElement {
           delay={200}
           content={
             <div className={styles.wearBreakdown}>
-              <p className={styles.wearExplain}>
-                Un bateau usé navigue plus lentement. Évitez les conditions extrêmes
-                pour préserver vos performances.
-              </p>
+              <p className={styles.wearExplain}>{t('wear.explain')}</p>
               {(['hull', 'rig', 'sails', 'electronics'] as const).map((part) => (
                 <div key={part} className={styles.wearRow}>
-                  <span>{part === 'hull' ? 'Coque' : part === 'rig' ? 'Gréement' : part === 'sails' ? 'Voiles' : 'Électronique'}</span>
+                  <span>{t(`wear.parts.${part}`)}</span>
                   <div className={styles.wearBarBg}>
                     <div
                       className={styles.wearBarFill}
@@ -222,13 +221,13 @@ function HudBarInner(): React.ReactElement {
                 </div>
               ))}
               <p className={styles.wearPenalty}>
-                Pénalité de vitesse : <strong>−{hud.speedPenaltyPct.toFixed(1)}%</strong>
+                {t('wear.penaltyLabel')} <strong>−{hud.speedPenaltyPct.toFixed(1)}%</strong>
               </p>
             </div>
           }
         >
-          <div className={styles.wearStat} tabIndex={0} aria-label="Usure du bateau">
-            <span className={styles.statLabel}>⚓ Usure</span>
+          <div className={styles.wearStat} tabIndex={0} aria-label={t('wear.ariaLabel')}>
+            <span className={styles.statLabel}>{t('wear.label')}</span>
             <span className={`${styles.statValue}`} style={{ color: wearColor(hud.wearGlobal) }}>
               {Math.round(hud.wearGlobal)}%
             </span>
@@ -238,9 +237,9 @@ function HudBarInner(): React.ReactElement {
 
       {/* Quit button */}
       <div className={styles.end}>
-        <Tooltip text="Quitter et revenir aux courses" position="bottom">
+        <Tooltip text={t('tooltips.quit')} position="bottom">
           <Link href="/races" className={styles.quit}>
-            ← Quitter
+            {t('quit')}
           </Link>
         </Tooltip>
       </div>

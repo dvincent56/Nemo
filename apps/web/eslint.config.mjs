@@ -66,6 +66,11 @@ const config = [
       'src/app/\\[locale\\]/marina/\\[boatId\\]/customize/CustomizeView.tsx',
       'src/app/\\[locale\\]/play/\\[raceId\\]/page.tsx',
       'src/app/\\[locale\\]/play/\\[raceId\\]/PlayClient.tsx',
+      'src/components/play/HudBar.tsx',
+      'src/components/play/Compass.tsx',
+      'src/components/play/CoordsDisplay.tsx',
+      'src/components/play/WindLegend.tsx',
+      'src/components/play/CursorTooltip.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.
@@ -91,6 +96,8 @@ const config = [
           '01', '02', '03', '04', '05',
           '⌕', 'e',
           '°',
+          'BSP', 'TWS', 'TWD', 'TWA', 'HDG', 'VMG', 'DTF', 'Factor',
+          'Pos', 'DTU', 'SWH', 'Dir', 'kn', 'm ·', 'nds', 's', '−',
         ],
       }],
     },

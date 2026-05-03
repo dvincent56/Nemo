@@ -1,15 +1,17 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import { formatDMS } from './formatDMS';
 import styles from './CoordsDisplay.module.css';
 
 export default function CoordsDisplay(): React.ReactElement {
+  const t = useTranslations('play.coords');
   const lat = useGameStore((s) => s.hud.lat);
   const lon = useGameStore((s) => s.hud.lon);
 
   return (
-    <div className={styles.coords} aria-label="Position">
+    <div className={styles.coords} aria-label={t('ariaPosition')}>
       <div className={styles.row}>
         <span className={styles.value}>{formatDMS(lat, true)}</span>
       </div>

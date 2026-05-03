@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { mapInstance } from './MapCanvas';
 import { useGameStore } from '@/lib/store';
 import { sampleDecodedWindAtTime } from '@/lib/weather/gridFromBinary';
@@ -23,6 +24,7 @@ interface CursorData {
 }
 
 export default function CursorTooltip(): React.ReactElement | null {
+  const t = useTranslations('play.cursor');
   const [data, setData] = useState<CursorData | null>(null);
   const [mapReady, setMapReady] = useState(!!mapInstance);
   const rafRef = useRef(0);
@@ -179,14 +181,14 @@ export default function CursorTooltip(): React.ReactElement | null {
       style={{ left: data.x, top: data.y }}
     >
       <div className={styles.row}>
-        <span className={styles.label}>Pos</span>
+        <span className={styles.label}>{t('pos')}</span>
         <span className={styles.value}>
           {formatDMS(data.lat, true)} {formatDMS(data.lon, false)}
         </span>
       </div>
       {data.dtuNm !== null && (
         <div className={styles.row}>
-          <span className={styles.label}>DTU</span>
+          <span className={styles.label}>{t('dtu')}</span>
           <span className={styles.value}>
             {data.dtuNm < 0.1
               ? data.dtuNm.toFixed(3)
@@ -199,27 +201,27 @@ export default function CursorTooltip(): React.ReactElement | null {
       {swellOn && !windOn ? (
         <>
           <div className={styles.row}>
-            <span className={styles.label}>Dir</span>
+            <span className={styles.label}>{t('dir')}</span>
             <span className={styles.value}>{Math.round(data.swellDir)}°</span>
           </div>
           <div className={styles.row}>
-            <span className={styles.label}>SWH</span>
+            <span className={styles.label}>{t('swh')}</span>
             <span className={styles.value}>{data.swellHeight.toFixed(1)} m · {data.swellPeriod.toFixed(0)}s</span>
           </div>
         </>
       ) : (
         <>
           <div className={styles.row}>
-            <span className={styles.label}>Dir</span>
+            <span className={styles.label}>{t('dir')}</span>
             <span className={styles.value}>{Math.round(data.twd)}°</span>
           </div>
           <div className={styles.row}>
-            <span className={styles.label}>TWS</span>
+            <span className={styles.label}>{t('tws')}</span>
             <span className={styles.value}>{data.tws.toFixed(1)} kn</span>
           </div>
           {swellOn && (
             <div className={styles.row}>
-              <span className={styles.label}>SWH</span>
+              <span className={styles.label}>{t('swh')}</span>
               <span className={styles.value}>{data.swellHeight.toFixed(1)} m · {data.swellPeriod.toFixed(0)}s</span>
             </div>
           )}
