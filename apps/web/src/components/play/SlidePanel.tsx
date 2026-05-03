@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import styles from './SlidePanel.module.css';
 
 export type SlidePanelMode = 'side' | 'sheet';
@@ -55,6 +56,7 @@ export default function SlidePanel({
   side, width, title, isOpen, onClose, children,
   mode = 'side', panelClassName,
 }: SlidePanelProps): React.ReactElement {
+  const t = useTranslations('play.slidePanel');
   const [snap, setSnap] = useState<SheetSnap>('mid');
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const dragStartRef = useRef<{ y: number; height: number } | null>(null);
@@ -141,13 +143,13 @@ export default function SlidePanel({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerCancel}
-            aria-label="Redimensionner panneau"
+            aria-label={t('resize')}
           >
             <span className={styles.sheetHandleBar} />
           </button>
           <div className={styles.head}>
             <h3 className={styles.title}>{title}</h3>
-            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fermer">✕</button>
+            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label={t('close')}>✕</button>
           </div>
           <div className={styles.body}>{children}</div>
         </aside>
@@ -164,7 +166,7 @@ export default function SlidePanel({
       >
         <div className={styles.head}>
           <h3 className={styles.title}>{title}</h3>
-          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Fermer">✕</button>
+          <button type="button" className={styles.closeBtn} onClick={onClose} aria-label={t('close')}>✕</button>
         </div>
         <div className={styles.body}>{children}</div>
       </aside>

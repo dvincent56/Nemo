@@ -415,6 +415,10 @@
       "heading": "Cap",
       "twa": "TWA"
     },
+    "slidePanel": {
+      "resize": "Redimensionner panneau",
+      "close": "Fermer"
+    },
     "zoom": {
       "ariaGroup": "Zoom carte",
       "tooltipPlus": "Zoom +",
