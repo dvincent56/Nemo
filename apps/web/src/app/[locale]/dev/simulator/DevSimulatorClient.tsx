@@ -133,7 +133,7 @@ export function DevSimulatorClient() {
 
   function getRoutingWorker(): Worker {
     if (!routingWorkerRef.current) {
-      const worker = new Worker(new URL('../../../workers/routing.worker.ts', import.meta.url), { type: 'module' });
+      const worker = new Worker(new URL('../../../../workers/routing.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => {
         const msg = e.data as
           | { type: 'result'; requestId: number; plan: RoutePlan }
