@@ -9,6 +9,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import Tooltip from '@/components/ui/Tooltip';
 import { EffectsSummary } from './EffectsSummary';
+import { useUpgradeLabel } from '@/lib/upgrade-i18n';
 import styles from './SlotDrawer.module.css';
 
 type PendingPurchase = { item: CatalogItem; mode: 'buy-and-install' | 'buy-stock' } | null;
@@ -77,6 +78,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
   const t = useTranslations('marina.slotDrawer');
   const tSlot = useTranslations('marina.slots');
   const tTier = useTranslations('marina.tiers');
+  const upgradeLabel = useUpgradeLabel();
   const buildUnlockRows = useUnlockRowsBuilder();
 
   const [tab, setTab] = useState<'install' | 'buy'>('install');
@@ -226,7 +228,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
-                        <p className={styles.itemName}>{item.name}</p>
+                        <p className={styles.itemName}>{upgradeLabel({ id: item.upgradeCatalogId, name: item.name })}</p>
                         <span className={styles.itemTier}>{tTier(item.tier ?? 'SERIE')}</span>
                         {isInstalledHere && (
                           <span className={styles.badgeInstalled}>{t('badgeInstalledHere')}</span>
@@ -280,7 +282,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
-                        <p className={styles.itemName}>{item.name}</p>
+                        <p className={styles.itemName}>{upgradeLabel(item)}</p>
                         <p className={styles.itemDesc}>{item.profile}</p>
                         <span className={styles.itemTier}>{tTier(item.tier)}</span>
                         {isInstalledOnThisBoat && (
@@ -369,7 +371,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
           : t('confirm.titleBuyStock')}
         body={
           <>
-            <strong>{pending.item.name}</strong>{' '}({tTier(pending.item.tier)}){t('confirm.bodyMid')}
+            <strong>{upgradeLabel(pending.item)}</strong>{' '}({tTier(pending.item.tier)}){t('confirm.bodyMid')}
             <strong>{t('creditsValue', { amount: pending.item.cost?.toLocaleString('fr-FR') ?? '—' })}</strong>
             {pending.mode === 'buy-and-install'
               ? t('confirm.bodyEndInstall')

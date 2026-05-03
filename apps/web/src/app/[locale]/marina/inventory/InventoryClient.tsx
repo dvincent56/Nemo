@@ -9,6 +9,7 @@ import {
   type InventoryItem, type BoatRecord,
 } from '@/lib/marina-api';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useUpgradeLabel } from '@/lib/upgrade-i18n';
 import styles from './page.module.css';
 
 interface Row {
@@ -21,6 +22,7 @@ export default function InventoryClient(): React.ReactElement {
   const tMarina = useTranslations('marina');
   const tSlot = useTranslations('marina.slots');
   const tTier = useTranslations('marina.tiers');
+  const upgradeLabel = useUpgradeLabel();
   const [rows, setRows] = useState<Row[]>([]);
   const [credits, setCredits] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export default function InventoryClient(): React.ReactElement {
               return (
                 <div key={item.id} className={styles.row}>
                   <div className={styles.rowInfo}>
-                    <p className={styles.rowName}>{item.name}</p>
+                    <p className={styles.rowName}>{upgradeLabel({ id: item.upgradeCatalogId, name: item.name })}</p>
                     <p className={styles.rowMeta}>
                       {item.slot ? tSlot(item.slot) : t('noSlot')} · {item.tier ? tTier(item.tier) : tTier('SERIE')}
                       {t('available.metaSep')}{t('available.acquiredOn', { date: new Date(item.acquiredAt).toLocaleDateString('fr-FR') })}
