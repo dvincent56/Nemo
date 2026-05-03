@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalLayout, type LegalSection } from '@/components/ui';
 import { SiteShell } from '@/components/ui/SiteShell';
 
@@ -18,7 +19,7 @@ const SECTIONS: LegalSection[] = [
       <>
         <p>
           Le responsable du traitement des données à caractère personnel est la société éditrice identifiée
-          dans les <a href="/legal">mentions légales</a>.
+          dans les <Link href="/legal">mentions légales</Link>.
         </p>
         <p>
           Pour toute question relative au traitement de tes données ou à l'exercice de tes droits, tu peux

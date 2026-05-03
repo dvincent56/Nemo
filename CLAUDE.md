@@ -27,3 +27,18 @@ Rules:
 - When graphify is requested: read graphify-out/wiki/index.md if it exists, otherwise graphify-out/GRAPH_REPORT.md
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — only when in an explicit architecture session
 - After modifying code files in a graphify session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+
+## i18n
+
+Ce projet utilise `next-intl` v4 pour l'internationalisation. 4 locales : `fr` (source), `en`, `es`, `de` (stubs jusqu'à traduction).
+
+**Règle absolue** : aucune string littérale en dur dans le code UI. Tout texte affiché à l'utilisateur passe par une clé de traduction.
+
+- Côté UI : `const t = useTranslations('namespace')` + `t('key')`. Server components : `await getTranslations('namespace')`.
+- Côté événements backend : `tEvent('event-code')` qui résout `events.{code}` dans les messages.
+- Fichiers de messages : [apps/web/messages/{fr,en,es,de}.json](apps/web/messages/), structure namespacée 1:1 avec les routes.
+- Garde-fou local : `pnpm --filter @nemo/web lint` (règle ESLint `react/jsx-no-literals` active sur `src/app/[locale]/**`).
+- Garde-fou CI : `pnpm --filter @nemo/web i18n:check` vérifie que toutes les clés référencées existent dans les 4 locales et flag les clés orphelines.
+- Quand tu ajoutes/édites un wording : crée la clé dans `messages/fr.json` ET copie-la dans `en.json`, `es.json`, `de.json` (mêmes valeurs, traduction différée).
+
+Spec design : [docs/superpowers/specs/2026-04-28-i18n-design.md](docs/superpowers/specs/2026-04-28-i18n-design.md).

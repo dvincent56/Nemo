@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { Route } from 'next';
 import { Button, Eyebrow, Field } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 import styles from './page.module.css';
@@ -147,7 +148,7 @@ export default function LoginPage(): React.ReactElement {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 action={
-                  <Link href="/reset-password" className={styles.labelAction}>
+                  <Link href={'/reset-password' as Route} className={styles.labelAction}>
                     Mot de passe oublié&nbsp;?
                   </Link>
                 }
@@ -159,7 +160,7 @@ export default function LoginPage(): React.ReactElement {
 
             <p className={styles.signup}>
               Pas encore de compte&nbsp;?{' '}
-              <Link href="/register" className={styles.signupLink}>Créer un compte</Link>
+              <Link href={'/register' as Route} className={styles.signupLink}>Créer un compte</Link>
             </p>
 
             <div className={styles.divider}>

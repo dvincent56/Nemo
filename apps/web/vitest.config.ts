@@ -25,6 +25,8 @@ export default defineConfig({
       'src/components/**/*.test.tsx',
       'src/app/**/*.test.ts',
       'src/app/**/*.test.tsx',
+      'src/i18n/**/*.test.ts',
+      'scripts/**/*.test.ts',
     ],
   },
 });

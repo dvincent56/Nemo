@@ -28,6 +28,19 @@ const config = [
       '@typescript-eslint/no-require-imports': 'warn',
     },
   },
+  // i18n PR 1 : interdit les strings littérales sous [locale]/**.
+  // Le glob s'élargira aux composants et au reste de l'app dans les PR suivantes.
+  {
+    files: ['src/app/\\[locale\\]/**/*.{tsx,ts}'],
+    rules: {
+      'react/jsx-no-literals': ['error', {
+        noStrings: true,
+        ignoreProps: false,
+        noAttributeStrings: true,
+        allowedStrings: ['—', '·', '•', '/', ':', '|', '×', '→', '↑', '↓', '+', '-'],
+      }],
+    },
+  },
 ];
 
 export default config;
