@@ -59,6 +59,8 @@ const config = [
       'src/app/\\[locale\\]/profile/settings/SettingsView.tsx',
       'src/app/\\[locale\\]/profile/social/page.tsx',
       'src/app/\\[locale\\]/profile/social/SocialView.tsx',
+      'src/app/\\[locale\\]/team/\\[slug\\]/page.tsx',
+      'src/app/\\[locale\\]/team/\\[slug\\]/TeamView.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.

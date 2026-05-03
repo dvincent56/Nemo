@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Eyebrow, Pagination } from '@/components/ui';
 import { readClientSession } from '@/lib/access';
 import { profileHref } from '@/lib/routes';
+import { useBoatLabel } from '@/lib/boat-classes-i18n';
 import type { TeamMember, TeamProfile } from '../data';
-import { CLASS_LABEL } from '@/lib/boat-classes';
 import styles from './page.module.css';
 
 const MEMBER_PAGE_SIZE = 12;
@@ -15,13 +16,9 @@ function formatRank(n: number): { main: string; suffix: string } {
   return { main: String(n).padStart(2, '0'), suffix: n === 1 ? 'er' : 'e' };
 }
 
-const ROLE_LABEL: Record<TeamMember['role'], string> = {
-  CAPTAIN: 'Capitaine',
-  MODERATOR: 'Modérateur',
-  MEMBER: 'Membre',
-};
-
 export default function TeamView({ team }: { team: TeamProfile }): React.ReactElement {
+  const t = useTranslations('team');
+  const boatLabel = useBoatLabel();
   const [page, setPage] = useState(1);
   const [meUsername, setMeUsername] = useState<string | null>(null);
   useEffect(() => {
@@ -42,18 +39,18 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
     <>
       <section className={styles.hero}>
         <div className={styles.heroMain}>
-          <Eyebrow trailing={`Équipe · ${team.foundedYear}`}>Circuit Nemo</Eyebrow>
+          <Eyebrow trailing={t('hero.trailing', { year: team.foundedYear })}>{t('hero.eyebrow')}</Eyebrow>
           <h1 className={styles.title}>{team.name}</h1>
           <p className={styles.meta}>
-            Basée à <strong>{team.baseCity}</strong> · {team.countryLabel} ·
-            {' '}{team.totalMembers} {team.totalMembers > 1 ? 'skippers' : 'skipper'}
+            {t('hero.metaPre')} <strong>{team.baseCity}</strong> · {team.countryLabel} ·
+            {' '}{t('hero.metaSkippers', { n: team.totalMembers })}
           </p>
           <p className={styles.description}>{team.description}</p>
 
           {team.activeClasses.length > 0 && (
             <div className={styles.classTags}>
               {team.activeClasses.map((c) => (
-                <span key={c} className={styles.classTag}>{CLASS_LABEL[c]}</span>
+                <span key={c} className={styles.classTag}>{boatLabel(c)}</span>
               ))}
             </div>
           )}
@@ -61,40 +58,40 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
 
         <aside className={styles.heroStats}>
           <div className={styles.heroStat}>
-            <p className={styles.heroStatLabel}>Rang équipe</p>
+            <p className={styles.heroStatLabel}>{t('hero.stats.teamRank')}</p>
             <p className={`${styles.heroStatValue} ${styles.gold}`}>
               {teamRank ? <>{teamRank.main}<sup>{teamRank.suffix}</sup></> : '—'}
             </p>
-            <p className={styles.heroStatSub}>Classement inter-équipes</p>
+            <p className={styles.heroStatSub}>{t('hero.stats.teamRankSub')}</p>
           </div>
           <div className={styles.heroStat}>
-            <p className={styles.heroStatLabel}>Meilleur membre</p>
+            <p className={styles.heroStatLabel}>{t('hero.stats.bestMember')}</p>
             <p className={styles.heroStatValue}>
               {bestRank ? <>{bestRank.main}<sup>{bestRank.suffix}</sup></> : '—'}
             </p>
-            <p className={styles.heroStatSub}>Rang saison toutes classes</p>
+            <p className={styles.heroStatSub}>{t('hero.stats.bestMemberSub')}</p>
           </div>
           <div className={styles.heroStat}>
-            <p className={styles.heroStatLabel}>Podiums cumulés</p>
+            <p className={styles.heroStatLabel}>{t('hero.stats.podiums')}</p>
             <p className={styles.heroStatValue}>
               {String(team.totalPodiums).padStart(2, '0')}
             </p>
-            <p className={styles.heroStatSub}>Tous membres confondus</p>
+            <p className={styles.heroStatSub}>{t('hero.stats.podiumsSub')}</p>
           </div>
           <div className={styles.heroStat}>
-            <p className={styles.heroStatLabel}>Courses saison</p>
+            <p className={styles.heroStatLabel}>{t('hero.stats.races')}</p>
             <p className={styles.heroStatValue}>{team.totalRacesFinished}</p>
-            <p className={styles.heroStatSub}>Agrégé</p>
+            <p className={styles.heroStatSub}>{t('hero.stats.racesSub')}</p>
           </div>
         </aside>
       </section>
 
-      <section className={styles.section} aria-label="Roster">
+      <section className={styles.section} aria-label={t('roster.aria')}>
         <header className={styles.sectionHead}>
           <div>
-            <p className={styles.sectionEyebrow}>Roster</p>
+            <p className={styles.sectionEyebrow}>{t('roster.eyebrow')}</p>
             <h2 className={styles.sectionTitle}>
-              Skippers
+              {t('roster.title')}
               <span className={styles.count}>{String(team.totalMembers).padStart(2, '0')}</span>
             </h2>
           </div>
@@ -102,7 +99,7 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
             href={'/ranking/teams' as Parameters<typeof Link>[0]['href']}
             className={styles.sectionLink}
           >
-            Classement des équipes →
+            {t('roster.linkRanking')}
           </Link>
         </header>
 
@@ -119,7 +116,7 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
             totalItems={team.members.length}
             pageSize={MEMBER_PAGE_SIZE}
             onChange={setPage}
-            label="Pagination membres de l'équipe"
+            label={t('roster.paginationAria')}
           />
         )}
       </section>
@@ -130,9 +127,10 @@ export default function TeamView({ team }: { team: TeamProfile }): React.ReactEl
 function MemberCard({
   member, meUsername,
 }: { member: TeamMember; meUsername: string | null }): React.ReactElement {
+  const t = useTranslations('team.member');
   const rank = member.seasonRank ? formatRank(member.seasonRank) : null;
   const isMe = meUsername !== null && member.username === meUsername;
-  // Mockup-seed : le marqueur mock `'vous'` sert aussi d'identifiant "moi"
+  // Mockup-seed : le marqueur 'vous' fait office d'identifiant "moi"
   // tant que la session est absente. À retirer quand getTeamProfile lira
   // le username depuis la session côté serveur.
   const isMeMock = member.username === 'vous';
@@ -148,7 +146,7 @@ function MemberCard({
           {displayName}
           {member.role !== 'MEMBER' && (
             <span className={`${styles.memberRole} ${member.role === 'CAPTAIN' ? styles.roleCaptain : ''}`}>
-              {ROLE_LABEL[member.role]}
+              {t(`roles.${member.role}`)}
             </span>
           )}
         </p>
@@ -156,7 +154,7 @@ function MemberCard({
       </div>
 
       <div className={styles.memberRankBlock}>
-        <p className={styles.memberRankLabel}>Rang saison</p>
+        <p className={styles.memberRankLabel}>{t('rankLabel')}</p>
         <p className={`${styles.memberRank} ${member.seasonRank && member.seasonRank <= 3 ? styles.gold : ''}`}>
           {rank ? <>{rank.main}<sup>{rank.suffix}</sup></> : '—'}
         </p>
@@ -164,15 +162,15 @@ function MemberCard({
 
       <dl className={styles.memberStats}>
         <div>
-          <dt>Points</dt>
+          <dt>{t('points')}</dt>
           <dd>{member.rankingScore.toLocaleString('fr-FR')}</dd>
         </div>
         <div>
-          <dt>Courses</dt>
+          <dt>{t('races')}</dt>
           <dd>{member.racesFinished}</dd>
         </div>
         <div>
-          <dt>Podiums</dt>
+          <dt>{t('podiums')}</dt>
           <dd>{String(member.podiums).padStart(2, '0')}</dd>
         </div>
       </dl>

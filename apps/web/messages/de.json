@@ -369,6 +369,42 @@
       }
     }
   },
+  "team": {
+    "hero": {
+      "eyebrow": "Circuit Nemo",
+      "trailing": "Équipe · {year}",
+      "metaPre": "Basée à",
+      "metaSkippers": "{n, plural, one {# skipper} other {# skippers}}",
+      "stats": {
+        "teamRank": "Rang équipe",
+        "teamRankSub": "Classement inter-équipes",
+        "bestMember": "Meilleur membre",
+        "bestMemberSub": "Rang saison toutes classes",
+        "podiums": "Podiums cumulés",
+        "podiumsSub": "Tous membres confondus",
+        "races": "Courses saison",
+        "racesSub": "Agrégé"
+      }
+    },
+    "roster": {
+      "aria": "Roster",
+      "eyebrow": "Roster",
+      "title": "Skippers",
+      "linkRanking": "Classement des équipes →",
+      "paginationAria": "Pagination membres de l'équipe"
+    },
+    "member": {
+      "rankLabel": "Rang saison",
+      "points": "Points",
+      "races": "Courses",
+      "podiums": "Podiums",
+      "roles": {
+        "CAPTAIN": "Capitaine",
+        "MODERATOR": "Modérateur",
+        "MEMBER": "Membre"
+      }
+    }
+  },
   "ranking": {
     "eyebrowSeason": "Saison 2026",
     "eyebrowTrailing": "Circuit Nemo",
