@@ -34,12 +34,15 @@ const config = [
   // Pages legales : chrome migre (cf Plan 4b) mais bodies juridiques restent
   // inline FR -- non-couvertes par la regle. Inclusion de ces globs viendra
   // avec la "vraie traduction" legale.
+  // dev/simulator/** : outil interne gate par NODE_ENV !== 'production',
+  // jamais expose aux utilisateurs finaux. Volontairement hors scope i18n.
   {
     files: [
       'src/app/\\[locale\\]/layout.tsx',
       'src/app/\\[locale\\]/page.tsx',
       'src/app/\\[locale\\]/HomeHeroTopbar.tsx',
       'src/app/\\[locale\\]/HomeView.tsx',
+      'src/app/\\[locale\\]/not-found.tsx',
       'src/app/\\[locale\\]/login/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/news/**/*.{tsx,ts}',
       'src/app/\\[locale\\]/marina/page.tsx',
@@ -125,6 +128,8 @@ const config = [
           '📍', 'nm', 'h', 'm',
           '−6h', '+6h', '❚❚', '▶',
           '°,', '★', '° ·',
+          'N', 'S', 'E',
+          '47°N', '04°W', '45°N', '02°W',
         ],
       }],
     },

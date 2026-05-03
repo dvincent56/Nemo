@@ -369,6 +369,20 @@
       }
     }
   },
+  "notFound": {
+    "metaTitle": "Hors carte — Nemo",
+    "metaDescription": "Cette page n'apparaît sur aucune de nos cartes.",
+    "brandAria": "Nemo — accueil",
+    "hereLabel": "ICI",
+    "kicker": "404 — Hors carte",
+    "title1": "Vous êtes perdu",
+    "title2": "en mer ?",
+    "ledeLine1": "Cette page n'apparaît sur aucune de nos cartes.",
+    "ledeLine2": "Aucune côte connue à cette position.",
+    "cta": "Retour au port",
+    "hudPosLabel": "POS ·",
+    "hudPosUnknown": "UNKNOWN"
+  },
   "play": {
     "loading": {
       "map": "Chargement de la carte nautique…",

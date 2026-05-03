@@ -1,16 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import styles from './not-found.module.css';
 
-export const metadata: Metadata = {
-  title: 'Hors carte — Nemo',
-  description: 'Cette page n’apparaît sur aucune de nos cartes.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('notFound');
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  };
+}
 
-export default function NotFound(): React.ReactElement {
+export default async function NotFound(): Promise<React.ReactElement> {
+  const t = await getTranslations('notFound');
   return (
     <div className={styles.root}>
-      <Link href="/" className={styles.brand} aria-label="Nemo — accueil">
+      <Link href="/" className={styles.brand} aria-label={t('brandAria')}>
         NE<span>M</span>O
       </Link>
 
@@ -91,33 +96,33 @@ export default function NotFound(): React.ReactElement {
               letterSpacing="0.18em"
               fill="#a8871e"
             >
-              ICI
+              {t('hereLabel')}
             </text>
           </svg>
         </div>
 
         <section className={styles.hero}>
-          <div className={styles.kicker}>404 — Hors carte</div>
+          <div className={styles.kicker}>{t('kicker')}</div>
           <h1 className={styles.title}>
-            Vous êtes perdu
+            {t('title1')}
             <br />
-            en mer ?
+            {t('title2')}
           </h1>
           <hr className={styles.rule} />
           <p className={styles.lede}>
-            Cette page n&rsquo;apparaît sur aucune de nos cartes.
+            {t('ledeLine1')}
             <br />
-            Aucune côte connue à cette position.
+            {t('ledeLine2')}
           </p>
           <Link href="/" className={styles.cta}>
             <span className={styles.arrow}>←</span>
-            Retour au port
+            {t('cta')}
           </Link>
         </section>
       </main>
 
       <div className={styles.hudPos}>
-        POS · <b>UNKNOWN</b>
+        {t('hudPosLabel')} <b>{t('hudPosUnknown')}</b>
       </div>
     </div>
   );
