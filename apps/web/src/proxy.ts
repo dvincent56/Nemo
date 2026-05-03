@@ -42,6 +42,10 @@ const PUBLIC_PATH_SUFFIXES = new Set<string>([
   '/races',
   '/ranking',
   '/news',
+  '/cgu',
+  '/cookies',
+  '/legal',
+  '/privacy',
 ]);
 
 const PUBLIC_PREFIX_SUFFIXES = [
