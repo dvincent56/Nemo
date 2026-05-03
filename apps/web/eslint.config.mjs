@@ -106,6 +106,7 @@ const config = [
           '°',
           'BSP', 'TWS', 'TWD', 'TWA', 'HDG', 'VMG', 'DTF', 'Factor',
           'Pos', 'DTU', 'SWH', 'Dir', 'kn', 'm ·', 'nds', 's', '−',
+          '📍', 'nm', 'h', 'm',
         ],
       }],
     },

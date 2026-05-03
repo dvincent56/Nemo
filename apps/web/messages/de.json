@@ -483,6 +483,68 @@
       "section": "Océan",
       "close": "Fermer"
     },
+    "sailPanel": {
+      "lockoutBanner": "Vous avez programmé un changement de voile dans quelques minutes. Vous ne pouvez pas changer de voile manuellement sans retirer votre programmation.",
+      "modeAuto": "Auto",
+      "modeManual": "Manuel",
+      "transitionInProgress": "Manœuvre en cours · {sec}s",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
+    "confirmReplaceProg": {
+      "title": "Remplacer la programmation",
+      "bodyMain": "Vous avez {n, plural, one {<bold>#</bold> ordre} other {<bold>#</bold> ordres}} en attente. Appliquer la route va remplacer tous les ordres futurs et activer la voile automatique.",
+      "bodyKeep": "Les ordres déjà déclenchés sont conservés.",
+      "cancel": "Annuler",
+      "confirm": "Remplacer"
+    },
+    "routerPanel": {
+      "departureLabel": "Point de départ",
+      "boatPosition": "Position bateau",
+      "arrivalLabel": "Point d'arrivée",
+      "placingHint": "Cliquez (ou tapez) sur la carte",
+      "placingHint2": "pour placer l'arrivée",
+      "cancelPlacing": "Annuler",
+      "destTitle": "Arrivée",
+      "edit": "Modifier",
+      "definePlace": "Définir l'arrivée",
+      "calculating": "Calcul en cours…",
+      "calcSub": "Fermer le panneau pour annuler",
+      "routeBtn": "Router",
+      "hintNoDest": "Définir l'arrivée pour calculer",
+      "hintNoGrid": "Météo en chargement…",
+      "results": {
+        "head": "✓ Route calculée",
+        "distance": "Distance",
+        "eta": "ETA",
+        "compute": "Calcul",
+        "maneuvers": "Manœuvres",
+        "warning": "⚠ Route incomplète : météo limitée à J+7",
+        "applyWaypoints": "→ Points de contrôle",
+        "applyCap": "→ Programmation de cap"
+      }
+    },
+    "routerControls": {
+      "configLabel": "Configuration",
+      "presetAria": "Préréglage du routeur",
+      "presetFast": "Fast",
+      "presetBalanced": "Équilibré",
+      "presetHires": "Hi-Res",
+      "coastDetection": "Détection des côtes",
+      "cone": "Cône"
+    },
+    "progPanel": {
+      "noWp": "Aucun WP disponible.",
+      "close": "Fermer",
+      "editorPlaceholder": "Editor placeholder — kind={kind}",
+      "deleteTitle": "Supprimer cet ordre ?",
+      "deleteWpRef": "Ce WP est référencé par un ordre voile. Les deux seront supprimés.",
+      "deleteIrreversible": "Cette action est irréversible.",
+      "delete": "Supprimer",
+      "clearAllTitle": "Tout effacer ?",
+      "clearAllBody": "Cela vide la programmation en cours d'édition. Vous pouvez annuler avec « Annuler ».",
+      "clearAll": "Tout effacer"
+    },
     "blocked": {
       "eyebrow": "Accès refusé",
       "draft": "Cette course n'est pas encore publiée.",
