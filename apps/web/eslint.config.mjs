@@ -48,6 +48,13 @@ const config = [
       'src/app/\\[locale\\]/marina/\\[boatId\\]/BoatDetailView.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotCard.tsx',
       'src/app/\\[locale\\]/marina/\\[boatId\\]/SellModal.tsx',
+      'src/app/\\[locale\\]/marina/\\[boatId\\]/SlotDrawer.tsx',
+      'src/app/\\[locale\\]/marina/inventory/**/*.{tsx,ts}',
+      // EffectsSummary intentionnellement non couvert : composition dynamique
+      // de strings FR ("vitesse au près", "temps virement"...) — refactor
+      // dédié quand on touchera vraiment aux traductions.
+      // CustomizeView intentionnellement non couvert : 832 lignes, sera fait
+      // dans un commit dédié (Plan 5b-customize).
       'src/components/ui/**/*.{tsx,ts}',
       'src/i18n/**/*.{tsx,ts}',
     ],
@@ -58,7 +65,7 @@ const config = [
         noAttributeStrings: false,
         allowedStrings: [
           '—', '·', '•', '/', ':', '|', '×', '+', '-', '.', '(', ')',
-          '→', '←', '↑', '↓', '…', '▸', '✦',
+          '→', '←', '↑', '↓', '…', '▸', '✦', '✕',
           'NE', 'M', 'O',
           'hello@nemo.sail',
           'G', '⌘',

@@ -230,6 +230,87 @@
         "paginationLabel": "Pagination historique du bateau"
       }
     },
+    "inventory": {
+      "ariaCrumbs": "Fil d'ariane",
+      "crumbBack": "← Marina",
+      "crumbCurrent": "Inventaire",
+      "eyebrow": "Upgrades",
+      "eyebrowTrailing": "Ta carrière",
+      "title": "Inventaire",
+      "heroLede": "Tes upgrades en stock. Les items non installés peuvent être revendus contre des crédits. Les items installés doivent être retirés d'un bateau avant d'être revendus.",
+      "counters": {
+        "available": "Disponibles",
+        "installed": "Installés",
+        "credits": "Crédits"
+      },
+      "errorBanner": "Impossible de charger l'inventaire.",
+      "available": {
+        "title": "Disponibles",
+        "aside": "Revends un item pour récupérer 70% du prix payé. Achats administrateur non remboursés.",
+        "empty": "Aucun upgrade disponible en stock.",
+        "metaSep": " · ",
+        "acquiredOn": "Acquis le {date}",
+        "sell": "Vendre",
+        "giftTag": "Cadeau"
+      },
+      "installed": {
+        "title": "Installés",
+        "aside": "Items actuellement montés sur tes bateaux. Retire-les depuis la marina pour les revendre.",
+        "empty": "Aucun upgrade installé sur tes bateaux.",
+        "onBoat": " · Sur ",
+        "tag": "Équipé"
+      },
+      "confirmSell": {
+        "title": "Vendre cet upgrade ?",
+        "bodyMid": " — tu récupères ",
+        "bodyEnd": " du prix payé. Action irréversible.",
+        "bodyEm": "70%"
+      },
+      "noSlot": "—"
+    },
+    "slotDrawer": {
+      "title": "Changer — {slot}",
+      "ariaClose": "Fermer",
+      "tabInstall": "Installer ({n})",
+      "tabBuy": "Acheter",
+      "creditsAvailable": "Crédits disponibles",
+      "creditsValue": "{amount} cr.",
+      "loading": "Chargement…",
+      "emptyInstall": "Aucun item compatible en inventaire.",
+      "emptyBuy": "Aucun item disponible à l'achat.",
+      "badgeInstalledHere": "Installé sur ce bateau",
+      "badgeInstalledElsewhere": "Installé sur un autre bateau",
+      "badgeOwned": "{n, plural, one {# en inventaire} other {# en inventaire}}",
+      "ariaUnlock": "Critères de déblocage",
+      "unlockHeader": "Nécessite :",
+      "unlock": {
+        "racesFinished": "{n} courses finies",
+        "top10": "{n} top 10",
+        "avgRankPctMax": "Classement moyen ≤ {pct}%",
+        "currentStreak": "Série en cours ≥ {n}"
+      },
+      "actions": {
+        "uninstall": "Retirer",
+        "unavailable": "Indisponible",
+        "install": "Installer",
+        "buyStock": "Acheter (stock)",
+        "buyAndInstall": "Acheter et installer"
+      },
+      "tooltips": {
+        "noCredits": "Crédits insuffisants",
+        "addToInventory": "Ajouter une copie à ton inventaire"
+      },
+      "locked": "Verrouillé",
+      "confirm": {
+        "titleBuyInstall": "Acheter et installer ?",
+        "titleBuyStock": "Acheter et ajouter à l'inventaire ?",
+        "bodyMid": " pour ",
+        "bodyEndInstall": " — l'item sera installé immédiatement sur ce bateau.",
+        "bodyEndStock": " — l'item partira dans ton inventaire.",
+        "confirmInstall": "Acheter et installer",
+        "confirmStock": "Acheter"
+      }
+    },
     "sellModal": {
       "title": "Vendre {name} ?",
       "warning": "Cette action est irréversible.",

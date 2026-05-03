@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   fetchMyUpgrades, fetchCatalog, installUpgrade, uninstallUpgrade, buyAndInstall, purchaseUpgrade,
   type CatalogItem, type InventoryItem, type UpgradeSlot, type BoatClass, type PlayerStats,
 } from '@/lib/marina-api';
-import { SLOT_LABEL, TIER_LABEL } from '../data';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import Tooltip from '@/components/ui/Tooltip';
 import { EffectsSummary } from './EffectsSummary';
@@ -19,44 +19,47 @@ interface CriterionRow {
   currentLabel: string;
 }
 
-function renderUnlockRows(
+function useUnlockRowsBuilder(): (
   criteria: NonNullable<CatalogItem['unlockCriteria']>,
   stats: PlayerStats | null,
-): CriterionRow[] {
-  const rows: CriterionRow[] = [];
-  if (criteria.racesFinished !== undefined) {
-    const current = stats?.racesFinished ?? 0;
-    rows.push({
-      label: `${criteria.racesFinished} courses finies`,
-      met: current >= criteria.racesFinished,
-      currentLabel: `${current}`,
-    });
-  }
-  if (criteria.top10Finishes !== undefined) {
-    const current = stats?.top10Finishes ?? 0;
-    rows.push({
-      label: `${criteria.top10Finishes} top 10`,
-      met: current >= criteria.top10Finishes,
-      currentLabel: `${current}`,
-    });
-  }
-  if (criteria.avgRankPctMax !== undefined) {
-    const current = stats?.avgRankPct ?? 1;
-    rows.push({
-      label: `Classement moyen ≤ ${Math.round(criteria.avgRankPctMax * 100)}%`,
-      met: current <= criteria.avgRankPctMax,
-      currentLabel: `${Math.round(current * 100)}%`,
-    });
-  }
-  if (criteria.currentStreak !== undefined) {
-    const current = stats?.currentStreak ?? 0;
-    rows.push({
-      label: `Série en cours ≥ ${criteria.currentStreak}`,
-      met: current >= criteria.currentStreak,
-      currentLabel: `${current}`,
-    });
-  }
-  return rows;
+) => CriterionRow[] {
+  const t = useTranslations('marina.slotDrawer.unlock');
+  return (criteria, stats) => {
+    const rows: CriterionRow[] = [];
+    if (criteria.racesFinished !== undefined) {
+      const current = stats?.racesFinished ?? 0;
+      rows.push({
+        label: t('racesFinished', { n: criteria.racesFinished }),
+        met: current >= criteria.racesFinished,
+        currentLabel: `${current}`,
+      });
+    }
+    if (criteria.top10Finishes !== undefined) {
+      const current = stats?.top10Finishes ?? 0;
+      rows.push({
+        label: t('top10', { n: criteria.top10Finishes }),
+        met: current >= criteria.top10Finishes,
+        currentLabel: `${current}`,
+      });
+    }
+    if (criteria.avgRankPctMax !== undefined) {
+      const current = stats?.avgRankPct ?? 1;
+      rows.push({
+        label: t('avgRankPctMax', { pct: Math.round(criteria.avgRankPctMax * 100) }),
+        met: current <= criteria.avgRankPctMax,
+        currentLabel: `${Math.round(current * 100)}%`,
+      });
+    }
+    if (criteria.currentStreak !== undefined) {
+      const current = stats?.currentStreak ?? 0;
+      rows.push({
+        label: t('currentStreak', { n: criteria.currentStreak }),
+        met: current >= criteria.currentStreak,
+        currentLabel: `${current}`,
+      });
+    }
+    return rows;
+  };
 }
 
 interface SlotDrawerProps {
@@ -64,17 +67,19 @@ interface SlotDrawerProps {
   slot: UpgradeSlot;
   boatId: string;
   boatClass: BoatClass;
-  /** Catalog id currently installed in this slot on this boat (to show badge + Retirer action). */
   installedCatalogId?: string | undefined;
-  /** Player credits, shown in the Buy tab as a budget reminder. */
   credits: number;
   onClose: () => void;
   onChanged: () => void;
 }
 
 export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, credits, onClose, onChanged }: SlotDrawerProps): React.ReactElement | null {
+  const t = useTranslations('marina.slotDrawer');
+  const tSlot = useTranslations('marina.slots');
+  const tTier = useTranslations('marina.tiers');
+  const buildUnlockRows = useUnlockRowsBuilder();
+
   const [tab, setTab] = useState<'install' | 'buy'>('install');
-  // All inventory items for this slot+class (compatible), including the one installed on this boat
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +113,6 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     loadDrawerData().catch((err) => console.error('drawer load failed', err));
   }, [open, loadDrawerData]);
 
-  // How many copies of each catalog id the player owns that are NOT installed
   const availableByCatalogId = useMemo(() => {
     const counts = new Map<string, number>();
     for (const i of inventory) {
@@ -178,8 +182,8 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
     <div className={styles.overlay} onClick={onClose}>
       <aside className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <header className={styles.header}>
-          <h3 className={styles.title}>Changer — {SLOT_LABEL[slot]}</h3>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+          <h3 className={styles.title}>{t('title', { slot: tSlot(slot) })}</h3>
+          <button type="button" className={styles.close} onClick={onClose} aria-label={t('ariaClose')}>✕</button>
         </header>
 
         <nav className={styles.tabs}>
@@ -188,31 +192,31 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
             className={`${styles.tab} ${tab === 'install' ? styles.tabActive : ''}`}
             onClick={() => setTab('install')}
           >
-            Installer ({inventory.length})
+            {t('tabInstall', { n: inventory.length })}
           </button>
           <button
             type="button"
             className={`${styles.tab} ${tab === 'buy' ? styles.tabActive : ''}`}
             onClick={() => setTab('buy')}
           >
-            Acheter
+            {t('tabBuy')}
           </button>
         </nav>
 
         {tab === 'buy' && (
           <div className={styles.creditsBar}>
-            <span className={styles.creditsLabel}>Crédits disponibles</span>
-            <span className={styles.creditsValue}>{credits.toLocaleString('fr-FR')} cr.</span>
+            <span className={styles.creditsLabel}>{t('creditsAvailable')}</span>
+            <span className={styles.creditsValue}>{t('creditsValue', { amount: credits.toLocaleString('fr-FR') })}</span>
           </div>
         )}
 
         <div className={styles.content}>
           {loading ? (
-            <p className={styles.loading}>Chargement…</p>
+            <p className={styles.loading}>{t('loading')}</p>
           ) : tab === 'install' ? (
             <>
               {inventory.length === 0 ? (
-                <p className={styles.empty}>Aucun item compatible en inventaire.</p>
+                <p className={styles.empty}>{t('emptyInstall')}</p>
               ) : (
                 inventory.map((item) => {
                   const isInstalledHere =
@@ -223,12 +227,12 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
                         <p className={styles.itemName}>{item.name}</p>
-                        <span className={styles.itemTier}>{TIER_LABEL[item.tier ?? 'SERIE']}</span>
+                        <span className={styles.itemTier}>{tTier(item.tier ?? 'SERIE')}</span>
                         {isInstalledHere && (
-                          <span className={styles.badgeInstalled}>Installé sur ce bateau</span>
+                          <span className={styles.badgeInstalled}>{t('badgeInstalledHere')}</span>
                         )}
                         {isInstalledElsewhere && (
-                          <span className={styles.badgeElsewhere}>Installé sur un autre bateau</span>
+                          <span className={styles.badgeElsewhere}>{t('badgeInstalledElsewhere')}</span>
                         )}
                         <EffectsSummary effects={catalogMatch?.effects ?? null} variant="text" />
                       </div>
@@ -239,11 +243,11 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                           onClick={handleUninstall}
                           disabled={busy !== null}
                         >
-                          Retirer
+                          {t('actions.uninstall')}
                         </button>
                       ) : isInstalledElsewhere ? (
                         <button type="button" className={styles.itemBtn} disabled>
-                          Indisponible
+                          {t('actions.unavailable')}
                         </button>
                       ) : (
                         <button
@@ -252,7 +256,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                           onClick={() => handleInstall(item.id)}
                           disabled={busy !== null}
                         >
-                          Installer
+                          {t('actions.install')}
                         </button>
                       )}
                     </div>
@@ -263,7 +267,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
           ) : (
             <>
               {catalog.length === 0 ? (
-                <p className={styles.empty}>Aucun item disponible à l'achat.</p>
+                <p className={styles.empty}>{t('emptyBuy')}</p>
               ) : (
                 catalog.map((item) => {
                   const isInstalledOnThisBoat = item.id === installedCatalogId;
@@ -271,26 +275,26 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                   const canAfford = item.cost === null || credits >= item.cost;
                   const isLocked = item.cost === null;
                   const unlockRows = isLocked && item.unlockCriteria
-                    ? renderUnlockRows(item.unlockCriteria, stats)
+                    ? buildUnlockRows(item.unlockCriteria, stats)
                     : [];
                   return (
                     <div key={item.id} className={styles.item}>
                       <div className={styles.itemInfo}>
                         <p className={styles.itemName}>{item.name}</p>
                         <p className={styles.itemDesc}>{item.profile}</p>
-                        <span className={styles.itemTier}>{TIER_LABEL[item.tier]}</span>
+                        <span className={styles.itemTier}>{tTier(item.tier)}</span>
                         {isInstalledOnThisBoat && (
-                          <span className={styles.badgeInstalled}>Installé sur ce bateau</span>
+                          <span className={styles.badgeInstalled}>{t('badgeInstalledHere')}</span>
                         )}
                         {!isInstalledOnThisBoat && copiesAvailable > 0 && (
                           <span className={styles.badgeOwned}>
-                            {copiesAvailable === 1 ? '1 en inventaire' : `${copiesAvailable} en inventaire`}
+                            {t('badgeOwned', { n: copiesAvailable })}
                           </span>
                         )}
                         <EffectsSummary effects={item.effects} variant="text" />
                         {unlockRows.length > 0 && (
-                          <ul className={styles.unlockList} aria-label="Critères de déblocage">
-                            <li className={styles.unlockHeader}>Nécessite :</li>
+                          <ul className={styles.unlockList} aria-label={t('ariaUnlock')}>
+                            <li className={styles.unlockHeader}>{t('unlockHeader')}</li>
                             {unlockRows.map((row, i) => (
                               <li
                                 key={`unlock-${i}`}
@@ -305,12 +309,14 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                       </div>
                       <div className={styles.itemAction}>
                         <span className={`${styles.itemCost} ${!canAfford ? styles.itemCostUnafford : ''}`}>
-                          {item.cost !== null ? `${item.cost.toLocaleString('fr-FR')} cr.` : 'Verrouillé'}
+                          {item.cost !== null
+                            ? t('creditsValue', { amount: item.cost.toLocaleString('fr-FR') })
+                            : t('locked')}
                         </span>
                         {item.cost !== null && (
                           isInstalledOnThisBoat || copiesAvailable > 0 ? (
                             <Tooltip
-                              text={!canAfford ? 'Crédits insuffisants' : 'Ajouter une copie à ton inventaire'}
+                              text={!canAfford ? t('tooltips.noCredits') : t('tooltips.addToInventory')}
                               position="bottom"
                             >
                               <button
@@ -319,17 +325,17 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                                 onClick={() => setPending({ item, mode: 'buy-stock' })}
                                 disabled={busy !== null || !canAfford}
                               >
-                                Acheter (stock)
+                                {t('actions.buyStock')}
                               </button>
                             </Tooltip>
                           ) : !canAfford ? (
-                            <Tooltip text="Crédits insuffisants" position="bottom">
+                            <Tooltip text={t('tooltips.noCredits')} position="bottom">
                               <button
                                 type="button"
                                 className={styles.itemBtn}
                                 disabled
                               >
-                                Acheter et installer
+                                {t('actions.buyAndInstall')}
                               </button>
                             </Tooltip>
                           ) : (
@@ -339,7 +345,7 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
                               onClick={() => setPending({ item, mode: 'buy-and-install' })}
                               disabled={busy !== null}
                             >
-                              Acheter et installer
+                              {t('actions.buyAndInstall')}
                             </button>
                           )
                         )}
@@ -359,18 +365,18 @@ export function SlotDrawer({ open, slot, boatId, boatClass, installedCatalogId, 
       <ConfirmDialog
         open={!!pending}
         title={pending.mode === 'buy-and-install'
-          ? `Acheter et installer ?`
-          : `Acheter et ajouter à l'inventaire ?`}
+          ? t('confirm.titleBuyInstall')
+          : t('confirm.titleBuyStock')}
         body={
           <>
-            <strong>{pending.item.name}</strong>{' '}({TIER_LABEL[pending.item.tier]}) pour{' '}
-            <strong>{pending.item.cost?.toLocaleString('fr-FR')} cr.</strong>
+            <strong>{pending.item.name}</strong>{' '}({tTier(pending.item.tier)}){t('confirm.bodyMid')}
+            <strong>{t('creditsValue', { amount: pending.item.cost?.toLocaleString('fr-FR') ?? '—' })}</strong>
             {pending.mode === 'buy-and-install'
-              ? ' — l\'item sera installé immédiatement sur ce bateau.'
-              : ' — l\'item partira dans ton inventaire.'}
+              ? t('confirm.bodyEndInstall')
+              : t('confirm.bodyEndStock')}
           </>
         }
-        confirmLabel={pending.mode === 'buy-and-install' ? 'Acheter et installer' : 'Acheter'}
+        confirmLabel={pending.mode === 'buy-and-install' ? t('confirm.confirmInstall') : t('confirm.confirmStock')}
         disabled={busy !== null}
         onCancel={() => setPending(null)}
         onConfirm={async () => {
