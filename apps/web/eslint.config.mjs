@@ -71,6 +71,9 @@ const config = [
       'src/components/play/CoordsDisplay.tsx',
       'src/components/play/WindLegend.tsx',
       'src/components/play/CursorTooltip.tsx',
+      'src/components/play/RankingPanel.tsx',
+      'src/components/play/LayersWidget.tsx',
+      'src/components/play/MapAppearanceModal.tsx',
       // EffectsSummary intentionnellement non couvert : composition dynamique
       // de strings FR ("vitesse au près", "temps virement"...) — refactor
       // dédié quand on touchera vraiment aux traductions.

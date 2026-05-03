@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import { OCEAN_PRESETS } from '@/lib/mapAppearance';
 import styles from './MapAppearanceModal.module.css';
@@ -11,6 +12,7 @@ interface MapAppearanceModalProps {
 }
 
 export default function MapAppearanceModal({ open, onClose }: MapAppearanceModalProps): React.ReactElement | null {
+  const t = useTranslations('play.mapAppearance');
   const oceanPresetId = useGameStore((s) => s.mapAppearance.oceanPresetId);
   const setOceanPreset = useGameStore((s) => s.setOceanPreset);
 
@@ -32,15 +34,15 @@ export default function MapAppearanceModal({ open, onClose }: MapAppearanceModal
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Apparence de la carte"
+        aria-label={t('ariaLabel')}
       >
         <header className={styles.header}>
-          <h2 className={styles.title}>Apparence</h2>
-          <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+          <h2 className={styles.title}>{t('title')}</h2>
+          <button className={styles.close} onClick={onClose} aria-label={t('ariaClose')}>✕</button>
         </header>
 
         <section className={styles.section}>
-          <p className={styles.sectionTitle}>Océan</p>
+          <p className={styles.sectionTitle}>{t('section')}</p>
           <div className={styles.swatches}>
             {OCEAN_PRESETS.map((p) => (
               <button
@@ -58,7 +60,7 @@ export default function MapAppearanceModal({ open, onClose }: MapAppearanceModal
 
         <footer className={styles.footer}>
           <button type="button" className={styles.closeButton} onClick={onClose}>
-            Fermer
+            {t('close')}
           </button>
         </footer>
       </div>

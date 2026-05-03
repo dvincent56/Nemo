@@ -2,6 +2,7 @@
 
 import { Wind, Waves, Shrimp, Ban } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import type { LayerName } from '@/lib/store';
 import { useGfsStatus } from '@/hooks/useGfsStatus';
@@ -16,10 +17,10 @@ function fmtRunLabel(ts: number): string {
   return `Run ${hh}z · ${dd}/${mm}`;
 }
 
-/** Format countdown: "dans ~2h15" or "dans ~45min" */
-function fmtCountdown(targetTs: number): string {
+/** Format countdown: "~2h15", "~45min". imminent string passed in by caller. */
+function fmtCountdown(targetTs: number, imminent: string): string {
   const diffSec = targetTs - Math.floor(Date.now() / 1000);
-  if (diffSec <= 0) return 'imminent';
+  if (diffSec <= 0) return imminent;
   const h = Math.floor(diffSec / 3600);
   const m = Math.floor((diffSec % 3600) / 60);
   if (h === 0) return `~${m}min`;
@@ -32,15 +33,14 @@ interface LayerRow {
   Icon?: LucideIcon;
   /** Fallback unicode glyph when no lucide icon fits (e.g. coastline). */
   glyph?: string;
-  label: string;
 }
 
 const LAYERS: LayerRow[] = [
-  { id: 'wind', Icon: Wind, label: 'Vent' },
-  { id: 'swell', Icon: Waves, label: 'Houle' },
-  { id: 'coastline', glyph: '⌇', label: 'Trait de côte' },
-  { id: 'opponents', Icon: Shrimp, label: 'Adversaires' },
-  { id: 'zones', Icon: Ban, label: 'Zones' },
+  { id: 'wind', Icon: Wind },
+  { id: 'swell', Icon: Waves },
+  { id: 'coastline', glyph: '⌇' },
+  { id: 'opponents', Icon: Shrimp },
+  { id: 'zones', Icon: Ban },
 ];
 
 interface LayersWidgetProps {
@@ -48,6 +48,7 @@ interface LayersWidgetProps {
 }
 
 export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.ReactElement {
+  const t = useTranslations('play.layers');
   const layers = useGameStore((s) => s.layers);
   const toggleLayer = useGameStore((s) => s.toggleLayer);
   const gfs = useGfsStatus();
@@ -61,24 +62,24 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
       {gfs && gfs.next > 0 && (
         <div className={styles.gfsStatus}>
           <span className={styles.gfsLine}>
-            GFS : {fmtRunLabel(gfs.run)}
+            {t('gfsPrefix')} {fmtRunLabel(gfs.run)}
           </span>
           {gfs.status === 1 ? (
             <span className={`${styles.gfsLine} ${styles.gfsUpdating}`}>
-              Mise à jour en cours…
+              {t('gfsUpdating')}
             </span>
           ) : gfs.status === 2 ? (
             <span className={styles.gfsLine}>
-              Prochaine maj : en attente NOAA
+              {t('gfsWaiting')}
             </span>
           ) : (
             <span className={styles.gfsLine}>
-              Prochaine maj : {fmtCountdown(gfs.next)}
+              {t('gfsNext', { countdown: fmtCountdown(gfs.next, t('imminent')) })}
             </span>
           )}
         </div>
       )}
-      <p className={styles.title}>Couches</p>
+      <p className={styles.title}>{t('title')}</p>
       {visibleLayers.map((l) => {
         const isOn = layers[l.id];
         return (
@@ -87,7 +88,7 @@ export default function LayersWidget({ isSpectator }: LayersWidgetProps): React.
               <span className={styles.icon}>
                 {l.Icon ? <l.Icon size={14} strokeWidth={2} /> : l.glyph}
               </span>
-              {l.label}
+              {t(`names.${l.id}`)}
             </span>
             <div className={`${styles.switch} ${isOn ? styles.switchOn : ''}`}>
               <div className={styles.switchDot} />

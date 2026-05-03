@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/lib/store';
 import styles from './RankingPanel.module.css';
 
@@ -24,6 +25,7 @@ const MOCK_RANKING = [
 ];
 
 export default function RankingPanel(): React.ReactElement {
+  const t = useTranslations('play.ranking');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('general');
   const toggleBoat = useGameStore((s) => s.toggleBoat);
@@ -41,32 +43,29 @@ export default function RankingPanel(): React.ReactElement {
 
   return (
     <div>
-      {/* Search */}
       <div className={styles.searchWrap}>
         <input
           type="text"
           className={styles.searchInput}
-          placeholder="Rechercher un joueur…"
+          placeholder={t('searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      {/* Filter */}
       <div className={styles.filterWrap}>
-        <p className={styles.filterLabel}>Filtre</p>
+        <p className={styles.filterLabel}>{t('filterLabel')}</p>
         <select className={styles.filterSelect} value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="general">Général · {MOCK_RANKING.length} skippers</option>
-          <option value="friends">Mes amis</option>
-          <option value="team">Mon équipe</option>
-          <option value="city">Ma ville</option>
-          <option value="country">Mon pays</option>
-          <option disabled>──────</option>
-          <option value="series">Série · {MOCK_RANKING.filter((r) => r.isSeriesConfig).length} skippers</option>
+          <option value="general">{t('filters.general', { n: MOCK_RANKING.length })}</option>
+          <option value="friends">{t('filters.friends')}</option>
+          <option value="team">{t('filters.team')}</option>
+          <option value="city">{t('filters.city')}</option>
+          <option value="country">{t('filters.country')}</option>
+          <option disabled>{t('filters.separator')}</option>
+          <option value="series">{t('filters.series', { n: MOCK_RANKING.filter((r) => r.isSeriesConfig).length })}</option>
         </select>
       </div>
 
-      {/* Ranking list */}
       <div className={styles.list}>
         {filtered.map((r) => (
           <div

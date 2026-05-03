@@ -448,6 +448,41 @@
       "swh": "SWH",
       "tws": "TWS"
     },
+    "ranking": {
+      "searchPlaceholder": "Rechercher un joueur…",
+      "filterLabel": "Filtre",
+      "filters": {
+        "general": "Général · {n} skippers",
+        "friends": "Mes amis",
+        "team": "Mon équipe",
+        "city": "Ma ville",
+        "country": "Mon pays",
+        "separator": "──────",
+        "series": "Série · {n} skippers"
+      }
+    },
+    "layers": {
+      "title": "Couches",
+      "gfsPrefix": "GFS :",
+      "gfsUpdating": "Mise à jour en cours…",
+      "gfsWaiting": "Prochaine maj : en attente NOAA",
+      "gfsNext": "Prochaine maj : {countdown}",
+      "imminent": "imminent",
+      "names": {
+        "wind": "Vent",
+        "swell": "Houle",
+        "coastline": "Trait de côte",
+        "opponents": "Adversaires",
+        "zones": "Zones"
+      }
+    },
+    "mapAppearance": {
+      "ariaLabel": "Apparence de la carte",
+      "title": "Apparence",
+      "ariaClose": "Fermer",
+      "section": "Océan",
+      "close": "Fermer"
+    },
     "blocked": {
       "eyebrow": "Accès refusé",
       "draft": "Cette course n'est pas encore publiée.",
